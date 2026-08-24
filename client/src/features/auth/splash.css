@@ -45,7 +45,7 @@
 
 .splash-decorations {
   position: absolute;
-  inset: -60px -40px;
+  inset: -20px -16px;
   pointer-events: none;
 }
 
@@ -207,7 +207,7 @@
   }
 
   .splash-decorations {
-    inset: -30px -20px;
+    inset: -14px -10px;
   }
 
   .splash-food-icon svg {
@@ -260,7 +260,7 @@
   }
 
   .splash-decorations {
-    inset: -20px -15px;
+    inset: -18px -14px;
   }
 
   .splash-food-icon svg {
@@ -288,7 +288,7 @@
   }
 
   .splash-decorations {
-    inset: -45px -30px;
+    inset: -22px -18px;
   }
 }
 
@@ -340,7 +340,7 @@
   }
 
   .splash-decorations {
-    inset: -80px -60px;
+    inset: -30px -24px;
   }
 }
 
@@ -359,7 +359,7 @@
   }
 
   .splash-decorations {
-    inset: -30px -40px;
+    inset: -16px -20px;
   }
 
   .splash-logo {
