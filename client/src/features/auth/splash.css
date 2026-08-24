@@ -105,6 +105,71 @@
   to { opacity: 0.4; transform: translateY(0); }
 }
 
+/* ── Decorative Circles ── */
+
+.splash-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--blue-200, #C4E1FF);
+  opacity: 0;
+  animation: splash-circle-in 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ── Circle Positions — scattered between icons ── */
+
+.splash-circle-1 {
+  top: 20%;
+  left: 18%;
+  animation-delay: 500ms;
+}
+
+.splash-circle-2 {
+  top: 8%;
+  left: 50%;
+  animation-delay: 600ms;
+}
+
+.splash-circle-3 {
+  top: 22%;
+  right: 20%;
+  animation-delay: 450ms;
+}
+
+.splash-circle-4 {
+  top: 55%;
+  left: 12%;
+  animation-delay: 650ms;
+}
+
+.splash-circle-5 {
+  top: 58%;
+  right: 14%;
+  animation-delay: 550ms;
+}
+
+.splash-circle-6 {
+  bottom: 22%;
+  left: 24%;
+  animation-delay: 700ms;
+}
+
+.splash-circle-7 {
+  bottom: 8%;
+  left: 52%;
+  animation-delay: 400ms;
+}
+
+.splash-circle-8 {
+  bottom: 24%;
+  right: 26%;
+  animation-delay: 620ms;
+}
+
+@keyframes splash-circle-in {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 0.35; transform: scale(1); }
+}
+
 /* ── Brand ── */
 
 .splash-brand {
@@ -231,12 +296,25 @@
     height: 36px;
   }
 
+  .splash-circle {
+    transform: scale(0.8);
+  }
+
   .splash-icon-pos-tl { top: 6%; left: 4%; }
   .splash-icon-pos-tr { top: 10%; right: 4%; }
   .splash-icon-pos-ml { top: 44%; left: 0%; }
   .splash-icon-pos-mr { top: 40%; right: 0%; }
   .splash-icon-pos-bl { bottom: 10%; left: 6%; }
   .splash-icon-pos-br { bottom: 6%; right: 6%; }
+
+  .splash-circle-1 { top: 16%; left: 14%; }
+  .splash-circle-2 { top: 6%; left: 46%; }
+  .splash-circle-3 { top: 18%; right: 16%; }
+  .splash-circle-4 { top: 52%; left: 8%; }
+  .splash-circle-5 { top: 54%; right: 10%; }
+  .splash-circle-6 { bottom: 18%; left: 20%; }
+  .splash-circle-7 { bottom: 6%; left: 48%; }
+  .splash-circle-8 { bottom: 20%; right: 22%; }
 }
 
 /* ── Standard phones (361-430px) ── */
@@ -289,12 +367,25 @@
     height: 28px;
   }
 
+  .splash-circle {
+    transform: scale(0.7);
+  }
+
   .splash-icon-pos-tl { top: 8%; left: 10%; }
   .splash-icon-pos-tr { top: 12%; right: 10%; }
   .splash-icon-pos-ml { top: 44%; left: 4%; }
   .splash-icon-pos-mr { top: 40%; right: 4%; }
   .splash-icon-pos-bl { bottom: 12%; left: 14%; }
   .splash-icon-pos-br { bottom: 8%; right: 14%; }
+
+  .splash-circle-1 { top: 18%; left: 18%; }
+  .splash-circle-2 { top: 8%; left: 50%; }
+  .splash-circle-3 { top: 20%; right: 18%; }
+  .splash-circle-4 { top: 54%; left: 12%; }
+  .splash-circle-5 { top: 56%; right: 12%; }
+  .splash-circle-6 { bottom: 20%; left: 24%; }
+  .splash-circle-7 { bottom: 8%; left: 52%; }
+  .splash-circle-8 { bottom: 22%; right: 24%; }
 }
 
 /* ── Medium height (501-650px) ── */
@@ -321,6 +412,15 @@
   .splash-icon-pos-mr { top: 41%; right: 0%; }
   .splash-icon-pos-bl { bottom: 12%; left: 10%; }
   .splash-icon-pos-br { bottom: 8%; right: 10%; }
+
+  .splash-circle-1 { top: 17%; left: 16%; }
+  .splash-circle-2 { top: 7%; left: 48%; }
+  .splash-circle-3 { top: 19%; right: 17%; }
+  .splash-circle-4 { top: 53%; left: 10%; }
+  .splash-circle-5 { top: 55%; right: 11%; }
+  .splash-circle-6 { bottom: 19%; left: 22%; }
+  .splash-circle-7 { bottom: 7%; left: 50%; }
+  .splash-circle-8 { bottom: 21%; right: 23%; }
 }
 
 /* ── Tall phones (651-800px) — default styles ── */
@@ -350,6 +450,15 @@
   .splash-icon-pos-mr { top: 42%; right: 4%; }
   .splash-icon-pos-bl { bottom: 16%; left: 14%; }
   .splash-icon-pos-br { bottom: 12%; right: 14%; }
+
+  .splash-circle-1 { top: 20%; left: 18%; }
+  .splash-circle-2 { top: 10%; left: 52%; }
+  .splash-circle-3 { top: 22%; right: 18%; }
+  .splash-circle-4 { top: 56%; left: 12%; }
+  .splash-circle-5 { top: 58%; right: 12%; }
+  .splash-circle-6 { bottom: 22%; left: 24%; }
+  .splash-circle-7 { bottom: 10%; left: 54%; }
+  .splash-circle-8 { bottom: 24%; right: 24%; }
 }
 
 /* ── Tablets / large screens (768px+) ── */
@@ -380,6 +489,15 @@
   .splash-icon-pos-mr { top: 42%; right: 6%; }
   .splash-icon-pos-bl { bottom: 18%; left: 16%; }
   .splash-icon-pos-br { bottom: 14%; right: 16%; }
+
+  .splash-circle-1 { top: 22%; left: 20%; }
+  .splash-circle-2 { top: 12%; left: 54%; }
+  .splash-circle-3 { top: 24%; right: 20%; }
+  .splash-circle-4 { top: 58%; left: 14%; }
+  .splash-circle-5 { top: 60%; right: 14%; }
+  .splash-circle-6 { bottom: 24%; left: 26%; }
+  .splash-circle-7 { bottom: 12%; left: 56%; }
+  .splash-circle-8 { bottom: 26%; right: 26%; }
 }
 
 /* ── Landscape phones ── */
@@ -421,6 +539,15 @@
   .splash-icon-pos-mr { top: 40%; right: 4%; }
   .splash-icon-pos-bl { bottom: 14%; left: 16%; }
   .splash-icon-pos-br { bottom: 10%; right: 16%; }
+
+  .splash-circle-1 { top: 18%; left: 18%; }
+  .splash-circle-2 { top: 8%; left: 50%; }
+  .splash-circle-3 { top: 20%; right: 18%; }
+  .splash-circle-4 { top: 54%; left: 12%; }
+  .splash-circle-5 { top: 56%; right: 12%; }
+  .splash-circle-6 { bottom: 20%; left: 24%; }
+  .splash-circle-7 { bottom: 8%; left: 52%; }
+  .splash-circle-8 { bottom: 22%; right: 24%; }
 }
 
 /* ── Reduced Motion ── */

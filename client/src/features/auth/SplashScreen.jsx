@@ -20,6 +20,17 @@ const foodIcons = [
   { icon: IconToolsKitchen2, size: 42, className: 'splash-icon-pos-br' },
 ];
 
+const circles = [
+  { size: 8, className: 'splash-circle-1' },
+  { size: 6, className: 'splash-circle-2' },
+  { size: 10, className: 'splash-circle-3' },
+  { size: 5, className: 'splash-circle-4' },
+  { size: 7, className: 'splash-circle-5' },
+  { size: 9, className: 'splash-circle-6' },
+  { size: 4, className: 'splash-circle-7' },
+  { size: 6, className: 'splash-circle-8' },
+];
+
 export default function SplashScreen({ onComplete }) {
   const [visible, setVisible] = useState(true);
 
@@ -45,6 +56,14 @@ export default function SplashScreen({ onComplete }) {
               icon={item.icon}
               size={item.size}
               className={item.className}
+            />
+          ))}
+          {circles.map((item, i) => (
+            <span
+              key={`c-${i}`}
+              className={`splash-circle ${item.className}`}
+              style={{ width: item.size, height: item.size }}
+              aria-hidden="true"
             />
           ))}
         </div>
