@@ -55,6 +55,7 @@ paths:
       summary: Health check
       description: API health check endpoint
       operationId: getHealth
+      security: []
       responses:
         '200':
           description: API is running
@@ -77,8 +78,9 @@ paths:
       tags:
         - Authentication
       summary: Employee login
-      description: Authenticate employee with email and password
+      description: Authenticate employee with email and password. Returns JWT access token.
       operationId: login
+      security: []
       requestBody:
         required: true
         content:
@@ -113,30 +115,40 @@ paths:
       tags:
         - Authentication
       summary: Employee logout
-      description: Revoke current session
+      description: Revoke current session. Requires valid JWT.
       operationId: logout
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Logout successful
+        '401':
+          description: Unauthorized - invalid or missing token
 
   '/auth/refresh':
     post:
       tags:
         - Authentication
       summary: Refresh session
-      description: Refresh access token using refresh token
+      description: Refresh access token using current JWT. Requires valid JWT.
       operationId: refresh
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Session refreshed
+        '401':
+          description: Unauthorized - invalid or missing token
 
   '/auth/me':
     get:
       tags:
         - Authentication
       summary: Get current user profile
-      description: Fetch authenticated user profile with roles
+      description: Fetch authenticated user profile with roles. Requires valid JWT.
       operationId: getMe
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: User profile retrieved
@@ -144,6 +156,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized - invalid or missing token
 
 components:
   schemas:
@@ -179,7 +193,7 @@ components:
           description: Authenticated user object
         session:
           type: object
-          description: Supabase session data
+          description: Supabase session data with access_token and refresh_token
 
     UserProfile:
       type: object
@@ -226,3 +240,4 @@ securitySchemes:
     type: http
     scheme: bearer
     bearerFormat: JWT
+    description: "Paste the access_token from /auth/login response"
