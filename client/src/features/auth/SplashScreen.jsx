@@ -8,7 +8,7 @@ import {
   IconToolsKitchen2,
 } from '@tabler/icons-react';
 import SplashFoodIcon from './SplashFoodIcon.jsx';
-import mainLogo from '../../assets/main_logo.jpeg';
+import mainLogo from '../../assets/main_logo.png';
 import './splash.css';
 
 const foodIcons = [
