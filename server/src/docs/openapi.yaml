@@ -1,0 +1,228 @@
+openapi: 3.0.1
+info:
+  title: Merchant Munchies API
+  version: 0.1.0
+  description: Workplace food-ordering platform API - Merchant Place Pilot
+  contact:
+    name: Merchant Munchies Team
+    email: support@merchantmunnies.local
+servers:
+  - url: http://localhost:4000/api/v1
+    description: Development server
+  - url: https://api.merchantmunnies.local/api/v1
+    description: Production server
+tags:
+  - name: Authentication
+    description: Authenticate and manage user sessions
+  - name: Profile
+    description: User profile management
+  - name: Campuses
+    description: Campus and building management
+  - name: Vendors
+    description: Vendor/outlet management
+  - name: Menus
+    description: Menu items and categories
+  - name: Search
+    description: Search meals and vendors
+  - name: Cart
+    description: Shopping cart management
+  - name: Collection Slots
+    description: Collection time slot management
+  - name: Orders
+    description: Order lifecycle management
+  - name: Payments
+    description: Payment processing and refunds
+  - name: Notifications
+    description: Notification preferences and events
+  - name: Favorites
+    description: Favorite vendors and meals
+  - name: Feedback
+    description: Ratings and complaints
+  - name: Vendor Operations
+    description: Vendor dashboard APIs
+  - name: Administration
+    description: Admin portal APIs
+  - name: Corporate Catering
+    description: Corporate ordering and approvals
+  - name: Reports
+    description: Reporting and analytics
+
+paths:
+  '/api/v1/health':
+    get:
+      tags:
+        - Authentication
+      summary: Health check
+      description: API health check endpoint
+      operationId: getHealth
+      responses:
+        '200':
+          description: API is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  service:
+                    type: string
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+
+  '/api/v1/auth/login':
+    post:
+      tags:
+        - Authentication
+      summary: Employee login
+      description: Authenticate employee with email and password
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Employee email or employee number
+                password:
+                  type: string
+                  description: Password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error
+        '401':
+          description: Invalid credentials
+
+  '/api/v1/auth/logout':
+    post:
+      tags:
+        - Authentication
+      summary: Employee logout
+      description: Revoke current session
+      operationId: logout
+      responses:
+        '200':
+          description: Logout successful
+
+  '/api/v1/auth/refresh':
+    post:
+      tags:
+        - Authentication
+      summary: Refresh session
+      description: Refresh access token using refresh token
+      operationId: refresh
+      responses:
+        '200':
+          description: Session refreshed
+
+  '/api/v1/auth/me':
+    get:
+      tags:
+        - Authentication
+      summary: Get current user profile
+      description: Fetch authenticated user profile with roles
+      operationId: getMe
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+components:
+  schemas:
+    AuthResponse:
+      type: object
+      required:
+        - success
+        - user
+        - session
+      properties:
+        success:
+          type: boolean
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            email:
+              type: string
+            full_name:
+              type: string
+            employee_number:
+              type: string
+            role:
+              type: string
+              enum: [employee, executive, executive_assistant, meeting_organiser, training_coordinator, cost_centre_owner, vendor_staff, vendor_manager, admin, finance, support, auditor]
+            roles:
+              type: array
+              items:
+                type: string
+                enum: [employee, executive, executive_assistant, meeting_organiser, training_coordinator, cost_centre_owner, vendor_staff, vendor_manager, admin, finance, support, auditor]
+          description: Authenticated user object
+        session:
+          type: object
+          description: Supabase session data
+
+    UserProfile:
+      type: object
+      required:
+        - id
+        - email
+        - full_name
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        full_name:
+          type: string
+        employee_number:
+          type: string
+        role:
+          type: string
+          enum: [employee, executive, executive_assistant, meeting_organiser, training_coordinator, cost_centre_owner, vendor_staff, vendor_manager, admin, finance, support, auditor]
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [employee, executive, executive_assistant, meeting_organiser, training_coordinator, cost_centre_owner, vendor_staff, vendor_manager, admin, finance, support, auditor]
+        department:
+          type: string
+        business_unit:
+          type: string
+        cost_centre:
+          type: string
+        preferred_campus_id:
+          type: string
+          format: uuid
+        preferred_building_id:
+          type: string
+          format: uuid
+
+security:
+  - bearerAuth: []
+
+securitySchemes:
+  bearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT
