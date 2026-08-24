@@ -72,16 +72,16 @@ export default function SplashScreen({ onComplete }) {
 
           <svg
             className="splash-smile"
-            width="36"
-            height="14"
-            viewBox="0 0 36 14"
+            width="48"
+            height="16"
+            viewBox="0 0 48 16"
             fill="none"
             aria-hidden="true"
           >
             <path
-              d="M3 3C8 10 28 10 33 3"
+              d="M4 4C12 14 36 14 44 4"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="2.5"
               strokeLinecap="round"
             />
           </svg>
