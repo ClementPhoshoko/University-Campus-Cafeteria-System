@@ -6,8 +6,18 @@ import morgan from 'morgan';
 import healthRoutes from './routes/healthRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 
+const port = Number(process.env.PORT) || 4000;
+
+console.log('\n--- Environment Injection ---');
+console.log(`NODE_ENV:            ${process.env.NODE_ENV || 'not set'}`);
+console.log(`PORT:                ${port}`);
+console.log(`CLIENT_ORIGIN:       ${process.env.CLIENT_ORIGIN || 'not set'}`);
+console.log(`SUPABASE_URL:        ${process.env.SUPABASE_URL ? 'loaded' : 'NOT SET'}`);
+console.log(`SUPABASE_ANON_KEY:   ${process.env.SUPABASE_ANON_KEY ? 'loaded' : 'NOT SET'}`);
+console.log(`SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? 'loaded' : 'NOT SET'}`);
+console.log('--- End Environment Injection ---\n');
+
 const app = express();
-const port = Number(process.env.PORT);
 
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
@@ -22,5 +32,7 @@ app.use((error, req, res, next) => {
 });
 
 const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
-app.listen(port, () => console.log(`\n🚀 Merchant Munchies API running on ${baseUrl}`));
-console.log(`📖 Swagger docs available at: ${baseUrl}/api-docs\n`);
+app.listen(port, () => {
+  console.log(`🚀 Merchant Munchies API running on ${baseUrl}`);
+  console.log(`📖 Swagger docs available at: ${baseUrl}/api-docs\n`);
+});
