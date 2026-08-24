@@ -121,7 +121,7 @@
   height: 110px;
   object-fit: contain;
   border-radius: var(--radius-xl, 22px);
-  margin-bottom: 28px;
+  margin-bottom: 24px;
   animation: splash-logo-in 600ms cubic-bezier(0.4, 0, 0.2, 1) 100ms forwards;
   opacity: 0;
 }
@@ -131,51 +131,72 @@
   to { opacity: 1; transform: scale(1); }
 }
 
+/* ── Title ── */
+
 .splash-name {
-  font-family: var(--font-primary, 'Inter', sans-serif);
-  font-size: 2rem;
-  font-weight: var(--font-weight-bold, 700);
-  color: var(--color-text-primary, #1F2933);
-  letter-spacing: -0.02em;
-  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+  margin: 0 0 16px;
   animation: splash-text-in 500ms cubic-bezier(0.4, 0, 0.2, 1) 300ms forwards;
   opacity: 0;
 }
 
-.splash-tagline {
+.splash-name-merchant {
   font-family: var(--font-primary, 'Inter', sans-serif);
-  font-size: 0.95rem;
-  font-weight: var(--font-weight-regular, 400);
-  color: var(--color-text-secondary, #5B6673);
-  line-height: 1.5;
-  margin: 0 0 24px;
-  max-width: 260px;
+  font-size: 2.4rem;
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-action-primary, #0A8CFF);
+  letter-spacing: -0.02em;
+}
+
+.splash-name-munchies {
+  font-family: var(--font-primary, 'Inter', sans-serif);
+  font-size: 2.4rem;
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text-primary, #1F2933);
+  letter-spacing: -0.02em;
+}
+
+/* ── Subtitle ── */
+
+.splash-tagline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-primary, 'Inter', sans-serif);
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-semibold, 600);
+  letter-spacing: 0.12em;
+  color: var(--color-text-tertiary, #737E8B);
+  margin: 0 0 20px;
   animation: splash-text-in 500ms cubic-bezier(0.4, 0, 0.2, 1) 450ms forwards;
   opacity: 0;
 }
 
 .splash-tagline-accent {
   color: var(--color-action-primary, #0A8CFF);
-  font-weight: var(--font-weight-semibold, 600);
 }
 
-.splash-divider {
-  width: 40px;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--color-action-primary, #0A8CFF);
-  animation: splash-divider-in 500ms cubic-bezier(0.4, 0, 0.2, 1) 600ms forwards;
+.splash-tagline-dot {
+  font-size: 0.5rem;
+  opacity: 0.5;
+}
+
+/* ── Smile SVG ── */
+
+.splash-smile {
+  color: var(--color-action-primary, #0A8CFF);
+  animation: splash-text-in 500ms cubic-bezier(0.4, 0, 0.2, 1) 550ms forwards;
   opacity: 0;
 }
+
+/* ── Animations ── */
 
 @keyframes splash-text-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes splash-divider-in {
-  from { opacity: 0; width: 0; }
-  to { opacity: 1; width: 40px; }
 }
 
 /* ============================================
@@ -192,18 +213,17 @@
   .splash-logo {
     width: 80px;
     height: 80px;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
   }
 
-  .splash-name {
-    font-size: 1.6rem;
-    margin-bottom: 10px;
+  .splash-name-merchant,
+  .splash-name-munchies {
+    font-size: 1.8rem;
   }
 
   .splash-tagline {
-    font-size: 0.82rem;
-    margin-bottom: 18px;
-    max-width: 220px;
+    font-size: 0.58rem;
+    gap: 6px;
   }
 
   .splash-food-icon svg {
@@ -230,8 +250,9 @@
     height: 125px;
   }
 
-  .splash-name {
-    font-size: 2.2rem;
+  .splash-name-merchant,
+  .splash-name-munchies {
+    font-size: 2.7rem;
   }
 }
 
@@ -248,18 +269,19 @@
     margin-bottom: 12px;
   }
 
-  .splash-name {
-    font-size: 1.3rem;
-    margin-bottom: 6px;
+  .splash-name-merchant,
+  .splash-name-munchies {
+    font-size: 1.4rem;
   }
 
   .splash-tagline {
-    font-size: 0.75rem;
-    margin-bottom: 10px;
+    font-size: 0.55rem;
+    margin-bottom: 12px;
   }
 
-  .splash-divider {
-    height: 2px;
+  .splash-smile {
+    width: 28px;
+    height: 11px;
   }
 
   .splash-food-icon svg {
@@ -281,16 +303,16 @@
   .splash-logo {
     width: 90px;
     height: 90px;
-    margin-bottom: 22px;
+    margin-bottom: 20px;
   }
 
-  .splash-name {
-    font-size: 1.75rem;
+  .splash-name-merchant,
+  .splash-name-munchies {
+    font-size: 2rem;
   }
 
   .splash-tagline {
-    font-size: 0.88rem;
-    margin-bottom: 20px;
+    font-size: 0.62rem;
   }
 
   .splash-icon-pos-tl { top: 8%; left: 6%; }
@@ -309,21 +331,17 @@
   .splash-logo {
     width: 130px;
     height: 130px;
-    margin-bottom: 36px;
-  }
-
-  .splash-name {
-    font-size: 2.4rem;
-    margin-bottom: 16px;
-  }
-
-  .splash-tagline {
-    font-size: 1.05rem;
     margin-bottom: 32px;
   }
 
-  .splash-divider {
-    width: 48px;
+  .splash-name-merchant,
+  .splash-name-munchies {
+    font-size: 2.8rem;
+  }
+
+  .splash-tagline {
+    font-size: 0.72rem;
+    margin-bottom: 24px;
   }
 
   .splash-icon-pos-tl { top: 12%; left: 10%; }
@@ -346,12 +364,13 @@
     height: 140px;
   }
 
-  .splash-name {
-    font-size: 2.6rem;
+  .splash-name-merchant,
+  .splash-name-munchies {
+    font-size: 3rem;
   }
 
   .splash-tagline {
-    font-size: 1.1rem;
+    font-size: 0.75rem;
     max-width: 300px;
   }
 
@@ -388,7 +407,11 @@
     align-items: flex-start;
   }
 
-  .splash-divider {
+  .splash-name {
+    align-items: flex-start;
+  }
+
+  .splash-tagline {
     margin-top: 4px;
   }
 
@@ -408,13 +431,9 @@
   .splash-logo,
   .splash-name,
   .splash-tagline,
-  .splash-divider {
+  .splash-smile {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
-  }
-
-  .splash-divider {
-    width: 40px !important;
   }
 }

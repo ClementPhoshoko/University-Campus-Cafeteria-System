@@ -52,18 +52,39 @@ export default function SplashScreen({ onComplete }) {
         <div className="splash-brand">
           <img
             src={mainLogo}
-            alt="CampusBites logo"
+            alt="Merchant Munchies logo"
             className="splash-logo"
             draggable="false"
           />
 
-          <h1 className="splash-name">CampusBites</h1>
+          <h1 className="splash-name">
+            <span className="splash-name-merchant">merchant</span>
+            <span className="splash-name-munchies">munchies</span>
+          </h1>
 
           <p className="splash-tagline">
-            Skip the queue. Enjoy your <span className="splash-tagline-accent">meal.</span>
+            <span>GOOD FOOD</span>
+            <span className="splash-tagline-dot">•</span>
+            <span className="splash-tagline-accent">LESS QUEUE</span>
+            <span className="splash-tagline-dot">•</span>
+            <span>MORE YOU</span>
           </p>
 
-          <div className="splash-divider" aria-hidden="true" />
+          <svg
+            className="splash-smile"
+            width="36"
+            height="14"
+            viewBox="0 0 36 14"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M3 3C8 10 28 10 33 3"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
         </div>
       </div>
     </div>
