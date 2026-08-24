@@ -45,7 +45,7 @@
 
 .splash-decorations {
   position: absolute;
-  inset: -20px -16px;
+  inset: 0;
   pointer-events: none;
 }
 
@@ -62,41 +62,41 @@
   height: 48px;
 }
 
-/* ── Icon Positions (asymmetric) ── */
+/* ── Icon Positions — pixel offsets from content center ── */
 
 .splash-icon-pos-tl {
-  top: 4%;
-  left: 2%;
+  top: 10%;
+  left: 8%;
   animation-delay: 300ms;
 }
 
 .splash-icon-pos-tr {
-  top: 8%;
-  right: 0%;
+  top: 14%;
+  right: 8%;
   animation-delay: 450ms;
 }
 
 .splash-icon-pos-ml {
-  top: 42%;
-  left: -4%;
+  top: 46%;
+  left: 2%;
   animation-delay: 200ms;
 }
 
 .splash-icon-pos-mr {
-  top: 38%;
-  right: -2%;
+  top: 42%;
+  right: 2%;
   animation-delay: 550ms;
 }
 
 .splash-icon-pos-bl {
-  bottom: 10%;
-  left: 6%;
+  bottom: 14%;
+  left: 12%;
   animation-delay: 400ms;
 }
 
 .splash-icon-pos-br {
-  bottom: 4%;
-  right: 4%;
+  bottom: 10%;
+  right: 10%;
   animation-delay: 350ms;
 }
 
@@ -206,14 +206,17 @@
     max-width: 220px;
   }
 
-  .splash-decorations {
-    inset: -14px -10px;
-  }
-
   .splash-food-icon svg {
     width: 36px;
     height: 36px;
   }
+
+  .splash-icon-pos-tl { top: 6%; left: 4%; }
+  .splash-icon-pos-tr { top: 10%; right: 4%; }
+  .splash-icon-pos-ml { top: 44%; left: 0%; }
+  .splash-icon-pos-mr { top: 40%; right: 0%; }
+  .splash-icon-pos-bl { bottom: 10%; left: 6%; }
+  .splash-icon-pos-br { bottom: 6%; right: 6%; }
 }
 
 /* ── Standard phones (361-430px) ── */
@@ -259,14 +262,17 @@
     height: 2px;
   }
 
-  .splash-decorations {
-    inset: -18px -14px;
-  }
-
   .splash-food-icon svg {
     width: 28px;
     height: 28px;
   }
+
+  .splash-icon-pos-tl { top: 8%; left: 10%; }
+  .splash-icon-pos-tr { top: 12%; right: 10%; }
+  .splash-icon-pos-ml { top: 44%; left: 4%; }
+  .splash-icon-pos-mr { top: 40%; right: 4%; }
+  .splash-icon-pos-bl { bottom: 12%; left: 14%; }
+  .splash-icon-pos-br { bottom: 8%; right: 14%; }
 }
 
 /* ── Medium height (501-650px) ── */
@@ -287,9 +293,12 @@
     margin-bottom: 20px;
   }
 
-  .splash-decorations {
-    inset: -22px -18px;
-  }
+  .splash-icon-pos-tl { top: 8%; left: 6%; }
+  .splash-icon-pos-tr { top: 12%; right: 6%; }
+  .splash-icon-pos-ml { top: 45%; left: 0%; }
+  .splash-icon-pos-mr { top: 41%; right: 0%; }
+  .splash-icon-pos-bl { bottom: 12%; left: 10%; }
+  .splash-icon-pos-br { bottom: 8%; right: 10%; }
 }
 
 /* ── Tall phones (651-800px) — default styles ── */
@@ -316,6 +325,13 @@
   .splash-divider {
     width: 48px;
   }
+
+  .splash-icon-pos-tl { top: 12%; left: 10%; }
+  .splash-icon-pos-tr { top: 16%; right: 10%; }
+  .splash-icon-pos-ml { top: 46%; left: 4%; }
+  .splash-icon-pos-mr { top: 42%; right: 4%; }
+  .splash-icon-pos-bl { bottom: 16%; left: 14%; }
+  .splash-icon-pos-br { bottom: 12%; right: 14%; }
 }
 
 /* ── Tablets / large screens (768px+) ── */
@@ -339,9 +355,12 @@
     max-width: 300px;
   }
 
-  .splash-decorations {
-    inset: -30px -24px;
-  }
+  .splash-icon-pos-tl { top: 14%; left: 12%; }
+  .splash-icon-pos-tr { top: 18%; right: 12%; }
+  .splash-icon-pos-ml { top: 46%; left: 6%; }
+  .splash-icon-pos-mr { top: 42%; right: 6%; }
+  .splash-icon-pos-bl { bottom: 18%; left: 16%; }
+  .splash-icon-pos-br { bottom: 14%; right: 16%; }
 }
 
 /* ── Landscape phones ── */
@@ -358,10 +377,6 @@
     max-width: none;
   }
 
-  .splash-decorations {
-    inset: -16px -20px;
-  }
-
   .splash-logo {
     width: 64px;
     height: 64px;
@@ -376,6 +391,13 @@
   .splash-divider {
     margin-top: 4px;
   }
+
+  .splash-icon-pos-tl { top: 10%; left: 12%; }
+  .splash-icon-pos-tr { top: 14%; right: 12%; }
+  .splash-icon-pos-ml { top: 44%; left: 4%; }
+  .splash-icon-pos-mr { top: 40%; right: 4%; }
+  .splash-icon-pos-bl { bottom: 14%; left: 16%; }
+  .splash-icon-pos-br { bottom: 10%; right: 16%; }
 }
 
 /* ── Reduced Motion ── */
