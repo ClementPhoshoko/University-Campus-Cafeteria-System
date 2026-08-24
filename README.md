@@ -1,1558 +1,2243 @@
-# CampusBites Mobile Design System
+# Merchant Munchies
 
-**Version:** 1.0.0  
-**Platform:** Android / Mobile  
-**Minimum target:** API 17+  
-**Primary typeface:** Inter (bundled app font)  
-**Design direction:** Bright, airy, Google-inspired university cafeteria ordering experience
+> **Good Food • Less Queue • More You**
 
----
+Merchant Munchies is a workplace food-ordering platform designed to reduce cafeteria queues, make employee meal ordering faster, improve vendor demand visibility, and provide a structured workflow for personal meals and corporate catering.
 
-## 1. Purpose
+This repository is being implemented with:
 
-This design system defines the visual foundations and reusable UI tokens for CampusBites.
+- **Frontend:** React + pure JavaScript
+- **Backend:** Node.js + Express
+- **API documentation:** Swagger / OpenAPI
+- **Database:** Online Supabase PostgreSQL
+- **Design system:** Existing `design_tokens.md` in the repository
 
-The system is intentionally split into **primitive tokens** and **semantic tokens** so the application can support future theme switching without rewriting component styles.
-
-Core principles:
-
-- White and very light surfaces dominate the interface.
-- Bright blue is reserved for actions, active states, progress and meaningful emphasis.
-- Primary text is a soft grey-black rather than pure black.
-- Borders and elevation are subtle.
-- Rounded surfaces and generous spacing create a calm, modern experience.
-- Food imagery remains realistic and visually dominant.
-- Components should feel lightweight, fast and easy to scan.
-- The visual language should feel like a university product, not a generic food-delivery clone.
-
-These principles are based on the supplied CampusBites screen direction: bright blue primary accent, white dominant surfaces, subtle blue-tinted surfaces, soft neutral grey, greyish-black typography, rounded cards, light borders, minimal shadows and generous whitespace. fileciteturn0file0L38-L101
+The original project brief defines a solution spanning employee mobile/web experiences, vendor operations, administration, corporate catering, payments, order tracking, reporting, security, integrations, pilot rollout and operational support.
 
 ---
 
-# 2. Token Architecture
+## 1. Source of Truth
 
-Use three token layers.
+The functional scope in this README is extracted from the provided **Merchant Munchies Application Development Design Brief**.
+
+The brief defines the product as a **mobile and web-based workplace food-ordering platform** and identifies the initial pilot as **Merchant Place**. It calls for an employee application, vendor portal, administration portal and corporate catering module.
+
+The initial pilot outlets listed in the brief are:
+
+1. Vovo Telo
+2. Fresh at First
+3. Staff Cafeteria at 1 Merchant Place
+4. Staff Cafeteria at 5 Merchant Place
+5. Woolworths Food Stop
+
+Participation remains subject to vendor approval, contracts, technical readiness, payment integration and operational feasibility.
+
+---
+
+# 2. Product Vision
+
+## Good food with less waiting
+
+The platform should allow an authenticated employee to:
 
 ```text
-PRIMITIVE TOKENS
-    ↓
-SEMANTIC TOKENS
-    ↓
-COMPONENT TOKENS
+Sign in
+  ↓
+Select campus / building
+  ↓
+Choose vendor
+  ↓
+Browse menu
+  ↓
+Search / filter / customise
+  ↓
+Add to cart
+  ↓
+Choose collection slot
+  ↓
+Pay
+  ↓
+Receive confirmation
+  ↓
+Track preparation
+  ↓
+Receive ready notification
+  ↓
+Present QR / collection reference
+  ↓
+Collect meal
+  ↓
+Rate experience
 ```
 
-### Primitive tokens
+The product is not only a food catalogue. It is an operational ordering system connecting employees, vendors, kitchens, administrators, finance/reconciliation users, technical support and authorised corporate-ordering users.
 
-Raw values that describe the palette, spacing scale, radii, type scale and elevations.
+---
+
+# 3. Business Problems the System Solves
+
+The brief identifies the following problems:
+
+- Long lunch-time queues, especially around 12:00–14:00.
+- Employees spending approximately 20–30 minutes waiting to order, pay and receive meals.
+- Reduced lunch-break recovery and socialisation time.
+- Productivity disruption caused by extended time away from workstations.
+- Unpredictable demand for food vendors.
+- Food shortages, overproduction and avoidable wastage.
+- Manual corporate catering handled through email, phone calls and physical collection.
+- Limited management information about demand, meal preferences, order volume and service performance.
+
+The application should therefore optimise both the **employee experience** and the **vendor operating workflow**.
+
+---
+
+# 4. Delivery Scope
+
+## 4.1 Employee application
+
+The employee experience must support:
+
+- Secure sign-in.
+- Campus selection or automatic campus identification.
+- Vendor discovery.
+- Current menu browsing.
+- Search and filtering.
+- Prices and availability.
+- Allergen and dietary information.
+- Meal customisation.
+- Cart management.
+- Collection-time selection.
+- Payment.
+- Order tracking.
+- Notifications.
+- QR code or order-reference collection.
+- Order history and receipts.
+- Favourite vendors and meals.
+- Repeat previous order.
+- Ratings and feedback.
+- Cancellation and refund requests where rules permit.
+
+## 4.2 Vendor portal
+
+Vendor staff must be able to:
+
+- Create and maintain menu items.
+- Upload descriptions and photographs.
+- Set prices.
+- Set daily stock quantities.
+- Mark items available, limited or sold out.
+- Receive new orders.
+- Accept/reject where permitted.
+- Update order status.
+- Manage collection slots.
+- View upcoming orders by preparation time.
+- Manage corporate catering requests.
+- Record completed collections and deliveries.
+- View sales, settlement and operational reports.
+
+## 4.3 Administration portal
+
+Administrators must be able to:
+
+- Register and approve campuses, buildings, vendors and collection points.
+- Activate/deactivate vendors.
+- Manage roles and permissions.
+- Configure operating hours and order rules.
+- Configure pilot and rollout locations.
+- Monitor transaction volume and application performance.
+- View feedback.
+- Manage complaints and disputes.
+- View audit trails.
+- Generate reports.
+- Configure announcements and service notifications.
+
+## 4.4 Corporate catering
+
+The corporate module supports authorised users such as executives, assistants and meeting/event organisers.
+
+It must support:
+
+- Future-dated catering.
+- Meeting attendees.
+- Meeting venue / room details.
+- Dietary and allergen requirements.
+- Delivery instructions.
+- Large-order cut-off times.
+- Minimum / maximum quantities.
+- Custom quotations.
+- Approval workflows.
+- Cost-centre allocation where approved.
+- Ordering on behalf of another person.
+- Delivery confirmation.
+- Corporate invoices and supporting documentation.
+- Reporting by executive office, department, cost centre, vendor or event.
+
+---
+
+# 5. User Roles
+
+The platform is role-driven.
+
+| Role | Core responsibilities |
+|---|---|
+| Employee | Browse, order, pay, collect, track, favourite, rate |
+| Executive | Personal ordering and corporate catering |
+| Executive Assistant / Personal Assistant | Order on behalf of executives / organisers |
+| Meeting / Event Organiser | Schedule corporate catering |
+| Vendor Staff | Menus, stock, orders, preparation, statuses, catering |
+| Vendor Manager | Vendor profile, staff, prices, operating hours, reconciliation, reporting |
+| Company Administrator | Campuses, vendors, roles, configuration, reporting |
+| Finance / Reconciliation | Transactions, settlements, refunds, exceptions |
+| Technical Support | Incidents, monitoring, user queries, configuration |
+| System Auditor | Read-only audit evidence and logs |
+
+Every route, API operation and database query must respect the authenticated user's role and organisation boundaries.
+
+---
+
+# 6. Platform Architecture
+
+## 6.1 Target architecture
+
+```text
+                     ┌─────────────────────┐
+                     │   React Frontend    │
+                     │   Pure JavaScript   │
+                     └──────────┬──────────┘
+                                │ HTTPS / JSON
+                                ▼
+                     ┌─────────────────────┐
+                     │    Express API      │
+                     │    Node.js          │
+                     └──────────┬──────────┘
+                                │
+                ┌───────────────┼─────────────────┐
+                │               │                 │
+                ▼               ▼                 ▼
+        ┌──────────────┐ ┌──────────────┐ ┌───────────────┐
+        │  Supabase    │ │ Payment      │ │ Notifications │
+        │ PostgreSQL   │ │ Provider     │ │ / Email /     │
+        │ Auth / RLS*  │ │              │ │ Push / SMS*   │
+        └──────────────┘ └──────────────┘ └───────────────┘
+```
+
+`*` External integrations remain subject to stakeholder approval and final implementation decisions.
+
+## 6.2 Implementation principles
+
+- React is the presentation layer.
+- Express owns business APIs and server-side validation.
+- Supabase PostgreSQL is the primary persistent data store.
+- API consumers communicate through documented REST endpoints.
+- Swagger/OpenAPI is the API contract.
+- Sensitive business operations must not rely on client-side validation.
+- Authorisation must be enforced server-side for every protected resource.
+- Database access must enforce tenant/vendor/role boundaries.
+- External integrations should sit behind service modules so providers can be replaced without rewriting business logic.
+
+---
+
+# 7. Recommended Repository Structure
+
+```text
+merchant-munchies/
+│
+├── client/
+│   ├── public/
+│   └── src/
+│       ├── assets/
+│       ├── components/
+│       ├── features/
+│       │   ├── auth/
+│       │   ├── home/
+│       │   ├── vendors/
+│       │   ├── menu/
+│       │   ├── cart/
+│       │   ├── checkout/
+│       │   ├── orders/
+│       │   ├── favourites/
+│       │   ├── profile/
+│       │   ├── notifications/
+│       │   ├── corporate/
+│       │   └── support/
+│       ├── layouts/
+│       ├── routes/
+│       ├── services/
+│       ├── hooks/
+│       ├── utils/
+│       ├── constants/
+│       └── styles/
+│
+├── server/
+│   ├── src/
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── middleware/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── repositories/
+│   │   ├── validators/
+│   │   ├── integrations/
+│   │   ├── utils/
+│   │   ├── docs/
+│   │   └── app.js
+│   └── tests/
+│
+├── database/
+│   ├── migrations/
+│   ├── seed/
+│   └── docs/
+│
+├── docs/
+│   ├── architecture/
+│   ├── api/
+│   ├── workflows/
+│   └── operations/
+│
+├── design_tokens.md
+├── README.md
+└── .env.example
+```
+
+This is a proposed implementation structure; it is not prescribed verbatim by the original brief.
+
+---
+
+# 8. Frontend Design Plan
+
+The existing `design_tokens.md` remains the visual source of truth. This README does not duplicate those tokens.
+
+The product UI should consistently use the established visual system:
+
+- Bright light-blue primary action colour.
+- White dominant surfaces.
+- Very subtle blue-tinted surfaces.
+- Greyish-black primary text.
+- Muted grey supporting text.
+- Rounded cards and controls.
+- Thin borders.
+- Minimal shadows.
+- Realistic food photography.
+- Simple line icons.
+- Spacious mobile-first layouts.
+
+The interface should feel like a polished corporate/workplace product rather than a generic consumer food-delivery clone.
+
+### Design priorities
+
+1. **Fast scanning:** important information is visible without excessive interaction.
+2. **Low friction:** minimise unnecessary checkout steps.
+3. **Operational clarity:** order state, collection time and vendor status are always understandable.
+4. **Trust:** prices, fees, availability and payment state are explicit.
+5. **Campus/building awareness:** the employee must always know where the order is being collected.
+6. **Accessibility:** statuses should never rely on colour alone.
+7. **Theme readiness:** all UI must consume existing semantic design tokens.
+
+---
+
+# 9. Employee Screen Plan
+
+The following is the full employee-facing screen plan. It combines the supplied UI design sequence with functional requirements from the design brief.
+
+## A. Authentication & onboarding
+
+### 1. Splash / Brand
+
+Purpose: establish the product identity while the application initialises.
+
+Key UI:
+
+- Merchant Munchies logo.
+- Product name.
+- Short value proposition.
+- Minimal loading state if required.
+
+### 2. Onboarding — Skip the Queue
+
+Purpose: explain the value proposition quickly.
+
+Key message:
+
+> Skip the queue.
+
+Supporting concepts:
+
+- Order before arrival.
+- Choose collection time.
+- Track preparation.
+- Collect using QR/order reference.
+
+### 3. Login
+
+Fields/actions:
+
+- Employee email / employee number.
+- Password.
+- Forgot password.
+- Sign in.
+- SSO where technically permitted.
+- Account creation only if the approved identity model supports it.
+
+### 4. Registration / Account activation
+
+The design brief prioritises the company's identity and access management solution and possible SSO. A conventional public sign-up flow should therefore only be implemented if stakeholders approve it.
+
+Potential UI states:
+
+- Account activation.
+- Identity verification.
+- SSO handoff.
+- Access denied / inactive employee.
+
+---
+
+## B. Discovery
+
+### 5. Home / Discover
+
+Primary starting point.
+
+Recommended sections:
+
+- Greeting.
+- Current campus/building.
+- Search.
+- Campus cafeterias/vendors.
+- Popular meals.
+- Availability/status.
+- Current promotions if approved.
+- Active order shortcut.
+- Notifications.
+
+### 6. Campus & Building Selection
+
+Required because vendor availability is location-dependent.
+
+UI should support:
+
+- Campus selector.
+- Building selector.
+- Saved/default campus.
+- Collection point context.
+- Clear location confirmation.
+
+The active location should remain visible throughout ordering to prevent an accidental order from the wrong campus.
+
+### 7. Vendor Directory / Cafeteria Selection
+
+Each vendor should show:
+
+- Vendor name/logo.
+- Campus/building.
+- Operating hours.
+- Order cut-off.
+- Preparation estimate.
+- Available collection slots.
+- Service status.
+- Rating.
+- Collection instructions.
+- Catering availability.
+- Support/contact information.
+
+---
+
+## C. Menu and item ordering
+
+### 8. Cafeteria Menu
+
+Key UI:
+
+- Vendor header.
+- Open/closed/busy status.
+- Operating hours.
+- Collection context.
+- Category navigation.
+- Menu items.
+- Availability states.
+- Dietary indicators.
+- Allergen information.
+- Preparation time.
+- Add action.
+
+### 9. Search & Filter
+
+Filters required by the brief:
+
+- Vendor.
+- Meal name.
+- Category.
+- Price range.
+- Dietary classification.
+- Availability.
+- Preparation time.
+- Collection slot.
+- Rating.
+- Favourite meals.
+- Current campus/building.
+
+Dietary filters may include vegetarian, vegan, Halaal where confirmed, gluten-conscious/gluten-free where confirmed, dairy-free, nut-free where confirmed, low-sugar and other approved categories.
+
+Serious allergy messaging must be visible because vendor-provided allergen data is not a substitute for direct confirmation with the vendor.
+
+### 10. Food Item Details
+
+Key UI:
+
+- Large food image.
+- Name.
+- Description.
+- Price.
+- Portion information.
+- Preparation estimate.
+- Allergen/dietary information.
+- Customisations.
+- Optional extras.
+- Special instructions.
+- Add to cart.
+
+### 11. Customize Order
+
+This can be implemented as part of the Food Details screen or as a dedicated route/modal depending on complexity.
+
+Potential controls:
+
+- Portion selection.
+- Extras.
+- Ingredient changes.
+- Dietary-related options.
+- Special instructions.
+
+The vendor controls what customisations are actually available.
+
+---
+
+## D. Cart & checkout
+
+### 12. Cart
+
+The initial pilot supports **one vendor per order**.
+
+Cart must show:
+
+- Vendor.
+- Campus/building.
+- Collection location.
+- Products.
+- Quantities.
+- Customisations.
+- Prices.
+- Taxes.
+- Service fees.
+- Total.
+- Availability validation.
+- Collection-slot availability.
+- Promotion/subsidy rules if approved.
+
+Abandoned carts must be configurable for automatic expiry.
+
+### 13. Collection Time Selection
+
+Required because scheduled collection is core to the operating model.
+
+UI should show only available slots and capacity-aware availability.
+
+The backend must enforce:
+
+- Slot intervals.
+- Capacity.
+- Preparation capacity.
+- Peak-period rules.
+- Paused/reduced capacity.
+- Immediate collection where supported.
+- No overbooking.
+
+### 14. Checkout / Payment
+
+Before submission the employee should review:
+
+- Vendor.
+- Campus/building.
+- Collection point.
+- Items.
+- Quantity/customisation.
+- Collection date/time.
+- Total.
+- Payment method.
+- Cancellation conditions.
+- Preparation estimate.
+
+Payment support is subject to approved providers and may include:
+
+- Bank card.
+- Digital wallet.
+- Instant electronic payment.
+- Employee meal benefit/subsidy.
+- Internal cost-centre allocation for authorised corporate orders.
+- Approved corporate purchasing mechanisms.
+
+Do not store full card details. Use provider tokenisation when saved payment methods are permitted.
+
+### 15. Order Confirmed
+
+After successful submission:
+
+- Unique order number.
+- Payment confirmation.
+- Collection time.
+- Collection instructions.
+- Tracking entry point.
+- Digital receipt.
+
+---
+
+## E. Fulfilment and post-order
+
+### 16. Live Order Tracking
+
+The employee needs clear progress through:
+
+```text
+Payment pending
+→ Order submitted
+→ Payment confirmed
+→ Order received by vendor
+→ Order accepted
+→ Order being prepared
+→ Ready for collection
+→ Collected
+→ Completed
+```
+
+The UI can simplify this into customer-facing milestone stages while retaining the complete backend status history.
+
+### 17. Pickup / Ready Screen
+
+When ready:
+
+- Strong ready status.
+- QR code.
+- Order reference.
+- Vendor name.
+- Collection location.
+- Collection instructions.
+- Ready time.
+- Reminder that the QR/reference should be presented at the express collection point.
+
+QR codes must not expose sensitive employee or payment information.
+
+### 18. My Orders
+
+Sections:
+
+- Active order.
+- Past orders.
+- Cancelled orders.
+- Refunded orders.
+- Corporate orders where applicable.
+
+### 19. Order Details / Receipt
+
+Show:
+
+- Order number.
+- Vendor.
+- Campus/building.
+- Collection point.
+- Date/time.
+- Items.
+- Customisations.
+- Fees/taxes.
+- Payment status.
+- Transaction reference where appropriate.
+- Receipt.
+- Refund/cancellation state.
+
+### 20. Favorites
+
+Support:
+
+- Favourite vendors.
+- Favourite meals.
+- Quick repeat ordering.
+
+### 21. Student / Employee Profile
+
+The source brief calls for:
+
+- Name.
+- Employee number/unique identifier.
+- Email.
+- Preferred campus.
+- Preferred building.
+- Dietary preferences.
+- Allergy indicators.
+- Favourite vendors.
+- Favourite meals.
+- Order history.
+- Saved payment-method token where permitted.
+- Notification preferences.
+
+Only collect sensitive information with a defined business purpose and required approvals.
+
+### 22. Notifications
+
+Notification events include:
+
+- Order submitted.
+- Payment success/failure.
+- Order accepted/rejected.
+- Preparing.
+- Ready.
+- Collection reminder.
+- Delayed order.
+- Cancellation.
+- Refund processed.
+- Catering approval.
+- Catering delivery.
+- Vendor unavailable.
+
+Users may control non-essential notification preferences. Transactional notifications required to complete an order remain active.
+
+### 23. Help / Support
+
+Support should provide:
+
+- Current-order assistance.
+- Vendor contact/support.
+- Complaint initiation.
+- Payment issue guidance.
+- Cancellation/refund support.
+- Order dispute flow.
+
+---
+
+# 10. Vendor Portal Plan
+
+The vendor interface is operational software and should prioritise speed over visual decoration.
+
+## Main screens
+
+### Vendor Dashboard
+
+- Current order volume.
+- New order alerts.
+- Orders by collection time.
+- Delayed/urgent orders.
+- Preparation summary.
+- Stock alerts.
+- Quick status actions.
+
+### Live Order Queue
+
+Each order needs:
+
+- Order number.
+- Customer identity as permitted.
+- Items.
+- Customisations.
+- Dietary/allergy indicators supplied by the customer.
+- Collection time.
+- Payment status.
+- Status controls.
+
+Actions:
+
+- Accept.
+- Reject with reason.
+- Prepare.
+- Ready.
+- Complete/collected.
+- Cancel where permitted.
+
+### Menu Management
+
+- Create/edit item.
+- Description.
+- Image.
+- Price.
+- Category.
+- Portion.
+- Ingredients.
+- Allergens.
+- Dietary classification.
+- Extras/customisations.
+- Stock quantity.
+- Availability.
+- Schedule visibility.
+- Sold-out state.
+- Weekly menu / copy previous menu.
+
+### Collection Slot Management
+
+- Slot interval.
+- Capacity.
+- Preparation capacity.
+- Open/close slot.
+- Pause/reduce capacity.
+- Peak period rules.
+
+### Catering Management
+
+- View requests.
+- Quote/customise.
+- Accept/decline.
+- Propose substitutions.
+- Confirm preparation.
+- Dispatch.
+- Confirm delivery.
+- Supporting documents.
+
+### Vendor Reports
+
+- Sales.
+- Orders.
+- Items sold.
+- Sold-out items.
+- Rejected orders.
+- Delays.
+- Preparation time.
+- Ratings.
+- Refunds/cancellations.
+- Catering revenue.
+- Settlement.
+- Reconciliation.
+- Demand by slot/item.
+
+---
+
+# 11. Administration Portal Plan
+
+## Administration dashboard
+
+Show a consolidated operational view:
+
+- Current order volume.
+- Active vendors.
+- System health.
+- Failed transactions.
+- Vendor delays.
+- User adoption.
+- Estimated queue-time reduction.
+- Employee satisfaction.
+- Vendor performance.
+- Demand/wastage trends.
+- Corporate catering activity.
+
+## Configuration areas
+
+- Campuses.
+- Buildings/floors.
+- Collection points.
+- Delivery locations.
+- Vendor onboarding.
+- Operating hours.
+- Vendor service areas.
+- Menu categories.
+- Dietary classifications.
+- Order capacity.
+- Collection intervals.
+- Corporate thresholds.
+- Approval levels.
+- Cancellation rules.
+- Refund rules.
+- Fees.
+- Tax configuration.
+- User roles.
+- Notification templates.
+- Complaint categories.
+- Announcements.
+- Maintenance notices.
+- Pilot configuration.
+- Feature activation per campus/vendor.
+
+All configuration changes must be auditable.
+
+---
+
+# 12. Corporate Catering Plan
+
+## Corporate order form
+
+Capture:
+
+- Requester.
+- Person ordering on behalf of.
+- Department/business unit.
+- Cost centre where applicable.
+- Event name.
+- Date.
+- Start/end time.
+- Required delivery time.
+- Campus.
+- Building.
+- Floor.
+- Room/venue.
+- Number of attendees.
+- Food and refreshments.
+- Dietary requirements.
+- Allergy information.
+- Delivery/setup requirements.
+- Disposable/reusable serving requirements.
+- Special instructions.
+- PO/internal reference where applicable.
+
+## Approval flow
+
+```text
+Draft
+→ Submitted
+→ Awaiting approval
+→ Approved / Rejected / Amendment requested
+→ Vendor confirmed
+→ Preparing
+→ Dispatched
+→ Delivered
+→ Recipient confirmed
+→ Closed
+```
+
+Approvals may depend on:
+
+- User role.
+- Value.
+- Cost centre.
+- Business unit.
+- Event type.
+- Attendee count.
+- Vendor.
+- Lead time.
+
+The system must prevent fulfilment before required approvals are complete.
+
+---
+
+# 13. Order State Model
+
+Use an explicit state machine rather than free-form status strings.
+
+## Core states
+
+```text
+PAYMENT_PENDING
+ORDER_SUBMITTED
+PAYMENT_CONFIRMED
+VENDOR_RECEIVED
+ACCEPTED
+PREPARING
+READY_FOR_COLLECTION
+COLLECTED
+COMPLETED
+CANCELLED
+REJECTED
+REFUND_PENDING
+REFUNDED
+COLLECTION_NOT_COMPLETED
+```
+
+## Corporate-specific states
+
+```text
+DELIVERY_IN_PROGRESS
+DELIVERED
+```
+
+Every status transition must retain:
+
+- Timestamp.
+- Actor (user/system).
+- Previous state.
+- New state.
+- Reason for rejection/cancellation/refund where applicable.
+
+This event history becomes the basis for auditing and reporting.
+
+---
+
+# 14. Supabase Database Plan
+
+The exact schema should be finalised during database design, but the functional requirements imply the following major entities.
+
+## Identity & access
+
+```text
+profiles
+roles
+permissions
+user_roles
+sessions / authentication metadata
+```
+
+## Organisation & locations
+
+```text
+campuses
+buildings
+floors
+collection_points
+delivery_locations
+```
+
+## Vendors
+
+```text
+vendors
+vendor_users
+vendor_operating_hours
+vendor_service_areas
+vendor_collection_rules
+```
+
+## Menu
+
+```text
+menu_categories
+menus
+menu_items
+menu_item_images
+menu_item_options
+menu_item_option_values
+menu_item_dietary_tags
+menu_item_allergens
+menu_item_stock
+```
+
+## Ordering
+
+```text
+carts
+cart_items
+orders
+order_items
+order_item_options
+order_status_history
+collection_slots
+order_collection
+```
+
+## Payment
+
+```text
+payment_transactions
+payment_methods_tokens
+refunds
+settlements
+reconciliation_records
+```
+
+## User preferences
+
+```text
+favourite_vendors
+favourite_meals
+user_dietary_preferences
+user_allergy_indicators
+notification_preferences
+```
+
+## Communications
+
+```text
+notifications
+notification_templates
+announcements
+```
+
+## Feedback/support
+
+```text
+ratings
+feedback
+complaints
+complaint_categories
+complaint_events
+support_cases
+```
+
+## Corporate catering
+
+```text
+corporate_orders
+corporate_order_items
+corporate_attendees
+corporate_approvals
+corporate_quotes
+corporate_delivery
+corporate_cost_allocations
+```
+
+## Administration / auditing
+
+```text
+audit_logs
+configuration
+feature_flags
+maintenance_windows
+```
+
+### Database design principles
+
+- Foreign keys for relational integrity.
+- Database constraints for critical invariants.
+- Unique constraints for order numbers and transaction references.
+- Index high-volume lookup paths.
+- Use timestamps consistently in UTC.
+- Keep status transitions auditable.
+- Avoid storing payment card data.
+- Use Supabase Row Level Security where appropriate, but do not rely on RLS alone for complex business rules; validate authorisation in the API service layer as well.
+- Never expose service-role credentials to the React client.
+
+---
+
+# 15. REST API Plan
+
+Express should expose versioned APIs.
+
+Base path:
+
+```text
+/api/v1
+```
+
+## Authentication
+
+```text
+POST   /auth/login
+POST   /auth/logout
+POST   /auth/refresh
+GET    /auth/me
+POST   /auth/forgot-password
+```
+
+SSO endpoints should be added only after the approved identity provider is confirmed.
+
+## User profile
+
+```text
+GET    /profile
+PATCH  /profile
+GET    /profile/preferences
+PATCH  /profile/preferences
+```
+
+## Locations
+
+```text
+GET    /campuses
+GET    /campuses/:campusId
+GET    /campuses/:campusId/buildings
+GET    /buildings/:buildingId/vendors
+```
+
+## Vendors
+
+```text
+GET    /vendors
+GET    /vendors/:vendorId
+GET    /vendors/:vendorId/hours
+GET    /vendors/:vendorId/collection-slots
+GET    /vendors/:vendorId/menu
+```
+
+## Search
+
+```text
+GET    /search/meals
+GET    /search/vendors
+GET    /search/filters
+```
+
+## Cart
+
+```text
+GET    /cart
+POST   /cart/items
+PATCH  /cart/items/:itemId
+DELETE /cart/items/:itemId
+POST   /cart/validate
+POST   /cart/expire
+```
+
+## Collection slots
+
+```text
+GET    /vendors/:vendorId/collection-slots?date=...
+POST   /orders/validate-slot
+```
+
+## Orders
+
+```text
+POST   /orders
+GET    /orders
+GET    /orders/:orderId
+POST   /orders/:orderId/cancel
+GET    /orders/:orderId/status
+GET    /orders/:orderId/receipt
+GET    /orders/:orderId/collection
+```
+
+## Payments
+
+```text
+POST   /payments/intent
+POST   /payments/confirm
+GET    /payments/:paymentId
+POST   /payments/:paymentId/refund
+```
+
+Payment-provider-specific webhook routes should be isolated under `/webhooks/...` and must verify signatures.
+
+## Favorites
+
+```text
+GET    /favorites/vendors
+POST   /favorites/vendors/:vendorId
+DELETE /favorites/vendors/:vendorId
+GET    /favorites/meals
+POST   /favorites/meals/:mealId
+DELETE /favorites/meals/:mealId
+```
+
+## Notifications
+
+```text
+GET    /notifications
+PATCH  /notifications/:notificationId/read
+GET    /notification-preferences
+PATCH  /notification-preferences
+```
+
+## Feedback / support
+
+```text
+POST   /orders/:orderId/feedback
+POST   /complaints
+GET    /support/cases
+GET    /support/cases/:caseId
+```
+
+## Vendor API namespace
+
+```text
+GET    /vendor/orders
+PATCH  /vendor/orders/:orderId/status
+POST   /vendor/orders/:orderId/reject
+GET    /vendor/menu
+POST   /vendor/menu/items
+PATCH  /vendor/menu/items/:itemId
+DELETE /vendor/menu/items/:itemId
+PATCH  /vendor/menu/items/:itemId/stock
+GET    /vendor/collection-slots
+PATCH  /vendor/collection-slots/:slotId
+GET    /vendor/reports
+```
+
+## Administration API namespace
+
+```text
+GET    /admin/dashboard
+GET    /admin/vendors
+POST   /admin/vendors
+PATCH  /admin/vendors/:vendorId
+GET    /admin/campuses
+POST   /admin/campuses
+PATCH  /admin/campuses/:campusId
+GET    /admin/users
+PATCH  /admin/users/:userId/roles
+GET    /admin/audit-logs
+GET    /admin/reports
+PATCH  /admin/configuration
+```
+
+Corporate routes should live under a dedicated namespace such as `/corporate/...` to make permissions and documentation clear.
+
+---
+
+# 16. Swagger / OpenAPI Plan
+
+Maintain an OpenAPI 3 specification covering every public API endpoint.
+
+Swagger documentation should define:
+
+- Endpoint.
+- HTTP method.
+- Authentication requirement.
+- Required roles.
+- Request parameters.
+- Request body schemas.
+- Response schemas.
+- Pagination.
+- Validation errors.
+- Business errors.
+- HTTP status codes.
+- Example payloads.
+- Idempotency requirements where applicable.
+
+Recommended top-level tags:
+
+```text
+Authentication
+Profile
+Campuses
+Vendors
+Menus
+Search
+Cart
+Collection Slots
+Orders
+Payments
+Notifications
+Favorites
+Feedback
+Support
+Vendor Operations
+Administration
+Corporate Catering
+Reports
+Webhooks
+```
+
+The OpenAPI specification should be treated as a contract between the React application, Express backend and any future integrations.
+
+---
+
+# 17. Backend Service Boundaries
+
+Recommended Express service layer:
+
+```text
+AuthService
+UserService
+CampusService
+VendorService
+MenuService
+SearchService
+CartService
+CollectionSlotService
+OrderService
+PaymentService
+NotificationService
+FavoriteService
+FeedbackService
+ComplaintService
+CorporateOrderService
+ReportingService
+AuditService
+```
+
+Repositories should isolate Supabase/database access from business logic.
 
 Example:
 
 ```text
-color.blue.500 = #0A8CFF
-space.4 = 16dp
-radius.lg = 18dp
+Controller
+   ↓
+Service
+   ↓
+Repository
+   ↓
+Supabase
 ```
 
-### Semantic tokens
-
-Meaning-based values used by screens and components.
-
-Example:
+External providers should follow:
 
 ```text
-color.action.primary = color.blue.500
-color.text.primary = color.neutral.900
-color.surface.default = color.white.500
+Service
+   ↓
+Integration Adapter
+   ↓
+Provider
 ```
 
-Components should use semantic tokens instead of primitive values.
-
-### Component tokens
-
-Specific values for buttons, cards, inputs, navigation, chips, food cards and other reusable components.
-
-Example:
-
-```text
-button.primary.background = color.action.primary
-button.primary.cornerRadius = radius.lg
-```
-
-This structure allows a future light/dark theme or branded university theme to replace semantic mappings without changing component code.
+This keeps payment, identity, notification and future integrations replaceable.
 
 ---
 
-# 3. Color Foundations
+# 18. Critical Business Rules
 
-## 3.1 Brand blue
+These rules must be enforced server-side.
 
-CampusBites uses one recognizable bright blue family. Keep the hue consistent across the whole application.
+### One vendor per pilot order
 
-**Primary brand blue:** `#0A8CFF`
+The initial pilot permits items from only one vendor per order.
 
-This is the main action color used in the generated visual language: bright, clean and highly visible on white without becoming neon.
+### Slot capacity
 
-| Token | Hex | Primary use |
-|---|---|---|
-| `blue.50` | `#F1F8FF` | Very subtle blue surfaces |
-| `blue.100` | `#E4F2FF` | Selected backgrounds, soft highlights |
-| `blue.200` | `#CBE5FF` | Soft borders and focus backgrounds |
-| `blue.300` | `#9CCFFF` | Secondary accents |
-| `blue.400` | `#5FB1FF` | Hover/pressed-prep states |
-| `blue.500` | `#0A8CFF` | Primary action / active state |
-| `blue.600` | `#087BD9` | Pressed/strong action state |
-| `blue.700` | `#0A63B2` | High-contrast blue text on light surfaces |
-| `blue.800` | `#084F8F` | Rare high-contrast usage |
-| `blue.900` | `#063A69` | Do not use as a primary surface |
+A collection slot cannot exceed configured capacity.
 
-### Blue usage rule
+### Availability
 
-Use `blue.500` for:
+Inventory must be revalidated before payment/order confirmation.
 
-- Primary buttons
-- Active bottom navigation
-- Active category chips
-- Selected controls
-- Progress indicators
-- Important links
-- Add-to-cart controls
-- Order state emphasis
-- Small visual accents
+### Payment release
 
-Do **not** use blue on every title, card, icon or border.
+An order must not be released for preparation until payment is confirmed when payment is required.
 
----
+### Duplicate protection
 
-## 3.2 Neutral palette
+The system must prevent duplicate orders and duplicate charges, especially under retries/timeouts.
 
-Avoid pure black for interface text. Use soft grey-black tones.
+### Cancellation
 
-| Token | Hex | Use |
-|---|---|---|
-| `neutral.0` | `#FFFFFF` | Main background, cards |
-| `neutral.25` | `#FCFDFE` | Elevated white surfaces |
-| `neutral.50` | `#F8FAFC` | Page sections |
-| `neutral.100` | `#F2F5F8` | Soft secondary surfaces |
-| `neutral.150` | `#E9EEF3` | Dividers / subtle filled controls |
-| `neutral.200` | `#DDE4EA` | Default borders |
-| `neutral.300` | `#C7D0D9` | Stronger borders / disabled outlines |
-| `neutral.400` | `#98A3AF` | Placeholder / tertiary text |
-| `neutral.500` | `#737E8B` | Secondary text |
-| `neutral.600` | `#5B6673` | Supporting text |
-| `neutral.700` | `#404B57` | Strong secondary text |
-| `neutral.800` | `#2B3440` | Heading/support contrast |
-| `neutral.900` | `#1F2933` | Primary text |
-| `neutral.950` | `#171D24` | Maximum text contrast; use sparingly |
+Cancellation is allowed only within vendor-defined rules/cut-off periods.
 
-### Recommended text hierarchy
+### Refund
 
-```text
-Primary text      → neutral.900
-Secondary text    → neutral.600
-Tertiary text     → neutral.500
-Placeholder       → neutral.400
-Disabled text     → neutral.300 / neutral.400
-```
+Refund status must be explicit, traceable and reconciled.
 
-Never use `#000000` for normal UI text.
+### Role isolation
+
+Users must not access another employee's order history or another vendor's information.
+
+### QR / collection
+
+Collection must be uniquely verifiable and duplicate collection prevented.
+
+### Location safety
+
+The selected campus/building/collection point must remain explicit throughout the ordering journey.
 
 ---
 
-## 3.3 System status colors
+# 19. Security Plan
 
-Status colors remain restrained so blue stays the main brand identity.
+The brief requires:
 
-### Success
+- Role-based access control.
+- Least-privilege permissions.
+- Separation of employee/vendor/admin/finance/support/audit access.
+- Vendor tenant isolation.
+- Employee order isolation.
+- Elevated protection for administrative functions.
+- Immediate access deactivation.
+- Encryption in transit and at rest for sensitive data.
+- Data minimisation.
+- Secure storage and masking of sensitive information.
+- Approved data-retention periods.
+- Secure deletion/anonymisation where required.
+- No storage of full payment-card information.
+- Protection of credentials and keys.
+- Audit logging.
+- Vulnerability/dependency scanning.
+- Threat modelling.
+- Code review.
+- Penetration testing.
+- Separate development/test/production environments.
 
-```text
-success.50  = #F0FBF4
-success.100 = #DCF6E4
-success.500 = #22A559
-success.700 = #187A43
-```
-
-Used for:
-
-- Open cafeteria
-- Ready for pickup
-- Confirmed states
-- Successful payment
-
-### Warning
-
-```text
-warning.50  = #FFF9EC
-warning.100 = #FFF0C9
-warning.500 = #D99A00
-warning.700 = #946900
-```
-
-Used for:
-
-- Delayed preparation
-- Limited availability
-- Attention-needed states
-
-### Error
-
-```text
-error.50  = #FFF4F4
-error.100 = #FFDCDC
-error.500 = #D94A4A
-error.700 = #A73232
-```
-
-Used for:
-
-- Invalid form values
-- Failed payment
-- Cancelled order
-- Destructive actions
-
-### Informational
-
-```text
-info.50  = #F1F8FF
-info.100 = #E4F2FF
-info.500 = #0A8CFF
-info.700 = #0A63B2
-```
-
-The info family intentionally maps closely to the brand blue.
+The project must account for applicable South African privacy requirements, including the Protection of Personal Information Act (POPIA), as stated in the source brief.
 
 ---
 
-# 4. Semantic Color Tokens
+# 20. Audit Logging
 
-Components and screens should reference these names.
+Audit events should include at minimum:
 
-## Light theme
+- Login/logout.
+- Failed authentication.
+- User/role changes.
+- Vendor onboarding/deactivation.
+- Menu creation/amendments.
+- Price changes.
+- Stock changes.
+- Order status changes.
+- Payment/refund events.
+- Approval decisions.
+- Corporate order amendments.
+- Administrative configuration changes.
+- Report exports.
+- Access to sensitive information.
+- Support overrides.
 
-```text
-color.background.app             = neutral.50
-color.background.default         = neutral.0
-color.background.secondary       = neutral.50
-color.background.tertiary        = neutral.100
-
-color.surface.default            = neutral.0
-color.surface.raised             = neutral.25
-color.surface.subtle             = blue.50
-color.surface.selected           = blue.100
-color.surface.disabled           = neutral.100
-
-color.text.primary               = neutral.900
-color.text.secondary             = neutral.600
-color.text.tertiary              = neutral.500
-color.text.placeholder           = neutral.400
-color.text.disabled              = neutral.400
-color.text.inverse               = neutral.0
-
-color.border.default             = neutral.200
-color.border.subtle              = neutral.150
-color.border.strong              = neutral.300
-color.border.focus               = blue.500
-color.border.selected            = blue.300
-
-color.action.primary             = blue.500
-color.action.primaryPressed      = blue.600
-color.action.primaryText        = neutral.0
-color.action.secondary           = blue.100
-color.action.secondaryText       = blue.700
-color.action.link                = blue.600
-color.action.disabled            = neutral.200
-color.action.disabledText        = neutral.400
-
-color.icon.primary               = neutral.700
-color.icon.secondary             = neutral.500
-color.icon.tertiary              = neutral.400
-color.icon.active                = blue.500
-color.icon.disabled              = neutral.300
-color.icon.inverse               = neutral.0
-
-color.status.success             = success.500
-color.status.warning             = warning.500
-color.status.error               = error.500
-color.status.info                = info.500
-```
-
-## Theme switching rule
-
-Screens should reference semantic tokens only:
-
-```text
-Correct:
-background = color.surface.default
-
-Avoid:
-background = #FFFFFF
-```
-
-When implementing themes, only the semantic mapping should change.
+Logs must be access controlled, retained according to policy and protected against unauthorised tampering.
 
 ---
 
-# 5. Typography
+# 21. Notifications Architecture
 
-## 5.1 Font family
-
-Primary font:
+Notification channels named in the brief:
 
 ```text
-Inter
+In-app
+Push
+Email
+SMS (only when approved and operationally necessary)
 ```
 
-For Android API 17 compatibility, package Inter inside the application rather than depending on a device-installed font.
-
-Fallback chain:
+Use an event-driven application pattern:
 
 ```text
-Inter → sans-serif → system sans-serif
+Order state changes
+      ↓
+Domain event
+      ↓
+Notification service
+      ↓
+Channel adapters
+      ↓
+In-app / push / email / SMS
 ```
 
-The design language supports Google Sans-like proportions, but Inter should be the consistent bundled product font.
+This prevents order logic from becoming tightly coupled to a specific notification provider.
 
 ---
 
-## 5.2 Font weights
+# 22. Reporting & Analytics Plan
 
-```text
-Regular      = 400
-Medium       = 500
-SemiBold     = 600
-Bold         = 700
-```
+## Employee/order reporting
 
-Use weight 700 selectively. Avoid making every label bold.
+- Registered users.
+- Active users.
+- Orders.
+- Completed/cancelled orders.
+- Order value.
+- Average basket value.
+- Popular meals/vendors.
+- Peak ordering times.
+- Peak collection times.
+- Average preparation time.
+- Average collection waiting time.
+- Uncollected orders.
+- Refunds.
+- Failed payments.
+- Ratings.
+- Complaints/resolution time.
 
----
+## Vendor reporting
 
-## 5.3 Type scale
+- Daily/weekly/monthly sales.
+- Number/value of orders.
+- Items sold.
+- Sold-out items.
+- Rejected/delayed orders.
+- Preparation time.
+- Ratings.
+- Refunds/cancellations.
+- Catering revenue.
+- Settlement/reconciliation.
+- Demand by slot/item.
 
-All measurements below are Android `sp` values.
+## Food waste reporting
 
-| Style | Size | Weight | Line height | Typical use |
-|---|---:|---:|---:|---|
-| `display.lg` | 32sp | 700 | 40sp | Rare hero heading |
-| `display.md` | 28sp | 700 | 36sp | Major screen heading |
-| `heading.xl` | 24sp | 700 | 32sp | Primary page title |
-| `heading.lg` | 22sp | 700 | 28sp | Feature heading |
-| `heading.md` | 20sp | 700 | 26sp | Section heading |
-| `title.lg` | 18sp | 600 | 24sp | Card / cafeteria title |
-| `title.md` | 16sp | 600 | 22sp | Component title |
-| `body.lg` | 16sp | 400 | 24sp | Main body copy |
-| `body.md` | 14sp | 400 | 20sp | Supporting text |
-| `body.sm` | 13sp | 400 | 18sp | Compact descriptions |
-| `label.lg` | 14sp | 600 | 20sp | Buttons / important labels |
-| `label.md` | 13sp | 600 | 18sp | Chips / tabs |
-| `label.sm` | 12sp | 600 | 16sp | Small metadata |
-| `caption` | 11sp | 500 | 16sp | Rare tertiary information |
-| `price.lg` | 20sp | 700 | 26sp | Food price |
-| `price.md` | 16sp | 700 | 22sp | Compact food price |
+Where vendors provide reliable data:
 
-### Typography rules
+- Planned quantity.
+- Ordered quantity.
+- Produced quantity.
+- Unsold quantity.
+- Wasted quantity.
+- Expected-vs-actual demand.
+- Trends over time/campus.
 
-- Use sentence case, not unnecessary all-caps.
-- Keep headings short.
-- Use `heading.xl` or `heading.lg` for major screen titles.
-- Use `heading.md` for sections such as “Campus cafeterias” and “Popular near you”.
-- Use `body.md` for supporting descriptions.
-- Never shrink primary content below 14sp.
-- Keep text contrast high enough for readability on mobile screens.
+The platform must not claim food-waste reduction unless reliable baseline and post-implementation data support the claim.
 
----
+## Corporate reporting
 
-# 6. Spacing Scale
+- Corporate orders/value.
+- Business unit.
+- Cost centre.
+- Meeting type.
+- Requester.
+- Vendor.
+- Approval time.
+- Delivery performance.
+- Disputes.
+- Recurring requirements.
 
-Use an 4dp base rhythm.
-
-| Token | Value |
-|---|---:|
-| `space.0` | 0dp |
-| `space.1` | 4dp |
-| `space.2` | 8dp |
-| `space.3` | 12dp |
-| `space.4` | 16dp |
-| `space.5` | 20dp |
-| `space.6` | 24dp |
-| `space.7` | 28dp |
-| `space.8` | 32dp |
-| `space.10` | 40dp |
-| `space.12` | 48dp |
-| `space.14` | 56dp |
-| `space.16` | 64dp |
-| `space.20` | 80dp |
-| `space.24` | 96dp |
-
-### Common screen spacing
-
-```text
-Screen horizontal padding       = 20dp
-Compact horizontal padding      = 16dp
-Large section gap               = 28dp
-Section title → content         = 12dp
-Card internal padding           = 16dp
-Form field vertical gap         = 14dp
-Button internal horizontal      = 20dp
-Bottom navigation height        = 72dp + safe area handling
-```
-
-Avoid arbitrary spacing such as 13dp, 19dp or 27dp unless a component specifically requires it.
+Reports should support approved CSV, Excel or PDF export with access control.
 
 ---
 
-# 7. Corner Radius
+# 23. Performance Plan
 
-Use a restrained rounded language.
+The original brief requires the system to:
 
-| Token | Value | Use |
-|---|---:|---|
-| `radius.none` | 0dp | Rare utility cases |
-| `radius.xs` | 6dp | Small badges |
-| `radius.sm` | 10dp | Compact controls |
-| `radius.md` | 14dp | Inputs / smaller cards |
-| `radius.lg` | 18dp | Main cards / buttons |
-| `radius.xl` | 22dp | Large feature surfaces |
-| `radius.2xl` | 28dp | Hero containers |
-| `radius.full` | 999dp | Pills / circular controls |
+- Perform acceptably under normal conditions.
+- Support peak ordering between 12:00 and 14:00.
+- Handle simultaneous transactions without duplicate orders/payments.
+- Refresh vendor queues promptly.
+- Scale across campuses/vendors/users.
+- Maintain acceptable performance during menu uploads and reporting.
 
-Primary production default:
+Implementation priorities:
 
-```text
-Cards          = 18dp
-Buttons        = 18dp
-Inputs         = 16dp
-Chips          = full
-Bottom sheet   = 24dp top corners
-Circular icon  = full
-```
+- Paginate large lists.
+- Index common Supabase queries.
+- Cache low-volatility reference data where useful.
+- Debounce search.
+- Avoid unnecessary React re-renders.
+- Optimise food-image delivery.
+- Use server-side pagination/filtering for large datasets.
+- Make order creation idempotent.
+- Perform load/stress testing against realistic pilot volumes.
 
----
-
-# 8. Borders
-
-Borders should create structure without visually dominating the interface.
-
-```text
-border.width.none    = 0dp
-border.width.thin    = 1dp
-border.width.focus   = 2dp
-```
-
-Recommended mapping:
-
-```text
-Default card border      = color.border.subtle
-Input border             = color.border.default
-Focused input border     = color.border.focus
-Selected control border  = color.border.focus
-Divider                  = color.border.subtle
-```
-
-Avoid thick permanent borders around every component.
+Exact response-time and availability targets remain stakeholder decisions and are not invented in this README.
 
 ---
 
-# 9. Elevation & Shadows
+# 24. Reliability & Resilience
 
-Use elevation sparingly.
+The system must:
 
-### Level 0
+- Protect confirmed orders from data loss.
+- Recover incomplete transactions safely.
+- Provide maintenance mode.
+- Give user-friendly outage messages.
+- Give vendors an approved fallback process for confirmed orders.
+- Maintain tested backup/recovery and disaster-recovery procedures.
 
-Flat surface.
-
-```text
-elevation.none = 0dp
-```
-
-### Level 1
-
-For cards and compact controls.
-
-```text
-elevation.sm = 2dp
-```
-
-Visual intention:
-
-```text
-very soft
-very low opacity
-large blur
-```
-
-### Level 2
-
-For floating buttons, sheets or strongly elevated elements.
-
-```text
-elevation.md = 4dp
-```
-
-### Level 3
-
-For modals / dialogs.
-
-```text
-elevation.lg = 8dp
-```
-
-Do not use heavy shadows on ordinary food or cafeteria cards.
+For order and payment flows, prefer explicit transaction states over assuming that a request failure means the operation failed.
 
 ---
 
-# 10. Icon System
+# 25. Testing Strategy
 
-Use one consistent line-icon family across the application.
+Testing must cover:
 
-Preferred characteristics:
+### Frontend
 
-- Rounded line endings
-- Simple geometry
-- Minimal internal detail
-- Consistent stroke weight
-- Visually similar optical size across icons
+- Unit tests.
+- Component tests.
+- Form validation.
+- Accessibility.
+- Responsive layouts.
+- Navigation/route protection.
+- Loading/error/empty states.
 
-Recommended icon sizes:
+### Backend
 
-| Token | Size |
-|---|---:|
-| `icon.xs` | 14dp |
-| `icon.sm` | 18dp |
-| `icon.md` | 20dp |
-| `icon.lg` | 24dp |
-| `icon.xl` | 28dp |
-| `icon.2xl` | 32dp |
-| `icon.hero` | 40dp |
+- Unit tests.
+- Integration tests.
+- API contract tests.
+- Authorisation tests.
+- Validation tests.
+- Database integration tests.
+- Payment webhook tests.
+- Notification event tests.
 
-Default UI icon:
+### System
 
-```text
-24dp
-```
+- End-to-end ordering.
+- Payment success/failure/interruption.
+- Duplicate submission.
+- Unavailable items.
+- Slot exhaustion.
+- Delayed vendor.
+- Refund failure.
+- QR validation.
+- Corporate approval workflow.
+- Vendor operations.
+- Admin operations.
+- Notification delivery.
 
-Default stroke:
+### Non-functional
 
-```text
-1.75–2.0dp
-```
+- Performance.
+- Load/stress.
+- Security.
+- Penetration testing.
+- Browser compatibility.
+- Mobile device testing.
+- Accessibility.
+- Disaster recovery.
 
-### Semantic icon colors
-
-```text
-Primary icon      = color.icon.primary
-Secondary icon    = color.icon.secondary
-Active icon       = color.icon.active
-Disabled icon     = color.icon.disabled
-Status icon       = color.status.*
-```
-
-Do not color icons blue merely because they are present. Blue indicates activity or meaningful action.
-
----
-
-# 11. Buttons
-
-## Primary button
-
-Used for:
-
-- Sign in
-- Next
-- Add to cart
-- Continue to checkout
-- Confirm order
-- Pay
-
-```text
-height              = 52dp
-min width           = 120dp
-corner radius       = 18dp
-horizontal padding  = 20dp
-text size           = 14sp
-text weight         = 600
-background          = color.action.primary
-text color          = color.action.primaryText
-```
-
-### Primary states
-
-```text
-Default     = blue.500
-Pressed     = blue.600
-Disabled    = neutral.200
-Focus       = blue.500 + 2dp focus ring where needed
-```
-
-## Secondary button
-
-Use for lower-priority actions.
-
-```text
-height              = 48dp
-background          = blue.100
-text                = blue.700
-border              = transparent
-corner radius       = 16dp
-```
-
-## Text button
-
-Used for:
-
-- Skip
-- Forgot password?
-- View all
-- Need help?
-
-```text
-height = 44dp minimum touch target
-text   = color.action.link
-```
+The source brief explicitly calls for unit, integration, system, UAT, mobile, browser, payment, access-control, security, penetration, performance, load/stress, disaster-recovery, notification, refund/cancellation, reconciliation, vendor, accessibility and corporate-workflow testing.
 
 ---
 
-# 12. Input Fields
+# 26. Acceptance Criteria
 
-Use generous touch targets and clear focus states.
+The product should not enter production until the following minimum conditions are met:
+
+1. Employees authenticate securely.
+2. Employees select the correct campus/vendor.
+3. Vendors maintain menus.
+4. Availability is accurate.
+5. Orders can be placed and paid successfully.
+6. Duplicate orders/payments are prevented adequately.
+7. Vendors receive/manage orders in real time.
+8. Collection slots cannot be overbooked.
+9. Employees receive accurate status notifications.
+10. QR/collection references can be validated.
+11. Cancellation/refund flows work as designed.
+12. Corporate approvals operate correctly.
+13. Financial/operational reports reconcile to transactions.
+14. Roles/permissions are tested.
+15. Audit logs are complete/protected.
+16. Security findings above the approved risk threshold are resolved.
+17. UAT is formally approved.
+18. Support, backup, recovery and escalation processes exist.
+19. Participating vendors are operationally trained.
+20. Required business, technology, risk, compliance, privacy and security approvals are obtained.
+
+---
+
+# 27. Development Phases
+
+## Phase 0 — Discovery & decisions
+
+Resolve the stakeholder-confirmation items before locking implementation assumptions:
+
+- Final vendors.
+- Pilot employee population.
+- Mobile-development approach.
+- Identity/SSO integration.
+- Approved payment methods.
+- Transaction-fee allocation.
+- Refund responsibility.
+- Vendor settlement.
+- Corporate delivery responsibility.
+- Corporate approval levels.
+- Cost-centre integration.
+- Tax/invoicing rules.
+- Data ownership.
+- Hosting environment.
+- Availability target.
+- Data retention.
+- Support ownership.
+- Vendor onboarding criteria/contracts.
+- Subsidy/meal benefits.
+- Woolworths participation.
+- Standalone vs existing employee-platform integration.
+- Branding/IP ownership.
+
+## Phase 1 — Foundation
+
+Build:
+
+- React application shell.
+- Express API.
+- Supabase database foundation.
+- Environment configuration.
+- Authentication/authorisation foundation.
+- Swagger/OpenAPI.
+- Logging/error handling.
+- Role model.
+- Design token integration.
+
+## Phase 2 — Employee ordering MVP
+
+Build the critical path:
 
 ```text
-height                 = 52dp
-corner radius          = 16dp
-horizontal padding     = 16dp
-text size              = 16sp
-label size             = 14sp
-border                 = 1dp
-background             = neutral.0
+Login
+→ Campus
+→ Vendor
+→ Menu
+→ Food details
+→ Cart
+→ Collection slot
+→ Payment
+→ Confirmation
+→ Tracking
+→ Pickup
 ```
 
-### Input states
+## Phase 3 — Vendor operations
+
+Build:
+
+- Vendor dashboard.
+- Live queue.
+- Menu management.
+- Stock/availability.
+- Collection slots.
+- Status management.
+.
+
+## Phase 4 — Admin operations
+
+Build:
+
+- Vendor/campus management.
+- Roles.
+- Configuration.
+- Reports.
+- Audit.
+- Announcements.
+
+## Phase 5 — Corporate catering
+
+Build:
+
+- Catering form.
+- Approval workflow.
+- Quotes.
+- Cost centres.
+- Delivery.
+- Confirmation.
+- Corporate reporting.
+
+## Phase 6 — Hardening
+
+- Security review.
+- Performance testing.
+- Accessibility testing.
+- UAT.
+- Recovery testing.
+- Monitoring.
+- Vendor training.
+- Pilot readiness.
+
+## Phase 7 — Merchant Place Pilot
+
+Pilot with the approved Merchant Place population and participating vendors.
+
+Measure:
+
+- Adoption.
+- Queue-time reduction.
+- Satisfaction.
+- Order accuracy.
+- Preparation performance.
+- Collection performance.
+- Vendor participation.
+- Payment reliability.
+- Demand/forecast performance.
+- Food-waste data where available.
+- Catering efficiency.
+- Reliability.
+
+## Phase 8 — Expansion
+
+Subject to pilot results and approvals, expand to additional locations named in the brief, including:
+
+- Sandton.
+- Bank City.
+- Fairland.
+- Other approved company locations.
+
+Expansion should follow documented pilot results, security review, vendor readiness and support capacity.
+
+---
+
+# 28. Recommended Build Order for the React UI
+
+Do not build every screen at once.
+
+Build in this order:
+
+```text
+1. App shell / navigation
+2. Authentication
+3. Home / Discover
+4. Campus & vendor selection
+5. Vendor menu
+6. Food details / customisation
+7. Cart
+8. Collection slot
+9. Checkout/payment
+10. Order confirmation
+11. Live tracking
+12. Pickup / QR
+13. Order history
+14. Profile / favourites / notifications
+15. Support
+16. Vendor portal
+17. Admin portal
+18. Corporate catering
+```
+
+For each feature, finish the full flow before moving to the next one.
+
+---
+
+# 29. UI State Requirements
+
+Every production screen should account for:
 
 ```text
 Default
-background = color.surface.default
-border     = color.border.default
-text       = color.text.primary
-
-Focused
-border     = color.border.focus
-background = color.surface.default
-
+Loading
+Empty
 Error
-border     = color.status.error
-helper     = color.status.error
-
 Disabled
-background = color.surface.disabled
-text       = color.text.disabled
-border     = color.border.subtle
+Success
+Permission denied
+Offline / connection failure where relevant
 ```
-
-Minimum touch target:
-
-```text
-44dp × 44dp
-```
-
-Prefer 48dp+ where space allows.
-
----
-
-# 13. Search Bar
-
-The home screen search field should feel lighter than a standard form field.
-
-```text
-height             = 52dp
-corner radius      = 18dp
-background         = neutral.50
-border             = neutral.150
-icon               = 24dp
-icon color         = neutral.500
-placeholder       = neutral.500
-horizontal padding = 16dp
-```
-
-Example:
-
-```text
-Search meals, cafeterias...
-```
-
----
-
-# 14. Chips & Category Tabs
-
-Selected category:
-
-```text
-background = blue.100
-text       = blue.700
-height     = 36dp
-radius     = full
-padding-x  = 14dp
-text       = 13sp / 600
-```
-
-Unselected category:
-
-```text
-background = transparent
-text       = neutral.700
-border     = transparent
-```
-
-Use a clear difference between selected and unselected states without overusing borders.
-
----
-
-# 15. Cards
-
-## Standard card
-
-```text
-background      = color.surface.default
-border          = color.border.subtle
-corner radius   = 18dp
-elevation       = elevation.sm
-padding         = 16dp
-```
-
-## Blue-tinted information card
-
-```text
-background      = blue.50
-border          = blue.200
-corner radius   = 18dp
-```
-
-Use for:
-
-- Estimated ready time
-- Ordering guidance
-- Helpful information
-- Lightweight status content
-
-## Food card
-
-Food cards should prioritize the photograph and a fast information scan.
-
-```text
-image corner radius        = 14dp
-card radius                = 18dp
-image ratio                = approximately 1.0–1.3 depending on layout
-name                       = title.md
-supporting text            = body.sm
-price                      = price.md
-add button                 = 40–44dp circular
-```
-
----
-
-# 16. Cafeteria Cards
-
-Cafeteria cards are a core CampusBites pattern.
-
-Required information priority:
-
-1. Cafeteria image
-2. Cafeteria name
-3. Open / closed status
-4. Distance
-5. Estimated preparation time
-6. Supporting description
-
-Recommended card dimensions for horizontal carousel:
-
-```text
-width  = 245–270dp
-radius = 18dp
-```
-
-Recommended image height:
-
-```text
-150–170dp
-```
-
-Status badge:
-
-```text
-Open background = success.50
-Open icon/text  = success.700
-```
-
-Closed:
-
-```text
-background = neutral.100
-text       = neutral.600
-```
-
----
-
-# 17. Food Details Pattern
-
-Food details should feel visual first, configuration second.
-
-Recommended order:
-
-```text
-Hero food image
-↓
-Food name + price
-↓
-Cafeteria context
-↓
-Description
-↓
-Preparation time
-↓
-Customization
-↓
-Special instructions
-↓
-Sticky add-to-cart action
-```
-
-Use a large hero photograph with realistic lighting and minimal artificial effects.
-
-Sticky action area:
-
-```text
-background = color.surface.default
-border top = color.border.subtle
-padding    = 12dp 16dp + bottom safe-area inset
-```
-
----
-
-# 18. Selection Controls
-
-For portion sizes, extras and meal preferences.
-
-### Radio / single selection
-
-```text
-outer size        = 20dp
-selected fill     = blue.500
-selected ring     = blue.500
-unselected border = neutral.300
-```
-
-### Checkbox / multi-selection
-
-```text
-size              = 20dp
-selected          = blue.500
-checkmark         = neutral.0
-unselected border = neutral.300
-```
-
-Selected containers may use:
-
-```text
-background = blue.50
-border     = blue.300
-```
-
----
-
-# 19. Quantity Controls
-
-Used in cart and order editing.
-
-```text
-height            = 40–44dp
-minimum width     = 96dp
-corner radius     = 14dp
-background        = neutral.0
-border            = neutral.200
-minus/plus icon   = blue.500
-number            = neutral.900
-```
-
-Buttons must meet at least a 44dp touch target even when the visible icon is smaller.
-
----
-
-# 20. Bottom Navigation
-
-Primary destinations:
-
-```text
-Home
-Orders
-Favorites
-Profile
-```
-
-### Navigation dimensions
-
-```text
-container height = 72dp
-icon size        = 24dp
-label size       = 12sp
-label weight     = 500
-```
-
-Active item:
-
-```text
-icon  = blue.500
-label = blue.600
-```
-
-Inactive item:
-
-```text
-icon  = neutral.500
-label = neutral.500
-```
-
-Container:
-
-```text
-background = neutral.0
-border top = neutral.150
-```
-
-Avoid a heavy floating-navigation appearance. Keep it integrated into the app shell.
-
----
-
-# 21. Order Tracking
-
-Order tracking should emphasize reassurance, not visual complexity.
-
-Four standard states:
-
-```text
-Order placed
-Confirmed
-Preparing
-Ready for pickup
-```
-
-Progress token rules:
-
-```text
-Completed = blue.500 or blue.300 depending on context
-Current   = blue.500
-Upcoming  = neutral.300
-Connector = blue.300 when completed, neutral.200 otherwise
-```
-
-Current-state title:
-
-```text
-heading.lg
-color.text.primary
-```
-
-Supporting state text:
-
-```text
-body.md
-color.text.secondary
-```
-
-Estimated time:
-
-```text
-price-like emphasis
-20–24sp
-weight 700
-color blue.600
-```
-
-The map preview should remain subtle and functional rather than becoming a visual centerpiece.
-
----
-
-# 22. Status Badges
-
-### Open
-
-```text
-background = success.50
-text       = success.700
-icon       = success.500
-```
-
-### Closed
-
-```text
-background = neutral.100
-text       = neutral.600
-icon       = neutral.400
-```
-
-### Preparing
-
-```text
-background = blue.100
-text       = blue.700
-icon       = blue.500
-```
-
-### Ready
-
-```text
-background = success.100
-text       = success.700
-icon       = success.500
-```
-
----
-
-# 23. Images & Photography
-
-Food photography is a major part of the interface.
-
-Use:
-
-- Realistic food
-- Natural lighting
-- Clean composition
-- Appetizing texture
-- Moderate contrast
-- Minimal clutter
-- Consistent image treatment across cards
-
-Avoid:
-
-- Cartoon food
-- Artificial 3D food
-- Overly saturated imagery
-- Heavy filters
-- Busy restaurant advertising styles
-
-Image containers should use the same radius language as surrounding cards.
-
-Recommended image overlay:
-
-```text
-none by default
-```
-
-Use overlays only when required for readability over an image.
-
----
-
-# 24. Layout Rules
-
-## Smartphone page margins
-
-Default:
-
-```text
-16–20dp
-```
-
-Preferred:
-
-```text
-20dp
-```
-
-For very dense content:
-
-```text
-16dp
-```
-
-## Content rhythm
-
-Use repeated vertical rhythm:
-
-```text
-Screen edge
-20dp
-Title
-8–12dp
-Supporting text
-20–24dp
-Section heading
-12dp
-Content
-24–32dp
-Next section
-```
-
-Do not stack many components with identical visual weight.
-
----
-
-# 25. Android API 17 Compatibility
-
-The design system is intentionally compatible with API 17 while retaining a modern visual result.
-
-### Dimensions
-
-Use Android `dp` for layout and `sp` for text.
-
-```text
-All layout dimensions → dp
-All text sizes        → sp
-```
-
-Do not hardcode pixels.
-
-### Fonts
-
-Bundle Inter in the APK as a local font resource. Do not rely on the device having Inter installed.
-
-### Minimum touch targets
-
-Use at least:
-
-```text
-44dp × 44dp
-```
-
-for interactive controls. 48dp is preferred for primary controls.
-
-### Layouts
-
-Favor compatibility-friendly Android layouts/components and avoid assuming newer platform-only behavior.
-
-Recommended approach:
-
-```text
-dp-based spacing
-sp-based typography
-vector icons where supported by project configuration
-compatibility support libraries where needed
-local bundled fonts
-```
-
-Do not design around edge-to-edge system APIs that are unavailable on API 17.
-
-For older devices, keep content inside the system window and explicitly account for the status/navigation bar regions.
-
----
-
-# 26. Responsive Mobile Rules
-
-The reference designs are portrait mobile screens, but components should scale gracefully.
-
-### Narrow phones
-
-For widths around 320–360dp:
-
-- Keep horizontal padding at 16dp.
-- Reduce multi-column content to one column.
-- Allow food descriptions to wrap to 2–3 lines.
-- Use horizontal scrolling for category/cafeteria carousels.
-- Never squeeze important information to fit one line.
-
-### Standard phones
-
-For widths around 360–430dp:
-
-- Use 20dp page padding.
-- Use full-width primary actions.
-- Use 2-column metadata where appropriate.
-- Use 1-column order item lists.
-
-### Larger screens
-
-For larger Android devices:
-
-- Cap reading width where practical.
-- Keep important content centered.
-- Avoid simply stretching every card to fill the entire width.
-
----
-
-# 27. Motion & Interaction
-
-Motion should communicate state, not decoration.
-
-Recommended timing:
-
-```text
-micro interaction      = 120–160ms
-standard transition    = 180–240ms
-larger screen motion   = 240–320ms
-```
-
-Use:
-
-- Soft scale or opacity feedback for buttons
-- Small state transitions for selected chips
-- Progress animation for order tracking
-- Subtle confirmation motion after adding to cart
-
-Avoid:
-
-- Large bouncing animations
-- Decorative looping motion
-- Long loading transitions
-- Heavy parallax
-
-The product should feel fast.
-
----
-
-# 28. Accessibility
-
-Accessibility is part of the design system, not an afterthought.
-
-### Color
-
-Never rely on color alone to communicate state.
 
 Examples:
 
+### Menu
+
 ```text
-Open → green + text label
-Preparing → blue + text label
-Error → red + error icon/text
+Loading menu
+No menu published
+Item available
+Item limited
+Item sold out
+Vendor closed
+Vendor temporarily unavailable
 ```
 
-### Typography
-
-Respect Android font scaling.
-
-Avoid placing essential content inside fixed-height containers that cannot grow when font size increases.
-
-### Touch
-
-Minimum interactive target:
+### Cart
 
 ```text
-44dp × 44dp
+Normal
+Item unavailable
+Price changed
+Collection slot unavailable
+Cart expired
+Validation failed
 ```
 
-### Content
-
-Use clear, direct labels:
+### Payment
 
 ```text
-Add to cart
-Continue to checkout
-Preparing your order
-Ready for pickup
+Ready
+Processing
+Successful
+Failed
+Interrupted
+Pending confirmation
+Refund pending
+Refunded
 ```
 
-Avoid unclear icon-only controls unless the meaning is universally recognizable or accompanied by accessibility content descriptions.
-
----
-
-# 29. Component Naming
-
-Recommended component naming convention:
+### Order tracking
 
 ```text
-CbButtonPrimary
-CbButtonSecondary
-CbTextButton
-CbSearchBar
-CbTextField
-CbChip
-CbCard
-CbFoodCard
-CbCafeteriaCard
-CbPrice
-CbStatusBadge
-CbQuantityControl
-CbBottomNavigation
-CbOrderProgress
-CbInfoCard
-CbEmptyState
-CbLoadingState
-CbTopBar
-CbSectionHeader
-```
-
-Prefix reusable components with `Cb` to clearly separate CampusBites UI from Android framework components.
-
----
-
-# 30. Theme Architecture
-
-## Theme-independent components
-
-Every reusable component should consume semantic tokens.
-
-Example pseudo-configuration:
-
-```text
-ButtonPrimary.background = theme.color.action.primary
-ButtonPrimary.text       = theme.color.action.primaryText
-ButtonPrimary.radius     = theme.radius.lg
-ButtonPrimary.height     = theme.control.buttonHeight
-```
-
-## Theme object
-
-Recommended structure:
-
-```text
-Theme
-├── colors
-│   ├── background
-│   ├── surface
-│   ├── text
-│   ├── border
-│   ├── action
-│   ├── icon
-│   └── status
-├── typography
-├── spacing
-├── radius
-├── elevation
-├── icon
-└── component
-```
-
-## Future themes
-
-The initial release can ship with one theme:
-
-```text
-CampusBites Light
-```
-
-Future themes can include:
-
-```text
-CampusBites Dark
-University Branded Light
-University Branded Dark
-High Contrast
-```
-
-The screen and component layouts should not need to change when themes are introduced.
-
----
-
-# 31. Recommended Token File Structure
-
-If implementing the design system in Android resources:
-
-```text
-res/
-├── values/
-│   ├── colors.xml
-│   ├── dimens.xml
-│   ├── strings.xml
-│   ├── styles.xml
-│   └── themes.xml
-│
-├── font/
-│   └── inter_*.ttf
-│
-├── drawable/
-│   └── vector icons / shape resources
-│
-├── values-night/
-│   ├── colors.xml
-│   ├── themes.xml
-│   └── styles.xml
-│
-└── values-sw600dp/
-    └── dimens.xml
-```
-
-Recommended semantic grouping inside resources:
-
-```text
-cb_color_background_*
-cb_color_surface_*
-cb_color_text_*
-cb_color_border_*
-cb_color_action_*
-cb_color_icon_*
-cb_color_status_*
-
-cb_space_*
-cb_radius_*
-cb_elevation_*
-cb_text_*
-cb_icon_*
-cb_component_*
+Submitted
+Confirmed
+Vendor received
+Accepted
+Preparing
+Ready
+Collected
+Completed
+Rejected
+Cancelled
+Delayed
 ```
 
 ---
 
-# 32. Starter Semantic Token Map
+# 30. Data Ownership & Integration Boundaries
 
-Use this as the initial source of truth.
+External integrations should be documented before implementation.
+
+The brief calls out possible integrations for:
+
+- Identity and access management.
+- SSO.
+- Payment providers.
+- Email/notification services.
+- Mobile push notifications.
+- Employee directory.
+- Cost-centre/approval systems.
+- Vendor settlement/reconciliation.
+- Service desk / incident management.
+- Reporting/analytics.
+- Building/boardroom location data.
+
+For every integration document:
 
 ```text
-// COLORS
-color.background.app          = #F8FAFC
-color.background.default     = #FFFFFF
-color.background.secondary   = #F8FAFC
-color.background.tertiary    = #F2F5F8
-
-color.surface.default        = #FFFFFF
-color.surface.raised         = #FCFDFE
-color.surface.subtle         = #F1F8FF
-color.surface.selected       = #E4F2FF
-
-color.text.primary           = #1F2933
-color.text.secondary         = #5B6673
-color.text.tertiary          = #737E8B
-color.text.placeholder       = #98A3AF
-color.text.inverse           = #FFFFFF
-
-color.border.default         = #DDE4EA
-color.border.subtle          = #E9EEF3
-color.border.strong          = #C7D0D9
-color.border.focus           = #0A8CFF
-
-color.action.primary         = #0A8CFF
-color.action.primaryPressed  = #087BD9
-color.action.secondary       = #E4F2FF
-color.action.link            = #087BD9
-
-color.icon.primary           = #404B57
-color.icon.secondary         = #737E8B
-color.icon.active            = #0A8CFF
-color.icon.disabled          = #C7D0D9
-
-color.status.success         = #22A559
-color.status.warning         = #D99A00
-color.status.error           = #D94A4A
-color.status.info            = #0A8CFF
-
-// TYPOGRAPHY
-font.family.primary          = Inter
-font.weight.regular          = 400
-font.weight.medium           = 500
-font.weight.semibold         = 600
-font.weight.bold             = 700
-
-// LAYOUT
-screen.padding.horizontal    = 20dp
-screen.padding.compact       = 16dp
-card.padding                 = 16dp
-section.gap                  = 28dp
-content.gap                  = 12dp
-
-// RADII
-radius.card                  = 18dp
-radius.button                = 18dp
-radius.input                 = 16dp
-radius.chip                  = 999dp
-radius.sheet                 = 24dp
-
-// CONTROLS
-control.button.height        = 52dp
-control.input.height         = 52dp
-control.iconButton.size      = 44dp
-control.touch.min            = 44dp
-
-// NAVIGATION
-navigation.bottom.height     = 72dp
-navigation.icon.size         = 24dp
-navigation.label.size        = 12sp
+Fields exchanged
+Direction of flow
+Update frequency
+Authentication
+Error handling
+Reconciliation
+Ownership
+Support responsibility
+Security classification
+Retention
 ```
 
 ---
 
-# 33. Do / Don't
+# 31. Environment Strategy
 
-## Do
+Use separate environments:
 
-- Use white as the dominant visual field.
-- Use the bright blue strategically.
-- Use neutral grey-black for the majority of text.
-- Keep cards rounded and lightweight.
-- Keep screens easy to scan with strong hierarchy.
-- Use realistic food photography.
-- Make order status immediately understandable.
-- Keep primary actions visually dominant.
-- Maintain consistent 4dp spacing rhythm.
-- Build all components on semantic theme tokens.
+```text
+Development
+Testing / Staging
+Production
+```
 
-## Don't
+Recommended variables:
 
-- Do not use pure black as the default text color.
-- Do not make every icon blue.
-- Do not use strong blue backgrounds behind large amounts of text.
-- Do not add glassmorphism.
-- Do not use neon blue.
-- Do not create heavy shadows.
-- Do not fill screens with decorative graphics.
-- Do not imitate a generic restaurant-delivery marketplace.
-- Do not hardcode colors directly inside individual components.
-- Do not hardcode pixel measurements.
+```text
+NODE_ENV
+PORT
+SUPABASE_URL
+SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+API_BASE_URL
+SWAGGER_BASE_URL
+PAYMENT_* 
+NOTIFICATION_* 
+AUTH_* 
+```
+
+Never commit secrets.
+
+The React client must never receive the Supabase service-role key or other privileged backend credentials.
 
 ---
 
-# 34. Visual Quality Checklist
+# 32. Error Handling Standard
 
-Before approving a screen, verify:
+All APIs should return a predictable error envelope.
+
+Recommended shape:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "COLLECTION_SLOT_FULL",
+    "message": "The selected collection slot is no longer available."
+  },
+  "requestId": "..."
+}
+```
+
+Use stable error codes for frontend handling and human-readable messages for users.
+
+Never expose raw database errors, provider secrets or stack traces in production responses.
+
+---
+
+# 33. Pagination & Query Rules
+
+For large datasets:
+
+- Paginate vendor lists.
+- Paginate menus where necessary.
+- Paginate orders.
+- Paginate audit logs.
+- Paginate reports/data exports where applicable.
+- Apply server-side filtering for large datasets.
+
+Keep the API response shape consistent between list endpoints.
+
+---
+
+# 34. Deployment Plan
+
+Deployment should include:
 
 ```text
-[ ] White/light surface hierarchy is clear
-[ ] Primary blue is used intentionally
-[ ] No pure black UI text
-[ ] Typography follows the defined scale
-[ ] Spacing follows the 4dp rhythm
-[ ] Main cards use approximately 18dp radius
-[ ] Interactive controls meet 44dp minimum touch targets
-[ ] Borders are subtle
-[ ] Shadows are restrained
-[ ] Icons use one consistent line style
-[ ] Food imagery is realistic
-[ ] Important actions are visually dominant
-[ ] Screen remains readable on smaller phones
-[ ] Components use semantic theme tokens
-[ ] No component directly hardcodes brand colors
-[ ] Future dark/theme switching will only require semantic remapping
+Build React frontend
+        ↓
+Build/test Express API
+        ↓
+Run database migrations
+        ↓
+Run automated tests
+        ↓
+Run security/dependency checks
+        ↓
+Deploy staging
+        ↓
+UAT
+        ↓
+Production approval
+        ↓
+Production deployment
+        ↓
+Post-deployment monitoring
+```
+
+Database migrations must be version controlled.
+
+Production deployment must have a rollback/recovery plan.
+
+---
+
+# 35. Observability
+
+Track at minimum:
+
+- API error rate.
+- Authentication failures.
+- Order creation failures.
+- Payment failures.
+- Duplicate-prevention events.
+- Notification failures.
+- Vendor queue delays.
+- Slow API requests.
+- Database query issues.
+- Background job failures.
+- Unhandled exceptions.
+- Client-side critical errors.
+
+Include correlation/request IDs so a failed customer order can be traced across API, payment, notification and database logs.
+
+---
+
+# 36. Developer Deliverables
+
+The original brief expects the final project to produce or maintain:
+
+- Business requirements specification.
+- Functional requirements specification.
+- Non-functional requirements specification.
+- Solution architecture.
+- Data-flow diagrams.
+- Process-flow diagrams.
+- Database/data-model design.
+- Integration design.
+- Security/privacy design.
+- UI prototypes.
+- User journeys.
+- Source code.
+- API documentation.
+- Test strategy and test cases.
+- Test results and defect register.
+- Security assessment results.
+- Deployment/release plan.
+- Backup/recovery plan.
+- Administration manual.
+- Vendor guide.
+- Employee guide.
+- Support/maintenance procedures.
+- Incident/escalation matrix.
+- Training materials.
+- Pilot implementation plan.
+- Pilot performance dashboard.
+- Post-implementation review.
+- Source-code ownership/licensing/handover documentation.
+
+---
+
+# 37. Definition of Done
+
+A feature is not considered complete when the happy-path UI works.
+
+A production-ready feature must include:
+
+```text
+UI
++ Loading state
++ Empty state
++ Error state
++ Validation
++ API integration
++ Backend validation
++ Authorisation
++ Database persistence
++ Audit/event handling where required
++ Notification handling where required
++ Tests
++ Swagger documentation where an API exists
++ Accessibility review
++ Responsive review
+```
+
+For payment/order features, also require:
+
+```text
+Idempotency
+Failure recovery
+Duplicate protection
+State reconciliation
+Refund/cancellation handling
 ```
 
 ---
 
-# 35. Source Screen Set
+# 38. Important Implementation Notes
 
-The design system supports the current core journey:
+### React + pure JavaScript
 
-1. Splash / Brand
-2. Onboarding
-3. Student Login
-4. Home / Discover
-5. Cafeteria Selection / Menu
-6. Food Item Details
-7. Cart
-8. Checkout / Payment
-9. Order Confirmed
-10. Live Order Tracking
-11. Pickup / Ready
-12. My Orders
-13. Order Details / Receipt
-14. Favorites
-15. Student Profile
-16. Notifications
-17. Help / Support
+Keep the frontend JavaScript-first as requested. Use clear feature-based modules and reusable components instead of introducing unnecessary abstraction.
 
-This ordering flow follows the supplied project specification and can be expanded as the product grows. fileciteturn0file0L5-L23
+### Node.js + Express
+
+Keep business rules in services rather than controllers. Controllers should translate HTTP requests into service calls and format responses.
+
+### Supabase
+
+Use Supabase PostgreSQL as the system of record. Keep privileged database operations on the server. Use migrations and controlled seed data.
+
+### Swagger
+
+Document the actual implementation rather than maintaining a disconnected API document. Prefer one source of truth for request/response schemas where practical.
+
+### Design tokens
+
+The repository already contains `design_tokens.md`. Treat it as the visual source of truth and keep page-specific styling derived from those tokens rather than inventing new colours or spacing values screen by screen.
 
 ---
 
-# 36. Final Design Principle
+# 39. Current MVP Recommendation
 
-**CampusBites should feel like a calm, modern campus utility that happens to make food ordering extremely convenient.**
-
-The design should communicate:
+For the first usable Merchant Place release, prioritise:
 
 ```text
-FAST
-CLEAR
-TRUSTWORTHY
-CAMPUS-FIRST
-FRIENDLY
-MODERN
+Authentication
+Campus selection
+Vendor directory
+Menu browsing
+Search/filter
+Food details/customisation
+Cart
+Collection slots
+Payment
+Order confirmation
+Live order status
+Ready/QR collection
+Order history
+Basic notifications
+Vendor live queue
+Vendor menu management
+Basic admin vendor/campus configuration
+Core reporting
+Audit logging
 ```
 
-The strongest visual signature is:
+Corporate catering can be implemented after the employee meal journey is stable, unless the pilot specifically requires controlled catering testing from day one.
+
+This sequencing is a project recommendation, not a change to the original brief.
+
+---
+
+# 40. Final Product Standard
+
+Merchant Munchies should ultimately feel like a reliable workplace utility rather than a generic restaurant marketplace.
+
+The product should make these questions immediately answerable:
+
+> **Where am I ordering from?**
+>
+> **What can I order?**
+>
+> **Is it available?**
+>
+> **When can I collect it?**
+>
+> **Have I paid?**
+>
+> **What is happening to my order?**
+>
+> **Where do I collect it?**
+>
+> **What happens if something goes wrong?**
+
+The core success loop is:
 
 ```text
-WHITE + BRIGHT CAMPUSBites BLUE + SOFT GREY-BLACK TEXT
-+ LIGHT BLUE SURFACES + SUBTLE BORDERS + 18DP ROUNDED SURFACES
+DISCOVER
+→ ORDER
+→ PAY
+→ TRACK
+→ COLLECT
+→ FEEDBACK
 ```
+
+The wider platform loop is:
+
+```text
+EMPLOYEE DEMAND
+→ VENDOR PREPARATION
+→ SCHEDULED COLLECTION
+→ TRANSACTION / RECONCILIATION
+→ OPERATIONAL ANALYTICS
+→ BETTER DEMAND PLANNING
+```
+
+That loop is the foundation for the platform's queue reduction, convenience, vendor efficiency and management-information objectives.
