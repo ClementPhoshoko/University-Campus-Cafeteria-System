@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, Bell, Clock3, MapPin, Utensils } from 'lucide-react';
+import { useTheme } from './contexts/ThemeContext.jsx';
 import { getHealth } from './services/api.js';
 
 const vendors = [
@@ -10,6 +11,7 @@ const vendors = [
 
 export default function App() {
   const [apiStatus, setApiStatus] = useState('Checking connection');
+  const { theme } = useTheme();
 
   useEffect(() => {
     getHealth()
@@ -48,7 +50,13 @@ export default function App() {
           {vendors.map((vendor) => (
             <article className="vendor-card" key={vendor.name}>
               <div className={`vendor-image ${vendor.tone}`}><Utensils size={25} /></div>
-              <div className="vendor-card-body"><div><h3>{vendor.name}</h3><p>{vendor.detail}</p></div><span className="time"><Clock3 size={13} />{vendor.time}</span></div>
+              <div className="vendor-card-body">
+                <div>
+                  <h3>{vendor.name}</h3>
+                  <p>{vendor.detail}</p>
+                </div>
+                <span className="time"><Clock3 size={13} />{vendor.time}</span>
+              </div>
             </article>
           ))}
         </div>

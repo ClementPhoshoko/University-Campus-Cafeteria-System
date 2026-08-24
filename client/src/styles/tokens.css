@@ -1,0 +1,168 @@
+/* ============================================
+   Merchant Munchies Design Tokens
+   From design_system.md - Light Theme
+   ============================================ */
+
+:root {
+  /* ── Brand Blue ── */
+  --blue-50:  #F1F8FF;
+  --blue-100: #E4F2FF;
+  --blue-200: #CBE5FF;
+  --blue-300: #9CCFFF;
+  --blue-400: #5FB1FF;
+  --blue-500: #0A8CFF;
+  --blue-600: #087BD9;
+  --blue-700: #0A63B2;
+  --blue-800: #084F8F;
+  --blue-900: #063A69;
+
+  /* ── Neutrals ── */
+  --neutral-0:   #FFFFFF;
+  --neutral-25:  #FCFDFE;
+  --neutral-50:  #F8FAFC;
+  --neutral-100: #F2F5F8;
+  --neutral-150: #E9EEF3;
+  --neutral-200: #DDE4EA;
+  --neutral-300: #C7D0D9;
+  --neutral-400: #98A3AF;
+  --neutral-500: #737E8B;
+  --neutral-600: #5B6673;
+  --neutral-700: #404B57;
+  --neutral-800: #2B3440;
+  --neutral-900: #1F2933;
+  --neutral-950: #171D24;
+
+  /* ── Status ── */
+  --success-50:  #F0FBF4;
+  --success-100: #DCF6E4;
+  --success-500: #22A559;
+  --success-700: #187A43;
+
+  --warning-50:  #FFF9EC;
+  --warning-100: #FFF0C9;
+  --warning-500: #D99A00;
+  --warning-700: #946900;
+
+  --error-50:  #FFF4F4;
+  --error-100: #FFDCDC;
+  --error-500: #D94A4A;
+  --error-700: #A73232;
+
+  --info-50:  #F1F8FF;
+  --info-100: #E4F2FF;
+  --info-500: #0A8CFF;
+  --info-700: #0A63B2;
+
+  /* ── Semantic: Background ── */
+  --color-bg-app:           var(--neutral-50);
+  --color-bg-default:       var(--neutral-0);
+  --color-bg-secondary:     var(--neutral-50);
+  --color-bg-tertiary:      var(--neutral-100);
+
+  /* ── Semantic: Surface ── */
+  --color-surface-default:  var(--neutral-0);
+  --color-surface-raised:   var(--neutral-25);
+  --color-surface-subtle:   var(--blue-50);
+  --color-surface-selected: var(--blue-100);
+  --color-surface-disabled: var(--neutral-100);
+
+  /* ── Semantic: Text ── */
+  --color-text-primary:     var(--neutral-900);
+  --color-text-secondary:   var(--neutral-600);
+  --color-text-tertiary:    var(--neutral-500);
+  --color-text-placeholder: var(--neutral-400);
+  --color-text-disabled:    var(--neutral-400);
+  --color-text-inverse:     var(--neutral-0);
+
+  /* ── Semantic: Border ── */
+  --color-border-default:   var(--neutral-200);
+  --color-border-subtle:    var(--neutral-150);
+  --color-border-strong:    var(--neutral-300);
+  --color-border-focus:     var(--blue-500);
+  --color-border-selected:  var(--blue-300);
+
+  /* ── Semantic: Action ── */
+  --color-action-primary:        var(--blue-500);
+  --color-action-primary-hover:  var(--blue-400);
+  --color-action-primary-pressed: var(--blue-600);
+  --color-action-primary-text:   var(--neutral-0);
+  --color-action-secondary:      var(--blue-100);
+  --color-action-secondary-text: var(--blue-700);
+  --color-action-link:           var(--blue-600);
+  --color-action-disabled:       var(--neutral-200);
+  --color-action-disabled-text:  var(--neutral-400);
+
+  /* ── Semantic: Icon ── */
+  --color-icon-primary:   var(--neutral-700);
+  --color-icon-secondary: var(--neutral-500);
+  --color-icon-tertiary:  var(--neutral-400);
+  --color-icon-active:    var(--blue-500);
+  --color-icon-disabled:  var(--neutral-300);
+  --color-icon-inverse:   var(--neutral-0);
+
+  /* ── Semantic: Status ── */
+  --color-status-success: var(--success-500);
+  --color-status-warning: var(--warning-500);
+  --color-status-error:   var(--error-500);
+  --color-status-info:    var(--info-500);
+
+  /* ── Typography ── */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* ── Spacing (4dp base) ── */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  28px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ── Radius ── */
+  --radius-none: 0;
+  --radius-xs:   6px;
+  --radius-sm:   10px;
+  --radius-md:   14px;
+  --radius-lg:   18px;
+  --radius-xl:   22px;
+  --radius-2xl:  28px;
+  --radius-full: 999px;
+
+  /* ── Elevation ── */
+  --elevation-none: none;
+  --elevation-sm:   0 1px 3px rgba(31, 41, 51, 0.04), 0 1px 2px rgba(31, 41, 51, 0.06);
+  --elevation-md:   0 4px 12px rgba(31, 41, 51, 0.06), 0 2px 4px rgba(31, 41, 51, 0.04);
+  --elevation-lg:   0 10px 30px rgba(31, 41, 51, 0.08), 0 4px 8px rgba(31, 41, 51, 0.04);
+
+  /* ── Glass Morphism ── */
+  --glass-bg:         rgba(255, 255, 255, 0.72);
+  --glass-bg-heavy:   rgba(255, 255, 255, 0.85);
+  --glass-bg-light:   rgba(255, 255, 255, 0.55);
+  --glass-border:     rgba(255, 255, 255, 0.45);
+  --glass-blur:       16px;
+  --glass-blur-heavy: 24px;
+  --glass-shadow:     0 8px 32px rgba(10, 140, 255, 0.06), 0 2px 8px rgba(31, 41, 51, 0.04);
+
+  /* ── Transitions ── */
+  --transition-fast:   120ms ease;
+  --transition-normal: 200ms ease;
+  --transition-smooth: 280ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── Layout ── */
+  --content-max-width: 1180px;
+  --screen-padding:    20px;
+  --screen-padding-compact: 16px;
+  --bottom-nav-height: 72px;
+}
