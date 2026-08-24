@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, Bell, Clock3, MapPin, Utensils } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext.jsx';
 import { getHealth } from './services/api.js';
+import SplashScreen from './features/auth/SplashScreen.jsx';
 
 const vendors = [
   { name: 'Vovo Telo', detail: 'Bakery & cafe', time: '10-15 min', tone: 'coral' },
@@ -11,6 +12,7 @@ const vendors = [
 
 export default function App() {
   const [apiStatus, setApiStatus] = useState('Checking connection');
+  const [showSplash, setShowSplash] = useState(true);
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -18,6 +20,10 @@ export default function App() {
       .then(() => setApiStatus('Connected to Merchant Munchies API'))
       .catch(() => setApiStatus('API is waiting to connect'));
   }, []);
+
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
 
   return (
     <main className="app-shell">
