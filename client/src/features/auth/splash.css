@@ -110,7 +110,8 @@
 .splash-circle {
   position: absolute;
   border-radius: 50%;
-  background: var(--blue-200, #C4E1FF);
+  background: transparent;
+  border: 2px solid var(--blue-300, #9CCFFF);
   opacity: 0;
   animation: splash-circle-in 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
@@ -167,7 +168,7 @@
 
 @keyframes splash-circle-in {
   from { opacity: 0; transform: scale(0.5); }
-  to { opacity: 0.35; transform: scale(1); }
+  to { opacity: 0.55; transform: scale(1); }
 }
 
 /* ── Brand ── */
