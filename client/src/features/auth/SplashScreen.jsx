@@ -12,12 +12,12 @@ import mainLogo from '../../assets/main_logo.png';
 import './splash.css';
 
 const foodIcons = [
-  { icon: IconPizza, size: 34, className: 'splash-icon-pos-tl' },
-  { icon: IconSalad, size: 30, className: 'splash-icon-pos-tr' },
-  { icon: IconBurger, size: 28, className: 'splash-icon-pos-ml' },
-  { icon: IconCup, size: 26, className: 'splash-icon-pos-mr' },
-  { icon: IconCoffee, size: 30, className: 'splash-icon-pos-bl' },
-  { icon: IconToolsKitchen2, size: 28, className: 'splash-icon-pos-br' },
+  { icon: IconPizza, size: 48, className: 'splash-icon-pos-tl' },
+  { icon: IconSalad, size: 44, className: 'splash-icon-pos-tr' },
+  { icon: IconBurger, size: 42, className: 'splash-icon-pos-ml' },
+  { icon: IconCup, size: 40, className: 'splash-icon-pos-mr' },
+  { icon: IconCoffee, size: 44, className: 'splash-icon-pos-bl' },
+  { icon: IconToolsKitchen2, size: 42, className: 'splash-icon-pos-br' },
 ];
 
 export default function SplashScreen({ onComplete }) {
