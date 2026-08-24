@@ -10,6 +10,7 @@
   align-items: center;
   justify-content: center;
   background: var(--color-bg-app, #F8FAFC);
+  overflow: hidden;
   animation: splash-in 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
@@ -18,25 +19,13 @@
 }
 
 @keyframes splash-in {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes splash-out {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(1.01);
-  }
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.01); }
 }
 
 /* ── Content Container ── */
@@ -110,14 +99,8 @@
 }
 
 @keyframes splash-icon-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 0.4;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 0.4; transform: translateY(0); }
 }
 
 /* ── Brand ── */
@@ -142,14 +125,8 @@
 }
 
 @keyframes splash-logo-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .splash-name {
@@ -170,6 +147,7 @@
   color: var(--color-text-secondary, #5B6673);
   line-height: 1.5;
   margin: 0 0 24px;
+  max-width: 260px;
   animation: splash-text-in 500ms cubic-bezier(0.4, 0, 0.2, 1) 450ms forwards;
   opacity: 0;
 }
@@ -189,24 +167,212 @@
 }
 
 @keyframes splash-text-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes splash-divider-in {
-  from {
-    opacity: 0;
-    width: 0;
+  from { opacity: 0; width: 0; }
+  to { opacity: 1; width: 40px; }
+}
+
+/* ============================================
+   Responsive Breakpoints
+   ============================================ */
+
+/* ── Very small phones (320-360px) ── */
+
+@media (max-width: 360px) {
+  .splash-content {
+    padding: 32px 16px;
   }
-  to {
-    opacity: 1;
-    width: 40px;
+
+  .splash-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 20px;
+  }
+
+  .splash-name {
+    font-size: 1.6rem;
+    margin-bottom: 10px;
+  }
+
+  .splash-tagline {
+    font-size: 0.82rem;
+    margin-bottom: 18px;
+    max-width: 220px;
+  }
+
+  .splash-decorations {
+    inset: -30px -20px;
+  }
+
+  .splash-food-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* ── Standard phones (361-430px) ── */
+/* Default styles already cover this range */
+
+/* ── Large phones (431-500px) ── */
+
+@media (min-width: 431px) {
+  .splash-logo {
+    width: 125px;
+    height: 125px;
+  }
+
+  .splash-name {
+    font-size: 2.2rem;
+  }
+}
+
+/* ── Short screens / landscape (max-height: 500px) ── */
+
+@media (max-height: 500px) {
+  .splash-content {
+    padding: 16px;
+  }
+
+  .splash-logo {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 12px;
+  }
+
+  .splash-name {
+    font-size: 1.3rem;
+    margin-bottom: 6px;
+  }
+
+  .splash-tagline {
+    font-size: 0.75rem;
+    margin-bottom: 10px;
+  }
+
+  .splash-divider {
+    height: 2px;
+  }
+
+  .splash-decorations {
+    inset: -20px -15px;
+  }
+
+  .splash-food-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* ── Medium height (501-650px) ── */
+
+@media (min-height: 501px) and (max-height: 650px) {
+  .splash-logo {
+    width: 90px;
+    height: 90px;
+    margin-bottom: 22px;
+  }
+
+  .splash-name {
+    font-size: 1.75rem;
+  }
+
+  .splash-tagline {
+    font-size: 0.88rem;
+    margin-bottom: 20px;
+  }
+
+  .splash-decorations {
+    inset: -45px -30px;
+  }
+}
+
+/* ── Tall phones (651-800px) — default styles ── */
+
+/* ── Very tall phones (801px+) ── */
+
+@media (min-height: 801px) {
+  .splash-logo {
+    width: 130px;
+    height: 130px;
+    margin-bottom: 36px;
+  }
+
+  .splash-name {
+    font-size: 2.4rem;
+    margin-bottom: 16px;
+  }
+
+  .splash-tagline {
+    font-size: 1.05rem;
+    margin-bottom: 32px;
+  }
+
+  .splash-divider {
+    width: 48px;
+  }
+}
+
+/* ── Tablets / large screens (768px+) ── */
+
+@media (min-width: 768px) {
+  .splash-content {
+    max-width: 420px;
+  }
+
+  .splash-logo {
+    width: 140px;
+    height: 140px;
+  }
+
+  .splash-name {
+    font-size: 2.6rem;
+  }
+
+  .splash-tagline {
+    font-size: 1.1rem;
+    max-width: 300px;
+  }
+
+  .splash-decorations {
+    inset: -80px -60px;
+  }
+}
+
+/* ── Landscape phones ── */
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .splash-screen {
+    align-items: center;
+  }
+
+  .splash-content {
+    flex-direction: row;
+    gap: 32px;
+    padding: 16px 32px;
+    max-width: none;
+  }
+
+  .splash-decorations {
+    inset: -30px -40px;
+  }
+
+  .splash-logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 0;
+  }
+
+  .splash-brand {
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .splash-divider {
+    margin-top: 4px;
   }
 }
 
@@ -226,50 +392,5 @@
 
   .splash-divider {
     width: 40px !important;
-  }
-}
-
-/* ── Responsive: smaller screens ── */
-
-@media (max-height: 600px) {
-  .splash-logo {
-    width: 85px;
-    height: 85px;
-    margin-bottom: 20px;
-  }
-
-  .splash-name {
-    font-size: 1.65rem;
-  }
-
-  .splash-tagline {
-    font-size: 0.85rem;
-    margin-bottom: 18px;
-  }
-
-  .splash-decorations {
-    inset: -40px -30px;
-  }
-}
-
-@media (max-height: 480px) {
-  .splash-content {
-    padding: 24px 16px;
-  }
-
-  .splash-logo {
-    width: 70px;
-    height: 70px;
-    margin-bottom: 16px;
-  }
-
-  .splash-name {
-    font-size: 1.4rem;
-    margin-bottom: 8px;
-  }
-
-  .splash-tagline {
-    font-size: 0.8rem;
-    margin-bottom: 14px;
   }
 }
