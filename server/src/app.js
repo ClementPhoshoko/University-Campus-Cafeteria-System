@@ -21,4 +21,6 @@ app.use((error, req, res, next) => {
   res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Something went wrong.' } });
 });
 
-app.listen(port, () => console.log(`Merchant Munchies API listening on port ${port}`));
+const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
+app.listen(port, () => console.log(`\n🚀 Merchant Munchies API running on ${baseUrl}`));
+console.log(`📖 Swagger docs available at: ${baseUrl}/api-docs\n`);
