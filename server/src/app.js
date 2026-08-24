@@ -4,6 +4,7 @@ import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import healthRoutes from './routes/healthRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 const app = express();
 const port = Number(process.env.PORT);
@@ -13,6 +14,7 @@ app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
 app.use(express.json());
 app.use(morgan('dev'));
 app.use('/api/v1', healthRoutes);
+app.use('/api/v1', authRoutes);
 
 app.use((error, req, res, next) => {
   console.error(error);
