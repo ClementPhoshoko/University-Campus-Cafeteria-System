@@ -1,0 +1,378 @@
+/* ============================================
+   Onboarding Screen
+   ============================================ */
+
+.onboarding-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-default, #FFFFFF);
+  overflow: hidden;
+}
+
+/* ── Track (horizontal slide container) ── */
+
+.onboarding-track {
+  display: flex;
+  flex: 1;
+  transition: transform 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.onboarding-track-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+/* ── Individual Slide ── */
+
+.onboarding-slide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: var(--space-5) var(--space-5) 0;
+  box-sizing: border-box;
+}
+
+/* ── Illustration Area ── */
+
+.onboarding-illustration {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-height: 55vh;
+  min-height: 180px;
+  padding: var(--space-4) 0;
+}
+
+.onboarding-illustration img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ── Content Area ── */
+
+.onboarding-content {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0 var(--space-6);
+  max-width: 380px;
+}
+
+.onboarding-title {
+  font-family: var(--font-primary, 'Inter', sans-serif);
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold, 700);
+  line-height: 1.3;
+  color: var(--color-text-primary, #1F2933);
+  margin: 0 0 var(--space-3);
+}
+
+.onboarding-description {
+  font-family: var(--font-primary, 'Inter', sans-serif);
+  font-size: 0.94rem;
+  font-weight: var(--font-weight-regular, 400);
+  line-height: 1.6;
+  color: var(--color-text-secondary, #5B6673);
+  margin: 0;
+  max-width: 300px;
+}
+
+/* ── Controls Area ── */
+
+.onboarding-controls {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-5) var(--space-6);
+}
+
+/* ── Primary Button ── */
+
+.onboarding-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 320px;
+  height: 52px;
+  padding: 0 var(--space-5);
+  border: 1px solid var(--color-border-subtle, #E9EEF3);
+  border-radius: var(--radius-lg, 18px);
+  background: var(--color-action-primary, #0A8CFF);
+  color: var(--color-action-primary-text, #FFFFFF);
+  font-family: var(--font-primary, 'Inter', sans-serif);
+  font-size: 0.88rem;
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+  box-shadow: var(--elevation-sm);
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.onboarding-btn:hover {
+  background: var(--color-action-primary-hover, #5FB1FF);
+  box-shadow: var(--elevation-md);
+}
+
+.onboarding-btn:active {
+  background: var(--color-action-primary-pressed, #087BD9);
+  transform: scale(0.98);
+}
+
+.onboarding-btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--blue-200, #CBE5FF);
+}
+
+.onboarding-btn-label {
+  pointer-events: none;
+}
+
+.onboarding-btn-icon {
+  pointer-events: none;
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.onboarding-btn:hover .onboarding-btn-icon {
+  transform: translateX(2px);
+}
+
+/* ── Skip Button ── */
+
+.onboarding-skip {
+  background: none;
+  border: none;
+  padding: var(--space-3) var(--space-4);
+  min-height: 44px;
+  min-width: 44px;
+  font-family: var(--font-primary, 'Inter', sans-serif);
+  font-size: 0.88rem;
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-tertiary, #737E8B);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.onboarding-skip:hover {
+  color: var(--color-text-secondary, #5B6673);
+}
+
+.onboarding-skip:focus-visible {
+  color: var(--color-action-primary, #0A8CFF);
+}
+
+/* ── Pagination Indicator ── */
+
+.onboarding-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-1);
+}
+
+.onboarding-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full, 999px);
+  background: var(--neutral-200, #DDE4EA);
+  transition:
+    background var(--transition-smooth),
+    width var(--transition-smooth);
+}
+
+.onboarding-dot-active {
+  width: 24px;
+  background: var(--color-action-primary, #0A8CFF);
+}
+
+/* ── Reduced Motion ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-track {
+    transition: none;
+  }
+
+  .onboarding-btn,
+  .onboarding-btn-icon,
+  .onboarding-skip,
+  .onboarding-dot {
+    transition: none;
+  }
+}
+
+/* ============================================
+   Responsive Breakpoints
+   ============================================ */
+
+/* ── Very small phones (320-360px) ── */
+
+@media (max-width: 360px) {
+  .onboarding-slide {
+    padding: var(--space-3) var(--space-4) 0;
+  }
+
+  .onboarding-content {
+    padding: 0 var(--space-4);
+  }
+
+  .onboarding-title {
+    font-size: 1.3rem;
+  }
+
+  .onboarding-description {
+    font-size: 0.85rem;
+  }
+
+  .onboarding-controls {
+    padding: var(--space-4) var(--space-4) var(--space-5);
+  }
+}
+
+/* ── Standard phones (361-430px) ── */
+/* Default styles cover this range */
+
+/* ── Large phones (431-500px) ── */
+
+@media (min-width: 431px) {
+  .onboarding-title {
+    font-size: 1.65rem;
+  }
+
+  .onboarding-description {
+    font-size: 1rem;
+  }
+}
+
+/* ── Short screens (max-height: 600px) ── */
+
+@media (max-height: 600px) {
+  .onboarding-illustration {
+    max-height: 40vh;
+    min-height: 120px;
+    padding: var(--space-2) 0;
+  }
+
+  .onboarding-title {
+    font-size: 1.2rem;
+    margin-bottom: var(--space-2);
+  }
+
+  .onboarding-description {
+    font-size: 0.82rem;
+  }
+
+  .onboarding-controls {
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-5) var(--space-4);
+  }
+
+  .onboarding-btn {
+    height: 46px;
+  }
+}
+
+/* ── Tall phones (801px+) ── */
+
+@media (min-height: 801px) {
+  .onboarding-illustration {
+    max-height: 58vh;
+  }
+
+  .onboarding-content {
+    padding-bottom: var(--space-2);
+  }
+
+  .onboarding-title {
+    font-size: 1.7rem;
+    margin-bottom: var(--space-4);
+  }
+
+  .onboarding-description {
+    font-size: 1rem;
+  }
+
+  .onboarding-controls {
+    padding-bottom: var(--space-8);
+  }
+}
+
+/* ── Tablets (768px+) ── */
+
+@media (min-width: 768px) {
+  .onboarding-content {
+    max-width: 440px;
+  }
+
+  .onboarding-title {
+    font-size: 1.8rem;
+  }
+
+  .onboarding-description {
+    font-size: 1.05rem;
+    max-width: 360px;
+  }
+
+  .onboarding-btn {
+    max-width: 360px;
+  }
+}
+
+/* ── Landscape ── */
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .onboarding-slide {
+    flex-direction: row;
+    padding: var(--space-3) var(--space-8);
+    gap: var(--space-8);
+  }
+
+  .onboarding-illustration {
+    flex: 0 0 40%;
+    max-height: 80vh;
+    padding: 0;
+  }
+
+  .onboarding-content {
+    flex: 1;
+    text-align: left;
+    align-items: flex-start;
+    padding: 0;
+  }
+
+  .onboarding-controls {
+    position: absolute;
+    bottom: var(--space-4);
+    left: var(--space-8);
+    right: var(--space-8);
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+  }
+
+  .onboarding-btn {
+    max-width: 200px;
+  }
+}

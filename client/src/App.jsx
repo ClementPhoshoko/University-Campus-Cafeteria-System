@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import SplashScreen from './features/auth/SplashScreen.jsx';
+import Onboarding from './features/onboarding/Onboarding.jsx';
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [phase, setPhase] = useState('splash');
 
-  if (showSplash) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  if (phase === 'splash') {
+    return <SplashScreen onComplete={() => setPhase('onboarding')} />;
+  }
+
+  if (phase === 'onboarding') {
+    return <Onboarding onComplete={() => setPhase('home')} />;
   }
 
   return (
