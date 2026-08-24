@@ -36,6 +36,7 @@ const spec = yamlLoad(fs.readFileSync(specPath, 'utf8'));
 
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec, {
+  explorer: true,
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'Merchant Munchies API'
 }));

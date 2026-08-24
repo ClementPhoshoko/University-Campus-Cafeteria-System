@@ -160,6 +160,12 @@ paths:
           description: Unauthorized - invalid or missing token
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Paste the access_token from /auth/login response"
   schemas:
     AuthResponse:
       type: object
@@ -234,10 +240,3 @@ components:
 
 security:
   - bearerAuth: []
-
-securitySchemes:
-  bearerAuth:
-    type: http
-    scheme: bearer
-    bearerFormat: JWT
-    description: "Paste the access_token from /auth/login response"
