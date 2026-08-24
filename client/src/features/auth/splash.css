@@ -116,53 +116,53 @@
   animation: splash-circle-in 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* ── Circle Positions — scattered between icons ── */
+/* ── Circle Positions — closer to center content ── */
 
 .splash-circle-1 {
-  top: 20%;
-  left: 18%;
+  top: 30%;
+  left: 24%;
   animation-delay: 500ms;
 }
 
 .splash-circle-2 {
-  top: 8%;
-  left: 50%;
+  top: 18%;
+  left: 46%;
   animation-delay: 600ms;
 }
 
 .splash-circle-3 {
-  top: 22%;
-  right: 20%;
+  top: 32%;
+  right: 26%;
   animation-delay: 450ms;
 }
 
 .splash-circle-4 {
-  top: 55%;
-  left: 12%;
+  top: 52%;
+  left: 20%;
   animation-delay: 650ms;
 }
 
 .splash-circle-5 {
-  top: 58%;
-  right: 14%;
+  top: 50%;
+  right: 22%;
   animation-delay: 550ms;
 }
 
 .splash-circle-6 {
-  bottom: 22%;
-  left: 24%;
+  bottom: 30%;
+  left: 28%;
   animation-delay: 700ms;
 }
 
 .splash-circle-7 {
-  bottom: 8%;
-  left: 52%;
+  bottom: 18%;
+  left: 48%;
   animation-delay: 400ms;
 }
 
 .splash-circle-8 {
-  bottom: 24%;
-  right: 26%;
+  bottom: 32%;
+  right: 30%;
   animation-delay: 620ms;
 }
 
@@ -308,14 +308,14 @@
   .splash-icon-pos-bl { bottom: 10%; left: 6%; }
   .splash-icon-pos-br { bottom: 6%; right: 6%; }
 
-  .splash-circle-1 { top: 16%; left: 14%; }
-  .splash-circle-2 { top: 6%; left: 46%; }
-  .splash-circle-3 { top: 18%; right: 16%; }
-  .splash-circle-4 { top: 52%; left: 8%; }
-  .splash-circle-5 { top: 54%; right: 10%; }
-  .splash-circle-6 { bottom: 18%; left: 20%; }
-  .splash-circle-7 { bottom: 6%; left: 48%; }
-  .splash-circle-8 { bottom: 20%; right: 22%; }
+  .splash-circle-1 { top: 26%; left: 20%; }
+  .splash-circle-2 { top: 16%; left: 42%; }
+  .splash-circle-3 { top: 28%; right: 22%; }
+  .splash-circle-4 { top: 50%; left: 16%; }
+  .splash-circle-5 { top: 48%; right: 18%; }
+  .splash-circle-6 { bottom: 26%; left: 24%; }
+  .splash-circle-7 { bottom: 16%; left: 44%; }
+  .splash-circle-8 { bottom: 28%; right: 26%; }
 }
 
 /* ── Standard phones (361-430px) ── */
@@ -379,14 +379,14 @@
   .splash-icon-pos-bl { bottom: 12%; left: 14%; }
   .splash-icon-pos-br { bottom: 8%; right: 14%; }
 
-  .splash-circle-1 { top: 18%; left: 18%; }
-  .splash-circle-2 { top: 8%; left: 50%; }
-  .splash-circle-3 { top: 20%; right: 18%; }
-  .splash-circle-4 { top: 54%; left: 12%; }
-  .splash-circle-5 { top: 56%; right: 12%; }
-  .splash-circle-6 { bottom: 20%; left: 24%; }
-  .splash-circle-7 { bottom: 8%; left: 52%; }
-  .splash-circle-8 { bottom: 22%; right: 24%; }
+  .splash-circle-1 { top: 28%; left: 22%; }
+  .splash-circle-2 { top: 17%; left: 44%; }
+  .splash-circle-3 { top: 30%; right: 24%; }
+  .splash-circle-4 { top: 51%; left: 18%; }
+  .splash-circle-5 { top: 49%; right: 20%; }
+  .splash-circle-6 { bottom: 28%; left: 26%; }
+  .splash-circle-7 { bottom: 17%; left: 46%; }
+  .splash-circle-8 { bottom: 30%; right: 28%; }
 }
 
 /* ── Medium height (501-650px) ── */
@@ -414,14 +414,14 @@
   .splash-icon-pos-bl { bottom: 12%; left: 10%; }
   .splash-icon-pos-br { bottom: 8%; right: 10%; }
 
-  .splash-circle-1 { top: 17%; left: 16%; }
-  .splash-circle-2 { top: 7%; left: 48%; }
-  .splash-circle-3 { top: 19%; right: 17%; }
-  .splash-circle-4 { top: 53%; left: 10%; }
-  .splash-circle-5 { top: 55%; right: 11%; }
-  .splash-circle-6 { bottom: 19%; left: 22%; }
-  .splash-circle-7 { bottom: 7%; left: 50%; }
-  .splash-circle-8 { bottom: 21%; right: 23%; }
+  .splash-circle-1 { top: 28%; left: 22%; }
+  .splash-circle-2 { top: 17%; left: 44%; }
+  .splash-circle-3 { top: 30%; right: 24%; }
+  .splash-circle-4 { top: 51%; left: 18%; }
+  .splash-circle-5 { top: 49%; right: 20%; }
+  .splash-circle-6 { bottom: 28%; left: 26%; }
+  .splash-circle-7 { bottom: 17%; left: 46%; }
+  .splash-circle-8 { bottom: 30%; right: 28%; }
 }
 
 /* ── Tall phones (651-800px) — default styles ── */
@@ -452,14 +452,14 @@
   .splash-icon-pos-bl { bottom: 16%; left: 14%; }
   .splash-icon-pos-br { bottom: 12%; right: 14%; }
 
-  .splash-circle-1 { top: 20%; left: 18%; }
-  .splash-circle-2 { top: 10%; left: 52%; }
-  .splash-circle-3 { top: 22%; right: 18%; }
-  .splash-circle-4 { top: 56%; left: 12%; }
-  .splash-circle-5 { top: 58%; right: 12%; }
-  .splash-circle-6 { bottom: 22%; left: 24%; }
-  .splash-circle-7 { bottom: 10%; left: 54%; }
-  .splash-circle-8 { bottom: 24%; right: 24%; }
+  .splash-circle-1 { top: 30%; left: 24%; }
+  .splash-circle-2 { top: 19%; left: 46%; }
+  .splash-circle-3 { top: 32%; right: 26%; }
+  .splash-circle-4 { top: 53%; left: 20%; }
+  .splash-circle-5 { top: 51%; right: 22%; }
+  .splash-circle-6 { bottom: 30%; left: 28%; }
+  .splash-circle-7 { bottom: 19%; left: 48%; }
+  .splash-circle-8 { bottom: 32%; right: 30%; }
 }
 
 /* ── Tablets / large screens (768px+) ── */
@@ -491,14 +491,14 @@
   .splash-icon-pos-bl { bottom: 18%; left: 16%; }
   .splash-icon-pos-br { bottom: 14%; right: 16%; }
 
-  .splash-circle-1 { top: 22%; left: 20%; }
-  .splash-circle-2 { top: 12%; left: 54%; }
-  .splash-circle-3 { top: 24%; right: 20%; }
-  .splash-circle-4 { top: 58%; left: 14%; }
-  .splash-circle-5 { top: 60%; right: 14%; }
-  .splash-circle-6 { bottom: 24%; left: 26%; }
-  .splash-circle-7 { bottom: 12%; left: 56%; }
-  .splash-circle-8 { bottom: 26%; right: 26%; }
+  .splash-circle-1 { top: 30%; left: 24%; }
+  .splash-circle-2 { top: 20%; left: 48%; }
+  .splash-circle-3 { top: 32%; right: 26%; }
+  .splash-circle-4 { top: 54%; left: 22%; }
+  .splash-circle-5 { top: 52%; right: 24%; }
+  .splash-circle-6 { bottom: 30%; left: 28%; }
+  .splash-circle-7 { bottom: 20%; left: 50%; }
+  .splash-circle-8 { bottom: 32%; right: 30%; }
 }
 
 /* ── Landscape phones ── */
@@ -541,14 +541,14 @@
   .splash-icon-pos-bl { bottom: 14%; left: 16%; }
   .splash-icon-pos-br { bottom: 10%; right: 16%; }
 
-  .splash-circle-1 { top: 18%; left: 18%; }
-  .splash-circle-2 { top: 8%; left: 50%; }
-  .splash-circle-3 { top: 20%; right: 18%; }
-  .splash-circle-4 { top: 54%; left: 12%; }
-  .splash-circle-5 { top: 56%; right: 12%; }
-  .splash-circle-6 { bottom: 20%; left: 24%; }
-  .splash-circle-7 { bottom: 8%; left: 52%; }
-  .splash-circle-8 { bottom: 22%; right: 24%; }
+  .splash-circle-1 { top: 28%; left: 22%; }
+  .splash-circle-2 { top: 17%; left: 44%; }
+  .splash-circle-3 { top: 30%; right: 24%; }
+  .splash-circle-4 { top: 51%; left: 18%; }
+  .splash-circle-5 { top: 49%; right: 20%; }
+  .splash-circle-6 { bottom: 28%; left: 26%; }
+  .splash-circle-7 { bottom: 17%; left: 46%; }
+  .splash-circle-8 { bottom: 30%; right: 28%; }
 }
 
 /* ── Reduced Motion ── */
