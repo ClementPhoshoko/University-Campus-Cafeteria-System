@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { IconUser, IconMail, IconBrandGoogle } from '@tabler/icons-react';
 import AuthLayout from '../../components/AuthLayout.jsx';
 import Input from '../../components/Input.jsx';
 import PasswordInput from '../../components/PasswordInput.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
+import GlassTooltip from '../../components/GlassTooltip.jsx';
 import { signUpWithEmail, signInWithGoogle } from '../../services/auth.js';
 import mainLogo from '../../assets/main_logo.png';
 
@@ -14,6 +15,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [globalError, setGlobalError] = useState('');
   const [success, setSuccess] = useState(false);
+  const formRef = useRef(null);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -108,9 +110,18 @@ export default function Signup() {
       <h1 className="auth-heading">Create account</h1>
       <p className="auth-subtitle">Join your campus food community</p>
 
-      {globalError && <div className="auth-alert auth-alert--error">{globalError}</div>}
+      {globalError && (
+        <GlassTooltip
+          message={globalError}
+          type="error"
+          onClose={() => setGlobalError('')}
+          autoClose
+          anchorRef={formRef}
+          position="bottom"
+        />
+      )}
 
-      <form className="auth-form" onSubmit={handleSubmit} noValidate>
+      <form className="auth-form" ref={formRef} onSubmit={handleSubmit} noValidate>
         <Input
           label="Full name"
           icon={IconUser}
@@ -120,6 +131,7 @@ export default function Signup() {
           value={form.name}
           onChange={handleChange}
           error={errors.name}
+          tooltipError
           autoComplete="name"
         />
 
@@ -132,6 +144,7 @@ export default function Signup() {
           value={form.email}
           onChange={handleChange}
           error={errors.email}
+          tooltipError
           autoComplete="email"
         />
 
@@ -142,6 +155,7 @@ export default function Signup() {
           value={form.password}
           onChange={handleChange}
           error={errors.password}
+          tooltipError
           autoComplete="new-password"
         />
 

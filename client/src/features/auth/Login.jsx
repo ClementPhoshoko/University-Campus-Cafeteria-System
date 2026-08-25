@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { IconMail, IconBrandGoogle } from '@tabler/icons-react';
 import AuthLayout from '../../components/AuthLayout.jsx';
 import Input from '../../components/Input.jsx';
 import PasswordInput from '../../components/PasswordInput.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
+import GlassTooltip from '../../components/GlassTooltip.jsx';
 import { signInWithEmail, signInWithGoogle } from '../../services/auth.js';
 import mainLogo from '../../assets/main_logo.png';
 
@@ -13,6 +14,7 @@ export default function Login() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [globalError, setGlobalError] = useState('');
+  const formRef = useRef(null);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -71,9 +73,18 @@ export default function Login() {
       <h1 className="auth-heading">Welcome back</h1>
       <p className="auth-subtitle">Sign in to your account to continue</p>
 
-      {globalError && <div className="auth-alert auth-alert--error">{globalError}</div>}
+      {globalError && (
+        <GlassTooltip
+          message={globalError}
+          type="error"
+          onClose={() => setGlobalError('')}
+          autoClose
+          anchorRef={formRef}
+          position="bottom"
+        />
+      )}
 
-      <form className="auth-form" onSubmit={handleSubmit} noValidate>
+      <form className="auth-form" ref={formRef} onSubmit={handleSubmit} noValidate>
         <Input
           label="Email or student number"
           icon={IconMail}
@@ -83,6 +94,7 @@ export default function Login() {
           value={form.email}
           onChange={handleChange}
           error={errors.email}
+          tooltipError
           autoComplete="email"
         />
 
@@ -93,6 +105,7 @@ export default function Login() {
           value={form.password}
           onChange={handleChange}
           error={errors.password}
+          tooltipError
           autoComplete="current-password"
         />
 
