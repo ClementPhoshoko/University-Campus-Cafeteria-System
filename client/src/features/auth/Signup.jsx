@@ -58,6 +58,8 @@ export default function Signup() {
       <AuthLayout>
         <div className="auth-brand">
           <img src={mainLogo} alt="Merchant Munchies" className="auth-logo" />
+          <span className="auth-brand-name">CampusBites</span>
+          <span className="auth-brand-tagline">Modern campus food + booking system</span>
         </div>
         <h1 className="auth-heading">Check your email</h1>
         <p className="auth-subtitle">
@@ -74,6 +76,8 @@ export default function Signup() {
     <AuthLayout>
       <div className="auth-brand">
         <img src={mainLogo} alt="Merchant Munchies" className="auth-logo" />
+        <span className="auth-brand-name">CampusBites</span>
+        <span className="auth-brand-tagline">Modern campus food + booking system</span>
       </div>
 
       <h1 className="auth-heading">Create account</h1>

@@ -81,6 +81,8 @@ export default function ForgotPassword() {
       <AuthLayout>
         <div className="auth-brand">
           <img src={mainLogo} alt="Merchant Munchies" className="auth-logo" />
+          <span className="auth-brand-name">CampusBites</span>
+          <span className="auth-brand-tagline">Modern campus food + booking system</span>
         </div>
         <h1 className="auth-heading">Password reset</h1>
         <p className="auth-subtitle">Your password has been updated successfully.</p>
@@ -95,6 +97,8 @@ export default function ForgotPassword() {
     <AuthLayout>
       <div className="auth-brand">
         <img src={mainLogo} alt="Merchant Munchies" className="auth-logo" />
+        <span className="auth-brand-name">CampusBites</span>
+        <span className="auth-brand-tagline">Modern campus food + booking system</span>
       </div>
 
       {step === STEPS.EMAIL && (

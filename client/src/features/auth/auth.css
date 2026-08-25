@@ -63,10 +63,10 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 180px;
+  height: 200px;
   background: var(--blue-50);
   border-radius: 100% 100% 0 0 / 80px 80px 0 0;
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 /* ── Content ── */
@@ -85,7 +85,11 @@
 /* ── Brand ── */
 
 .auth-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin-bottom: var(--space-8);
+  gap: var(--space-3);
 }
 
 .auth-logo {
@@ -94,6 +98,23 @@
   object-fit: contain;
   border-radius: var(--radius-md);
   filter: drop-shadow(0 4px 12px rgba(10, 140, 255, 0.15));
+}
+
+.auth-brand-name {
+  font-family: var(--font-primary);
+  font-size: 1.1rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-action-primary);
+  letter-spacing: -0.01em;
+}
+
+.auth-brand-tagline {
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+  letter-spacing: 0.02em;
+  text-align: center;
 }
 
 /* ── Typography ── */
