@@ -19,6 +19,7 @@ export default function Onboarding({ onComplete }) {
 
   const goNext = useCallback(() => {
     if (isLast) {
+      localStorage.setItem('onboarding_completed', 'true');
       onComplete?.();
     } else {
       setCurrent((prev) => prev + 1);

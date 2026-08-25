@@ -21,6 +21,19 @@ export function AuthProvider({ children }) {
         .single();
       if (error) throw error;
       setProfile(data);
+
+      if (localStorage.getItem('onboarding_completed') === 'true' &&
+          !data?.notification_preferences?.onboarding_completed) {
+        const updatedPrefs = {
+          ...(data.notification_preferences || {}),
+          onboarding_completed: true,
+        };
+        await supabase
+          .from('profiles')
+          .update({ notification_preferences: updatedPrefs })
+          .eq('id', userId);
+        setProfile((prev) => prev ? { ...prev, notification_preferences: updatedPrefs } : prev);
+      }
     } catch {
       setProfile(null);
     }

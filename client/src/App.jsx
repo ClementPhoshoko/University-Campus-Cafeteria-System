@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './hooks/useAuth.js';
 import SplashScreen from './features/auth/SplashScreen.jsx';
 import Onboarding from './features/onboarding/Onboarding.jsx';
 import AuthLayout from './components/AuthLayout.jsx';
@@ -13,20 +14,31 @@ import EmailConfirmation from './features/auth/EmailConfirmation.jsx';
 import PasswordRecovery from './features/auth/PasswordRecovery.jsx';
 import './features/auth/auth.css';
 
+function isOnboardingCompleted(profile) {
+  return profile?.notification_preferences?.onboarding_completed === true;
+}
+
 export default function App() {
+  const { user, profile, initialized } = useAuth();
   const [phase, setPhase] = useState('splash');
 
+  const shouldShowOnboarding = useMemo(() => {
+    if (!initialized) return false;
+    if (phase !== 'home') return false;
+    if (user && isOnboardingCompleted(profile)) return false;
+    return true;
+  }, [initialized, phase, user, profile]);
+
   if (phase === 'splash') {
-    return <SplashScreen onComplete={() => setPhase('onboarding')} />;
+    return <SplashScreen onComplete={() => setPhase('home')} />;
   }
 
-  if (phase === 'onboarding') {
-    return <Onboarding onComplete={() => setPhase('home')} />;
+  if (phase === 'home' && shouldShowOnboarding) {
+    return <Onboarding onComplete={() => setPhase('app')} />;
   }
 
   return (
     <Routes>
-      {/* Public auth routes - only accessible when not logged in */}
       <Route element={<PublicOnlyRoute />}>
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
@@ -35,17 +47,14 @@ export default function App() {
         </Route>
       </Route>
 
-      {/* Callback routes - no layout needed */}
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/auth/confirm" element={<EmailConfirmation />} />
       <Route path="/auth/recovery" element={<PasswordRecovery />} />
 
-      {/* Protected routes - requires authentication */}
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<main className="app-shell"><p>Home screen coming soon</p></main>} />
       </Route>
 
-      {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
