@@ -51,6 +51,8 @@
   min-height: 240px;
   padding: 0;
   overflow: visible;
+  position: relative;
+  z-index: 1;
 }
 
 .onboarding-illustration img {
@@ -77,6 +79,9 @@
   text-align: center;
   padding: 0 var(--space-6);
   max-width: 380px;
+  position: relative;
+  z-index: 2;
+}
 }
 
 .onboarding-title {
@@ -370,6 +375,11 @@
   .onboarding-illustration img {
     max-width: 100%;
     max-height: 100%;
+  }
+
+  .onboarding-track-slide:nth-child(1) .onboarding-illustration img {
+    max-width: 130%;
+    max-height: 130%;
   }
 
   .onboarding-track-slide:nth-child(2) .onboarding-illustration img {
