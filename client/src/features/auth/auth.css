@@ -66,8 +66,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: var(--space-8);
-  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  gap: var(--space-2);
 }
 
 .auth-logo {
@@ -139,9 +139,9 @@
 
 .auth-subtitle {
   font-family: var(--font-primary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--color-text-secondary);
-  margin: 0 0 var(--space-8);
+  margin: 0 0 var(--space-6);
   text-align: center;
   line-height: 1.5;
 }
@@ -152,7 +152,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-3);
 }
 
 /* ── Field ── */
@@ -160,7 +160,7 @@
 .auth-field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .auth-field__label {
@@ -186,7 +186,7 @@
 
 .auth-input-icon {
   position: absolute;
-  left: var(--space-4);
+  left: var(--space-3);
   color: var(--color-icon-tertiary);
   pointer-events: none;
   flex-shrink: 0;
@@ -194,14 +194,14 @@
 
 .auth-input {
   width: 100%;
-  height: 48px;
-  padding: 0 var(--space-4) 0 46px;
+  height: 40px;
+  padding: 0 var(--space-3) 0 40px;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-sm);
   background: var(--color-bg-default);
   color: var(--color-text-primary);
   font-family: var(--font-primary);
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   outline: none;
   transition:
     border-color var(--transition-fast),
@@ -261,12 +261,12 @@
 .auth-forgot {
   align-self: flex-end;
   font-family: var(--font-primary);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: var(--font-weight-medium);
   color: var(--color-action-link);
   text-decoration: none;
   transition: color var(--transition-fast);
-  margin-top: calc(-1 * var(--space-2));
+  margin-top: calc(-1 * var(--space-1));
 }
 
 .auth-forgot:hover {
@@ -280,14 +280,14 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 48px;
-  padding: 0 var(--space-5);
+  height: 40px;
+  padding: 0 var(--space-4);
   border: none;
   border-radius: var(--radius-sm);
   background: var(--color-action-primary);
   color: var(--color-action-primary-text);
   font-family: var(--font-primary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
   transition:
@@ -295,7 +295,7 @@
     transform var(--transition-fast),
     box-shadow var(--transition-fast);
   box-shadow: var(--elevation-sm);
-  margin-top: var(--space-2);
+  margin-top: var(--space-1);
 }
 
 .auth-btn-primary:hover {
@@ -343,16 +343,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   width: 100%;
-  height: 48px;
-  padding: 0 var(--space-5);
+  height: 40px;
+  padding: 0 var(--space-4);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-sm);
   background: var(--color-bg-default);
   color: var(--color-text-primary);
   font-family: var(--font-primary);
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition:
@@ -540,11 +540,11 @@
 }
 
 .otp-input {
-  width: 48px;
-  height: 56px;
+  width: 44px;
+  height: 48px;
   text-align: center;
   font-family: var(--font-primary);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   border: 1.5px solid var(--color-border-default);
