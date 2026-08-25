@@ -4,6 +4,7 @@ import { IconUser, IconMail, IconBrandGoogle } from '@tabler/icons-react';
 import AuthLayout from '../../components/AuthLayout.jsx';
 import Input from '../../components/Input.jsx';
 import PasswordInput from '../../components/PasswordInput.jsx';
+import PrimaryButton from '../../components/PrimaryButton.jsx';
 import { signUpWithEmail, signInWithGoogle } from '../../services/auth.js';
 import mainLogo from '../../assets/main_logo.png';
 
@@ -77,7 +78,7 @@ export default function Signup() {
         <p className="auth-subtitle">
           We've sent a verification link to <strong>{form.email}</strong>. Please confirm your account.
         </p>
-        <Link to="/login" className="auth-btn-primary" style={{ textAlign: 'center', textDecoration: 'none' }}>
+        <Link to="/login" className="primary-btn primary-btn--md" style={{ textAlign: 'center', textDecoration: 'none', width: '100%' }}>
           Back to sign in
         </Link>
       </AuthLayout>
@@ -144,19 +145,19 @@ export default function Signup() {
           autoComplete="new-password"
         />
 
-        <button type="submit" className="auth-btn-primary" disabled={loading}>
+        <PrimaryButton type="submit" disabled={loading}>
           {loading ? 'Creating account...' : 'Create account'}
-        </button>
+        </PrimaryButton>
       </form>
 
       <div className="auth-divider">
         <span>or continue with</span>
       </div>
 
-      <button type="button" className="auth-btn-google" onClick={handleGoogle}>
-        <IconBrandGoogle size={20} stroke={2} />
+      <PrimaryButton onClick={handleGoogle}>
+        <IconBrandGoogle size={18} stroke={2} />
         <span>Continue with Google</span>
-      </button>
+      </PrimaryButton>
 
       <p className="auth-footer">
         Already have an account?{' '}

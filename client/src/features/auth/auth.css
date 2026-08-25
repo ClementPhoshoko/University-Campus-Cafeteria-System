@@ -312,6 +312,47 @@
   box-shadow: 0 0 0 3px var(--blue-200);
 }
 
+/* ── Primary Button (auth override) ── */
+
+.auth-content .primary-btn {
+  width: 100%;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-semibold);
+  box-shadow: var(--elevation-sm);
+}
+
+.auth-content .primary-btn:hover {
+  background: var(--color-action-primary-hover);
+  border-color: transparent;
+  box-shadow: var(--elevation-md);
+}
+
+.auth-content .primary-btn:active {
+  background: var(--color-action-primary-pressed);
+}
+
+.auth-content .primary-btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--blue-200);
+}
+
+.auth-content .primary-btn__icon {
+  color: inherit;
+}
+
+.auth-content .primary-btn:disabled {
+  background: var(--color-surface-disabled);
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 /* ── Divider ── */
 
 .auth-divider {

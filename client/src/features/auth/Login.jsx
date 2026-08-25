@@ -4,6 +4,7 @@ import { IconMail, IconBrandGoogle } from '@tabler/icons-react';
 import AuthLayout from '../../components/AuthLayout.jsx';
 import Input from '../../components/Input.jsx';
 import PasswordInput from '../../components/PasswordInput.jsx';
+import PrimaryButton from '../../components/PrimaryButton.jsx';
 import { signInWithEmail, signInWithGoogle } from '../../services/auth.js';
 import mainLogo from '../../assets/main_logo.png';
 
@@ -99,19 +100,19 @@ export default function Login() {
           Forgot password?
         </Link>
 
-        <button type="submit" className="auth-btn-primary" disabled={loading}>
+        <PrimaryButton type="submit" disabled={loading}>
           {loading ? 'Signing in...' : 'Sign in'}
-        </button>
+        </PrimaryButton>
       </form>
 
       <div className="auth-divider">
         <span>or continue with</span>
       </div>
 
-      <button type="button" className="auth-btn-google" onClick={handleGoogle}>
-        <IconBrandGoogle size={20} stroke={2} />
+      <PrimaryButton onClick={handleGoogle}>
+        <IconBrandGoogle size={18} stroke={2} />
         <span>Continue with Google</span>
-      </button>
+      </PrimaryButton>
 
       <p className="auth-footer">
         Don't have an account?{' '}

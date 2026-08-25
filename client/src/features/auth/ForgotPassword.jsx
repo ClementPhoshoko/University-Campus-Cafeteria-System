@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { IconMail, IconArrowLeft, IconLock } from '@tabler/icons-react';
 import AuthLayout from '../../components/AuthLayout.jsx';
 import Input from '../../components/Input.jsx';
-import PasswordInput from '../../components/PasswordInput.jsx';
 import OtpInput from '../../components/OtpInput.jsx';
+import PrimaryButton from '../../components/PrimaryButton.jsx';
 import { sendOtp, verifyOtp, resetPassword } from '../../services/auth.js';
 import mainLogo from '../../assets/main_logo.png';
 
@@ -98,9 +98,9 @@ export default function ForgotPassword() {
         </div>
         <h1 className="auth-heading">Password reset</h1>
         <p className="auth-subtitle">Your password has been updated successfully.</p>
-        <button onClick={() => navigate('/login')} className="auth-btn-primary">
+        <PrimaryButton onClick={() => navigate('/login')}>
           Sign in
-        </button>
+        </PrimaryButton>
       </AuthLayout>
     );
   }
@@ -146,9 +146,9 @@ export default function ForgotPassword() {
               error={errors.email}
               autoComplete="email"
             />
-            <button type="submit" className="auth-btn-primary" disabled={loading}>
+            <PrimaryButton type="submit" disabled={loading}>
               {loading ? 'Sending...' : 'Send OTP'}
-            </button>
+            </PrimaryButton>
           </form>
         </>
       )}
@@ -164,9 +164,9 @@ export default function ForgotPassword() {
 
           <form className="auth-form" onSubmit={handleVerifyOtp} noValidate>
             <OtpInput value={otp} onChange={setOtp} error={errors.otp} />
-            <button type="submit" className="auth-btn-primary" disabled={loading}>
+            <PrimaryButton type="submit" disabled={loading}>
               {loading ? 'Verifying...' : 'Verify'}
-            </button>
+            </PrimaryButton>
           </form>
 
           <button
@@ -197,9 +197,9 @@ export default function ForgotPassword() {
               error={errors.password}
               autoComplete="new-password"
             />
-            <button type="submit" className="auth-btn-primary" disabled={loading}>
+            <PrimaryButton type="submit" disabled={loading}>
               {loading ? 'Resetting...' : 'Reset password'}
-            </button>
+            </PrimaryButton>
           </form>
         </>
       )}
