@@ -367,6 +367,10 @@
 /* ── Desktop (1024px+) ── */
 
 @media (min-width: 1024px) {
+  .onboarding-slide {
+    gap: var(--space-4);
+  }
+
   .onboarding-illustration {
     max-height: 45vh;
     min-height: 200px;
