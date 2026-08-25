@@ -36,8 +36,8 @@
 
 .auth-bg-icon {
   position: absolute;
-  color: var(--blue-200);
-  opacity: 0.25;
+  color: var(--blue-300);
+  opacity: 0.45;
 }
 
 .auth-bg-icon--1 { top: 12%; left: 8%; transform: rotate(-12deg); }
@@ -79,20 +79,50 @@
 }
 
 .auth-brand-name {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+}
+
+.auth-brand-merchant {
   font-family: var(--font-primary);
   font-size: 1.1rem;
   font-weight: var(--font-weight-bold);
   color: var(--color-action-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+}
+
+.auth-brand-munchies {
+  font-family: var(--font-primary);
+  font-size: 1.1rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
 }
 
 .auth-brand-tagline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-primary);
-  font-size: 0.75rem;
-  font-weight: var(--font-weight-medium);
+  font-size: 0.62rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.12em;
   color: var(--color-text-tertiary);
-  letter-spacing: 0.02em;
-  text-align: center;
+}
+
+.auth-brand-tagline-accent {
+  color: var(--color-action-primary);
+}
+
+.auth-brand-tagline-dot {
+  font-size: 0.45rem;
+  opacity: 0.5;
+}
+
+.auth-brand-smile {
+  color: var(--color-action-primary);
 }
 
 /* ── Typography ── */

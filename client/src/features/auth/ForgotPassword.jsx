@@ -81,8 +81,20 @@ export default function ForgotPassword() {
       <AuthLayout>
         <div className="auth-brand">
           <img src={mainLogo} alt="Merchant Munchies" className="auth-logo" />
-          <span className="auth-brand-name">CampusBites</span>
-          <span className="auth-brand-tagline">Modern campus food + booking system</span>
+          <div className="auth-brand-name">
+            <span className="auth-brand-merchant">merchant</span>
+            <span className="auth-brand-munchies">munchies</span>
+          </div>
+          <p className="auth-brand-tagline">
+            <span>GOOD FOOD</span>
+            <span className="auth-brand-tagline-dot">•</span>
+            <span className="auth-brand-tagline-accent">LESS QUEUE</span>
+            <span className="auth-brand-tagline-dot">•</span>
+            <span>MORE YOU</span>
+          </p>
+          <svg className="auth-brand-smile" width="36" height="12" viewBox="0 0 48 16" fill="none" aria-hidden="true">
+            <path d="M4 4C12 14 36 14 44 4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
         </div>
         <h1 className="auth-heading">Password reset</h1>
         <p className="auth-subtitle">Your password has been updated successfully.</p>
@@ -97,8 +109,20 @@ export default function ForgotPassword() {
     <AuthLayout>
       <div className="auth-brand">
         <img src={mainLogo} alt="Merchant Munchies" className="auth-logo" />
-        <span className="auth-brand-name">CampusBites</span>
-        <span className="auth-brand-tagline">Modern campus food + booking system</span>
+        <div className="auth-brand-name">
+          <span className="auth-brand-merchant">merchant</span>
+          <span className="auth-brand-munchies">munchies</span>
+        </div>
+        <p className="auth-brand-tagline">
+          <span>GOOD FOOD</span>
+          <span className="auth-brand-tagline-dot">•</span>
+          <span className="auth-brand-tagline-accent">LESS QUEUE</span>
+          <span className="auth-brand-tagline-dot">•</span>
+          <span>MORE YOU</span>
+        </p>
+        <svg className="auth-brand-smile" width="36" height="12" viewBox="0 0 48 16" fill="none" aria-hidden="true">
+          <path d="M4 4C12 14 36 14 44 4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
       </div>
 
       {step === STEPS.EMAIL && (
