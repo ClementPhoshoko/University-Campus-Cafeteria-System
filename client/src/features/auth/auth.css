@@ -38,6 +38,8 @@
   position: absolute;
   color: var(--blue-300);
   opacity: 0.45;
+  width: 24px;
+  height: 24px;
 }
 
 .auth-bg-icon--1 { top: 12%; left: 8%; transform: rotate(-12deg); }
@@ -46,6 +48,12 @@
 .auth-bg-icon--4 { top: 40%; right: 6%; transform: rotate(-8deg); }
 .auth-bg-icon--5 { bottom: 18%; left: 10%; transform: rotate(10deg); }
 .auth-bg-icon--6 { bottom: 14%; right: 10%; transform: rotate(-6deg); }
+.auth-bg-icon--7 { top: 25%; left: 50%; transform: rotate(-15deg); }
+.auth-bg-icon--8 { top: 60%; right: 15%; transform: rotate(12deg); }
+.auth-bg-icon--9 { bottom: 30%; left: 20%; transform: rotate(-8deg); }
+.auth-bg-icon--10 { top: 18%; left: 30%; transform: rotate(5deg); }
+.auth-bg-icon--11 { bottom: 10%; right: 30%; transform: rotate(-10deg); }
+.auth-bg-icon--12 { top: 55%; left: 15%; transform: rotate(7deg); }
 
 /* ── Content ── */
 
@@ -586,11 +594,35 @@
   }
 
   .auth-bg-icon {
-    opacity: 0.2;
+    opacity: 0.3;
+    width: 36px;
+    height: 36px;
+  }
+
+  .auth-bg-icon--7,
+  .auth-bg-icon--8,
+  .auth-bg-icon--9,
+  .auth-bg-icon--10 {
+    display: block;
   }
 
   .auth-bg-wave {
     min-height: 220px;
+  }
+}
+
+/* ── Desktop (1024px+) ── */
+
+@media (min-width: 1024px) {
+  .auth-bg-icon {
+    opacity: 0.35;
+    width: 48px;
+    height: 48px;
+  }
+
+  .auth-bg-icon--11,
+  .auth-bg-icon--12 {
+    display: block;
   }
 }
 
