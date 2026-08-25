@@ -12,7 +12,7 @@
   align-items: center;
   justify-content: center;
   background: var(--color-bg-app);
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 /* ── Decorative Background ── */
@@ -558,10 +558,6 @@
   .auth-bg-icon--6 {
     display: block;
   }
-
-  .auth-bg-wave {
-    min-height: 120px;
-  }
 }
 
 /* ── Tall phones ── */
@@ -604,10 +600,6 @@
   .auth-bg-icon--9,
   .auth-bg-icon--10 {
     display: block;
-  }
-
-  .auth-bg-wave {
-    min-height: 220px;
   }
 }
 
