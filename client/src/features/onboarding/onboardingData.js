@@ -1,5 +1,6 @@
 import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.png';
 import collectOrderImg from '../../assets/avatars/illustration_collect_order.png';
+import avoidDeliveriesImg from '../../assets/avatars/illustration_avoid_deliveries.png';
 
 const onboardingSlides = [
   {
@@ -16,7 +17,7 @@ const onboardingSlides = [
   },
   {
     id: 3,
-    illustration: avoidQueuesImg,
+    illustration: avoidDeliveriesImg,
     title: 'Pick up when ready.',
     description: 'Order ahead and collect your meal without waiting.',
   },
