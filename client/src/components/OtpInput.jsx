@@ -1,11 +1,9 @@
 import { useRef, useCallback } from 'react';
-import GlassTooltip from './GlassTooltip.jsx';
 
 const LENGTH = 6;
 
-export default function OtpInput({ value, onChange, error, tooltipError }) {
+export default function OtpInput({ value, onChange, error }) {
   const inputs = useRef([]);
-  const fieldRef = useRef(null);
 
   const focus = useCallback((idx) => {
     inputs.current[idx]?.focus();
@@ -45,7 +43,7 @@ export default function OtpInput({ value, onChange, error, tooltipError }) {
   const digits = value.split('').concat(Array(LENGTH - value.length).fill(''));
 
   return (
-    <div className="otp-field" ref={fieldRef} style={{ position: 'relative' }}>
+    <div className="otp-field">
       <label className="auth-field__label">Enter verification code</label>
       <div className="otp-input-group" onPaste={handlePaste}>
         {digits.map((digit, idx) => (
@@ -64,10 +62,6 @@ export default function OtpInput({ value, onChange, error, tooltipError }) {
           />
         ))}
       </div>
-      {error && tooltipError && (
-        <GlassTooltip message={error} type="error" anchorRef={fieldRef} position="top" />
-      )}
-      {error && !tooltipError && <span className="auth-field__error">{error}</span>}
     </div>
   );
 }

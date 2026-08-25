@@ -1,0 +1,11 @@
+<svg width="1200" height="500" viewBox="0 0 1200 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path
+    d="M0 155
+       C135 245 245 275 390 258
+       C535 241 625 155 770 145
+       C925 134 1040 205 1200 305
+       L1200 500
+       L0 500
+       Z"
+    fill="#EEF6FF"/>
+</svg>

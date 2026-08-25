@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IconMail, IconBrandGoogle } from '@tabler/icons-react';
 import AuthLayout from '../../components/AuthLayout.jsx';
@@ -12,14 +12,13 @@ import mainLogo from '../../assets/main_logo.png';
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [globalError, setGlobalError] = useState('');
-  const formRef = useRef(null);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     if (errors[e.target.name]) setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
-    if (globalError) setGlobalError('');
+    if (formError) setFormError('');
   };
 
   const handleSubmit = async (e) => {
@@ -28,25 +27,28 @@ export default function Login() {
     if (!form.email.trim()) next.email = 'Email or student number is required';
     if (!form.password) next.password = 'Password is required';
     setErrors(next);
-    if (Object.keys(next).length) return;
+    if (Object.keys(next).length) {
+      setFormError('Please fix the errors below');
+      return;
+    }
 
     setLoading(true);
-    setGlobalError('');
+    setFormError('');
     try {
       await signInWithEmail(form.email.trim(), form.password);
     } catch (err) {
-      setGlobalError(err.message || 'Invalid email or password. Please try again.');
+      setFormError(err.message || 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogle = async () => {
-    setGlobalError('');
+    setFormError('');
     try {
       await signInWithGoogle();
     } catch (err) {
-      setGlobalError(err.message || 'Google sign-in failed. Please try again.');
+      setFormError(err.message || 'Google sign-in failed. Please try again.');
     }
   };
 
@@ -73,18 +75,15 @@ export default function Login() {
       <h1 className="auth-heading">Welcome back</h1>
       <p className="auth-subtitle">Sign in to your account to continue</p>
 
-      {globalError && (
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <GlassTooltip
-          message={globalError}
+          message={formError}
           type="error"
-          onClose={() => setGlobalError('')}
+          banner
+          onClose={() => setFormError('')}
           autoClose
-          anchorRef={formRef}
-          position="bottom"
         />
-      )}
 
-      <form className="auth-form" ref={formRef} onSubmit={handleSubmit} noValidate>
         <Input
           label="Email or student number"
           icon={IconMail}
@@ -94,7 +93,6 @@ export default function Login() {
           value={form.email}
           onChange={handleChange}
           error={errors.email}
-          tooltipError
           autoComplete="email"
         />
 
@@ -105,7 +103,6 @@ export default function Login() {
           value={form.password}
           onChange={handleChange}
           error={errors.password}
-          tooltipError
           autoComplete="current-password"
         />
 

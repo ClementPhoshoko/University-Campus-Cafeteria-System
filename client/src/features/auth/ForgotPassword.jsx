@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { IconMail, IconArrowLeft, IconLock } from '@tabler/icons-react';
+import { IconMail, IconArrowLeft } from '@tabler/icons-react';
 import AuthLayout from '../../components/AuthLayout.jsx';
 import Input from '../../components/Input.jsx';
 import OtpInput from '../../components/OtpInput.jsx';
+import PasswordInput from '../../components/PasswordInput.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import GlassTooltip from '../../components/GlassTooltip.jsx';
 import { sendOtp, verifyOtp, resetPassword } from '../../services/auth.js';
@@ -23,22 +24,25 @@ export default function ForgotPassword() {
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [globalError, setGlobalError] = useState('');
-  const formRef = useRef(null);
 
-  const clearErrors = () => { setErrors({}); setGlobalError(''); };
+  const clearErrors = () => { setErrors({}); setFormError(''); };
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
     clearErrors();
-    if (!email.trim()) { setErrors({ email: 'Email is required' }); return; }
+    if (!email.trim()) {
+      setErrors({ email: 'Email is required' });
+      setFormError('Please enter your email');
+      return;
+    }
     setLoading(true);
     try {
       await sendOtp(email.trim());
       setStep(STEPS.OTP);
     } catch (err) {
-      setGlobalError(err.message || 'Failed to send OTP. Please try again.');
+      setFormError(err.message || 'Failed to send OTP. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -47,13 +51,17 @@ export default function ForgotPassword() {
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     clearErrors();
-    if (otp.length !== 6) { setErrors({ otp: 'Enter the 6-digit code' }); return; }
+    if (otp.length !== 6) {
+      setErrors({ otp: 'Enter the 6-digit code' });
+      setFormError('Please enter the complete code');
+      return;
+    }
     setLoading(true);
     try {
       await verifyOtp(email.trim(), otp);
       setStep(STEPS.RESET);
     } catch (err) {
-      setGlobalError(err.message || 'Invalid or expired code. Please try again.');
+      setFormError(err.message || 'Invalid or expired code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -66,13 +74,16 @@ export default function ForgotPassword() {
     if (!newPassword) next.password = 'Password is required';
     else if (newPassword.length < 8) next.password = 'Must be at least 8 characters';
     setErrors(next);
-    if (Object.keys(next).length) return;
+    if (Object.keys(next).length) {
+      setFormError('Please fix the errors below');
+      return;
+    }
     setLoading(true);
     try {
       await resetPassword(newPassword);
       setStep(STEPS.DONE);
     } catch (err) {
-      setGlobalError(err.message || 'Failed to reset password. Please try again.');
+      setFormError(err.message || 'Failed to reset password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -134,18 +145,15 @@ export default function ForgotPassword() {
             Enter your email and we'll send you a verification code
           </p>
 
-          {globalError && (
+          <form className="auth-form" onSubmit={handleSendOtp} noValidate>
             <GlassTooltip
-              message={globalError}
+              message={formError}
               type="error"
-              onClose={() => setGlobalError('')}
+              banner
+              onClose={() => setFormError('')}
               autoClose
-              anchorRef={formRef}
-              position="bottom"
             />
-          )}
 
-          <form className="auth-form" ref={formRef} onSubmit={handleSendOtp} noValidate>
             <Input
               label="Email"
               icon={IconMail}
@@ -155,7 +163,6 @@ export default function ForgotPassword() {
               value={email}
               onChange={(e) => { setEmail(e.target.value); clearErrors(); }}
               error={errors.email}
-              tooltipError
               autoComplete="email"
             />
             <PrimaryButton type="submit" disabled={loading}>
@@ -172,19 +179,16 @@ export default function ForgotPassword() {
             Enter the 6-digit code sent to <strong>{email}</strong>
           </p>
 
-          {globalError && (
+          <form className="auth-form" onSubmit={handleVerifyOtp} noValidate>
             <GlassTooltip
-              message={globalError}
+              message={formError}
               type="error"
-              onClose={() => setGlobalError('')}
+              banner
+              onClose={() => setFormError('')}
               autoClose
-              anchorRef={formRef}
-              position="bottom"
             />
-          )}
 
-          <form className="auth-form" ref={formRef} onSubmit={handleVerifyOtp} noValidate>
-            <OtpInput value={otp} onChange={setOtp} error={errors.otp} tooltipError />
+            <OtpInput value={otp} onChange={setOtp} error={errors.otp} />
             <PrimaryButton type="submit" disabled={loading}>
               {loading ? 'Verifying...' : 'Verify'}
             </PrimaryButton>
@@ -206,18 +210,15 @@ export default function ForgotPassword() {
           <h1 className="auth-heading">New password</h1>
           <p className="auth-subtitle">Create a new password for your account</p>
 
-          {globalError && (
+          <form className="auth-form" onSubmit={handleResetPassword} noValidate>
             <GlassTooltip
-              message={globalError}
+              message={formError}
               type="error"
-              onClose={() => setGlobalError('')}
+              banner
+              onClose={() => setFormError('')}
               autoClose
-              anchorRef={formRef}
-              position="bottom"
             />
-          )}
 
-          <form className="auth-form" ref={formRef} onSubmit={handleResetPassword} noValidate>
             <PasswordInput
               label="New password"
               name="password"
@@ -225,7 +226,6 @@ export default function ForgotPassword() {
               value={newPassword}
               onChange={(e) => { setNewPassword(e.target.value); clearErrors(); }}
               error={errors.password}
-              tooltipError
               autoComplete="new-password"
             />
             <PrimaryButton type="submit" disabled={loading}>

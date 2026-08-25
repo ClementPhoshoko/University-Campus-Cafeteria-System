@@ -14,25 +14,28 @@ export default function GlassTooltip({
   onClose,
   autoClose = true,
   autoCloseDelay = 4000,
-  anchorRef,
-  position = 'top',
+  banner = false,
 }) {
-  const [state, setState] = useState('enter'); // 'enter' | 'idle' | 'exit'
-  const [actualPosition, setActualPosition] = useState(position);
-  const tooltipRef = useRef(null);
+  const [show, setShow] = useState(false);
+  const [closing, setClosing] = useState(false);
   const timerRef = useRef(null);
   const mountedRef = useRef(true);
+  const tooltipRef = useRef(null);
 
   const handleClose = useCallback(() => {
-    if (state === 'exit') return;
+    if (closing) return;
     clearTimeout(timerRef.current);
-    setState('exit');
+    // Force layout so browser paints the current state before transition
+    tooltipRef.current?.offsetHeight;
+    setClosing(true);
     setTimeout(() => {
       if (mountedRef.current) {
+        setShow(false);
+        setClosing(false);
         onClose?.();
       }
     }, 220);
-  }, [state, onClose]);
+  }, [closing, onClose]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -41,54 +44,33 @@ export default function GlassTooltip({
 
   useEffect(() => {
     if (message) {
-      setState('enter');
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setState('idle');
-        });
-      });
+      setShow(true);
+      setClosing(false);
 
       if (autoClose && autoCloseDelay > 0) {
         clearTimeout(timerRef.current);
         timerRef.current = setTimeout(handleClose, autoCloseDelay);
       }
+    } else {
+      setShow(false);
+      setClosing(false);
     }
 
     return () => clearTimeout(timerRef.current);
   }, [message, autoClose, autoCloseDelay, handleClose]);
 
-  useEffect(() => {
-    if (!tooltipRef.current || !anchorRef?.current) return;
-
-    const tooltip = tooltipRef.current;
-    const anchor = anchorRef.current;
-    const tooltipRect = tooltip.getBoundingClientRect();
-    const anchorRect = anchor.getBoundingClientRect();
-    const viewportH = window.innerHeight;
-
-    let preferred = position;
-
-    if (preferred === 'top' && anchorRect.top - tooltipRect.height - 8 < 0) {
-      preferred = 'bottom';
-    } else if (preferred === 'bottom' && anchorRect.bottom + tooltipRect.height + 8 > viewportH) {
-      preferred = 'top';
-    }
-
-    setActualPosition(preferred);
-  }, [state, anchorRef, position]);
-
-  if (!message) return null;
+  if (!show) return null;
 
   const Icon = ICONS[type];
-  const stateClass = state === 'enter' ? 'glass-tooltip--enter' : state === 'exit' ? 'glass-tooltip--exit' : '';
+  const bannerClass = banner ? 'glass-tooltip--banner' : '';
 
   return (
     <div
       ref={tooltipRef}
-      className={`glass-tooltip glass-tooltip--${type} glass-tooltip--${actualPosition} ${stateClass}`}
+      className={`glass-tooltip glass-tooltip--${type} ${closing ? 'glass-tooltip--exit' : ''} ${bannerClass}`}
       role="alert"
     >
-      <span className="glass-tooltip__arrow" />
+      {!banner && <span className="glass-tooltip__arrow" />}
       {Icon && <Icon size={14} stroke={2} className="glass-tooltip__icon" />}
       <span className="glass-tooltip__message">{message}</span>
       <button
@@ -99,9 +81,9 @@ export default function GlassTooltip({
       >
         <IconX size={12} stroke={2} />
       </button>
-      {autoClose && autoCloseDelay > 0 && state === 'idle' && (
+      {autoClose && autoCloseDelay > 0 && (
         <span
-          className="glass-tooltip__progress"
+          className={`glass-tooltip__progress ${closing ? 'glass-tooltip__progress--hidden' : ''}`}
           style={{ animationDuration: `${autoCloseDelay}ms` }}
         />
       )}

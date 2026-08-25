@@ -1,13 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { IconLock, IconEye, IconEyeOff } from '@tabler/icons-react';
-import GlassTooltip from './GlassTooltip.jsx';
 
-export default function PasswordInput({ label, error, tooltipError, ...props }) {
+export default function PasswordInput({ label, error, ...props }) {
   const [visible, setVisible] = useState(false);
-  const fieldRef = useRef(null);
 
   return (
-    <div className={`auth-field ${error ? 'auth-field--error' : ''}`} ref={fieldRef} style={{ position: 'relative' }}>
+    <div className={`auth-field ${error ? 'auth-field--error' : ''}`}>
       {label && <label className="auth-field__label">{label}</label>}
       <div className="auth-input-wrap">
         <IconLock size={18} stroke={2} className="auth-input-icon" />
@@ -28,10 +26,6 @@ export default function PasswordInput({ label, error, tooltipError, ...props }) 
             : <IconEye size={18} stroke={2} />}
         </button>
       </div>
-      {error && tooltipError && (
-        <GlassTooltip message={error} type="error" anchorRef={fieldRef} position="top" />
-      )}
-      {error && !tooltipError && <span className="auth-field__error">{error}</span>}
     </div>
   );
 }

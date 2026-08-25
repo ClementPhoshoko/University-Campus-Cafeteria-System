@@ -21,14 +21,9 @@
   line-height: 1.4;
   box-shadow: var(--elevation-md);
   pointer-events: auto;
-  transition: opacity 200ms ease, transform 200ms ease;
   opacity: 1;
   transform: translateY(0) scale(1);
-}
-
-.glass-tooltip--enter {
-  opacity: 0;
-  transform: translateY(6px) scale(0.97);
+  transition: opacity 200ms ease, transform 200ms ease;
 }
 
 .glass-tooltip--exit {
@@ -36,12 +31,8 @@
   transform: translateY(6px) scale(0.97);
 }
 
-.glass-tooltip--bottom.glass-tooltip--enter {
-  transform: translateY(-6px) scale(0.97);
-}
-
-.glass-tooltip--bottom.glass-tooltip--exit {
-  transform: translateY(-6px) scale(0.97);
+.glass-tooltip--banner.glass-tooltip--exit {
+  transform: translateY(6px) scale(0.97);
 }
 
 /* ── Variants ── */
@@ -150,6 +141,23 @@
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 
+/* ── Banner mode (no arrow, full width, floating) ── */
+
+.glass-tooltip--banner {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: none;
+  margin-bottom: var(--space-2);
+  z-index: 10;
+}
+
+.glass-tooltip--banner .glass-tooltip__arrow {
+  display: none;
+}
+
 /* ── Auto-close progress bar ── */
 
 .glass-tooltip__progress {
@@ -160,6 +168,11 @@
   height: 2px;
   border-radius: var(--radius-xs);
   animation: tooltip-progress linear forwards;
+  transition: opacity 200ms ease;
+}
+
+.glass-tooltip__progress--hidden {
+  opacity: 0;
 }
 
 .glass-tooltip--error .glass-tooltip__progress {

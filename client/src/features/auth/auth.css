@@ -154,6 +154,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  position: relative;
 }
 
 /* ── Field ── */
@@ -162,7 +163,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  overflow: visible;
 }
 
 .auth-field__label {
@@ -170,12 +170,6 @@
   font-size: 0.82rem;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
-}
-
-.auth-field__error {
-  font-family: var(--font-primary);
-  font-size: 0.78rem;
-  color: var(--color-status-error);
 }
 
 /* ── Input ── */

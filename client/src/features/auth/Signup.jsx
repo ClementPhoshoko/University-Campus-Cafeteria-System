@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IconUser, IconMail, IconBrandGoogle } from '@tabler/icons-react';
 import AuthLayout from '../../components/AuthLayout.jsx';
@@ -12,15 +12,14 @@ import mainLogo from '../../assets/main_logo.png';
 export default function Signup() {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [globalError, setGlobalError] = useState('');
   const [success, setSuccess] = useState(false);
-  const formRef = useRef(null);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     if (errors[e.target.name]) setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
-    if (globalError) setGlobalError('');
+    if (formError) setFormError('');
   };
 
   const handleSubmit = async (e) => {
@@ -31,28 +30,31 @@ export default function Signup() {
     if (!form.password) next.password = 'Password is required';
     else if (form.password.length < 8) next.password = 'Must be at least 8 characters';
     setErrors(next);
-    if (Object.keys(next).length) return;
+    if (Object.keys(next).length) {
+      setFormError('Please fix the errors below');
+      return;
+    }
 
     setLoading(true);
-    setGlobalError('');
+    setFormError('');
     try {
       await signUpWithEmail(form.email.trim(), form.password, {
         full_name: form.name.trim(),
       });
       setSuccess(true);
     } catch (err) {
-      setGlobalError(err.message || 'Registration failed. Please try again.');
+      setFormError(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogle = async () => {
-    setGlobalError('');
+    setFormError('');
     try {
       await signInWithGoogle();
     } catch (err) {
-      setGlobalError(err.message || 'Google sign-in failed. Please try again.');
+      setFormError(err.message || 'Google sign-in failed. Please try again.');
     }
   };
 
@@ -110,18 +112,15 @@ export default function Signup() {
       <h1 className="auth-heading">Create account</h1>
       <p className="auth-subtitle">Join your campus food community</p>
 
-      {globalError && (
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <GlassTooltip
-          message={globalError}
+          message={formError}
           type="error"
-          onClose={() => setGlobalError('')}
+          banner
+          onClose={() => setFormError('')}
           autoClose
-          anchorRef={formRef}
-          position="bottom"
         />
-      )}
 
-      <form className="auth-form" ref={formRef} onSubmit={handleSubmit} noValidate>
         <Input
           label="Full name"
           icon={IconUser}
@@ -131,7 +130,6 @@ export default function Signup() {
           value={form.name}
           onChange={handleChange}
           error={errors.name}
-          tooltipError
           autoComplete="name"
         />
 
@@ -144,7 +142,6 @@ export default function Signup() {
           value={form.email}
           onChange={handleChange}
           error={errors.email}
-          tooltipError
           autoComplete="email"
         />
 
@@ -155,7 +152,6 @@ export default function Signup() {
           value={form.password}
           onChange={handleChange}
           error={errors.password}
-          tooltipError
           autoComplete="new-password"
         />
 
