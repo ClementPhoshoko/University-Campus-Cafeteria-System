@@ -1,39 +1,92 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { IconMail, IconArrowLeft } from '@tabler/icons-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { IconMail, IconArrowLeft, IconLock } from '@tabler/icons-react';
 import AuthLayout from '../../components/AuthLayout.jsx';
 import Input from '../../components/Input.jsx';
+import PasswordInput from '../../components/PasswordInput.jsx';
+import OtpInput from '../../components/OtpInput.jsx';
+import { sendOtp, verifyOtp, resetPassword } from '../../services/auth.js';
 import mainLogo from '../../assets/main_logo.png';
 
-export default function ForgotPassword() {
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [sent, setSent] = useState(false);
+const STEPS = {
+  EMAIL: 'email',
+  OTP: 'otp',
+  RESET: 'reset',
+  DONE: 'done',
+};
 
-  const handleSubmit = (e) => {
+export default function ForgotPassword() {
+  const navigate = useNavigate();
+  const [step, setStep] = useState(STEPS.EMAIL);
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [globalError, setGlobalError] = useState('');
+
+  const clearErrors = () => { setErrors({}); setGlobalError(''); };
+
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!email.trim()) {
-      setError('Email or student number is required');
-      return;
+    clearErrors();
+    if (!email.trim()) { setErrors({ email: 'Email is required' }); return; }
+    setLoading(true);
+    try {
+      await sendOtp(email.trim());
+      setStep(STEPS.OTP);
+    } catch (err) {
+      setGlobalError(err.message || 'Failed to send OTP. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setSent(true);
   };
 
-  if (sent) {
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    clearErrors();
+    if (otp.length !== 6) { setErrors({ otp: 'Enter the 6-digit code' }); return; }
+    setLoading(true);
+    try {
+      await verifyOtp(email.trim(), otp);
+      setStep(STEPS.RESET);
+    } catch (err) {
+      setGlobalError(err.message || 'Invalid or expired code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    clearErrors();
+    const next = {};
+    if (!newPassword) next.password = 'Password is required';
+    else if (newPassword.length < 8) next.password = 'Must be at least 8 characters';
+    setErrors(next);
+    if (Object.keys(next).length) return;
+    setLoading(true);
+    try {
+      await resetPassword(newPassword);
+      setStep(STEPS.DONE);
+    } catch (err) {
+      setGlobalError(err.message || 'Failed to reset password. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (step === STEPS.DONE) {
     return (
       <AuthLayout>
         <div className="auth-brand">
           <img src={mainLogo} alt="Merchant Munchies" className="auth-logo" />
         </div>
-
-        <h1 className="auth-heading">Check your email</h1>
-        <p className="auth-subtitle">
-          We've sent a password reset link to <strong>{email}</strong>
-        </p>
-
-        <Link to="/login" className="auth-btn-primary" style={{ textAlign: 'center', textDecoration: 'none' }}>
-          Back to sign in
-        </Link>
+        <h1 className="auth-heading">Password reset</h1>
+        <p className="auth-subtitle">Your password has been updated successfully.</p>
+        <button onClick={() => navigate('/login')} className="auth-btn-primary">
+          Sign in
+        </button>
       </AuthLayout>
     );
   }
@@ -44,28 +97,84 @@ export default function ForgotPassword() {
         <img src={mainLogo} alt="Merchant Munchies" className="auth-logo" />
       </div>
 
-      <h1 className="auth-heading">Forgot password?</h1>
-      <p className="auth-subtitle">
-        Enter your email or student number and we'll send you a reset link
-      </p>
+      {step === STEPS.EMAIL && (
+        <>
+          <h1 className="auth-heading">Forgot password?</h1>
+          <p className="auth-subtitle">
+            Enter your email and we'll send you a verification code
+          </p>
 
-      <form className="auth-form" onSubmit={handleSubmit} noValidate>
-        <Input
-          label="Email or student number"
-          icon={IconMail}
-          type="email"
-          name="email"
-          placeholder="you@university.edu"
-          value={email}
-          onChange={(e) => { setEmail(e.target.value); setError(''); }}
-          error={error}
-          autoComplete="email"
-        />
+          {globalError && <div className="auth-alert auth-alert--error">{globalError}</div>}
 
-        <button type="submit" className="auth-btn-primary">
-          Send reset link
-        </button>
-      </form>
+          <form className="auth-form" onSubmit={handleSendOtp} noValidate>
+            <Input
+              label="Email"
+              icon={IconMail}
+              type="email"
+              name="email"
+              placeholder="you@university.edu"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); clearErrors(); }}
+              error={errors.email}
+              autoComplete="email"
+            />
+            <button type="submit" className="auth-btn-primary" disabled={loading}>
+              {loading ? 'Sending...' : 'Send OTP'}
+            </button>
+          </form>
+        </>
+      )}
+
+      {step === STEPS.OTP && (
+        <>
+          <h1 className="auth-heading">Verify code</h1>
+          <p className="auth-subtitle">
+            Enter the 6-digit code sent to <strong>{email}</strong>
+          </p>
+
+          {globalError && <div className="auth-alert auth-alert--error">{globalError}</div>}
+
+          <form className="auth-form" onSubmit={handleVerifyOtp} noValidate>
+            <OtpInput value={otp} onChange={setOtp} error={errors.otp} />
+            <button type="submit" className="auth-btn-primary" disabled={loading}>
+              {loading ? 'Verifying...' : 'Verify'}
+            </button>
+          </form>
+
+          <button
+            type="button"
+            className="auth-back"
+            onClick={() => { setStep(STEPS.EMAIL); setOtp(''); clearErrors(); }}
+          >
+            <IconArrowLeft size={16} stroke={2} />
+            <span>Use a different email</span>
+          </button>
+        </>
+      )}
+
+      {step === STEPS.RESET && (
+        <>
+          <h1 className="auth-heading">New password</h1>
+          <p className="auth-subtitle">Create a new password for your account</p>
+
+          {globalError && <div className="auth-alert auth-alert--error">{globalError}</div>}
+
+          <form className="auth-form" onSubmit={handleResetPassword} noValidate>
+            <PasswordInput
+              label="New password"
+              name="password"
+              placeholder="Create a new password"
+              value={newPassword}
+              onChange={(e) => { setNewPassword(e.target.value); clearErrors(); }}
+              error={errors.password}
+              autoComplete="new-password"
+            />
+            <button type="submit" className="auth-btn-primary" disabled={loading}>
+              {loading ? 'Resetting...' : 'Reset password'}
+            </button>
+          </form>
+        </>
+      )}
 
       <Link to="/login" className="auth-back">
         <IconArrowLeft size={16} stroke={2} />
