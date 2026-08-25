@@ -1,0 +1,571 @@
+/* ============================================
+   Splash Screen
+   ============================================ */
+
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-app, #F8FAFC);
+  overflow: hidden;
+  animation: splash-in 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.splash-fade-out {
+  animation: splash-out 450ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes splash-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes splash-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.01); }
+}
+
+/* ── Content Container ── */
+
+.splash-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 360px;
+  padding: 40px 24px;
+}
+
+/* ── Decorations Layer ── */
+
+.splash-decorations {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.splash-food-icon {
+  position: absolute;
+  color: var(--blue-300, #9CCFFF);
+  opacity: 0;
+  animation: splash-icon-in 700ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.splash-food-icon svg {
+  display: block;
+  width: 48px;
+  height: 48px;
+}
+
+/* ── Icon Positions — pixel offsets from content center ── */
+
+.splash-icon-pos-tl {
+  top: 10%;
+  left: 8%;
+  animation-delay: 300ms;
+}
+
+.splash-icon-pos-tr {
+  top: 14%;
+  right: 8%;
+  animation-delay: 450ms;
+}
+
+.splash-icon-pos-ml {
+  top: 46%;
+  left: 2%;
+  animation-delay: 200ms;
+}
+
+.splash-icon-pos-mr {
+  top: 42%;
+  right: 2%;
+  animation-delay: 550ms;
+}
+
+.splash-icon-pos-bl {
+  bottom: 18%;
+  left: 8%;
+  animation-delay: 400ms;
+}
+
+.splash-icon-pos-br {
+  bottom: 14%;
+  right: 7%;
+  animation-delay: 350ms;
+}
+
+@keyframes splash-icon-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 0.65; transform: translateY(0); }
+}
+
+/* ── Decorative Circles ── */
+
+.splash-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid var(--blue-300, #9CCFFF);
+  opacity: 0;
+  animation: splash-circle-in 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ── Circle Positions — closer to center content ── */
+
+.splash-circle-1 {
+  top: 30%;
+  left: 24%;
+  animation-delay: 500ms;
+}
+
+.splash-circle-2 {
+  top: 18%;
+  left: 46%;
+  animation-delay: 600ms;
+}
+
+.splash-circle-3 {
+  top: 32%;
+  right: 26%;
+  animation-delay: 450ms;
+}
+
+.splash-circle-4 {
+  top: 52%;
+  left: 20%;
+  animation-delay: 650ms;
+}
+
+.splash-circle-5 {
+  top: 50%;
+  right: 22%;
+  animation-delay: 550ms;
+}
+
+.splash-circle-6 {
+  bottom: 30%;
+  left: 28%;
+  animation-delay: 700ms;
+}
+
+.splash-circle-7 {
+  bottom: 18%;
+  left: 48%;
+  animation-delay: 400ms;
+}
+
+.splash-circle-8 {
+  bottom: 32%;
+  right: 30%;
+  animation-delay: 620ms;
+}
+
+@keyframes splash-circle-in {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 0.7; transform: scale(1); }
+}
+
+/* ── Brand ── */
+
+.splash-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.splash-logo {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  border-radius: var(--radius-xl, 22px);
+  margin-bottom: 24px;
+  animation: splash-logo-in 600ms cubic-bezier(0.4, 0, 0.2, 1) 100ms forwards;
+  opacity: 0;
+  filter: drop-shadow(0 6px 20px rgba(10, 140, 255, 0.25));
+}
+
+@keyframes splash-logo-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ── Title ── */
+
+.splash-name {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+  margin: 0 0 16px;
+  animation: splash-text-in 500ms cubic-bezier(0.4, 0, 0.2, 1) 300ms forwards;
+  opacity: 0;
+}
+
+.splash-name-merchant {
+  font-family: var(--font-primary, 'Inter', sans-serif);
+  font-size: 2.4rem;
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-action-primary, #0A8CFF);
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 12px rgba(10, 140, 255, 0.3);
+}
+
+.splash-name-munchies {
+  font-family: var(--font-primary, 'Inter', sans-serif);
+  font-size: 2.4rem;
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text-primary, #1F2933);
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 8px rgba(31, 41, 51, 0.15);
+}
+
+/* ── Subtitle ── */
+
+.splash-tagline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-primary, 'Inter', sans-serif);
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-semibold, 600);
+  letter-spacing: 0.12em;
+  color: var(--color-text-tertiary, #737E8B);
+  margin: 0 0 6px;
+  animation: splash-text-in 500ms cubic-bezier(0.4, 0, 0.2, 1) 450ms forwards;
+  opacity: 0;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+}
+
+.splash-tagline-accent {
+  color: var(--color-action-primary, #0A8CFF);
+}
+
+.splash-tagline-dot {
+  font-size: 0.5rem;
+  opacity: 0.5;
+}
+
+/* ── Smile SVG ── */
+
+.splash-smile {
+  color: var(--color-action-primary, #0A8CFF);
+  animation: splash-text-in 500ms cubic-bezier(0.4, 0, 0.2, 1) 550ms forwards;
+  opacity: 0;
+}
+
+/* ── Animations ── */
+
+@keyframes splash-text-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   Responsive Breakpoints
+   ============================================ */
+
+/* ── Very small phones (320-360px) ── */
+
+@media (max-width: 360px) {
+  .splash-content {
+    padding: 32px 16px;
+  }
+
+  .splash-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 18px;
+  }
+
+  .splash-name-merchant,
+  .splash-name-munchies {
+    font-size: 1.8rem;
+  }
+
+  .splash-tagline {
+    font-size: 0.58rem;
+    gap: 6px;
+  }
+
+  .splash-food-icon svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .splash-circle {
+    transform: scale(0.8);
+  }
+
+  .splash-icon-pos-tl { top: 6%; left: 4%; }
+  .splash-icon-pos-tr { top: 10%; right: 4%; }
+  .splash-icon-pos-ml { top: 44%; left: 0%; }
+  .splash-icon-pos-mr { top: 40%; right: 0%; }
+  .splash-icon-pos-bl { bottom: 10%; left: 6%; }
+  .splash-icon-pos-br { bottom: 6%; right: 6%; }
+
+  .splash-circle-1 { top: 26%; left: 20%; }
+  .splash-circle-2 { top: 16%; left: 42%; }
+  .splash-circle-3 { top: 28%; right: 22%; }
+  .splash-circle-4 { top: 50%; left: 16%; }
+  .splash-circle-5 { top: 48%; right: 18%; }
+  .splash-circle-6 { bottom: 26%; left: 24%; }
+  .splash-circle-7 { bottom: 16%; left: 44%; }
+  .splash-circle-8 { bottom: 28%; right: 26%; }
+}
+
+/* ── Standard phones (361-430px) ── */
+/* Default styles already cover this range */
+
+/* ── Large phones (431-500px) ── */
+
+@media (min-width: 431px) {
+  .splash-logo {
+    width: 125px;
+    height: 125px;
+  }
+
+  .splash-name-merchant,
+  .splash-name-munchies {
+    font-size: 2.7rem;
+  }
+}
+
+/* ── Short screens / landscape (max-height: 500px) ── */
+
+@media (max-height: 500px) {
+  .splash-content {
+    padding: 16px;
+  }
+
+  .splash-logo {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 12px;
+  }
+
+  .splash-name-merchant,
+  .splash-name-munchies {
+    font-size: 1.4rem;
+  }
+
+  .splash-tagline {
+    font-size: 0.55rem;
+    margin-bottom: 4px;
+  }
+
+  .splash-smile {
+    width: 28px;
+    height: 11px;
+  }
+
+  .splash-food-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .splash-circle {
+    transform: scale(0.7);
+  }
+
+  .splash-icon-pos-tl { top: 8%; left: 10%; }
+  .splash-icon-pos-tr { top: 12%; right: 10%; }
+  .splash-icon-pos-ml { top: 44%; left: 4%; }
+  .splash-icon-pos-mr { top: 40%; right: 4%; }
+  .splash-icon-pos-bl { bottom: 12%; left: 14%; }
+  .splash-icon-pos-br { bottom: 8%; right: 14%; }
+
+  .splash-circle-1 { top: 28%; left: 22%; }
+  .splash-circle-2 { top: 17%; left: 44%; }
+  .splash-circle-3 { top: 30%; right: 24%; }
+  .splash-circle-4 { top: 51%; left: 18%; }
+  .splash-circle-5 { top: 49%; right: 20%; }
+  .splash-circle-6 { bottom: 28%; left: 26%; }
+  .splash-circle-7 { bottom: 17%; left: 46%; }
+  .splash-circle-8 { bottom: 30%; right: 28%; }
+}
+
+/* ── Medium height (501-650px) ── */
+
+@media (min-height: 501px) and (max-height: 650px) {
+  .splash-logo {
+    width: 90px;
+    height: 90px;
+    margin-bottom: 20px;
+  }
+
+  .splash-name-merchant,
+  .splash-name-munchies {
+    font-size: 2rem;
+  }
+
+  .splash-tagline {
+    font-size: 0.62rem;
+  }
+
+  .splash-icon-pos-tl { top: 8%; left: 6%; }
+  .splash-icon-pos-tr { top: 12%; right: 6%; }
+  .splash-icon-pos-ml { top: 45%; left: 0%; }
+  .splash-icon-pos-mr { top: 41%; right: 0%; }
+  .splash-icon-pos-bl { bottom: 12%; left: 10%; }
+  .splash-icon-pos-br { bottom: 8%; right: 10%; }
+
+  .splash-circle-1 { top: 28%; left: 22%; }
+  .splash-circle-2 { top: 17%; left: 44%; }
+  .splash-circle-3 { top: 30%; right: 24%; }
+  .splash-circle-4 { top: 51%; left: 18%; }
+  .splash-circle-5 { top: 49%; right: 20%; }
+  .splash-circle-6 { bottom: 28%; left: 26%; }
+  .splash-circle-7 { bottom: 17%; left: 46%; }
+  .splash-circle-8 { bottom: 30%; right: 28%; }
+}
+
+/* ── Tall phones (651-800px) — default styles ── */
+
+/* ── Very tall phones (801px+) ── */
+
+@media (min-height: 801px) {
+  .splash-logo {
+    width: 130px;
+    height: 130px;
+    margin-bottom: 32px;
+  }
+
+  .splash-name-merchant,
+  .splash-name-munchies {
+    font-size: 2.8rem;
+  }
+
+  .splash-tagline {
+    font-size: 0.72rem;
+    margin-bottom: 8px;
+  }
+
+  .splash-icon-pos-tl { top: 12%; left: 10%; }
+  .splash-icon-pos-tr { top: 16%; right: 10%; }
+  .splash-icon-pos-ml { top: 46%; left: 4%; }
+  .splash-icon-pos-mr { top: 42%; right: 4%; }
+  .splash-icon-pos-bl { bottom: 16%; left: 14%; }
+  .splash-icon-pos-br { bottom: 12%; right: 14%; }
+
+  .splash-circle-1 { top: 30%; left: 24%; }
+  .splash-circle-2 { top: 19%; left: 46%; }
+  .splash-circle-3 { top: 32%; right: 26%; }
+  .splash-circle-4 { top: 53%; left: 20%; }
+  .splash-circle-5 { top: 51%; right: 22%; }
+  .splash-circle-6 { bottom: 30%; left: 28%; }
+  .splash-circle-7 { bottom: 19%; left: 48%; }
+  .splash-circle-8 { bottom: 32%; right: 30%; }
+}
+
+/* ── Tablets / large screens (768px+) ── */
+
+@media (min-width: 768px) {
+  .splash-content {
+    max-width: 420px;
+  }
+
+  .splash-logo {
+    width: 140px;
+    height: 140px;
+  }
+
+  .splash-name-merchant,
+  .splash-name-munchies {
+    font-size: 3rem;
+  }
+
+  .splash-tagline {
+    font-size: 0.75rem;
+    max-width: 300px;
+  }
+
+  .splash-icon-pos-tl { top: 14%; left: 12%; }
+  .splash-icon-pos-tr { top: 18%; right: 12%; }
+  .splash-icon-pos-ml { top: 46%; left: 6%; }
+  .splash-icon-pos-mr { top: 42%; right: 6%; }
+  .splash-icon-pos-bl { bottom: 18%; left: 16%; }
+  .splash-icon-pos-br { bottom: 14%; right: 16%; }
+
+  .splash-circle-1 { top: 30%; left: 24%; }
+  .splash-circle-2 { top: 20%; left: 48%; }
+  .splash-circle-3 { top: 32%; right: 26%; }
+  .splash-circle-4 { top: 54%; left: 22%; }
+  .splash-circle-5 { top: 52%; right: 24%; }
+  .splash-circle-6 { bottom: 30%; left: 28%; }
+  .splash-circle-7 { bottom: 20%; left: 50%; }
+  .splash-circle-8 { bottom: 32%; right: 30%; }
+}
+
+/* ── Landscape phones ── */
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .splash-screen {
+    align-items: center;
+  }
+
+  .splash-content {
+    flex-direction: row;
+    gap: 32px;
+    padding: 16px 32px;
+    max-width: none;
+  }
+
+  .splash-logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 0;
+  }
+
+  .splash-brand {
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .splash-name {
+    align-items: flex-start;
+  }
+
+  .splash-tagline {
+    margin-top: 4px;
+  }
+
+  .splash-icon-pos-tl { top: 10%; left: 12%; }
+  .splash-icon-pos-tr { top: 14%; right: 12%; }
+  .splash-icon-pos-ml { top: 44%; left: 4%; }
+  .splash-icon-pos-mr { top: 40%; right: 4%; }
+  .splash-icon-pos-bl { bottom: 14%; left: 16%; }
+  .splash-icon-pos-br { bottom: 10%; right: 16%; }
+
+  .splash-circle-1 { top: 28%; left: 22%; }
+  .splash-circle-2 { top: 17%; left: 44%; }
+  .splash-circle-3 { top: 30%; right: 24%; }
+  .splash-circle-4 { top: 51%; left: 18%; }
+  .splash-circle-5 { top: 49%; right: 20%; }
+  .splash-circle-6 { bottom: 28%; left: 26%; }
+  .splash-circle-7 { bottom: 17%; left: 46%; }
+  .splash-circle-8 { bottom: 30%; right: 28%; }
+}
+
+/* ── Reduced Motion ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-screen,
+  .splash-food-icon,
+  .splash-logo,
+  .splash-name,
+  .splash-tagline,
+  .splash-smile {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

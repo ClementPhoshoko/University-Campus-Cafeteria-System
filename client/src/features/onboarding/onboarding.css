@@ -1,0 +1,427 @@
+/* ============================================
+   Onboarding Screen
+   ============================================ */
+
+.onboarding-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-default, #FFFFFF);
+  overflow: hidden;
+}
+
+/* ── Track (horizontal slide container) ── */
+
+.onboarding-track {
+  display: flex;
+  flex: 1;
+  transition: transform 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.onboarding-track-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+/* ── Individual Slide ── */
+
+.onboarding-slide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: var(--space-5) 0 0;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+/* ── Illustration Area ── */
+
+.onboarding-illustration {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-height: 75vh;
+  min-height: 240px;
+  padding: 0;
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+
+.onboarding-illustration img {
+  max-width: 120%;
+  max-height: 110%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 8px 24px rgba(10, 140, 255, 0.15)) drop-shadow(0 2px 8px rgba(31, 41, 51, 0.08));
+}
+
+.onboarding-track-slide:nth-child(2) .onboarding-illustration img {
+  max-width: 140%;
+  max-height: 120%;
+}
+
+/* ── Content Area ── */
+
+.onboarding-content {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0 var(--space-6);
+  max-width: 380px;
+  position: relative;
+  z-index: 2;
+}
+}
+
+.onboarding-title {
+  font-family: var(--font-primary, 'Inter', sans-serif);
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold, 700);
+  line-height: 1.3;
+  color: var(--color-text-primary, #1F2933);
+  margin: 0 0 var(--space-3);
+}
+
+.onboarding-description {
+  font-family: var(--font-primary, 'Inter', sans-serif);
+  font-size: 0.94rem;
+  font-weight: var(--font-weight-regular, 400);
+  line-height: 1.6;
+  color: var(--color-text-secondary, #5B6673);
+  margin: 0;
+  max-width: 300px;
+}
+
+/* ── Controls Area ── */
+
+.onboarding-controls {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-5) var(--space-10);
+}
+
+/* ── Actions Row ── */
+
+.onboarding-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ── Primary Button (Glass) ── */
+
+.primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.45));
+  border-radius: var(--radius-xs, 6px);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.72));
+  backdrop-filter: blur(var(--glass-blur, 16px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
+  color: var(--color-text-primary, #1F2933);
+  font-family: var(--font-primary, 'Inter', sans-serif);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+  box-shadow: var(--glass-shadow);
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.primary-btn--sm {
+  height: 36px;
+  font-size: 0.8rem;
+}
+
+.primary-btn--md {
+  height: 42px;
+  font-size: 0.88rem;
+}
+
+.primary-btn:hover {
+  background: var(--glass-bg-heavy, rgba(255, 255, 255, 0.85));
+  border-color: var(--blue-300, #9CCFFF);
+  box-shadow: var(--elevation-sm);
+}
+
+.primary-btn:active {
+  background: var(--glass-bg-light, rgba(255, 255, 255, 0.55));
+  transform: scale(0.98);
+}
+
+.primary-btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--blue-200, #CBE5FF);
+}
+
+.primary-btn__label {
+  pointer-events: none;
+}
+
+.primary-btn__icon {
+  pointer-events: none;
+  flex-shrink: 0;
+  color: var(--color-action-primary, #0A8CFF);
+  transition: transform var(--transition-fast);
+}
+
+.primary-btn:hover .primary-btn__icon {
+  transform: translateX(2px);
+}
+
+/* ── Pagination Indicator ── */
+
+.onboarding-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-1);
+}
+
+.onboarding-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full, 999px);
+  background: var(--neutral-200, #DDE4EA);
+  transition:
+    background var(--transition-smooth),
+    width var(--transition-smooth);
+}
+
+.onboarding-dot-active {
+  width: 24px;
+  background: var(--color-action-primary, #0A8CFF);
+}
+
+/* ── Reduced Motion ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-track {
+    transition: none;
+  }
+
+  .primary-btn,
+  .primary-btn__icon,
+  .onboarding-dot {
+    transition: none;
+  }
+}
+
+/* ============================================
+   Responsive Breakpoints
+   ============================================ */
+
+/* ── Very small phones (320-360px) ── */
+
+@media (max-width: 360px) {
+  .onboarding-slide {
+    padding: var(--space-3) var(--space-4) 0;
+  }
+
+  .onboarding-illustration {
+    max-height: 58vh;
+    min-height: 180px;
+    padding: 0;
+  }
+
+  .onboarding-illustration img {
+    max-width: 115%;
+  }
+
+  .onboarding-track-slide:nth-child(2) .onboarding-illustration img {
+    max-width: 130%;
+  }
+
+  .onboarding-content {
+    padding: 0 var(--space-4);
+  }
+
+  .onboarding-title {
+    font-size: 1.3rem;
+  }
+
+  .onboarding-description {
+    font-size: 0.85rem;
+  }
+
+  .onboarding-controls {
+    padding: var(--space-4) var(--space-4) var(--space-8);
+  }
+}
+
+/* ── Standard phones (361-430px) ── */
+/* Default styles cover this range */
+
+/* ── Large phones (431-500px) ── */
+
+@media (min-width: 431px) {
+  .onboarding-illustration {
+    max-height: 80vh;
+    min-height: 260px;
+  }
+
+  .onboarding-illustration img {
+    max-width: 125%;
+  }
+
+  .onboarding-track-slide:nth-child(2) .onboarding-illustration img {
+    max-width: 145%;
+  }
+}
+
+/* ── Short screens (max-height: 600px) ── */
+
+@media (max-height: 600px) {
+  .onboarding-illustration {
+    max-height: 38vh;
+    min-height: 100px;
+    padding: 0;
+  }
+
+  .onboarding-illustration img {
+    max-width: 70%;
+  }
+
+  .onboarding-title {
+    font-size: 1.2rem;
+    margin-bottom: var(--space-2);
+  }
+
+  .onboarding-description {
+    font-size: 0.82rem;
+  }
+
+  .onboarding-controls {
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-5) var(--space-8);
+  }
+
+  .primary-btn--sm {
+    height: 32px;
+    font-size: 0.75rem;
+  }
+}
+
+/* ── Tall phones (801px+) ── */
+
+@media (min-height: 801px) {
+  .onboarding-illustration {
+    max-height: 58vh;
+  }
+
+  .onboarding-content {
+    padding-bottom: var(--space-2);
+  }
+
+  .onboarding-title {
+    font-size: 1.7rem;
+    margin-bottom: var(--space-4);
+  }
+
+  .onboarding-description {
+    font-size: 1rem;
+  }
+
+  .onboarding-controls {
+    padding-bottom: var(--space-12);
+  }
+}
+
+/* ── Tablets (768px+) ── */
+
+@media (min-width: 768px) {
+  .onboarding-content {
+    max-width: 440px;
+  }
+
+  .onboarding-title {
+    font-size: 1.8rem;
+  }
+
+  .onboarding-description {
+    font-size: 1.05rem;
+    max-width: 360px;
+  }
+}
+
+/* ── Desktop (1024px+) ── */
+
+@media (min-width: 1024px) {
+  .onboarding-slide {
+    gap: var(--space-4);
+  }
+
+  .onboarding-illustration {
+    max-height: 45vh;
+    min-height: 200px;
+  }
+
+  .onboarding-illustration img {
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .onboarding-track-slide:nth-child(1) .onboarding-illustration img {
+    max-width: 130%;
+    max-height: 130%;
+  }
+
+  .onboarding-track-slide:nth-child(2) .onboarding-illustration img {
+    max-width: 110%;
+    max-height: 110%;
+  }
+}
+
+/* ── Landscape ── */
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .onboarding-slide {
+    flex-direction: row;
+    padding: var(--space-3) var(--space-8);
+    gap: var(--space-8);
+  }
+
+  .onboarding-illustration {
+    flex: 0 0 40%;
+    max-height: 80vh;
+    padding: 0;
+  }
+
+  .onboarding-content {
+    flex: 1;
+    text-align: left;
+    align-items: flex-start;
+    padding: 0;
+  }
+
+  .onboarding-controls {
+    position: absolute;
+    bottom: var(--space-4);
+    left: var(--space-8);
+    right: var(--space-8);
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+  }
+}

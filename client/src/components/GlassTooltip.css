@@ -1,0 +1,206 @@
+/* ============================================
+   Glass Tooltip
+   ============================================ */
+
+.glass-tooltip {
+  position: absolute;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 200px;
+  max-width: 320px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-family: var(--font-primary);
+  font-size: 0.78rem;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  box-shadow: var(--elevation-md);
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.glass-tooltip--exit {
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+}
+
+.glass-tooltip--banner.glass-tooltip--exit {
+  transform: translateY(6px) scale(0.97);
+}
+
+/* ── Variants ── */
+
+.glass-tooltip--error {
+  background: rgba(255, 244, 244, 0.85);
+  color: var(--error-700);
+}
+
+.glass-tooltip--warning {
+  background: rgba(255, 249, 236, 0.85);
+  color: var(--warning-700);
+}
+
+.glass-tooltip--info {
+  background: rgba(241, 248, 255, 0.85);
+  color: var(--info-700);
+}
+
+/* ── Dark mode ── */
+
+[data-theme="dark"] .glass-tooltip--error {
+  background: rgba(167, 50, 50, 0.25);
+  color: var(--error-100);
+}
+
+[data-theme="dark"] .glass-tooltip--warning {
+  background: rgba(148, 105, 0, 0.25);
+  color: var(--warning-100);
+}
+
+[data-theme="dark"] .glass-tooltip--info {
+  background: rgba(10, 99, 178, 0.25);
+  color: var(--info-100);
+}
+
+/* ── Icon ── */
+
+.glass-tooltip__icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.glass-tooltip--error .glass-tooltip__icon {
+  color: var(--error-500);
+}
+
+.glass-tooltip--warning .glass-tooltip__icon {
+  color: var(--warning-500);
+}
+
+.glass-tooltip--info .glass-tooltip__icon {
+  color: var(--info-500);
+}
+
+/* ── Message ── */
+
+.glass-tooltip__message {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Close button ── */
+
+.glass-tooltip__close {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
+
+.glass-tooltip__close:hover {
+  opacity: 1;
+}
+
+/* ── Arrow ── */
+
+.glass-tooltip__arrow {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  border: inherit;
+  transform: rotate(45deg);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.glass-tooltip--top .glass-tooltip__arrow {
+  bottom: -6px;
+  left: 20px;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.glass-tooltip--bottom .glass-tooltip__arrow {
+  top: -6px;
+  left: 20px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+/* ── Banner mode (no arrow, full width, floating) ── */
+
+.glass-tooltip--banner {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: none;
+  margin-bottom: var(--space-2);
+  z-index: 10;
+}
+
+.glass-tooltip--banner .glass-tooltip__arrow {
+  display: none;
+}
+
+/* ── Auto-close progress bar ── */
+
+.glass-tooltip__progress {
+  position: absolute;
+  bottom: 4px;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  border-radius: var(--radius-xs);
+  animation: tooltip-progress linear forwards;
+  transition: opacity 200ms ease;
+}
+
+.glass-tooltip__progress--hidden {
+  opacity: 0;
+}
+
+.glass-tooltip--error .glass-tooltip__progress {
+  background: var(--error-500);
+}
+
+.glass-tooltip--warning .glass-tooltip__progress {
+  background: var(--warning-500);
+}
+
+.glass-tooltip--info .glass-tooltip__progress {
+  background: var(--info-500);
+}
+
+@keyframes tooltip-progress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+/* ── Reduced motion ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-tooltip {
+    transition: none !important;
+  }
+
+  .glass-tooltip__progress {
+    animation: none !important;
+    width: 0%;
+  }
+}
