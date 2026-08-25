@@ -5,7 +5,7 @@ const LENGTH = 6;
 
 export default function OtpInput({ value, onChange, error, tooltipError }) {
   const inputs = useRef([]);
-  const groupRef = useRef(null);
+  const fieldRef = useRef(null);
 
   const focus = useCallback((idx) => {
     inputs.current[idx]?.focus();
@@ -45,9 +45,9 @@ export default function OtpInput({ value, onChange, error, tooltipError }) {
   const digits = value.split('').concat(Array(LENGTH - value.length).fill(''));
 
   return (
-    <div className="otp-field">
+    <div className="otp-field" ref={fieldRef} style={{ position: 'relative' }}>
       <label className="auth-field__label">Enter verification code</label>
-      <div className="otp-input-group" ref={groupRef} onPaste={handlePaste} style={{ position: 'relative' }}>
+      <div className="otp-input-group" onPaste={handlePaste}>
         {digits.map((digit, idx) => (
           <input
             key={idx}
@@ -63,10 +63,10 @@ export default function OtpInput({ value, onChange, error, tooltipError }) {
             autoComplete={idx === 0 ? 'one-time-code' : 'off'}
           />
         ))}
-        {error && tooltipError && (
-          <GlassTooltip message={error} type="error" anchorRef={groupRef} position="top" />
-        )}
       </div>
+      {error && tooltipError && (
+        <GlassTooltip message={error} type="error" anchorRef={fieldRef} position="top" />
+      )}
       {error && !tooltipError && <span className="auth-field__error">{error}</span>}
     </div>
   );
