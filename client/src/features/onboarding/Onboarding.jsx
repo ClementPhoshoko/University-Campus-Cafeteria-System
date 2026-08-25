@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import OnboardingSlide from './OnboardingSlide.jsx';
-import OnboardingButton from './OnboardingButton.jsx';
 import OnboardingIndicator from './OnboardingIndicator.jsx';
+import PrimaryButton from '../../components/PrimaryButton.jsx';
+import { IconArrowRight, IconArrowLeft } from '@tabler/icons-react';
 import onboardingSlides from './onboardingData.js';
 import './onboarding.css';
 
@@ -81,19 +82,24 @@ export default function Onboarding({ onComplete }) {
       </div>
 
       <div className="onboarding-controls">
-        <OnboardingButton onClick={goNext} isLast={isLast}>
-          {isLast ? 'Get started' : 'Next'}
-        </OnboardingButton>
-
-        {!isLast && (
-          <button
-            className="onboarding-skip"
-            onClick={onComplete}
-            type="button"
+        <div className="onboarding-actions">
+          {current > 0 && (
+            <PrimaryButton
+              icon={IconArrowLeft}
+              onClick={goPrev}
+              size="sm"
+            >
+              Back
+            </PrimaryButton>
+          )}
+          <PrimaryButton
+            icon={isLast ? undefined : IconArrowRight}
+            onClick={goNext}
+            size="sm"
           >
-            Skip
-          </button>
-        )}
+            {isLast ? 'Get started' : 'Next'}
+          </PrimaryButton>
+        </div>
 
         <OnboardingIndicator total={total} current={current} />
       </div>
