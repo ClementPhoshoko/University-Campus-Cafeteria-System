@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IconMail, IconBrandGoogle } from '@tabler/icons-react';
-import AuthLayout from '../../components/AuthLayout.jsx';
 import Input from '../../components/Input.jsx';
 import PasswordInput from '../../components/PasswordInput.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import GlassTooltip from '../../components/GlassTooltip.jsx';
 import { signInWithEmail, signInWithGoogle } from '../../services/auth.js';
-import mainLogo from '../../assets/main_logo.png';
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -53,25 +51,7 @@ export default function Login() {
   };
 
   return (
-    <AuthLayout>
-      <div className="auth-brand">
-        <img src={mainLogo} alt="Merchant Munchies" className="auth-logo" />
-        <div className="auth-brand-name">
-          <span className="auth-brand-merchant">merchant</span>
-          <span className="auth-brand-munchies">munchies</span>
-        </div>
-        <p className="auth-brand-tagline">
-          <span>GOOD FOOD</span>
-          <span className="auth-brand-tagline-dot">•</span>
-          <span className="auth-brand-tagline-accent">LESS QUEUE</span>
-          <span className="auth-brand-tagline-dot">•</span>
-          <span>MORE YOU</span>
-        </p>
-        <svg className="auth-brand-smile" width="36" height="12" viewBox="0 0 48 16" fill="none" aria-hidden="true">
-          <path d="M4 4C12 14 36 14 44 4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-        </svg>
-      </div>
-
+    <>
       <h1 className="auth-heading">Welcome back</h1>
       <p className="auth-subtitle">Sign in to your account to continue</p>
 
@@ -128,6 +108,6 @@ export default function Login() {
         Don't have an account?{' '}
         <Link to="/signup" className="auth-link">Sign up</Link>
       </p>
-    </AuthLayout>
+    </>
   );
 }

@@ -60,6 +60,27 @@
   align-items: center;
 }
 
+/* ── Page Content (animated on route change) ── */
+
+.auth-page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: auth-page-in 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes auth-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ── Brand ── */
 
 .auth-brand {
@@ -579,8 +600,10 @@
   .auth-btn-google,
   .auth-link,
   .auth-back,
-  .auth-input-toggle {
+  .auth-input-toggle,
+  .auth-page {
     transition: none;
+    animation: none;
   }
 }
 
