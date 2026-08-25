@@ -284,15 +284,6 @@
   }
 }
 
-  .onboarding-title {
-    font-size: 1.65rem;
-  }
-
-  .onboarding-description {
-    font-size: 1rem;
-  }
-}
-
 /* ── Short screens (max-height: 600px) ── */
 
 @media (max-height: 600px) {
