@@ -29,7 +29,7 @@ export default function GlassTooltip({
     setTimeout(() => {
       setVisible(false);
       onClose?.();
-    }, 150);
+    }, 220);
   }, [closing, onClose]);
 
   useEffect(() => {

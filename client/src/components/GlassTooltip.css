@@ -19,12 +19,13 @@
   font-weight: var(--font-weight-medium);
   line-height: 1.4;
   box-shadow: var(--elevation-md);
-  animation: tooltip-in 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: tooltip-in 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   pointer-events: auto;
+  will-change: opacity, transform;
 }
 
 .glass-tooltip--closing {
-  animation: tooltip-out 150ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: tooltip-out 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 /* ── Variants ── */
@@ -143,10 +144,11 @@
 
 .glass-tooltip__progress {
   position: absolute;
-  bottom: 0;
-  left: 0;
+  bottom: 4px;
+  left: 8px;
+  right: 8px;
   height: 2px;
-  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  border-radius: var(--radius-xs);
   animation: tooltip-progress linear forwards;
 }
 
@@ -167,11 +169,11 @@
 @keyframes tooltip-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(6px) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -182,22 +184,22 @@
 @keyframes tooltip-in-bottom {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(-6px) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes tooltip-out {
   from {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
   to {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(6px) scale(0.97);
   }
 }
 
@@ -208,11 +210,11 @@
 @keyframes tooltip-out-bottom {
   from {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
   to {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(-6px) scale(0.97);
   }
 }
 
