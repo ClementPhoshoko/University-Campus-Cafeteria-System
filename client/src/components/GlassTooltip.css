@@ -12,6 +12,7 @@
   max-width: 320px;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
+  border: none;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   font-family: var(--font-primary);
@@ -19,32 +20,44 @@
   font-weight: var(--font-weight-medium);
   line-height: 1.4;
   box-shadow: var(--elevation-md);
-  animation: tooltip-in 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   pointer-events: auto;
-  will-change: opacity, transform;
+  transition: opacity 200ms ease, transform 200ms ease;
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
-.glass-tooltip--closing {
-  animation: tooltip-out 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
+.glass-tooltip--enter {
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+}
+
+.glass-tooltip--exit {
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+}
+
+.glass-tooltip--bottom.glass-tooltip--enter {
+  transform: translateY(-6px) scale(0.97);
+}
+
+.glass-tooltip--bottom.glass-tooltip--exit {
+  transform: translateY(-6px) scale(0.97);
 }
 
 /* ── Variants ── */
 
 .glass-tooltip--error {
-  background: rgba(255, 244, 244, 0.78);
-  border: 1px solid var(--error-500);
+  background: rgba(255, 244, 244, 0.85);
   color: var(--error-700);
 }
 
 .glass-tooltip--warning {
-  background: rgba(255, 249, 236, 0.78);
-  border: 1px solid var(--warning-500);
+  background: rgba(255, 249, 236, 0.85);
   color: var(--warning-700);
 }
 
 .glass-tooltip--info {
-  background: rgba(241, 248, 255, 0.78);
-  border: 1px solid var(--info-500);
+  background: rgba(241, 248, 255, 0.85);
   color: var(--info-700);
 }
 
@@ -52,19 +65,16 @@
 
 [data-theme="dark"] .glass-tooltip--error {
   background: rgba(167, 50, 50, 0.25);
-  border-color: var(--error-500);
   color: var(--error-100);
 }
 
 [data-theme="dark"] .glass-tooltip--warning {
   background: rgba(148, 105, 0, 0.25);
-  border-color: var(--warning-500);
   color: var(--warning-100);
 }
 
 [data-theme="dark"] .glass-tooltip--info {
   background: rgba(10, 99, 178, 0.25);
-  border-color: var(--info-500);
   color: var(--info-100);
 }
 
@@ -164,60 +174,6 @@
   background: var(--info-500);
 }
 
-/* ── Animations ── */
-
-@keyframes tooltip-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.glass-tooltip--bottom {
-  animation-name: tooltip-in-bottom;
-}
-
-@keyframes tooltip-in-bottom {
-  from {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes tooltip-out {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(6px) scale(0.97);
-  }
-}
-
-.glass-tooltip--bottom.glass-tooltip--closing {
-  animation-name: tooltip-out-bottom;
-}
-
-@keyframes tooltip-out-bottom {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.97);
-  }
-}
-
 @keyframes tooltip-progress {
   from { width: 100%; }
   to { width: 0%; }
@@ -226,10 +182,8 @@
 /* ── Reduced motion ── */
 
 @media (prefers-reduced-motion: reduce) {
-  .glass-tooltip,
-  .glass-tooltip--closing {
-    animation: none !important;
-    opacity: 1;
+  .glass-tooltip {
+    transition: none !important;
   }
 
   .glass-tooltip__progress {

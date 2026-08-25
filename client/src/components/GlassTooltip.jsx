@@ -17,25 +17,36 @@ export default function GlassTooltip({
   anchorRef,
   position = 'top',
 }) {
-  const [visible, setVisible] = useState(false);
-  const [closing, setClosing] = useState(false);
+  const [state, setState] = useState('enter'); // 'enter' | 'idle' | 'exit'
   const [actualPosition, setActualPosition] = useState(position);
   const tooltipRef = useRef(null);
   const timerRef = useRef(null);
+  const mountedRef = useRef(true);
 
   const handleClose = useCallback(() => {
-    if (closing) return;
-    setClosing(true);
+    if (state === 'exit') return;
+    clearTimeout(timerRef.current);
+    setState('exit');
     setTimeout(() => {
-      setVisible(false);
-      onClose?.();
+      if (mountedRef.current) {
+        onClose?.();
+      }
     }, 220);
-  }, [closing, onClose]);
+  }, [state, onClose]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   useEffect(() => {
     if (message) {
-      setVisible(true);
-      setClosing(false);
+      setState('enter');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setState('idle');
+        });
+      });
 
       if (autoClose && autoCloseDelay > 0) {
         clearTimeout(timerRef.current);
@@ -64,16 +75,17 @@ export default function GlassTooltip({
     }
 
     setActualPosition(preferred);
-  }, [visible, anchorRef, position]);
+  }, [state, anchorRef, position]);
 
-  if (!visible || !message) return null;
+  if (!message) return null;
 
   const Icon = ICONS[type];
+  const stateClass = state === 'enter' ? 'glass-tooltip--enter' : state === 'exit' ? 'glass-tooltip--exit' : '';
 
   return (
     <div
       ref={tooltipRef}
-      className={`glass-tooltip glass-tooltip--${type} glass-tooltip--${actualPosition} ${closing ? 'glass-tooltip--closing' : ''}`}
+      className={`glass-tooltip glass-tooltip--${type} glass-tooltip--${actualPosition} ${stateClass}`}
       role="alert"
     >
       <span className="glass-tooltip__arrow" />
@@ -87,7 +99,7 @@ export default function GlassTooltip({
       >
         <IconX size={12} stroke={2} />
       </button>
-      {autoClose && autoCloseDelay > 0 && (
+      {autoClose && autoCloseDelay > 0 && state === 'idle' && (
         <span
           className="glass-tooltip__progress"
           style={{ animationDuration: `${autoCloseDelay}ms` }}
