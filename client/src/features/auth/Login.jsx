@@ -109,10 +109,10 @@ export default function Login() {
         <span>or continue with</span>
       </div>
 
-      <PrimaryButton onClick={handleGoogle}>
+      <button type="button" className="auth-google-btn" onClick={handleGoogle}>
         <IconBrandGoogle size={18} stroke={2} />
         <span>Continue with Google</span>
-      </PrimaryButton>
+      </button>
 
       <p className="auth-footer">
         Don't have an account?{' '}

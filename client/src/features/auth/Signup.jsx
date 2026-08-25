@@ -78,7 +78,7 @@ export default function Signup() {
         <p className="auth-subtitle">
           We've sent a verification link to <strong>{form.email}</strong>. Please confirm your account.
         </p>
-        <Link to="/login" className="primary-btn primary-btn--md" style={{ textAlign: 'center', textDecoration: 'none', width: '100%' }}>
+        <Link to="/login" className="primary-btn primary-btn--md" style={{ textAlign: 'center', textDecoration: 'none', width: '100%', background: 'var(--blue-50)', color: 'var(--color-action-primary)', border: '1px solid var(--glass-border, rgba(255,255,255,0.45))' }}>
           Back to sign in
         </Link>
       </AuthLayout>
@@ -154,10 +154,10 @@ export default function Signup() {
         <span>or continue with</span>
       </div>
 
-      <PrimaryButton onClick={handleGoogle}>
+      <button type="button" className="auth-google-btn" onClick={handleGoogle}>
         <IconBrandGoogle size={18} stroke={2} />
         <span>Continue with Google</span>
-      </PrimaryButton>
+      </button>
 
       <p className="auth-footer">
         Already have an account?{' '}

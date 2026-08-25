@@ -317,25 +317,25 @@
 .auth-content .primary-btn {
   width: 100%;
   height: 40px;
-  border: none;
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.45));
   border-radius: var(--radius-sm);
-  background: var(--color-action-primary);
-  color: var(--color-action-primary-text);
+  background: var(--blue-50);
+  color: var(--color-action-primary);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   font-size: 0.85rem;
   font-weight: var(--font-weight-semibold);
-  box-shadow: var(--elevation-sm);
+  box-shadow: var(--glass-shadow);
 }
 
 .auth-content .primary-btn:hover {
-  background: var(--color-action-primary-hover);
-  border-color: transparent;
-  box-shadow: var(--elevation-md);
+  background: var(--blue-100);
+  border-color: var(--blue-300);
+  box-shadow: var(--elevation-sm);
 }
 
 .auth-content .primary-btn:active {
-  background: var(--color-action-primary-pressed);
+  background: var(--blue-200);
 }
 
 .auth-content .primary-btn:focus-visible {
@@ -351,6 +351,46 @@
   color: var(--color-text-disabled);
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.auth-google-btn {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-primary);
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.auth-google-btn:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-focus);
+}
+
+.auth-google-btn:active {
+  background: var(--color-bg-pressed);
+}
+
+.auth-google-btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--blue-200);
+}
+
+.auth-google-btn:disabled {
+  background: var(--color-surface-disabled);
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
 }
 
 /* ── Divider ── */
