@@ -46,13 +46,13 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-height: 62vh;
-  min-height: 180px;
+  max-height: 68vh;
+  min-height: 200px;
   padding: 0;
 }
 
 .onboarding-illustration img {
-  max-width: 96%;
+  max-width: 100%;
   max-height: 100%;
   object-fit: contain;
   user-select: none;
@@ -226,13 +226,13 @@
   }
 
   .onboarding-illustration {
-    max-height: 48vh;
-    min-height: 140px;
+    max-height: 52vh;
+    min-height: 160px;
     padding: 0;
   }
 
   .onboarding-illustration img {
-    max-width: 94%;
+    max-width: 100%;
   }
 
   .onboarding-content {
@@ -259,12 +259,12 @@
 
 @media (min-width: 431px) {
   .onboarding-illustration {
-    max-height: 65vh;
-    min-height: 200px;
+    max-height: 72vh;
+    min-height: 220px;
   }
 
   .onboarding-illustration img {
-    max-width: 98%;
+    max-width: 100%;
   }
 
   .onboarding-title {
