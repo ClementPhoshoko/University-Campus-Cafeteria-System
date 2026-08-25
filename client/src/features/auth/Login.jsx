@@ -1,13 +1,16 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { IconMail, IconBrandGoogle } from '@tabler/icons-react';
 import Input from '../../components/Input.jsx';
 import PasswordInput from '../../components/PasswordInput.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import GlassTooltip from '../../components/GlassTooltip.jsx';
-import { signInWithEmail, signInWithGoogle } from '../../services/auth.js';
+import { useAuth } from '../../hooks/useAuth.js';
 
 export default function Login() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { signIn, signInWithGoogle, loading: authLoading } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
@@ -33,7 +36,9 @@ export default function Login() {
     setLoading(true);
     setFormError('');
     try {
-      await signInWithEmail(form.email.trim(), form.password);
+      await signIn(form.email.trim(), form.password);
+      const returnTo = searchParams.get('returnTo') || '/';
+      navigate(returnTo, { replace: true });
     } catch (err) {
       setFormError(err.message || 'Invalid email or password. Please try again.');
     } finally {
@@ -90,7 +95,7 @@ export default function Login() {
           Forgot password?
         </Link>
 
-        <PrimaryButton type="submit" disabled={loading}>
+        <PrimaryButton type="submit" disabled={loading || authLoading}>
           {loading ? 'Signing in...' : 'Sign in'}
         </PrimaryButton>
       </form>
@@ -99,7 +104,7 @@ export default function Login() {
         <span>or continue with</span>
       </div>
 
-      <button type="button" className="auth-google-btn" onClick={handleGoogle}>
+      <button type="button" className="auth-google-btn" onClick={handleGoogle} disabled={loading || authLoading}>
         <IconBrandGoogle size={18} stroke={2} />
         <span>Continue with Google</span>
       </button>

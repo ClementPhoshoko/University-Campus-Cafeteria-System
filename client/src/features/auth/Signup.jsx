@@ -5,9 +5,10 @@ import Input from '../../components/Input.jsx';
 import PasswordInput from '../../components/PasswordInput.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import GlassTooltip from '../../components/GlassTooltip.jsx';
-import { signUpWithEmail, signInWithGoogle } from '../../services/auth.js';
+import { useAuth } from '../../hooks/useAuth.js';
 
 export default function Signup() {
+  const { signUp, signInWithGoogle, loading: authLoading } = useAuth();
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
@@ -36,7 +37,7 @@ export default function Signup() {
     setLoading(true);
     setFormError('');
     try {
-      await signUpWithEmail(form.email.trim(), form.password, {
+      await signUp(form.email.trim(), form.password, {
         full_name: form.name.trim(),
       });
       setSuccess(true);
@@ -118,7 +119,7 @@ export default function Signup() {
           autoComplete="new-password"
         />
 
-        <PrimaryButton type="submit" disabled={loading}>
+        <PrimaryButton type="submit" disabled={loading || authLoading}>
           {loading ? 'Creating account...' : 'Create account'}
         </PrimaryButton>
       </form>
@@ -127,7 +128,7 @@ export default function Signup() {
         <span>or continue with</span>
       </div>
 
-      <button type="button" className="auth-google-btn" onClick={handleGoogle}>
+      <button type="button" className="auth-google-btn" onClick={handleGoogle} disabled={loading || authLoading}>
         <IconBrandGoogle size={18} stroke={2} />
         <span>Continue with Google</span>
       </button>

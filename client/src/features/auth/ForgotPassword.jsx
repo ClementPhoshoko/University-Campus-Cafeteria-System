@@ -6,7 +6,7 @@ import OtpInput from '../../components/OtpInput.jsx';
 import PasswordInput from '../../components/PasswordInput.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import GlassTooltip from '../../components/GlassTooltip.jsx';
-import { sendOtp, verifyOtp, resetPassword } from '../../services/auth.js';
+import { useAuth } from '../../hooks/useAuth.js';
 
 const STEPS = {
   EMAIL: 'email',
@@ -17,6 +17,7 @@ const STEPS = {
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
+  const { sendOtp, verifyOtp, resetPassword, loading: authLoading } = useAuth();
   const [step, setStep] = useState(STEPS.EMAIL);
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -128,7 +129,7 @@ export default function ForgotPassword() {
               error={errors.email}
               autoComplete="email"
             />
-            <PrimaryButton type="submit" disabled={loading}>
+            <PrimaryButton type="submit" disabled={loading || authLoading}>
               {loading ? 'Sending...' : 'Send OTP'}
             </PrimaryButton>
           </form>
@@ -152,7 +153,7 @@ export default function ForgotPassword() {
             />
 
             <OtpInput value={otp} onChange={setOtp} error={errors.otp} />
-            <PrimaryButton type="submit" disabled={loading}>
+            <PrimaryButton type="submit" disabled={loading || authLoading}>
               {loading ? 'Verifying...' : 'Verify'}
             </PrimaryButton>
           </form>
@@ -191,7 +192,7 @@ export default function ForgotPassword() {
               error={errors.password}
               autoComplete="new-password"
             />
-            <PrimaryButton type="submit" disabled={loading}>
+            <PrimaryButton type="submit" disabled={loading || authLoading}>
               {loading ? 'Resetting...' : 'Reset password'}
             </PrimaryButton>
           </form>
