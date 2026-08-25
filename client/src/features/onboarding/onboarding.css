@@ -101,7 +101,7 @@
   padding: var(--space-5) var(--space-5) var(--space-6);
 }
 
-/* ── Primary Button ── */
+/* ── Primary Button (Glass) ── */
 
 .onboarding-btn {
   display: flex;
@@ -110,32 +110,36 @@
   gap: var(--space-2);
   width: 100%;
   max-width: 320px;
-  height: 52px;
+  height: 48px;
   padding: 0 var(--space-5);
-  border: 1px solid var(--color-border-subtle, #E9EEF3);
-  border-radius: var(--radius-lg, 18px);
-  background: var(--color-action-primary, #0A8CFF);
-  color: var(--color-action-primary-text, #FFFFFF);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.45));
+  border-radius: var(--radius-full, 999px);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.72));
+  backdrop-filter: blur(var(--glass-blur, 16px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
+  color: var(--color-text-primary, #1F2933);
   font-family: var(--font-primary, 'Inter', sans-serif);
   font-size: 0.88rem;
   font-weight: var(--font-weight-semibold, 600);
   cursor: pointer;
   transition:
     background var(--transition-fast),
+    border-color var(--transition-fast),
     transform var(--transition-fast),
     box-shadow var(--transition-fast);
-  box-shadow: var(--elevation-sm);
+  box-shadow: var(--glass-shadow, 0 8px 32px rgba(10, 140, 255, 0.06), 0 2px 8px rgba(31, 41, 51, 0.04));
   -webkit-tap-highlight-color: transparent;
   outline: none;
 }
 
 .onboarding-btn:hover {
-  background: var(--color-action-primary-hover, #5FB1FF);
+  background: var(--glass-bg-heavy, rgba(255, 255, 255, 0.85));
+  border-color: var(--blue-300, #9CCFFF);
   box-shadow: var(--elevation-md);
 }
 
 .onboarding-btn:active {
-  background: var(--color-action-primary-pressed, #087BD9);
+  background: var(--glass-bg-light, rgba(255, 255, 255, 0.55));
   transform: scale(0.98);
 }
 
@@ -150,6 +154,7 @@
 .onboarding-btn-icon {
   pointer-events: none;
   flex-shrink: 0;
+  color: var(--color-action-primary, #0A8CFF);
   transition: transform var(--transition-fast);
 }
 
