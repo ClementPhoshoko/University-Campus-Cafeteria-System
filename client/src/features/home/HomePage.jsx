@@ -3,24 +3,21 @@ import { Link } from 'react-router-dom';
 import {
   IconSearch,
   IconMapPin,
-  IconClock,
-  IconWalk,
-  IconToolsKitchen2,
-  IconCoffee,
-  IconPlugX,
   IconChevronRight,
   IconChevronDown,
   IconChevronLeft,
-  IconPlus,
   IconArrowRight,
-  IconStar,
-  IconStarFilled,
 } from '@tabler/icons-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import SectionHeader from '../../components/layout/SectionHeader.jsx';
-import HomeBackground from '../../components/HomeBackground.jsx';
+import CategoryCard from '../../components/cards/CategoryCard.jsx';
+import CafeteriaCard from '../../components/cards/CafeteriaCard.jsx';
+import FoodCard from '../../components/cards/FoodCard.jsx';
+import ReviewItem from '../../components/reviews/ReviewItem.jsx';
+import androidBadge from '../../assets/android_download-PJqqAvJc.png';
+import iosBadge from '../../assets/ios_download-Dn_KtiFi.png';
 import { cafeterias, popularMeals, categories, deliveryImage, reviews, reviewsImage } from './homeData.js';
 import './home.css';
 
@@ -58,18 +55,6 @@ function ScrollIndicator({ fillRef }) {
   );
 }
 
-const STATUS_LABELS = {
-  open: 'Open',
-  busy: 'Busy',
-  closed: 'Closed',
-};
-
-const CATEGORY_ICONS = {
-  dining: IconToolsKitchen2,
-  seafood: IconToolsKitchen2,
-  cafe: IconCoffee,
-};
-
 export default function HomePage() {
   const { profile } = useAuth();
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
@@ -98,7 +83,6 @@ export default function HomePage() {
 
   return (
     <PageContainer>
-      <HomeBackground />
       <PageHeader
         eyebrow={greeting()}
         title={`${firstName} 👋`}
@@ -124,47 +108,19 @@ export default function HomePage() {
       <section aria-label="Campus cafeterias">
         <SectionHeader title="Campus cafeterias" actionLabel="View all" actionTo="/cafeterias" />
         <div className="home_cafeteria-scroll" ref={cafeteria.scrollRef} onScroll={cafeteria.onScroll}>
-          {cafeterias.map((v) => {
-            const CategoryIcon = CATEGORY_ICONS[v.category] || IconToolsKitchen2;
-            return (
-              <Link
-                to="/cafeterias"
-                key={v.id}
-                className={`home_vendor-card${v.status === 'closed' ? ' home_closed' : ''}`}
-              >
-                <div className="home_vendor-media">
-                  <img src={v.image} alt={v.name} loading="lazy" />
-                  <span className={`home_vendor-status-pill ${v.status}`}>{STATUS_LABELS[v.status]}</span>
-                  {v.status === 'closed' && (
-                    <span className="home_vendor-closed-badge" aria-hidden="true">
-                      <IconPlugX size={24} stroke={1.8} />
-                    </span>
-                  )}
-                </div>
-
-                <span className="home_vendor-category-badge" aria-hidden="true">
-                  <CategoryIcon size={24} stroke={1.8} />
-                </span>
-
-                <div className="home_vendor-body">
-                  <h3>{v.name}</h3>
-                  <p className="home_vendor-desc">{v.description}</p>
-                  <div className="home_vendor-divider" />
-                  <div className="home_vendor-meta">
-                    <span>
-                      <IconWalk size={15} stroke={1.8} />
-                      {v.walkTime}
-                    </span>
-                    <i className="home_meta-dot" />
-                    <span>
-                      <IconClock size={15} stroke={1.8} />
-                      {v.prepWindow}
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+          {cafeterias.map((v) => (
+            <CafeteriaCard
+              key={v.id}
+              id={v.id}
+              name={v.name}
+              status={v.status}
+              category={v.category}
+              image={v.image}
+              description={v.description}
+              walkTime={v.walkTime}
+              prepWindow={v.prepWindow}
+            />
+          ))}
 
           <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all cafeterias">
             <IconChevronRight size={26} stroke={2.2} />
@@ -177,24 +133,15 @@ export default function HomePage() {
         <SectionHeader title="Popular right now" actionLabel="View all" actionTo="/cafeterias" />
         <div className="home_meals-scroll" ref={meals.scrollRef} onScroll={meals.onScroll}>
           {popularMeals.map((m) => (
-            <div key={m.id} className="home_vendor-card home_meal-card">
-              {m.bestSeller && <span className="home_best-seller">Best Seller</span>}
-              <div className="home_vendor-media">
-                <img src={m.image} alt={m.name} loading="lazy" />
-              </div>
-
-              <div className="home_vendor-body">
-                <h3>{m.name}</h3>
-                <p className="home_vendor-subtitle">{m.vendor}</p>
-                <div className="home_vendor-divider" />
-                <div className="home_meal-footer">
-                  <span className="home_meal-price">{m.price}</span>
-                  <button type="button" className="home_add-btn" aria-label={`Add ${m.name} to cart`}>
-                    <IconPlus size={18} stroke={2.2} />
-                  </button>
-                </div>
-              </div>
-            </div>
+            <FoodCard
+              key={m.id}
+              id={m.id}
+              name={m.name}
+              price={m.price}
+              vendor={m.vendor}
+              image={m.image}
+              bestSeller={m.bestSeller}
+            />
           ))}
           <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all meals">
             <IconChevronRight size={26} stroke={2.2} />
@@ -207,11 +154,7 @@ export default function HomePage() {
         <SectionHeader title="Shop by category" />
         <div className="home_category-scroll">
           {categories.map((c) => (
-            <div key={c.id} className="home_category-card">
-              <img src={c.image} alt={c.name} loading="lazy" />
-              <div className="home_category-fade" />
-              <span className="home_category-name">{c.name}</span>
-            </div>
+            <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} />
           ))}
         </div>
       </section>
@@ -246,22 +189,14 @@ export default function HomePage() {
           <p className="home_reviews-subtitle">Real reviews from the campus community</p>
           <div className="home_reviews-list" key={reviewPage}>
             {pageReviews.map((r) => (
-              <div key={r.id} className="home_review-item" data-state={reviewAnim}>
-                <div className="home_review-body">
-                  <div className="home_review-head">
-                    <span className="home_review-name">{r.name}</span>
-                    <span className="home_review-stars">
-                      {Array.from({ length: 5 }, (_, i) =>
-                        i < r.stars
-                          ? <IconStarFilled key={i} size={13} stroke={0} />
-                          : <IconStar key={i} size={13} stroke={1.5} />
-                      )}
-                    </span>
-                  </div>
-                  <span className="home_review-role">{r.role}</span>
-                  <p className="home_review-text">{r.text}</p>
-                </div>
-              </div>
+              <ReviewItem
+                key={r.id}
+                name={r.name}
+                stars={r.stars}
+                role={r.role}
+                text={r.text}
+                animState={reviewAnim}
+              />
             ))}
           </div>
           <div className="home_reviews-pagination">
@@ -296,6 +231,20 @@ export default function HomePage() {
               <IconChevronRight size={18} stroke={2} />
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="home_app-download">
+        <p className="home_app-download-text">
+          You can also download and order your food on our mobile apps
+        </p>
+        <div className="home_app-download-badges">
+          <a href="#" className="home_app-badge" aria-label="Download on Android">
+            <img src={androidBadge} alt="Get it on Google Play" loading="lazy" />
+          </a>
+          <a href="#" className="home_app-badge" aria-label="Download on iOS">
+            <img src={iosBadge} alt="Download on the App Store" loading="lazy" />
+          </a>
         </div>
       </div>
     </PageContainer>
