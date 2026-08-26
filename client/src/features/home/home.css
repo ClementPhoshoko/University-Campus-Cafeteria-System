@@ -4,6 +4,48 @@
    to prevent cross-page style conflicts.
    ============================================ */
 
+/* ── Hero section ── */
+
+.home-hero {
+  position: relative;
+  overflow: hidden;
+  margin-top: -72px;
+  padding-top: 72px;
+}
+
+.home-hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.home-hero-inner {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--screen-padding) 0;
+}
+
+@media (max-width: 768px) {
+  .home-hero-inner {
+    padding-top: var(--space-5);
+    padding-left: var(--screen-padding-compact);
+    padding-right: var(--screen-padding-compact);
+  }
+}
+
+/* ── Content section ── */
+
+.home-content {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding-top: var(--space-2);
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-8));
+}
+
 /* ── Location chip (page header action) ── */
 
 .home_location-pill {

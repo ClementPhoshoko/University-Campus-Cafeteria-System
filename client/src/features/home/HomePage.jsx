@@ -18,7 +18,7 @@ import FoodCard from '../../components/cards/FoodCard.jsx';
 import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import androidBadge from '../../assets/android_download-PJqqAvJc.png';
 import iosBadge from '../../assets/ios_download-Dn_KtiFi.png';
-import { cafeterias, popularMeals, categories, deliveryImage, reviews, reviewsImage } from './homeData.js';
+import { cafeterias, popularMeals, categories, deliveryImage, reviews, reviewsImage, heroImage } from './homeData.js';
 import './home.css';
 
 function greeting() {
@@ -82,169 +82,175 @@ export default function HomePage() {
   useEffect(() => () => clearTimeout(timeoutRef.current), []);
 
   return (
-    <PageContainer>
-      <PageHeader
-        eyebrow={greeting()}
-        title={`${firstName} 👋`}
-        subtitle="What are you eating today?"
-        actions={
-          <button type="button" className="home_location-pill" aria-label="Change campus">
-            <IconMapPin size={16} stroke={1.8} />
-            Main Campus
-            <IconChevronDown size={15} stroke={2} />
-          </button>
-        }
-      />
-
-      <div className="search-field">
-        <IconSearch size={18} stroke={1.8} />
-        <input
-          type="search"
-          placeholder="Search cafeterias or meals…"
-          aria-label="Search cafeterias or meals"
-        />
+    <PageContainer noPad>
+      <div className="home-hero">
+        <img src={heroImage} alt="" className="home-hero-bg" aria-hidden="true" />
+        <div className="home-hero-inner">
+          <PageHeader
+            eyebrow={greeting()}
+            title={`${firstName} 👋`}
+            subtitle="What are you eating today?"
+            actions={
+              <button type="button" className="home_location-pill" aria-label="Change campus">
+                <IconMapPin size={16} stroke={1.8} />
+                Main Campus
+                <IconChevronDown size={15} stroke={2} />
+              </button>
+            }
+          />
+          <div className="search-field">
+            <IconSearch size={18} stroke={1.8} />
+            <input
+              type="search"
+              placeholder="Search cafeterias or meals…"
+              aria-label="Search cafeterias or meals"
+            />
+          </div>
+        </div>
       </div>
 
-      <section aria-label="Campus cafeterias">
-        <SectionHeader title="Campus cafeterias" actionLabel="View all" actionTo="/cafeterias" />
-        <div className="home_cafeteria-scroll" ref={cafeteria.scrollRef} onScroll={cafeteria.onScroll}>
-          {cafeterias.map((v) => (
-            <CafeteriaCard
-              key={v.id}
-              id={v.id}
-              name={v.name}
-              status={v.status}
-              category={v.category}
-              image={v.image}
-              description={v.description}
-              walkTime={v.walkTime}
-              prepWindow={v.prepWindow}
-            />
-          ))}
-
-          <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all cafeterias">
-            <IconChevronRight size={26} stroke={2.2} />
-          </Link>
-        </div>
-        <ScrollIndicator fillRef={cafeteria.fillRef} />
-      </section>
-
-      <section aria-label="Popular meals" style={{ marginTop: 'var(--space-8)' }}>
-        <SectionHeader title="Popular right now" actionLabel="View all" actionTo="/cafeterias" />
-        <div className="home_meals-scroll" ref={meals.scrollRef} onScroll={meals.onScroll}>
-          {popularMeals.map((m) => (
-            <FoodCard
-              key={m.id}
-              id={m.id}
-              name={m.name}
-              price={m.price}
-              vendor={m.vendor}
-              image={m.image}
-              bestSeller={m.bestSeller}
-            />
-          ))}
-          <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all meals">
-            <IconChevronRight size={26} stroke={2.2} />
-          </Link>
-        </div>
-        <ScrollIndicator fillRef={meals.fillRef} />
-      </section>
-
-      <section aria-label="Shop by category" style={{ marginTop: 'var(--space-8)' }}>
-        <SectionHeader title="Shop by category" />
-        <div className="home_category-scroll">
-          {categories.map((c) => (
-            <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} />
-          ))}
-        </div>
-      </section>
-
-      <section className="home_delivery" aria-label="Why order with us">
-        <div className="home_delivery-content">
-          <span className="home_delivery-label">Why order with us</span>
-          <h2 className="home_delivery-title">
-            Skip the queue,{'\n'}
-            eat on your terms
-          </h2>
-          <p className="home_delivery-desc">
-            Order ahead from your favourite campus spots and pick up when it suits you.
-            No waiting, no stress — just great food, ready when you are.
-          </p>
-          <button type="button" className="home_delivery-btn">
-            Start Order
-            <IconArrowRight size={18} stroke={2} />
-          </button>
-        </div>
-        <div className="home_delivery-image">
-          <img src={deliveryImage} alt="" loading="lazy" />
-        </div>
-      </section>
-
-      <div className="home_reviews-wrap">
-        <div className="home_reviews-image">
-          <img src={reviewsImage} alt="" loading="lazy" />
-        </div>
-        <div className="home_reviews-content">
-          <h2 className="home_reviews-title">What students are saying</h2>
-          <p className="home_reviews-subtitle">Real reviews from the campus community</p>
-          <div className="home_reviews-list" key={reviewPage}>
-            {pageReviews.map((r) => (
-              <ReviewItem
-                key={r.id}
-                name={r.name}
-                stars={r.stars}
-                role={r.role}
-                text={r.text}
-                animState={reviewAnim}
+      <div className="home-content">
+        <section aria-label="Campus cafeterias">
+          <SectionHeader title="Campus cafeterias" actionLabel="View all" actionTo="/cafeterias" />
+          <div className="home_cafeteria-scroll" ref={cafeteria.scrollRef} onScroll={cafeteria.onScroll}>
+            {cafeterias.map((v) => (
+              <CafeteriaCard
+                key={v.id}
+                id={v.id}
+                name={v.name}
+                status={v.status}
+                category={v.category}
+                image={v.image}
+                description={v.description}
+                walkTime={v.walkTime}
+                prepWindow={v.prepWindow}
               />
             ))}
+
+            <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all cafeterias">
+              <IconChevronRight size={26} stroke={2.2} />
+            </Link>
           </div>
-          <div className="home_reviews-pagination">
-            <button
-              type="button"
-              className="home_reviews-page-btn"
-              disabled={reviewPage === 0}
-              onClick={() => goToPage(reviewPage - 1)}
-              aria-label="Previous reviews"
-            >
-              <IconChevronLeft size={18} stroke={2} />
+          <ScrollIndicator fillRef={cafeteria.fillRef} />
+        </section>
+
+        <section aria-label="Popular meals" style={{ marginTop: 'var(--space-8)' }}>
+          <SectionHeader title="Popular right now" actionLabel="View all" actionTo="/cafeterias" />
+          <div className="home_meals-scroll" ref={meals.scrollRef} onScroll={meals.onScroll}>
+            {popularMeals.map((m) => (
+              <FoodCard
+                key={m.id}
+                id={m.id}
+                name={m.name}
+                price={m.price}
+                vendor={m.vendor}
+                image={m.image}
+                bestSeller={m.bestSeller}
+              />
+            ))}
+            <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all meals">
+              <IconChevronRight size={26} stroke={2.2} />
+            </Link>
+          </div>
+          <ScrollIndicator fillRef={meals.fillRef} />
+        </section>
+
+        <section aria-label="Shop by category" style={{ marginTop: 'var(--space-8)' }}>
+          <SectionHeader title="Shop by category" />
+          <div className="home_category-scroll">
+            {categories.map((c) => (
+              <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} />
+            ))}
+          </div>
+        </section>
+
+        <section className="home_delivery" aria-label="Why order with us">
+          <div className="home_delivery-content">
+            <span className="home_delivery-label">Why order with us</span>
+            <h2 className="home_delivery-title">
+              Skip the queue,{'\n'}
+              eat on your terms
+            </h2>
+            <p className="home_delivery-desc">
+              Order ahead from your favourite campus spots and pick up when it suits you.
+              No waiting, no stress — just great food, ready when you are.
+            </p>
+            <button type="button" className="home_delivery-btn">
+              Start Order
+              <IconArrowRight size={18} stroke={2} />
             </button>
-            <div className="home_reviews-dots">
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className="home_reviews-dot"
-                  data-active={i === reviewPage}
-                  onClick={() => goToPage(i)}
-                  aria-label={`Go to page ${i + 1}`}
+          </div>
+          <div className="home_delivery-image">
+            <img src={deliveryImage} alt="" loading="lazy" />
+          </div>
+        </section>
+
+        <div className="home_reviews-wrap">
+          <div className="home_reviews-image">
+            <img src={reviewsImage} alt="" loading="lazy" />
+          </div>
+          <div className="home_reviews-content">
+            <h2 className="home_reviews-title">What students are saying</h2>
+            <p className="home_reviews-subtitle">Real reviews from the campus community</p>
+            <div className="home_reviews-list" key={reviewPage}>
+              {pageReviews.map((r) => (
+                <ReviewItem
+                  key={r.id}
+                  name={r.name}
+                  stars={r.stars}
+                  role={r.role}
+                  text={r.text}
+                  animState={reviewAnim}
                 />
               ))}
             </div>
-            <button
-              type="button"
-              className="home_reviews-page-btn"
-              disabled={reviewPage === totalPages - 1}
-              onClick={() => goToPage(reviewPage + 1)}
-              aria-label="Next reviews"
-            >
-              <IconChevronRight size={18} stroke={2} />
-            </button>
+            <div className="home_reviews-pagination">
+              <button
+                type="button"
+                className="home_reviews-page-btn"
+                disabled={reviewPage === 0}
+                onClick={() => goToPage(reviewPage - 1)}
+                aria-label="Previous reviews"
+              >
+                <IconChevronLeft size={18} stroke={2} />
+              </button>
+              <div className="home_reviews-dots">
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="home_reviews-dot"
+                    data-active={i === reviewPage}
+                    onClick={() => goToPage(i)}
+                    aria-label={`Go to page ${i + 1}`}
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                className="home_reviews-page-btn"
+                disabled={reviewPage === totalPages - 1}
+                onClick={() => goToPage(reviewPage + 1)}
+                aria-label="Next reviews"
+              >
+                <IconChevronRight size={18} stroke={2} />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="home_app-download">
-        <p className="home_app-download-text">
-          You can also download and order your food on our mobile apps
-        </p>
-        <div className="home_app-download-badges">
-          <a href="#" className="home_app-badge" aria-label="Download on Android">
-            <img src={androidBadge} alt="Get it on Google Play" loading="lazy" />
-          </a>
-          <a href="#" className="home_app-badge" aria-label="Download on iOS">
-            <img src={iosBadge} alt="Download on the App Store" loading="lazy" />
-          </a>
+        <div className="home_app-download">
+          <p className="home_app-download-text">
+            You can also download and order your food on our mobile apps
+          </p>
+          <div className="home_app-download-badges">
+            <a href="#" className="home_app-badge" aria-label="Download on Android">
+              <img src={androidBadge} alt="Get it on Google Play" loading="lazy" />
+            </a>
+            <a href="#" className="home_app-badge" aria-label="Download on iOS">
+              <img src={iosBadge} alt="Download on the App Store" loading="lazy" />
+            </a>
+          </div>
         </div>
       </div>
     </PageContainer>

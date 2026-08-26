@@ -21,6 +21,29 @@
   }
 }
 
+.page-container--no-pad {
+  max-width: none;
+  padding: 0;
+}
+
+@media (max-width: 768px) {
+  .page-container--no-pad {
+    padding: 0;
+  }
+}
+
+.page-container--no-pad > * {
+  padding-left: var(--screen-padding);
+  padding-right: var(--screen-padding);
+}
+
+@media (max-width: 768px) {
+  .page-container--no-pad > * {
+    padding-left: var(--screen-padding-compact);
+    padding-right: var(--screen-padding-compact);
+  }
+}
+
 /* ── App brand (header) — mirrors auth screens: merchant blue, munchies dark ── */
 
 .app-brand {

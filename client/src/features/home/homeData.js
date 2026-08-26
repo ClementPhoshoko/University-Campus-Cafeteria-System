@@ -20,6 +20,7 @@ import imgLively from '../../assets/cafeterias/lively_courtyard.png';
 import imgDiningHall from '../../assets/cafeterias/dining_hall_buzz.png';
 import imgModernGathering from '../../assets/cafeterias/modern_gathering.png';
 import imgScienceBar from '../../assets/cafeterias/science_snack_bar.png';
+import heroPattern from '../../assets/heros/Pastel_Blue _Food_Doodle_Pattern.png';
 
 import catHalal from '../../assets/food/Grilled_Salmon_with_Rice_and_Roasted_Vegetables.png';
 import catBreakfast from '../../assets/food/Rustic_Afternoon_Tea_with_Berry_Scones.png';
@@ -136,6 +137,7 @@ export const popularMeals = [
 
 export const deliveryImage = imgDelivery;
 export const reviewsImage = imgReviews;
+export const heroImage = heroPattern;
 
 export const categories = [
   { id: 'halal', name: 'Halal', image: catHalal },

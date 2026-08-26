@@ -90,11 +90,16 @@ img {
   height: 72px;
   display: flex;
   align-items: center;
-  /* Glass background spans edge-to-edge; content is constrained by .topbar-inner */
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition: background 0.2s ease, border-color 0.2s ease, backdrop-filter 0.2s ease;
+}
+
+.topbar--scrolled {
   background: var(--glass-bg-heavy);
   backdrop-filter: blur(var(--glass-blur-heavy));
   -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom-color: var(--glass-border);
 }
 
 .topbar-inner {
