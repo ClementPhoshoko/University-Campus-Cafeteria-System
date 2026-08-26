@@ -9,6 +9,9 @@ import chickenWedges from '../../assets/food/Grilled_Chicken_Wrap_Platter_with_P
 import pennePasta from '../../assets/food/Creamy_Chicken_Penne_Pasta_Bowl.png';
 import salmonVeg from '../../assets/food/Grilled_Salmon_with_Rice_and_Roasted_Vegetables.png';
 
+import imgDelivery from '../../assets/avatars/illustration_avoid_deliveries.png';
+import imgReviews from '../../assets/avatars/illustration_collect_order.png';
+
 import imgBreakfast from '../../assets/cafeterias/cafeteria_breakfast.png';
 import imgEvening from '../../assets/cafeterias/campus_evening.png';
 import imgCourtyardParty from '../../assets/cafeterias/courtyard_party.png';
@@ -17,6 +20,15 @@ import imgLively from '../../assets/cafeterias/lively_courtyard.png';
 import imgDiningHall from '../../assets/cafeterias/dining_hall_buzz.png';
 import imgModernGathering from '../../assets/cafeterias/modern_gathering.png';
 import imgScienceBar from '../../assets/cafeterias/science_snack_bar.png';
+
+import catHalal from '../../assets/food/Grilled_Salmon_with_Rice_and_Roasted_Vegetables.png';
+import catBreakfast from '../../assets/food/Rustic_Afternoon_Tea_with_Berry_Scones.png';
+import catDrinks from '../../assets/drinks/Refreshing_Slusher_with_Ice.png';
+import catQuick from '../../assets/food/Grilled_Chicken_Wrap_Platter_with_Potato_Wedges.png';
+import catHealthy from '../../assets/food/Grilled_Chicken_Wraps_and_Fresh_Salad_Bowl.png';
+import catPasta from '../../assets/food/Creamy_Chicken_Fettuccine_with_Garlic_Bread.png';
+import catSeafood from '../../assets/food/Vibrant_Seafood_Paella_Bowl.png';
+import catStudent from '../../assets/food/Grilled_Fish_Rice_Bowl_with_Salsa.png';
 
 export const cafeterias = [
   {
@@ -110,14 +122,65 @@ export const cafeterias = [
 ];
 
 export const popularMeals = [
-  { id: 'chicken-wrap', name: 'Chicken Wrap & Salad', price: 'R45', vendor: 'Main Campus Cafe', image: chickenWraps },
+  { id: 'chicken-wrap', name: 'Chicken Wrap & Salad', price: 'R45', vendor: 'Main Campus Cafe', image: chickenWraps, bestSeller: true },
   { id: 'fish-bowl', name: 'Grilled Fish Rice Bowl', price: 'R52', vendor: 'Res Court Kitchen', image: fishBowl },
   { id: 'tea-scones', name: 'Tea & Berry Scones', price: 'R28', vendor: 'East Gate Gathering', image: teaScones },
-  { id: 'fettuccine', name: 'Creamy Chicken Fettuccine', price: 'R58', vendor: 'Library Bistro', image: fettuccine },
-  { id: 'paella', name: 'Seafood Paella Bowl', price: 'R64', vendor: 'Res Court Kitchen', image: paella },
+  { id: 'fettuccine', name: 'Creamy Chicken Fettuccine', price: 'R58', vendor: 'Library Bistro', image: fettuccine, bestSeller: true },
+  { id: 'paella', name: 'Seafood Paella Bowl', price: 'R64', vendor: 'Res Court Kitchen', image: paella, bestSeller: true },
   { id: 'chicken-dinner', name: 'Grilled Chicken Platter', price: 'R62', vendor: 'Grill House Court', image: chickenDinner },
   { id: 'teriyaki-bowl', name: 'Beef Teriyaki Rice Bowl', price: 'R56', vendor: 'Dining Hall Central', image: teriyakiBowl },
   { id: 'chicken-wedges', name: 'Chicken Wrap & Wedges', price: 'R50', vendor: 'Grill House Court', image: chickenWedges },
   { id: 'penne-pasta', name: 'Creamy Chicken Penne', price: 'R54', vendor: 'Library Bistro', image: pennePasta },
-  { id: 'salmon-veg', name: 'Grilled Salmon & Veg', price: 'R68', vendor: 'Res Court Kitchen', image: salmonVeg },
+  { id: 'salmon-veg', name: 'Grilled Salmon & Veg', price: 'R68', vendor: 'Res Court Kitchen', image: salmonVeg, bestSeller: true },
+];
+
+export const deliveryImage = imgDelivery;
+export const reviewsImage = imgReviews;
+
+export const categories = [
+  { id: 'halal', name: 'Halal', image: catHalal },
+  { id: 'breakfast', name: 'Breakfast', image: catBreakfast },
+  { id: 'drinks', name: 'Drinks', image: catDrinks },
+  { id: 'quick-bites', name: 'Quick Bites', image: catQuick },
+  { id: 'healthy', name: 'Healthy', image: catHealthy },
+  { id: 'pasta', name: 'Pasta', image: catPasta },
+  { id: 'seafood', name: 'Seafood', image: catSeafood },
+  { id: 'student-faves', name: 'Student Faves', image: catStudent },
+];
+
+const REVIEW_ACCENTS = ['#0A8CFF', '#6366F1', '#10B981', '#F59E0B'];
+
+export const reviews = [
+  {
+    id: 'r1',
+    name: 'Thabo M.',
+    role: '12 Aug 2026 · Library Bistro',
+    text: 'Ordering before class means I skip the entire lunch rush. The food is always hot and ready when I arrive.',
+    stars: 5,
+    accent: REVIEW_ACCENTS[0],
+  },
+  {
+    id: 'r2',
+    name: 'Sarah K.',
+    role: '10 Aug 2026 · Grill House Court',
+    text: 'The variety is insane — I switch between the grill and the bistro every day. Never gets old.',
+    stars: 5,
+    accent: REVIEW_ACCENTS[1],
+  },
+  {
+    id: 'r3',
+    name: 'James N.',
+    role: '8 Aug 2026 · Res Court Kitchen',
+    text: 'Honestly the best campus app we have. Saves me 15 minutes every single day. Worth it.',
+    stars: 5,
+    accent: REVIEW_ACCENTS[2],
+  },
+  {
+    id: 'r4',
+    name: 'Lerato P.',
+    role: '5 Aug 2026 · Main Campus Cafe',
+    text: 'The exclusive deals are a lifesaver on a student budget. Highly recommend the meal combos.',
+    stars: 4,
+    accent: REVIEW_ACCENTS[3],
+  },
 ];

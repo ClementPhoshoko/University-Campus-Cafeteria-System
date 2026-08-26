@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   IconSearch,
@@ -10,13 +10,18 @@ import {
   IconPlugX,
   IconChevronRight,
   IconChevronDown,
+  IconChevronLeft,
   IconPlus,
+  IconArrowRight,
+  IconStar,
+  IconStarFilled,
 } from '@tabler/icons-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import SectionHeader from '../../components/layout/SectionHeader.jsx';
-import { cafeterias, popularMeals } from './homeData.js';
+import HomeBackground from '../../components/HomeBackground.jsx';
+import { cafeterias, popularMeals, categories, deliveryImage, reviews, reviewsImage } from './homeData.js';
 import './home.css';
 
 function greeting() {
@@ -71,8 +76,29 @@ export default function HomePage() {
   const cafeteria = useScrollProgress();
   const meals = useScrollProgress();
 
+  const PER_PAGE = 3;
+  const totalPages = Math.ceil(reviews.length / PER_PAGE);
+  const [reviewPage, setReviewPage] = useState(0);
+  const [reviewAnim, setReviewAnim] = useState('entering');
+  const timeoutRef = useRef(null);
+
+  const pageReviews = reviews.slice(reviewPage * PER_PAGE, reviewPage * PER_PAGE + PER_PAGE);
+
+  const goToPage = useCallback((next) => {
+    if (next < 0 || next >= totalPages || next === reviewPage) return;
+    setReviewAnim('exiting');
+    clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      setReviewPage(next);
+      setReviewAnim('entering');
+    }, 200);
+  }, [reviewPage, totalPages]);
+
+  useEffect(() => () => clearTimeout(timeoutRef.current), []);
+
   return (
     <PageContainer>
+      <HomeBackground />
       <PageHeader
         eyebrow={greeting()}
         title={`${firstName} 👋`}
@@ -152,6 +178,7 @@ export default function HomePage() {
         <div className="home_meals-scroll" ref={meals.scrollRef} onScroll={meals.onScroll}>
           {popularMeals.map((m) => (
             <div key={m.id} className="home_vendor-card home_meal-card">
+              {m.bestSeller && <span className="home_best-seller">Best Seller</span>}
               <div className="home_vendor-media">
                 <img src={m.image} alt={m.name} loading="lazy" />
               </div>
@@ -176,9 +203,100 @@ export default function HomePage() {
         <ScrollIndicator fillRef={meals.fillRef} />
       </section>
 
-      <div className="status-bar" style={{ marginTop: 'var(--space-12)' }}>
-        <span className="status-dot" />
-        Live menus · updated just now
+      <section aria-label="Shop by category" style={{ marginTop: 'var(--space-8)' }}>
+        <SectionHeader title="Shop by category" />
+        <div className="home_category-scroll">
+          {categories.map((c) => (
+            <div key={c.id} className="home_category-card">
+              <img src={c.image} alt={c.name} loading="lazy" />
+              <div className="home_category-fade" />
+              <span className="home_category-name">{c.name}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="home_delivery" aria-label="Why order with us">
+        <div className="home_delivery-content">
+          <span className="home_delivery-label">Why order with us</span>
+          <h2 className="home_delivery-title">
+            Skip the queue,{'\n'}
+            eat on your terms
+          </h2>
+          <p className="home_delivery-desc">
+            Order ahead from your favourite campus spots and pick up when it suits you.
+            No waiting, no stress — just great food, ready when you are.
+          </p>
+          <button type="button" className="home_delivery-btn">
+            Start Order
+            <IconArrowRight size={18} stroke={2} />
+          </button>
+        </div>
+        <div className="home_delivery-image">
+          <img src={deliveryImage} alt="" loading="lazy" />
+        </div>
+      </section>
+
+      <div className="home_reviews-wrap">
+        <div className="home_reviews-image">
+          <img src={reviewsImage} alt="" loading="lazy" />
+        </div>
+        <div className="home_reviews-content">
+          <h2 className="home_reviews-title">What students are saying</h2>
+          <p className="home_reviews-subtitle">Real reviews from the campus community</p>
+          <div className="home_reviews-list" key={reviewPage}>
+            {pageReviews.map((r) => (
+              <div key={r.id} className="home_review-item" data-state={reviewAnim}>
+                <div className="home_review-body">
+                  <div className="home_review-head">
+                    <span className="home_review-name">{r.name}</span>
+                    <span className="home_review-stars">
+                      {Array.from({ length: 5 }, (_, i) =>
+                        i < r.stars
+                          ? <IconStarFilled key={i} size={13} stroke={0} />
+                          : <IconStar key={i} size={13} stroke={1.5} />
+                      )}
+                    </span>
+                  </div>
+                  <span className="home_review-role">{r.role}</span>
+                  <p className="home_review-text">{r.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="home_reviews-pagination">
+            <button
+              type="button"
+              className="home_reviews-page-btn"
+              disabled={reviewPage === 0}
+              onClick={() => goToPage(reviewPage - 1)}
+              aria-label="Previous reviews"
+            >
+              <IconChevronLeft size={18} stroke={2} />
+            </button>
+            <div className="home_reviews-dots">
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className="home_reviews-dot"
+                  data-active={i === reviewPage}
+                  onClick={() => goToPage(i)}
+                  aria-label={`Go to page ${i + 1}`}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              className="home_reviews-page-btn"
+              disabled={reviewPage === totalPages - 1}
+              onClick={() => goToPage(reviewPage + 1)}
+              aria-label="Next reviews"
+            >
+              <IconChevronRight size={18} stroke={2} />
+            </button>
+          </div>
+        </div>
       </div>
     </PageContainer>
   );
