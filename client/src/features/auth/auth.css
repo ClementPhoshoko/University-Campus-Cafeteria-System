@@ -198,6 +198,15 @@
   margin-top: var(--space-6);
 }
 
+/* Larger hero avatar used on standalone confirm screens */
+.auth-callback-avatar--hero {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto var(--space-5);
+}
+
 /* ── Form ── */
 
 .auth-form {
@@ -577,6 +586,11 @@
     margin-top: var(--space-5);
   }
 
+  .auth-callback-avatar--hero {
+    width: 78px;
+    height: 78px;
+  }
+
   .auth-bg-icon {
     display: none;
   }
@@ -621,6 +635,11 @@
   .auth-callback-avatar {
     width: 84px;
     height: 84px;
+  }
+
+  .auth-callback-avatar--hero {
+    width: 108px;
+    height: 108px;
   }
 
   .auth-bg-icon {

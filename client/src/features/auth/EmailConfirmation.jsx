@@ -35,7 +35,7 @@ export default function EmailConfirmation() {
     <div className="auth-screen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div className="auth-callback">
         {!error && user && (
-          <img src={cheerfulAvatar} alt="" className="auth-callback-avatar" />
+          <img src={cheerfulAvatar} alt="" className="auth-callback-avatar--hero" />
         )}
         <h1 className="auth-heading">{status}</h1>
         {user && !error && (
