@@ -1,3 +1,4 @@
+import { useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   IconSearch,
@@ -25,6 +26,33 @@ function greeting() {
   return 'Good evening,';
 }
 
+function useScrollProgress() {
+  const scrollRef = useRef(null);
+  const fillRef = useRef(null);
+
+  const onScroll = useCallback(() => {
+    const el = scrollRef.current;
+    const fill = fillRef.current;
+    if (!el || !fill) return;
+    const pct = el.scrollWidth <= el.clientWidth
+      ? 0
+      : (el.scrollLeft / (el.scrollWidth - el.clientWidth)) * 100;
+    fill.style.width = `${pct}%`;
+  }, []);
+
+  return { scrollRef, fillRef, onScroll };
+}
+
+function ScrollIndicator({ fillRef }) {
+  return (
+    <div className="home_scroll-indicator">
+      <div className="home_scroll-track">
+        <div className="home_scroll-fill" ref={fillRef} />
+      </div>
+    </div>
+  );
+}
+
 const STATUS_LABELS = {
   open: 'Open',
   busy: 'Busy',
@@ -40,6 +68,8 @@ const CATEGORY_ICONS = {
 export default function HomePage() {
   const { profile } = useAuth();
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
+  const cafeteria = useScrollProgress();
+  const meals = useScrollProgress();
 
   return (
     <PageContainer>
@@ -67,7 +97,7 @@ export default function HomePage() {
 
       <section aria-label="Campus cafeterias">
         <SectionHeader title="Campus cafeterias" actionLabel="View all" actionTo="/cafeterias" />
-        <div className="home_cafeteria-scroll">
+        <div className="home_cafeteria-scroll" ref={cafeteria.scrollRef} onScroll={cafeteria.onScroll}>
           {cafeterias.map((v) => {
             const CategoryIcon = CATEGORY_ICONS[v.category] || IconToolsKitchen2;
             return (
@@ -114,11 +144,12 @@ export default function HomePage() {
             <IconChevronRight size={26} stroke={2.2} />
           </Link>
         </div>
+        <ScrollIndicator fillRef={cafeteria.fillRef} />
       </section>
 
       <section aria-label="Popular meals" style={{ marginTop: 'var(--space-8)' }}>
         <SectionHeader title="Popular right now" actionLabel="View all" actionTo="/cafeterias" />
-        <div className="home_meals-scroll">
+        <div className="home_meals-scroll" ref={meals.scrollRef} onScroll={meals.onScroll}>
           {popularMeals.map((m) => (
             <div key={m.id} className="home_vendor-card home_meal-card">
               <div className="home_vendor-media">
@@ -138,7 +169,11 @@ export default function HomePage() {
               </div>
             </div>
           ))}
+          <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all meals">
+            <IconChevronRight size={26} stroke={2.2} />
+          </Link>
         </div>
+        <ScrollIndicator fillRef={meals.fillRef} />
       </section>
 
       <div className="status-bar" style={{ marginTop: 'var(--space-12)' }}>

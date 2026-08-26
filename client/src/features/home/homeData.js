@@ -3,6 +3,11 @@ import fettuccine from '../../assets/food/Creamy_Chicken_Fettuccine_with_Garlic_
 import paella from '../../assets/food/Vibrant_Seafood_Paella_Bowl.png';
 import fishBowl from '../../assets/food/Grilled_Fish_Rice_Bowl_with_Salsa.png';
 import teaScones from '../../assets/food/Rustic_Afternoon_Tea_with_Berry_Scones.png';
+import chickenDinner from '../../assets/food/Grilled_Chicken_Dinner_Platter.png';
+import teriyakiBowl from '../../assets/food/Glazed_Beef_Teriyaki_Rice_Bowl.png';
+import chickenWedges from '../../assets/food/Grilled_Chicken_Wrap_Platter_with_Potato_Wedges.png';
+import pennePasta from '../../assets/food/Creamy_Chicken_Penne_Pasta_Bowl.png';
+import salmonVeg from '../../assets/food/Grilled_Salmon_with_Rice_and_Roasted_Vegetables.png';
 
 import imgBreakfast from '../../assets/cafeterias/cafeteria_breakfast.png';
 import imgEvening from '../../assets/cafeterias/campus_evening.png';
@@ -105,7 +110,14 @@ export const cafeterias = [
 ];
 
 export const popularMeals = [
-  { id: 'chicken-wrap', name: 'Chicken Wrap', price: 'R45', vendor: 'Main Campus Cafe', image: chickenWraps },
-  { id: 'veg-bowl', name: 'Seafood Bowl', price: 'R52', vendor: 'Library Bistro', image: fishBowl },
-  { id: 'breakfast-tea', name: 'Tea & Scones', price: 'R28', vendor: 'Res Court Kitchen', image: teaScones },
+  { id: 'chicken-wrap', name: 'Chicken Wrap & Salad', price: 'R45', vendor: 'Main Campus Cafe', image: chickenWraps },
+  { id: 'fish-bowl', name: 'Grilled Fish Rice Bowl', price: 'R52', vendor: 'Res Court Kitchen', image: fishBowl },
+  { id: 'tea-scones', name: 'Tea & Berry Scones', price: 'R28', vendor: 'East Gate Gathering', image: teaScones },
+  { id: 'fettuccine', name: 'Creamy Chicken Fettuccine', price: 'R58', vendor: 'Library Bistro', image: fettuccine },
+  { id: 'paella', name: 'Seafood Paella Bowl', price: 'R64', vendor: 'Res Court Kitchen', image: paella },
+  { id: 'chicken-dinner', name: 'Grilled Chicken Platter', price: 'R62', vendor: 'Grill House Court', image: chickenDinner },
+  { id: 'teriyaki-bowl', name: 'Beef Teriyaki Rice Bowl', price: 'R56', vendor: 'Dining Hall Central', image: teriyakiBowl },
+  { id: 'chicken-wedges', name: 'Chicken Wrap & Wedges', price: 'R50', vendor: 'Grill House Court', image: chickenWedges },
+  { id: 'penne-pasta', name: 'Creamy Chicken Penne', price: 'R54', vendor: 'Library Bistro', image: pennePasta },
+  { id: 'salmon-veg', name: 'Grilled Salmon & Veg', price: 'R68', vendor: 'Res Court Kitchen', image: salmonVeg },
 ];

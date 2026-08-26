@@ -44,27 +44,65 @@
   align-items: stretch;
   gap: var(--space-4);
   overflow-x: auto;
-  /* Bleed pattern: inline padding mirrors the page gutter while equal
-     negative margins push the clip boundary outside — shadows survive.
-     Block sizes sized to fully contain hover elevation-lg (~25-40px reach):
-     32px bottom absorbs the drop-shadow tail without shifting page rhythm
-     (compensated by the negative margin below). */
-  padding: var(--space-4) var(--space-6) var(--space-8);
-  margin-bottom: calc(var(--space-4) * -1);
-  margin-inline: calc(var(--space-6) * -1);
+  /* First card shadow space: inset padding on the start edge.
+     No negative margins, no breakout — keeps scroll-snap happy.
+     End padding so the last card has room when scrolled fully right. */
+  padding: var(--space-4) var(--space-6) var(--space-8) var(--space-3);
+  scroll-padding-inline: var(--space-3);
   scroll-snap-type: x proximity;
   scrollbar-width: none;
 }
 
 @media (max-width: 768px) {
   .home_cafeteria-scroll {
-    padding-inline: var(--screen-padding-compact);
-    margin-inline: calc(var(--screen-padding-compact) * -1);
+    padding-left: var(--space-3);
+    padding-right: var(--space-4);
   }
 }
 
 .home_cafeteria-scroll::-webkit-scrollbar {
   display: none;
+}
+
+/* ── Scroll position indicator ── */
+
+.home_scroll-indicator {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-3);
+}
+
+.home_scroll-track {
+  position: relative;
+  width: 48px;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--color-border-subtle);
+  overflow: visible;
+}
+
+.home_scroll-track::before {
+  content: '›';
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-action-primary);
+  pointer-events: none;
+}
+
+.home_scroll-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  border-radius: 99px;
+  background: var(--color-action-primary);
+  transition: width 80ms ease-out;
 }
 
 /* ── Premium portrait card ── */
@@ -271,9 +309,8 @@
   align-items: stretch;
   gap: var(--space-4);
   overflow-x: auto;
-  padding: var(--space-4) var(--space-6) var(--space-8);
-  margin-bottom: calc(var(--space-4) * -1);
-  margin-inline: calc(var(--space-6) * -1);
+  padding: var(--space-4) var(--space-6) var(--space-8) var(--space-3);
+  scroll-padding-inline: var(--space-3);
   scroll-snap-type: x proximity;
   scrollbar-width: none;
 }
@@ -284,8 +321,8 @@
 
 @media (max-width: 768px) {
   .home_meals-scroll {
-    padding-inline: var(--screen-padding-compact);
-    margin-inline: calc(var(--screen-padding-compact) * -1);
+    padding-left: var(--space-3);
+    padding-right: var(--space-4);
   }
 }
 
