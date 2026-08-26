@@ -1,23 +1,17 @@
-const BLUE_300 = '#9CCFFF';
-const BLUE_500 = '#0A8CFF';
-const NEUTRAL_50 = '#F8FAFC';
-const NEUTRAL_0 = '#FFFFFF';
-const TEXT_PRIMARY = '#1f2937';
-const TEXT_SECONDARY = '#6b7280';
-const TEXT_MUTED = '#9ca3af';
+// Email-safe shared layout — minimal/borderless design system.
+// Rules for edits:
+// - No <svg> (stripped by Gmail/Outlook). Use hosted PNGs only.
+// - No CSS gradients, no background-color panels. White canvas + whitespace.
+// - Tables + inline styles only. Absolute image URLs only.
+const INK = '#111827';        // headings / strong text
+const BODY = '#374151';       // body copy
+const MUTED = '#9CA3AF';      // secondary text
+const HAIRLINE = '#EAEAEA';   // dividers
+const BLUE = '#0A8CFF';       // single accent: CTAs + key values
 
-const WAVE_SVG = `<svg width="480" height="60" viewBox="0 0 480 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M0 60L40 52C80 44 160 28 240 28C320 28 400 44 440 52L480 60V0H440C400 0 320 0 240 0C160 0 80 0 40 0H0V60Z" fill="${BLUE_300}" fill-opacity="0.15"/>
-</svg>`;
-
-const FOOD_ICONS = `<svg width="480" height="80" viewBox="0 0 480 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="40" cy="20" r="8" fill="${BLUE_300}" fill-opacity="0.2"/>
-  <circle cx="120" cy="60" r="6" fill="${BLUE_300}" fill-opacity="0.15"/>
-  <circle cx="200" cy="15" r="10" fill="${BLUE_300}" fill-opacity="0.12"/>
-  <circle cx="320" cy="55" r="7" fill="${BLUE_300}" fill-opacity="0.18"/>
-  <circle cx="400" cy="25" r="9" fill="${BLUE_300}" fill-opacity="0.14"/>
-  <circle cx="460" cy="65" r="5" fill="${BLUE_300}" fill-opacity="0.2"/>
-</svg>`;
+const LOGO_URL =
+  process.env.EMAIL_LOGO_URL ||
+  'https://npqvaoimvuwijbalsffp.supabase.co/storage/v1/object/public/email-assets/main_logo.png';
 
 export default function baseLayout({ title, subtitle, content }) {
   return `
@@ -27,92 +21,111 @@ export default function baseLayout({ title, subtitle, content }) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
+  <style>
+    /* Mobile-first baseline lives in inline styles below.
+       These progressive enhancements apply where <style> is supported
+       (Gmail, Apple Mail, iOS Mail). Outlook desktop safely ignores this. */
+    @media screen and (min-width: 480px) {
+      .e-title    { font-size: 23px !important; }
+      .e-subtitle { font-size: 15px !important; }
+      .e-body     { font-size: 16px !important; }
+      .e-otp      { font-size: 40px !important; }
+      .e-order-no { font-size: 36px !important; }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:${NEUTRAL_50};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${NEUTRAL_50};">
+<body style="margin:0;padding:0;background:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr>
-      <td align="center" style="padding:40px 16px;">
-        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;">
+      <td align="center" style="padding:48px 24px;">
 
-          <!-- Logo Header -->
+        <table role="presentation" width="440" cellpadding="0" cellspacing="0" border="0" style="max-width:440px;width:100%;">
+
+          <!-- Brand row: words on top -->
           <tr>
-            <td align="center" style="padding-bottom:8px;">
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="48" height="48" rx="12" fill="${BLUE_500}"/>
-                <text x="24" y="32" text-anchor="middle" font-family="Arial" font-weight="700" font-size="20" fill="white">M</text>
-              </svg>
-            </td>
-          </tr>
-
-          <!-- Brand Name -->
-          <tr>
-            <td align="center" style="padding-bottom:4px;">
-              <span style="font-size:18px;font-weight:600;color:${TEXT_PRIMARY};letter-spacing:-0.5px;">merchant</span>
-              <span style="font-size:18px;font-weight:600;color:${BLUE_500};letter-spacing:-0.5px;">munchies</span>
-            </td>
-          </tr>
-
-          <!-- Tagline -->
-          <tr>
-            <td align="center" style="padding-bottom:24px;">
-              <span style="font-size:11px;color:${TEXT_SECONDARY};letter-spacing:1px;">GOOD FOOD</span>
-              <span style="font-size:11px;color:${BLUE_300};margin:0 6px;">•</span>
-              <span style="font-size:11px;color:${BLUE_500};letter-spacing:1px;">LESS QUEUE</span>
-              <span style="font-size:11px;color:${BLUE_300};margin:0 6px;">•</span>
-              <span style="font-size:11px;color:${TEXT_SECONDARY};letter-spacing:1px;">MORE YOU</span>
-            </td>
-          </tr>
-
-          <!-- Card -->
-          <tr>
-            <td style="background:${NEUTRAL_0};border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 12px rgba(10,140,255,0.06);">
-
-              <!-- Blue Header -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <td>
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="background:linear-gradient(135deg,${BLUE_500} 0%,${BLUE_300} 100%);padding:32px 24px;text-align:center;">
-                    <h1 style="margin:0;color:${NEUTRAL_0};font-size:20px;font-weight:600;letter-spacing:-0.3px;">${title}</h1>
-                    ${subtitle ? `<p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">${subtitle}</p>` : ''}
+                  <td width="34" style="padding-right:10px;">
+                    <img src="${LOGO_URL}" alt="" width="34" height="34" style="display:block;border-radius:8px;">
+                  </td>
+                  <td style="font-size:15px;font-weight:700;color:${INK};letter-spacing:-0.3px;line-height:34px;">
+                    merchant<span style="color:${BLUE};">munchies</span>
                   </td>
                 </tr>
               </table>
+            </td>
+          </tr>
 
-              <!-- Body -->
-              <tr>
-                <td style="padding:32px 24px;color:${TEXT_PRIMARY};font-size:15px;line-height:1.6;">
-                  ${content}
-                </td>
-              </tr>
+          <!-- Title block -->
+          <tr>
+            <td style="padding-top:40px;">
+              <h1 class="e-title" style="margin:0;font-size:20px;font-weight:600;color:${INK};letter-spacing:-0.2px;">${title}</h1>
+              ${subtitle ? `<p class="e-subtitle" style="margin:6px 0 0;font-size:14px;color:${MUTED};">${subtitle}</p>` : ''}
+            </td>
+          </tr>
 
-              <!-- Wave -->
-              <tr>
-                <td style="padding:0;line-height:0;">
-                  ${WAVE_SVG}
-                </td>
-              </tr>
-
+          <!-- Body -->
+          <tr>
+            <td style="padding-top:24px;">
+              ${content}
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td align="center" style="padding:24px 16px;">
-              <p style="margin:0 0 8px;font-size:11px;color:${TEXT_MUTED};letter-spacing:1px;">GOOD FOOD • LESS QUEUE • MORE YOU</p>
-              <p style="margin:0;font-size:11px;color:${TEXT_MUTED};">© ${new Date().getFullYear()} Merchant Munchies. All rights reserved.</p>
-            </td>
-          </tr>
-
-          <!-- Food Icons -->
-          <tr>
-            <td style="padding:0;line-height:0;">
-              ${FOOD_ICONS}
+            <td style="padding-top:48px;">
+              <div style="border-top:1px solid ${HAIRLINE};padding-top:16px;font-size:11px;color:${MUTED};line-height:1.7;">
+                Good food &bull; Less queue &bull; More you<br>
+                &copy; ${new Date().getFullYear()} Merchant Munchies. All rights reserved.
+              </div>
             </td>
           </tr>
 
         </table>
+
       </td>
     </tr>
   </table>
 </body>
 </html>`;
 }
+
+// Shared email-safe components
+// Outline button: small, light-blue border, no fill.
+// Optional unicode icon (SVG is stripped by clients). Auto-appends a plain-link
+// fallback line for real URLs so the action still works if the button is blocked.
+export function ctaButton({ href, label, icon = null }) {
+  const iconHtml = icon ? `<span style="color:${BLUE};margin-right:7px;">${icon}</span>` : '';
+  const showFallback = href && href !== '#';
+  return `
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 0;">
+  <tr>
+    <td bgcolor="#FFFFFF" style="border:1px solid #B8DBFF;border-radius:6px;">
+      <a href="${href}" target="_blank" style="display:inline-block;padding:8px 20px;font-size:13px;font-weight:600;color:${BLUE};text-decoration:none;letter-spacing:0.2px;">${iconHtml}${label}</a>
+    </td>
+  </tr>
+</table>${
+    showFallback
+      ? `
+<p style="margin:14px 0 0;font-size:11px;color:${MUTED};line-height:1.6;">
+  If the button above isn't working, paste this link into your browser:<br>
+  <a href="${href}" target="_blank" style="color:${BLUE};text-decoration:none;word-break:break-all;">${href}</a>
+</p>`
+      : ''
+  }`;
+}
+
+export function infoRow({ label, value }) {
+  return `
+<tr>
+  <td style="padding:5px 0;font-size:14px;color:${MUTED};white-space:nowrap;">${label}</td>
+  <td style="padding:5px 0;font-size:14px;font-weight:600;color:${INK};text-align:right;">${value}</td>
+</tr>`;
+}
+
+export function finePrint({ children }) {
+  return `<p style="margin:20px 0 0;font-size:12px;color:${MUTED};line-height:1.6;">${children}</p>`;
+}
+
+export { INK, BODY, MUTED, HAIRLINE, BLUE };

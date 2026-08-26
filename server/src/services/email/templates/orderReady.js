@@ -1,34 +1,23 @@
-import baseLayout from './baseLayout.js';
+import baseLayout, { infoRow, finePrint } from './baseLayout.js';
 
 export default function orderReady({ userName, orderNumber, vendorName, collectionPoint }) {
   return baseLayout({
     title: 'Your order is ready!',
     subtitle: 'Time to collect your meal',
     content: `
-      <p style="margin:0 0 16px;">Hi <strong>${userName}</strong>,</p>
-      <p style="margin:0 0 24px;">Great news! Your order is ready for collection.</p>
+      <p style="margin:0 0 14px;class="e-body" style="font-size:15px;line-height:1.65;color:#374151;">Hi <strong style="color:#111827;">${userName}</strong>,</p>
+      <p style="margin:0 0 26px;class="e-body" style="font-size:15px;line-height:1.65;color:#374151;">
+        Great news — your order is ready for collection now.
+      </p>
 
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;background:#F1F8FF;border-radius:12px;border:1px solid #9CCFFF;">
-        <tr>
-          <td style="padding:20px;text-align:center;">
-            <p style="margin:0 0 4px;font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;">Order</p>
-            <p style="margin:0 0 16px;font-size:24px;font-weight:700;color:#0A8CFF;letter-spacing:2px;">#${orderNumber}</p>
-            <p style="margin:0 0 4px;font-size:13px;color:#6b7280;">Pick up at</p>
-            <p style="margin:0;font-size:16px;font-weight:600;color:#1f2937;">${collectionPoint}</p>
-          </td>
-        </tr>
+      <div class="e-order-no" style="font-size:30px;font-weight:700;letter-spacing:3px;color:#0A8CFF;line-height:1;">#${orderNumber}</div>
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;">
+        ${infoRow({ label: 'Collect at', value: collectionPoint })}
+        ${infoRow({ label: 'From', value: vendorName })}
       </table>
 
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
-        <tr>
-          <td style="padding:0 0 8px;font-size:13px;color:#6b7280;">From</td>
-        </tr>
-        <tr>
-          <td style="padding:0;font-size:15px;font-weight:600;color:#1f2937;">${vendorName}</td>
-        </tr>
-      </table>
-
-      <p style="margin:24px 0 0;font-size:13px;color:#6b7280;">Present your order number at the express collection point.</p>
+      ${finePrint({ children: 'Present your order number at the express collection point.' })}
     `,
   });
 }

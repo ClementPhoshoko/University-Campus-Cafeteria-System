@@ -54,20 +54,20 @@ export default function AuthCallback() {
 
   return (
     <div className="auth-screen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center' }}>
-        {showAvatar && (
-          <img
-            src={cheerfulAvatar}
-            alt=""
-            style={{ width: 96, height: 96, objectFit: 'contain', margin: '0 auto 16px', display: 'block' }}
-          />
-        )}
-        <h1 className="auth-heading" style={{ fontSize: '1.5rem' }}>{status}</h1>
-        {!showAvatar && (
+      <div className="auth-callback">
+        <h1 className="auth-heading">{status}</h1>
+        {newAccount ? (
+          <p className="auth-subtitle">
+            Welcome to the family, <strong>{user?.user_metadata?.full_name || 'friend'}</strong>! We've
+            emailed you a note — check your inbox.
+          </p>
+        ) : showAvatar ? (
+          <p className="auth-subtitle">Redirecting you to your dashboard…</p>
+        ) : (
           <p className="auth-subtitle">Please wait while we complete your sign-in</p>
         )}
-        {newAccount && (
-          <p className="auth-subtitle">We've emailed you a welcome note — check your inbox!</p>
+        {showAvatar && (
+          <img src={cheerfulAvatar} alt="" className="auth-callback-avatar" />
         )}
       </div>
     </div>
