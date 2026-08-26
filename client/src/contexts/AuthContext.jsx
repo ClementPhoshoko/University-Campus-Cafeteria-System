@@ -168,6 +168,7 @@ export function AuthProvider({ children }) {
     profile,
     loading,
     initialized,
+    isEmailVerified: !!user?.email_confirmed_at,
     signIn,
     signUp,
     signInWithGoogle,

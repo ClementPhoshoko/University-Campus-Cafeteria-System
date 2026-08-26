@@ -10,6 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import healthRoutes from './routes/healthRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import emailRoutes from './routes/emailRoutes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT) || 4000;
@@ -21,6 +22,7 @@ console.log(`CLIENT_ORIGIN:       ${process.env.CLIENT_ORIGIN || 'not set'}`);
 console.log(`SUPABASE_URL:        ${process.env.SUPABASE_URL ? 'loaded' : 'NOT SET'}`);
 console.log(`SUPABASE_ANON_KEY:   ${process.env.SUPABASE_ANON_KEY ? 'loaded' : 'NOT SET'}`);
 console.log(`SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? 'loaded' : 'NOT SET'}`);
+console.log(`RESEND_API_KEY:      ${process.env.RESEND_API_KEY ? 'loaded' : 'NOT SET'}`);
 console.log('--- End Environment Injection ---\n');
 
 const app = express();
@@ -43,6 +45,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec, {
 
 app.use('/api/v1', healthRoutes);
 app.use('/api/v1', authRoutes);
+app.use('/api/v1', emailRoutes);
 
 app.use((error, req, res, next) => {
   console.error(error);

@@ -39,6 +39,9 @@ export default function Signup() {
     try {
       await signUp(form.email.trim(), form.password, {
         full_name: form.name.trim(),
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
       });
       setSuccess(true);
     } catch (err) {
