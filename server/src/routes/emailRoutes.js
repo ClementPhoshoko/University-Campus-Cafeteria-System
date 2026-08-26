@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   handleSendEmailHook,
   handleResendVerification,
+  sendWelcomeEmail,
   sendOrderConfirmedEmail,
   sendOrderReadyEmail,
 } from '../controllers/emailController.js';
@@ -14,6 +15,9 @@ emailRouter.post('/email/supabase-hook', handleSendEmailHook);
 
 // Resend verification (uses supabase.auth.resend internally)
 emailRouter.post('/email/resend-verification', handleResendVerification);
+
+// Welcome email (no link, just account-created notice)
+emailRouter.post('/email/welcome', sendWelcomeEmail);
 
 // Protected routes (auth required)
 emailRouter.post('/email/order-confirmed', authenticate, sendOrderConfirmedEmail);

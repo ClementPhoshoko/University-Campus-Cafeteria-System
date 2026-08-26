@@ -10,6 +10,16 @@ export async function resendVerificationEmail(email) {
   return res.json();
 }
 
+export async function sendWelcomeEmail({ to, userName }) {
+  const res = await fetch(`${API_URL}/email/welcome`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to, userName }),
+  });
+  if (!res.ok) throw new Error('Failed to send welcome email');
+  return res.json();
+}
+
 export async function sendOrderConfirmed(data) {
   const res = await fetch(`${API_URL}/email/order-confirmed`, {
     method: 'POST',

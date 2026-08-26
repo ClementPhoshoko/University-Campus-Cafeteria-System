@@ -13,20 +13,35 @@ const SEND_EMAIL_HOOK_SECRET = process.env.SEND_EMAIL_HOOK_SECRET;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 
+// Normalize secret: Supabase shows "v1,whsec_xxx" — the library expects "whsec_xxx"
+function parseHookSecret(secret) {
+  if (!secret) return null;
+  if (secret.includes(',')) return secret.split(',').pop().trim();
+  return secret.trim();
+}
+
 // Verify Supabase Send Email Hook signature
 function verifyHookSignature(req) {
-  if (!SEND_EMAIL_HOOK_SECRET) return true;
+  const parsed = parseHookSecret(SEND_EMAIL_HOOK_SECRET);
+  if (!parsed) return true;
   try {
-    const wh = new Webhook(SEND_EMAIL_HOOK_SECRET);
-    const body = JSON.stringify(req.body);
+    const wh = new Webhook(parsed);
+    // Must verify against the exact raw bytes that were signed
+    const body = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body);
     const headers = {
-      'svix-id': req.headers['svix-id'],
-      'svix-timestamp': req.headers['svix-timestamp'],
-      'svix-signature': req.headers['svix-signature'],
+      'webhook-id': req.headers['webhook-id'] || req.headers['svix-id'],
+      'webhook-timestamp': req.headers['webhook-timestamp'] || req.headers['svix-timestamp'],
+      'webhook-signature': req.headers['webhook-signature'] || req.headers['svix-signature'],
     };
     wh.verify(body, headers);
     return true;
-  } catch {
+  } catch (err) {
+    console.error('[Email Hook] Signature verification failed:', err.message);
+    console.error('[Email Hook] Headers received:', JSON.stringify({
+      id: req.headers['webhook-id'] || req.headers['svix-id'],
+      ts: req.headers['webhook-timestamp'] || req.headers['svix-timestamp'],
+      sig: req.headers['webhook-signature'] || req.headers['svix-signature'] ? 'present' : 'MISSING',
+    }));
     return false;
   }
 }
@@ -112,6 +127,30 @@ export async function handleResendVerification(req, res) {
   } catch (error) {
     console.error('[Email] Resend verification failed:', error.message);
     res.status(500).json({ error: 'Failed to resend verification email' });
+  }
+}
+
+// Welcome email (no link, just account-created notice)
+export async function sendWelcomeEmail(req, res) {
+  try {
+    const { to, userName } = req.body;
+    if (!to) return res.status(400).json({ error: 'Email is required' });
+
+    const html = welcome({
+      userName: userName || to.split('@')[0],
+      appUrl: CLIENT_URL,
+    });
+
+    await sendEmail({
+      to,
+      subject: 'Welcome to Merchant Munchies!',
+      html,
+    });
+
+    res.status(200).json({ message: 'Welcome email sent' });
+  } catch (error) {
+    console.error('[Email] Welcome email failed:', error.message);
+    res.status(500).json({ error: 'Failed to send welcome email' });
   }
 }
 

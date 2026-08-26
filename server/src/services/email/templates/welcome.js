@@ -1,12 +1,13 @@
 import baseLayout from './baseLayout.js';
 
-export default function welcome({ userName }) {
+export default function welcome({ userName, appUrl }) {
+  const startUrl = appUrl || '#';
   return baseLayout({
     title: 'Welcome aboard!',
     subtitle: 'Your account is ready',
     content: `
       <p style="margin:0 0 16px;">Hi <strong>${userName}</strong>,</p>
-      <p style="margin:0 0 24px;">Your Merchant Munchies account is all set! Start browsing cafeterias near you and skip the queue.</p>
+      <p style="margin:0 0 24px;">You have just created a new account on <strong style="color:#0A8CFF;">Merchant</strong>&nbsp;<strong>Munchies</strong> — good food, less queue, more you.</p>
 
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
         <tr>
@@ -31,7 +32,7 @@ export default function welcome({ userName }) {
       <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
         <tr>
           <td style="border-radius:8px;background:#0A8CFF;">
-            <a href="#" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;letter-spacing:0.3px;">Start Ordering</a>
+            <a href="${startUrl}" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;letter-spacing:0.3px;">Start Ordering</a>
           </td>
         </tr>
       </table>

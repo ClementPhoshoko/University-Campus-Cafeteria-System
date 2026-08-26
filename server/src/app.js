@@ -23,13 +23,22 @@ console.log(`SUPABASE_URL:        ${process.env.SUPABASE_URL ? 'loaded' : 'NOT S
 console.log(`SUPABASE_ANON_KEY:   ${process.env.SUPABASE_ANON_KEY ? 'loaded' : 'NOT SET'}`);
 console.log(`SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? 'loaded' : 'NOT SET'}`);
 console.log(`RESEND_API_KEY:      ${process.env.RESEND_API_KEY ? 'loaded' : 'NOT SET'}`);
+if (process.env.SEND_EMAIL_HOOK_SECRET) {
+  const s = process.env.SEND_EMAIL_HOOK_SECRET;
+  console.log(`HOOK_SECRET:         ...${s.slice(-8)} (len ${s.length})`);
+} else {
+  console.log('HOOK_SECRET:         NOT SET');
+}
 console.log('--- End Environment Injection ---\n');
 
 const app = express();
 
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
-app.use(express.json());
+// Keep raw body for webhook signature verification (Supabase Send Email Hook)
+app.use(express.json({
+  verify: (req, res, buf) => { req.rawBody = buf; },
+}));
 app.use(morgan('dev'));
 
 // Load and parse OpenAPI spec
