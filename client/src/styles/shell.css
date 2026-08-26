@@ -1,0 +1,237 @@
+/* ============================================
+   App Shell — navigation, containers, page chrome
+   Reuses tokens from tokens.css and primitives from index.css.
+   Breakpoints: 360 (compact) / 768 (primary) / 1024 (large) — project standard.
+   ============================================ */
+
+/* ── Page Container ── */
+
+.page-container {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--screen-padding);
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-8));
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding-left: var(--screen-padding-compact);
+    padding-right: var(--screen-padding-compact);
+    padding-top: var(--space-5);
+  }
+}
+
+/* ── App brand (header) — mirrors auth screens: merchant blue, munchies dark ── */
+
+.app-brand {
+  gap: var(--space-2);
+}
+
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: var(--radius-xs);
+}
+
+.brand-word {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.brand-merchant {
+  color: var(--color-action-primary);
+}
+
+.brand-munchies {
+  color: var(--color-text-primary);
+}
+
+/* ── Desktop nav (inside topbar, ≥768px only) ── */
+
+.desktop-nav {
+  display: none;
+}
+
+.nav-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-fast);
+}
+
+.nav-item:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-subtle);
+}
+
+.nav-item.active {
+  color: var(--color-action-secondary-text);
+  background: var(--color-action-secondary);
+}
+
+.topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+@media (min-width: 768px) {
+  .desktop-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  /* Keep brand left / actions right while nav sits centered */
+  .topbar > .brand { margin-right: auto; }
+  .topbar-actions { margin-left: auto; }
+}
+
+/* ── Mobile bottom navigation (<768px) ── */
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: stretch;
+  height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--glass-bg-heavy);
+  backdrop-filter: blur(var(--glass-blur-heavy));
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
+  border-top: 1px solid var(--glass-border);
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 56px;               /* touch-friendly */
+  color: var(--color-icon-tertiary);
+  font-size: 0.66rem;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.01em;
+  transition: color var(--transition-fast);
+}
+
+.bottom-nav-item.active {
+  color: var(--color-icon-active);
+}
+
+.bottom-nav-item.active span {
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (min-width: 768px) {
+  .bottom-nav {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .bottom-nav-item {
+    font-size: 0.6rem;
+  }
+}
+
+/* ── Page Header ── */
+
+.page-header {
+  margin-bottom: var(--space-6);
+}
+
+.page-header.has-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.page-header-heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.page-header-eyebrow {
+  color: var(--color-action-secondary-text);
+  font-size: 1.45rem;              /* matches page-header-title */
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.01em;
+}
+
+.page-header-title {
+  margin: 0;
+  font-size: 1.45rem;
+  letter-spacing: -0.02em;
+}
+
+.page-header-subtitle {
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+  .page-header-eyebrow,
+  .page-header-title {
+    font-size: 1.75rem;
+  }
+}
+
+/* ── Search field ── */
+
+.search-field {
+  position: relative;
+  margin-bottom: var(--space-8);
+}
+
+.search-field input {
+  width: 100%;
+  height: 48px;
+  padding: 0 var(--space-4) 0 44px;
+  color: var(--color-text-primary);
+  background: var(--color-surface-default);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  font-size: 0.92rem;
+  transition: all var(--transition-fast);
+}
+
+.search-field input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.search-field input:focus {
+  outline: none;
+  border-color: var(--blue-300);
+  box-shadow: 0 0 0 3px var(--blue-100);
+}
+
+.search-field svg {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: var(--color-icon-tertiary);
+  pointer-events: none;
+}

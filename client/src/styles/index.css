@@ -90,14 +90,22 @@ img {
   height: 72px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  max-width: var(--content-max-width);
-  margin: 0 auto;
-  padding: 0 var(--screen-padding);
+  /* Glass background spans edge-to-edge; content is constrained by .topbar-inner */
   background: var(--glass-bg-heavy);
   backdrop-filter: blur(var(--glass-blur-heavy));
   -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
   border-bottom: 1px solid var(--glass-border);
+}
+
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--screen-padding);
 }
 
 .brand {
@@ -271,15 +279,33 @@ h2 {
   margin-bottom: var(--space-6);
 }
 
-.section-heading a {
+.section-heading a,
+.section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: var(--space-2) var(--space-3);
+  margin: calc(var(--space-2) * -1) calc(var(--space-3) * -1);
   color: var(--color-action-link);
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   font-weight: var(--font-weight-semibold);
-  transition: color var(--transition-fast);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-fast);
 }
 
-.section-heading a:hover {
+.section-heading a svg,
+.section-link svg {
+  transition: transform var(--transition-fast);
+}
+
+.section-heading a:hover,
+.section-link:hover {
   color: var(--color-action-primary);
+}
+
+.section-heading a:hover svg,
+.section-link:hover svg {
+  transform: translateX(2px);
 }
 
 /* ============================================
@@ -385,7 +411,6 @@ h2 {
    ============================================ */
 
 @media (max-width: 768px) {
-  .topbar,
   .hero-section,
   .content-section,
   .status-bar {
@@ -393,7 +418,7 @@ h2 {
     padding-right: var(--screen-padding-compact);
   }
 
-  .topbar {
+  .topbar-inner {
     padding-left: var(--screen-padding-compact);
     padding-right: var(--screen-padding-compact);
   }
