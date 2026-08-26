@@ -7,12 +7,15 @@ export async function signInWithEmail(email, password) {
   return data;
 }
 
-export async function signUpWithEmail(email, password, metadata) {
+export async function signUpWithEmail(email, password, metadata, options = {}) {
   if (!supabase) throw new Error('Supabase not configured');
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: metadata },
+    options: {
+      data: metadata,
+      ...options,
+    },
   });
   if (error) throw error;
   return data;

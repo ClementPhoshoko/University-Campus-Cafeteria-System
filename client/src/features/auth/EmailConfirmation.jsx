@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
+import cheerfulAvatar from '../../assets/avatars/Cheerful_Student_with_Green_Checkmark.png';
 
 export default function EmailConfirmation() {
   const navigate = useNavigate();
@@ -23,24 +24,38 @@ export default function EmailConfirmation() {
     }
 
     if (user) {
-      setStatus('Email confirmed successfully!');
+      setStatus('Email confirmed!');
     } else {
       setError(true);
-      setStatus('Invalid or expired confirmation link');
+      setStatus('Invalid or expired link');
     }
   }, [user, initialized, searchParams]);
 
   return (
     <div className="auth-screen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center', maxWidth: '380px' }}>
-        <h1 className="auth-heading">{status}</h1>
+      <div className="auth-callback">
         {!error && user && (
-          <PrimaryButton onClick={() => navigate('/', { replace: true })} style={{ marginTop: 'var(--space-4)' }}>
+          <img src={cheerfulAvatar} alt="" className="auth-callback-avatar" />
+        )}
+        <h1 className="auth-heading">{status}</h1>
+        {user && !error && (
+          <p className="auth-subtitle">
+            Your account is active. Time to skip the queue!
+          </p>
+        )}
+        {error && (
+          <p className="auth-subtitle">
+            This confirmation link may have expired or already been used.
+          </p>
+        )}
+
+        {initialized && !error && user && (
+          <PrimaryButton onClick={() => navigate('/', { replace: true })}>
             Continue
           </PrimaryButton>
         )}
-        {error && (
-          <PrimaryButton onClick={() => navigate('/login', { replace: true })} style={{ marginTop: 'var(--space-4)' }}>
+        {error && initialized && (
+          <PrimaryButton onClick={() => navigate('/login', { replace: true })}>
             Back to sign in
           </PrimaryButton>
         )}

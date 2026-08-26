@@ -104,10 +104,10 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const signUp = useCallback(async (email, password, metadata) => {
+  const signUp = useCallback(async (email, password, metadata, options = {}) => {
     setLoading(true);
     try {
-      const data = await auth.signUpWithEmail(email, password, metadata);
+      const data = await auth.signUpWithEmail(email, password, metadata, options);
       return data;
     } finally {
       setLoading(false);

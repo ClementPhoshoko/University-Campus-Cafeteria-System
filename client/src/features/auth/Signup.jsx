@@ -37,12 +37,14 @@ export default function Signup() {
     setLoading(true);
     setFormError('');
     try {
-      await signUp(form.email.trim(), form.password, {
-        full_name: form.name.trim(),
-        options: {
-          emailRedirectTo: window.location.origin,
-        },
-      });
+      await signUp(
+        form.email.trim(),
+        form.password,
+        { full_name: form.name.trim() },
+        {
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+        }
+      );
       setSuccess(true);
     } catch (err) {
       setFormError(err.message || 'Registration failed. Please try again.');
