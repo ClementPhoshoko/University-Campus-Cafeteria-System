@@ -82,6 +82,12 @@ export default function App() {
           <Route path="/cafeterias" element={<PlaceholderPage title="Cafeterias" />} />
           <Route path="/orders" element={<PlaceholderPage title="Orders" />} />
           <Route path="/profile" element={<PlaceholderPage title="Profile" />} />
+          <Route path="/corporate" element={<PlaceholderPage title="Corporate Catering" />} />
+          <Route path="/vendor" element={<PlaceholderPage title="Vendor Dashboard" />} />
+          <Route path="/admin" element={<PlaceholderPage title="Admin Panel" />} />
+          <Route path="/finance" element={<PlaceholderPage title="Finance" />} />
+          <Route path="/support" element={<PlaceholderPage title="Support Centre" />} />
+          <Route path="/audit" element={<PlaceholderPage title="Audit Logs" />} />
         </Route>
       </Route>
 
