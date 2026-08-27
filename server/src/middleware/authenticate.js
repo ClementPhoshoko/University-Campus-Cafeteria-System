@@ -1,6 +1,13 @@
 import { supabaseAdmin } from '../config/supabase.js';
 
 export async function authenticate(req, res, next) {
+  if (!supabaseAdmin) {
+    return res.status(500).json({
+      success: false,
+      error: { code: 'CONFIG_ERROR', message: 'Authentication service not configured' },
+    });
+  }
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

@@ -11,6 +11,8 @@ import { fileURLToPath } from 'node:url';
 import healthRoutes from './routes/healthRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import { bootstrapSuperAdmin } from './services/bootstrapSuperAdmin.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT) || 4000;
@@ -55,6 +57,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec, {
 app.use('/api/v1', healthRoutes);
 app.use('/api/v1', authRoutes);
 app.use('/api/v1', emailRoutes);
+app.use('/api/v1', adminRoutes);
 
 app.use((error, req, res, next) => {
   console.error(error);
@@ -65,4 +68,7 @@ const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
 app.listen(port, () => {
   console.log(`🚀 Merchant Munchies API running on ${baseUrl}`);
   console.log(`📖 Swagger docs available at: ${baseUrl}/api-docs\n`);
+
+  // Ensure the configured super admin always has admin access
+  bootstrapSuperAdmin();
 });

@@ -8,13 +8,23 @@ import { supabaseAdmin } from '../config/supabase.js';
  *   router.get('/admin/vendors', authenticate, requireRole('admin'), handler);
  *   router.post('/vendor/orders', authenticate, requireRole('admin', 'vendor_manager'), handler);
  */
+const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || '';
+
 export function requireRole(...allowedRoles) {
+  const isSuperAdmin = (email) => SUPER_ADMIN_EMAIL && email && email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+
   return async (req, res, next) => {
     if (!req.user?.id) {
       return res.status(401).json({
         success: false,
         error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
       });
+    }
+
+    // Super admin always has access
+    if (isSuperAdmin(req.user.email)) {
+      req.userRoles = ['admin', ...allowedRoles];
+      return next();
     }
 
     try {
@@ -73,6 +83,12 @@ export function optionalRole(...allowedRoles) {
   return async (req, res, next) => {
     if (!req.user?.id) {
       req.userRoles = [];
+      return next();
+    }
+
+    // Super admin has all roles
+    if (SUPER_ADMIN_EMAIL && req.user.email && req.user.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
+      req.userRoles = ['employee', 'admin', ...allowedRoles];
       return next();
     }
 

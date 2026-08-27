@@ -159,13 +159,468 @@ paths:
         '401':
           description: Unauthorized - invalid or missing token
 
+  '/admin/users':
+    get:
+      tags:
+        - Administration
+      summary: List users
+      description: Retrieve a paginated list of users with their assigned roles. Requires admin role.
+      operationId: listUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Items per page
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by name, email, or employee number
+        - name: role
+          in: query
+          schema:
+            $ref: '#/components/schemas/AppRole'
+          description: Filter by role
+      responses:
+        '200':
+          description: Users retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminUser'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          description: Server error
+
+  '/admin/users/{userId}/roles':
+    get:
+      tags:
+        - Administration
+      summary: Get user roles
+      description: Retrieve all roles assigned to a specific user. Requires admin role.
+      operationId: getUserRoles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User roles retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/AdminUser'
+                  roles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AppRole'
+                  roleDetails:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RoleDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Administration
+      summary: Set user roles
+      description: Replace all roles for a user. Cannot remove your own admin role. Requires admin role.
+      operationId: setUserRoles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - roles
+              properties:
+                roles:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AppRole'
+                  example: [admin, finance]
+      responses:
+        '200':
+          description: Roles updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  userId:
+                    type: string
+                    format: uuid
+                  roles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AppRole'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags:
+        - Administration
+      summary: Add role to user
+      description: Add a single role to a user. Requires admin role.
+      operationId: addRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+              properties:
+                role:
+                  $ref: '#/components/schemas/AppRole'
+      responses:
+        '200':
+          description: Role added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  userId:
+                    type: string
+                    format: uuid
+                  role:
+                    $ref: '#/components/schemas/AppRole'
+                  roles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AppRole'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  '/admin/users/{userId}/roles/{role}':
+    delete:
+      tags:
+        - Administration
+      summary: Remove role from user
+      description: Remove a single role from a user. Cannot remove your own admin role. Requires admin role.
+      operationId: removeRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: role
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/AppRole'
+      responses:
+        '200':
+          description: Role removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  userId:
+                    type: string
+                    format: uuid
+                  removedRole:
+                    $ref: '#/components/schemas/AppRole'
+                  roles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AppRole'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  '/email/supabase-hook':
+    post:
+      tags:
+        - Notifications
+      summary: Supabase Send Email Hook
+      description: Webhook endpoint called by Supabase to send auth emails (signup, magic link, recovery). Verified by webhook signature.
+      operationId: handleSendEmailHook
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user
+                - email_data
+              properties:
+                user:
+                  type: object
+                  required:
+                    - email
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                    user_metadata:
+                      type: object
+                email_data:
+                  type: object
+                  required:
+                    - email_action_type
+                  properties:
+                    email_action_type:
+                      type: string
+                      enum: [signup, magiclink, recovery, email_change]
+                    token_hash:
+                      type: string
+                    redirect_to:
+                      type: string
+                    token:
+                      type: string
+                      description: OTP token for recovery emails
+      responses:
+        '200':
+          description: Email sent
+        '400':
+          description: Invalid payload
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/email/resend-verification':
+    post:
+      tags:
+        - Authentication
+      summary: Resend verification email
+      description: Resend the signup verification email. Requires valid JWT.
+      operationId: handleResendVerification
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Verification email resent
+        '400':
+          description: Email is required
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/email/welcome':
+    post:
+      tags:
+        - Notifications
+      summary: Send welcome email
+      description: Send a branded welcome email to an employee. Requires admin role.
+      operationId: sendWelcomeEmail
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - to
+              properties:
+                to:
+                  type: string
+                  format: email
+                userName:
+                  type: string
+      responses:
+        '200':
+          description: Welcome email sent
+        '400':
+          description: Email is required
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  '/email/order-confirmed':
+    post:
+      tags:
+        - Orders
+      summary: Send order confirmed email
+      description: Send order confirmation to a customer. Requires valid JWT.
+      operationId: sendOrderConfirmedEmail
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - to
+                - orderNumber
+              properties:
+                to:
+                  type: string
+                  format: email
+                orderNumber:
+                  type: string
+                vendorName:
+                  type: string
+                collectionTime:
+                  type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+                total:
+                  type: number
+      responses:
+        '200':
+          description: Order confirmation sent
+        '400':
+          description: Email is required
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/email/order-ready':
+    post:
+      tags:
+        - Orders
+      summary: Send order ready email
+      description: Notify the customer that their order is ready. Requires valid JWT.
+      operationId: sendOrderReadyEmail
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - to
+                - orderNumber
+              properties:
+                to:
+                  type: string
+                  format: email
+                orderNumber:
+                  type: string
+                vendorName:
+                  type: string
+                collectionTime:
+                  type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+                total:
+                  type: number
+      responses:
+        '200':
+          description: Order ready email sent
+        '400':
+          description: Email is required
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: "Paste the access_token from /auth/login response"
+      description: Paste the access_token from /auth/login response
+
   schemas:
     AuthResponse:
       type: object
@@ -189,13 +644,11 @@ components:
             employee_number:
               type: string
             role:
-              type: string
-              enum: [employee, executive, executive_assistant, meeting_organiser, training_coordinator, cost_centre_owner, vendor_staff, vendor_manager, admin, finance, support, auditor]
+              $ref: '#/components/schemas/AppRole'
             roles:
               type: array
               items:
-                type: string
-                enum: [employee, executive, executive_assistant, meeting_organiser, training_coordinator, cost_centre_owner, vendor_staff, vendor_manager, admin, finance, support, auditor]
+                $ref: '#/components/schemas/AppRole'
           description: Authenticated user object
         session:
           type: object
@@ -218,13 +671,11 @@ components:
         employee_number:
           type: string
         role:
-          type: string
-          enum: [employee, executive, executive_assistant, meeting_organiser, training_coordinator, cost_centre_owner, vendor_staff, vendor_manager, admin, finance, support, auditor]
+          $ref: '#/components/schemas/AppRole'
         roles:
           type: array
           items:
-            type: string
-            enum: [employee, executive, executive_assistant, meeting_organiser, training_coordinator, cost_centre_owner, vendor_staff, vendor_manager, admin, finance, support, auditor]
+            $ref: '#/components/schemas/AppRole'
         department:
           type: string
         business_unit:
@@ -237,6 +688,114 @@ components:
         preferred_building_id:
           type: string
           format: uuid
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        full_name:
+          type: string
+        employee_number:
+          type: string
+        department:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppRole'
+
+    RoleDetail:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/AppRole'
+        granted_by:
+          type: string
+          format: uuid
+        granted_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    AppRole:
+      type: string
+      enum:
+        - employee
+        - executive
+        - executive_assistant
+        - meeting_organiser
+        - training_coordinator
+        - cost_centre_owner
+        - vendor_staff
+        - vendor_manager
+        - admin
+        - finance
+        - support
+        - auditor
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+  responses:
+    BadRequest:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized - missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
 
 security:
   - bearerAuth: []
