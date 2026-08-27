@@ -144,27 +144,37 @@
 
 .cafeteria_filter-chip {
   flex: 0 0 auto;
-  height: 34px;
+  height: 42px;
   padding: 0 var(--space-4);
-  border: 1px solid transparent;
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xs);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   color: var(--color-text-secondary);
   font-family: var(--font-primary);
   font-size: 0.78rem;
   font-weight: var(--font-weight-medium);
+  box-shadow: var(--glass-shadow);
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 .cafeteria_filter-chip:hover {
-  border-color: var(--color-border-selected);
+  border-color: var(--blue-300);
+  background: var(--glass-bg-heavy);
   color: var(--color-text-primary);
+  box-shadow: var(--elevation-sm);
 }
 
 .cafeteria_filter-chip--active {
   background: var(--color-action-primary);
+  border-color: var(--color-action-primary);
   color: var(--color-action-primary-text);
+}
+
+.cafeteria_filter-chip:active {
+  transform: scale(0.97);
 }
 
 .home_vendor-card--directory .home_vendor-media img {
