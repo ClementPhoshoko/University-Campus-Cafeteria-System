@@ -123,7 +123,7 @@ export default function ForgotPassword() {
               icon={IconMail}
               type="email"
               name="email"
-              placeholder="you@university.edu"
+              placeholder="you@merchantplace.com"
               value={email}
               onChange={(e) => { setEmail(e.target.value); clearErrors(); }}
               error={errors.email}

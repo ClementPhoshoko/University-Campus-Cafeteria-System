@@ -7,13 +7,13 @@ const onboardingSlides = [
     id: 1,
     illustration: avoidQueuesImg,
     title: 'Skip the queue.',
-    description: 'Order your favourite campus meals before you arrive.',
+    description: 'Order your favourite meals before you arrive.',
   },
   {
     id: 2,
     illustration: collectOrderImg,
-    title: 'Choose your campus café.',
-    description: 'Discover meals from cafeterias across your university.',
+    title: 'Choose your building café.',
+    description: 'Discover meals from cafeterias across your building.',
   },
   {
     id: 3,

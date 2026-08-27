@@ -25,7 +25,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const next = {};
-    if (!form.email.trim()) next.email = 'Email or student number is required';
+    if (!form.email.trim()) next.email = 'Employee email is required';
     if (!form.password) next.password = 'Password is required';
     setErrors(next);
     if (Object.keys(next).length) {
@@ -70,11 +70,11 @@ export default function Login() {
         />
 
         <Input
-          label="Email or student number"
+          label="Employee email"
           icon={IconMail}
           type="email"
           name="email"
-          placeholder="you@university.edu"
+          placeholder="you@merchantplace.com"
           value={form.email}
           onChange={handleChange}
           error={errors.email}

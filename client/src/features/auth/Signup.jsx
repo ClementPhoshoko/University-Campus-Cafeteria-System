@@ -25,7 +25,7 @@ export default function Signup() {
     e.preventDefault();
     const next = {};
     if (!form.name.trim()) next.name = 'Full name is required';
-    if (!form.email.trim()) next.email = 'Email or student number is required';
+    if (!form.email.trim()) next.email = 'Employee email is required';
     if (!form.password) next.password = 'Password is required';
     else if (form.password.length < 8) next.password = 'Must be at least 8 characters';
     setErrors(next);
@@ -79,7 +79,7 @@ export default function Signup() {
   return (
     <>
       <h1 className="auth-heading">Create account</h1>
-      <p className="auth-subtitle">Join your campus food community</p>
+      <p className="auth-subtitle">Join your workplace food community</p>
 
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <GlassTooltip
@@ -103,11 +103,11 @@ export default function Signup() {
         />
 
         <Input
-          label="Email or student number"
+          label="Employee email"
           icon={IconMail}
           type="email"
           name="email"
-          placeholder="you@university.edu"
+          placeholder="you@merchantplace.com"
           value={form.email}
           onChange={handleChange}
           error={errors.email}

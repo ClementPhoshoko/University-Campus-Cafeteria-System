@@ -94,9 +94,9 @@ export default function HomePage() {
               title={`${firstName} 👋`}
               subtitle="What are you eating today?"
               actions={
-                <button type="button" className="home_location-pill" aria-label="Change campus">
+                <button type="button" className="home_location-pill" aria-label="Change building">
                   <IconMapPin size={16} stroke={1.8} />
-                  Main Campus
+                  Merchant Place
                   <IconChevronDown size={15} stroke={2} />
                 </button>
               }
@@ -126,8 +126,8 @@ export default function HomePage() {
       </div>
 
       <div className="home-content">
-        <section aria-label="Campus cafeterias">
-          <SectionHeader title="Campus cafeterias" actionLabel="View all" actionTo="/cafeterias" />
+        <section aria-label="Our cafeterias">
+          <SectionHeader title="Our cafeterias" actionLabel="View all" actionTo="/cafeterias" />
           <div className="home_cafeteria-scroll" ref={cafeteria.scrollRef} onScroll={cafeteria.onScroll}>
             {cafeterias.map((v) => (
               <CafeteriaCard
@@ -188,7 +188,7 @@ export default function HomePage() {
               eat on your terms
             </h2>
             <p className="home_delivery-desc">
-              Order ahead from your favourite campus spots and pick up when it suits you.
+              Order ahead from your favourite spots and pick up when it suits you.
               No waiting, no stress — just great food, ready when you are.
             </p>
             <button type="button" className="home_delivery-btn">
@@ -206,8 +206,8 @@ export default function HomePage() {
             <img src={reviewsImage} alt="" loading="lazy" />
           </div>
           <div className="home_reviews-content">
-            <h2 className="home_reviews-title">What students are saying</h2>
-            <p className="home_reviews-subtitle">Real reviews from the campus community</p>
+            <h2 className="home_reviews-title">What colleagues are saying</h2>
+            <p className="home_reviews-subtitle">Real reviews from the workplace community</p>
             <div className="home_reviews-list" key={reviewPage}>
               {pageReviews.map((r) => (
                 <ReviewItem
