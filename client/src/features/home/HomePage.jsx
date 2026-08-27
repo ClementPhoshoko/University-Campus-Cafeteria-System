@@ -66,6 +66,7 @@ export default function HomePage() {
   const totalPages = Math.ceil(reviews.length / PER_PAGE);
   const [reviewPage, setReviewPage] = useState(0);
   const [reviewAnim, setReviewAnim] = useState('entering');
+  const [searchQuery, setSearchQuery] = useState('');
   const timeoutRef = useRef(null);
 
   const pageReviews = reviews.slice(reviewPage * PER_PAGE, reviewPage * PER_PAGE + PER_PAGE);
@@ -106,8 +107,17 @@ export default function HomePage() {
                 type="search"
                 placeholder="Search cafeterias or meals…"
                 aria-label="Search cafeterias or meals"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+            <button
+              type="button"
+              className={`search-btn${searchQuery.trim() ? ' search-btn--visible' : ''}`}
+            >
+              <IconSearch size={16} stroke={2} />
+              Search
+            </button>
           </div>
           <div className="home-hero-right">
             <HeroFoodShowcase items={heroFoods} />

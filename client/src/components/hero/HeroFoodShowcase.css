@@ -1,9 +1,9 @@
 .hero-showcase {
   position: relative;
-  flex: 0 0 240px;
-  width: 240px;
-  height: 280px;
-  border-radius: var(--radius-xl);
+  flex: 0 0 320px;
+  width: 320px;
+  height: 210px;
+  border-radius: var(--radius-xs);
   overflow: hidden;
   background: transparent;
   box-shadow:
@@ -14,13 +14,10 @@
 
 .hero-showcase-slide {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
-  bottom: 72px;
-  width: auto;
-  height: auto;
-  object-fit: contain;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   opacity: 0;
   transition: opacity 0.45s ease;
   pointer-events: none;
@@ -35,52 +32,31 @@
   top: 50%;
   transform: translateY(-50%);
   z-index: 2;
-  width: 30px;
-  height: 30px;
+  width: 72px;
+  height: 100%;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  color: var(--color-text-primary);
-  transition: box-shadow 0.2s ease;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.9);
+  opacity: 0;
+  transition: opacity 0.25s ease, color 0.2s ease;
+  cursor: pointer;
+}
+
+.hero-showcase:hover .hero-showcase-nav {
+  opacity: 1;
 }
 
 .hero-showcase-nav:hover {
-  box-shadow: var(--elevation-md);
+  color: #fff;
 }
 
-.hero-showcase-nav--prev { left: 8px; }
-.hero-showcase-nav--next { right: 8px; }
+.hero-showcase-nav--prev { left: 0; }
+.hero-showcase-nav--next { right: 0; }
 
-.hero-showcase-info {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 2;
-  padding: 12px 16px;
-}
-
-.hero-showcase-title {
-  margin: 0 0 4px;
-  font-size: 0.85rem;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-}
-
-.hero-showcase-price {
-  font-size: 1rem;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-action-link);
+.hero-showcase-nav svg {
+  transform: scaleY(2);
 }
 
 @media (max-width: 768px) {

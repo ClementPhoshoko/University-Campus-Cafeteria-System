@@ -31,8 +31,6 @@ export default function HeroFoodShowcase({ items }) {
   const pause = () => { pausedRef.current = true; };
   const resume = () => { pausedRef.current = false; };
 
-  const item = items[index];
-
   return (
     <div
       className="hero-showcase"
@@ -45,7 +43,7 @@ export default function HeroFoodShowcase({ items }) {
         <img
           key={m.id}
           src={m.image}
-          alt={m.name}
+          alt=""
           className="hero-showcase-slide"
           data-active={i === index}
           loading={i === 0 ? 'eager' : 'lazy'}
@@ -56,24 +54,19 @@ export default function HeroFoodShowcase({ items }) {
         type="button"
         className="hero-showcase-nav hero-showcase-nav--prev"
         onClick={prev}
-        aria-label="Previous food"
+        aria-label="Previous"
       >
-        <IconChevronLeft size={20} stroke={2.2} />
+        <IconChevronLeft size={36} stroke={2.4} />
       </button>
 
       <button
         type="button"
         className="hero-showcase-nav hero-showcase-nav--next"
         onClick={next}
-        aria-label="Next food"
+        aria-label="Next"
       >
-        <IconChevronRight size={20} stroke={2.2} />
+        <IconChevronRight size={36} stroke={2.4} />
       </button>
-
-      <div className="hero-showcase-info">
-        <p className="hero-showcase-title">{item.name}</p>
-        <span className="hero-showcase-price">{item.price}</span>
-      </div>
     </div>
   );
 }

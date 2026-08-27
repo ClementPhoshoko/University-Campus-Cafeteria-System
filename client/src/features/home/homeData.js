@@ -22,6 +22,12 @@ import imgModernGathering from '../../assets/cafeterias/modern_gathering.png';
 import imgScienceBar from '../../assets/cafeterias/science_snack_bar.png';
 import heroPattern from '../../assets/heros/Pastel_Blue _Food_Doodle_Pattern.png';
 
+import adCombo from '../../assets/home_ads/Ultimate_Combo_for_Two.png';
+import adWraps from '../../assets/home_ads/Light_Meal_Combo_with_Wraps_and_Cola.png';
+import adCokeWings from '../../assets/home_ads/Ice_Cold_Coke_Wings_Combo.png';
+import adHalal from '../../assets/home_ads/Grilled_Halal_Chicken_Feast.png';
+import adCrispy from '../../assets/home_ads/Crispy_Fried_Chicken_Feast.png';
+
 import catHalal from '../../assets/food/Grilled_Salmon_with_Rice_and_Roasted_Vegetables.png';
 import catBreakfast from '../../assets/food/Rustic_Afternoon_Tea_with_Berry_Scones.png';
 import catDrinks from '../../assets/drinks/Refreshing_Slusher_with_Ice.png';
@@ -140,10 +146,11 @@ export const reviewsImage = imgReviews;
 export const heroImage = heroPattern;
 
 export const heroFoods = [
-  { id: 'paella', name: 'Seafood Paella Bowl', price: 'R64', image: paella },
-  { id: 'fettuccine', name: 'Creamy Chicken Fettuccine', price: 'R58', image: fettuccine },
-  { id: 'salmon-veg', name: 'Grilled Salmon & Veg', price: 'R68', image: salmonVeg },
-  { id: 'chicken-wrap', name: 'Chicken Wrap & Salad', price: 'R45', image: chickenWraps },
+  { id: 'ad-combo', image: adCombo },
+  { id: 'ad-wraps', image: adWraps },
+  { id: 'ad-coke-wings', image: adCokeWings },
+  { id: 'ad-halal', image: adHalal },
+  { id: 'ad-crispy', image: adCrispy },
 ];
 
 export const categories = [
