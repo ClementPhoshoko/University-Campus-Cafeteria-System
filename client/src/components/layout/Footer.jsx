@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { IconBrandInstagram, IconBrandTwitter, IconBrandWhatsapp } from '@tabler/icons-react';
+import logo from '../../assets/main_logo.png';
 import './Footer.css';
 
 const quickLinks = [
@@ -25,9 +26,12 @@ export default function Footer() {
       <div className="footer-inner">
         <div className="footer-top">
           <div className="footer-brand">
-            <Link to="/" className="footer-brand-name">
-              <span className="brand-merchant">Merchant</span>
-              <span className="brand-munchies">Munchies</span>
+            <Link to="/" className="footer-brand-name app-brand" aria-label="Merchant Munchies home">
+              <img src={logo} alt="" className="brand-logo" />
+              <span className="brand-word">
+                <span className="brand-merchant">merchant</span>
+                <span className="brand-munchies">munchies</span>
+              </span>
             </Link>
             <p className="footer-tagline">
               Fast, fresh meals for the Merchant Place team.
