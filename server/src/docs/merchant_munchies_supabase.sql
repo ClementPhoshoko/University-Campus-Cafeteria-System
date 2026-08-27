@@ -963,6 +963,72 @@ as $$
   select (select private.has_role('auditor'::public.app_role));
 $$;
 
+create or replace function private.is_executive()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select (select private.has_role('executive'::public.app_role));
+$$;
+
+create or replace function private.is_executive_assistant()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select (select private.has_role('executive_assistant'::public.app_role));
+$$;
+
+create or replace function private.is_meeting_organiser()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select (select private.has_role('meeting_organiser'::public.app_role));
+$$;
+
+create or replace function private.is_training_coordinator()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select (select private.has_role('training_coordinator'::public.app_role));
+$$;
+
+create or replace function private.is_cost_centre_owner()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select (select private.has_role('cost_centre_owner'::public.app_role));
+$$;
+
+create or replace function private.has_any_role(p_roles public.app_role[])
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.user_roles ur
+    where ur.user_id = (select auth.uid())
+      and ur.role = any(p_roles)
+      and (ur.expires_at is null or ur.expires_at > now())
+  );
+$$;
+
 create or replace function private.is_vendor_member(p_vendor_id uuid)
 returns boolean
 language sql
@@ -1051,6 +1117,12 @@ grant execute on function private.is_admin() to authenticated;
 grant execute on function private.is_finance() to authenticated;
 grant execute on function private.is_support() to authenticated;
 grant execute on function private.is_auditor() to authenticated;
+grant execute on function private.is_executive() to authenticated;
+grant execute on function private.is_executive_assistant() to authenticated;
+grant execute on function private.is_meeting_organiser() to authenticated;
+grant execute on function private.is_training_coordinator() to authenticated;
+grant execute on function private.is_cost_centre_owner() to authenticated;
+grant execute on function private.has_any_role(public.app_role[]) to authenticated;
 grant execute on function private.is_vendor_member(uuid) to authenticated;
 grant execute on function private.is_vendor_manager(uuid) to authenticated;
 grant execute on function private.can_view_order(uuid) to authenticated;
@@ -1091,6 +1163,11 @@ begin
   )
   on conflict (id) do update
     set email = excluded.email;
+
+  insert into public.user_roles (user_id, role)
+  values (new.id, 'employee')
+  on conflict do nothing;
+
   return new;
 end;
 $$;
