@@ -19,12 +19,38 @@
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.45s ease;
+  transform: scale(1.08);
+  transition:
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
 
-.hero-showcase-slide[data-active='true'] {
+/* Active slide: centered, visible */
+.hero-showcase-slide--active {
   opacity: 1;
+  transform: scale(1) translateX(0);
+  z-index: 1;
+}
+
+/* Inactive slides: hidden, waiting at entry side */
+.hero-showcase-slide--from-right {
+  transform: scale(1.08) translateX(30%);
+}
+
+.hero-showcase-slide--from-left {
+  transform: scale(1.08) translateX(-30%);
+}
+
+/* Exit animations: slide out opposite to entry direction */
+.hero-showcase-slide--exit-left {
+  opacity: 0;
+  transform: scale(0.95) translateX(-30%);
+}
+
+.hero-showcase-slide--exit-right {
+  opacity: 0;
+  transform: scale(0.95) translateX(30%);
 }
 
 .hero-showcase-nav {

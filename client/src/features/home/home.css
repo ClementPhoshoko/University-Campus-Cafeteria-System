@@ -111,7 +111,6 @@
   max-width: var(--content-max-width);
   margin: 0 auto;
   padding-top: var(--space-6);
-  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-8));
 }
 
 /* ── Location chip (page header action) ── */
