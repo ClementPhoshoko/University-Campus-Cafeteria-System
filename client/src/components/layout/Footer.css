@@ -29,7 +29,7 @@
 
 .footer-brand-name {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 2px;
   font-size: 1.15rem;
   font-weight: var(--font-weight-bold);
@@ -128,29 +128,8 @@
 /* ── Responsive ── */
 
 @media (max-width: 768px) {
-  .footer-inner {
-    padding: var(--space-10) var(--screen-padding-compact) var(--space-6);
-  }
-
-  .footer-top {
-    flex-direction: column;
-    gap: var(--space-8);
-  }
-
-  .footer-brand {
-    max-width: none;
-  }
-
-  .footer-links {
-    gap: var(--space-10);
-  }
-
-  .footer-socials {
-    justify-content: flex-start;
-  }
-
-  .footer-bottom {
-    margin-top: var(--space-8);
+  .footer {
+    display: none;
   }
 }
 
