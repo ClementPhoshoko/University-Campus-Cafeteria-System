@@ -7,15 +7,8 @@ import {
   IconChevronDown,
   IconChevronLeft,
   IconArrowRight,
-  IconChefHat,
-  IconSettings,
-  IconBuilding,
-  IconCreditCard,
-  IconHeadset,
-  IconFileText,
 } from '@tabler/icons-react';
 import { useAuth } from '../../hooks/useAuth.js';
-import { useRoles } from '../../hooks/useRoles.js';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import SectionHeader from '../../components/layout/SectionHeader.jsx';
@@ -63,25 +56,11 @@ function ScrollIndicator({ fillRef }) {
   );
 }
 
-const ROLE_SHORTCUTS = [
-  { roles: ['vendor_staff', 'vendor_manager'], label: 'Vendor Dashboard', to: '/vendor', Icon: IconChefHat },
-  { roles: ['admin'], label: 'Admin Panel', to: '/admin', Icon: IconSettings },
-  { roles: ['executive', 'executive_assistant', 'meeting_organiser'], label: 'Corporate Catering', to: '/corporate', Icon: IconBuilding },
-  { roles: ['finance'], label: 'Finance', to: '/finance', Icon: IconCreditCard },
-  { roles: ['support'], label: 'Support Centre', to: '/support', Icon: IconHeadset },
-  { roles: ['auditor'], label: 'Audit Logs', to: '/audit', Icon: IconFileText },
-];
-
 export default function HomePage() {
   const { profile } = useAuth();
-  const { hasAnyRole } = useRoles();
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
   const cafeteria = useScrollProgress();
   const meals = useScrollProgress();
-
-  const shortcuts = ROLE_SHORTCUTS.filter(
-    (s) => s.roles.some((r) => hasAnyRole(r)),
-  );
 
   const PER_PAGE = 3;
   const totalPages = Math.ceil(reviews.length / PER_PAGE);
@@ -147,18 +126,6 @@ export default function HomePage() {
       </div>
 
       <div className="home-content">
-        {shortcuts.length > 0 && (
-          <section className="home_shortcuts" aria-label="Quick access">
-            {shortcuts.map((s) => (
-              <Link key={s.to} to={s.to} className="home_shortcut-card">
-                <s.Icon size={22} stroke={1.8} />
-                <span className="home_shortcut-label">{s.label}</span>
-                <IconChevronRight size={16} stroke={2} className="home_shortcut-arrow" />
-              </Link>
-            ))}
-          </section>
-        )}
-
         <section aria-label="Our cafeterias">
           <SectionHeader title="Our cafeterias" actionLabel="View all" actionTo="/cafeterias" />
           <div className="home_cafeteria-scroll" ref={cafeteria.scrollRef} onScroll={cafeteria.onScroll}>
