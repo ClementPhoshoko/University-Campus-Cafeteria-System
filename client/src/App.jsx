@@ -8,7 +8,6 @@ import PublicOnlyRoute from './components/auth/PublicOnlyRoute.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 import ApplicationHeader from './components/layout/ApplicationHeader.jsx';
 import MobileBottomNav from './components/layout/MobileBottomNav.jsx';
-import Footer from './components/layout/Footer.jsx';
 import PageContainer from './components/layout/PageContainer.jsx';
 import Login from './features/auth/Login.jsx';
 import Signup from './features/auth/Signup.jsx';
@@ -30,7 +29,6 @@ function AppLayout() {
     <div className="app-shell">
       <ApplicationHeader />
       <Outlet />
-      <Footer />
       <MobileBottomNav />
     </div>
   );
