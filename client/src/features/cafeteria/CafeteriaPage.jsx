@@ -138,7 +138,7 @@ export default function CafeteriaPage() {
           {visibleCafeterias.length > 0 ? (
             <div className="cafeteria_grid">
               {visibleCafeterias.map((cafeteria) => (
-                <CafeteriaCard key={cafeteria.id} {...cafeteria} variant="directory" />
+                <CafeteriaCard key={cafeteria.id} {...cafeteria} variant="directory" to={`/cafeterias/${cafeteria.id}`} />
               ))}
             </div>
           ) : (

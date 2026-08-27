@@ -79,3 +79,194 @@
   box-shadow: 0 2px 8px rgba(10, 140, 255, 0.3);
   pointer-events: none;
 }
+
+/* Browse-menu list variant. The home tile remains unchanged. */
+.food_browse-item {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-default);
+  box-shadow: var(--elevation-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.food_browse-item:hover {
+  border-color: var(--color-border-selected);
+  box-shadow: var(--elevation-md);
+  transform: translateY(-2px);
+}
+
+.food_browse-image-wrap {
+  position: relative;
+  flex: 0 0 132px;
+  height: 132px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.food_browse-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-smooth);
+}
+
+.food_browse-item:hover .food_browse-image {
+  transform: scale(1.04);
+}
+
+.food_browse-content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  padding: var(--space-1) var(--space-2) var(--space-1) 0;
+}
+
+.food_browse-heading,
+.food_browse-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.food_browse-name {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 0.98rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.015em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.food_browse-status {
+  flex-shrink: 0;
+  color: var(--color-status-error);
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.food_browse-description {
+  display: -webkit-box;
+  margin: var(--space-2) 0 0;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.food_browse-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.food_browse-tags span {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-subtle);
+  color: var(--color-action-secondary-text);
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.food_browse-footer {
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+
+.food_browse-price-meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.food_browse-price {
+  color: var(--color-action-link);
+  font-size: 0.95rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.food_browse-prep {
+  color: var(--color-text-tertiary);
+  font-size: 0.72rem;
+}
+
+.food_browse-add {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-default);
+  color: var(--color-action-primary);
+  box-shadow: var(--elevation-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.food_browse-add:hover {
+  border-color: var(--blue-300);
+  background: var(--color-action-secondary);
+  color: var(--color-action-secondary-text);
+  transform: scale(1.06);
+}
+
+.food_browse-add:active {
+  transform: scale(0.94);
+}
+
+.food_browse-add--added {
+  border-color: var(--success-500);
+  background: var(--success-50);
+  color: var(--success-700);
+}
+
+.food_browse-add:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.food_browse-item--unavailable {
+  opacity: 0.7;
+}
+
+.food_browse-item--unavailable:hover {
+  transform: none;
+}
+
+@media (max-width: 480px) {
+  .food_browse-item {
+    gap: var(--space-3);
+    padding: var(--space-2);
+  }
+
+  .food_browse-image-wrap {
+    flex-basis: 96px;
+    height: 112px;
+  }
+
+  .food_browse-content {
+    padding-right: var(--space-1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .food_browse-item,
+  .food_browse-image,
+  .food_browse-add {
+    transition: none;
+  }
+}

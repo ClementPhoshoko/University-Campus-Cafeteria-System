@@ -1,7 +1,63 @@
-import { IconPlus } from '@tabler/icons-react';
+import { IconCheck, IconPlus } from '@tabler/icons-react';
 import './FoodCard.css';
 
-export default function FoodCard({ id, name, price, vendor, image, bestSeller }) {
+export default function FoodCard({
+  id,
+  name,
+  price,
+  vendor,
+  image,
+  bestSeller,
+  description,
+  status = 'available',
+  prepMinutes,
+  dietaryTags = [],
+  variant = 'default',
+  added = false,
+  onAdd,
+}) {
+  if (variant === 'browse') {
+    const unavailable = status !== 'available' || !onAdd;
+
+    return (
+      <article className={`food_browse-item${unavailable ? ' food_browse-item--unavailable' : ''}`}>
+        <div className="food_browse-image-wrap">
+          {bestSeller && <span className="home_best-seller">Best Seller</span>}
+          <img src={image} alt={name} className="food_browse-image" loading="lazy" />
+        </div>
+        <div className="food_browse-content">
+          <div className="food_browse-heading">
+            <h3 className="food_browse-name">{name}</h3>
+            {status !== 'available' && (
+              <span className="food_browse-status">{status === 'sold_out' ? 'Sold out' : 'Unavailable'}</span>
+            )}
+          </div>
+          <p className="food_browse-description">{description}</p>
+          {dietaryTags.length > 0 && (
+            <div className="food_browse-tags" aria-label="Dietary information">
+              {dietaryTags.map((tag) => <span key={tag}>{tag}</span>)}
+            </div>
+          )}
+          <div className="food_browse-footer">
+            <div className="food_browse-price-meta">
+              <span className="food_browse-price">{price}</span>
+              {prepMinutes && <span className="food_browse-prep">{prepMinutes} min</span>}
+            </div>
+            <button
+              type="button"
+              className={`food_browse-add${added ? ' food_browse-add--added' : ''}`}
+              onClick={onAdd}
+              disabled={unavailable}
+              aria-label={added ? `${name} added to cart` : `Add ${name} to cart`}
+            >
+              {added ? <IconCheck size={18} stroke={2.2} /> : <IconPlus size={18} stroke={2.2} />}
+            </button>
+          </div>
+        </div>
+      </article>
+    );
+  }
+
   return (
     <div className="home_vendor-card home_meal-card">
       {bestSeller && <span className="home_best-seller">Best Seller</span>}

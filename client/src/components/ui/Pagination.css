@@ -1,0 +1,95 @@
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xs);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--color-action-primary);
+  border-color: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+  box-shadow: var(--elevation-sm);
+}
+
+.pagination-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pagination-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xs);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
+  color: var(--color-text-secondary);
+  font-family: var(--font-primary);
+  font-size: 0.82rem;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pagination-page:hover {
+  background: var(--color-action-primary);
+  border-color: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+  box-shadow: var(--elevation-sm);
+}
+
+.pagination-page:active {
+  transform: scale(0.95);
+}
+
+.pagination-page--active {
+  background: var(--color-action-primary);
+  border-color: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+  box-shadow: var(--elevation-sm);
+}
+
+.pagination-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 38px;
+  color: var(--color-text-tertiary);
+  font-size: 0.82rem;
+}
