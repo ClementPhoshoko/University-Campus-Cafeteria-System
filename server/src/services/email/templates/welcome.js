@@ -1,7 +1,7 @@
 import baseLayout, { ctaButton } from './baseLayout.js';
 
 const FEATURES = [
-  'Browse menus from campus cafeterias',
+  'Browse menus from our cafeterias',
   'Order ahead and choose your pickup time',
   'Track your order in real time',
 ];

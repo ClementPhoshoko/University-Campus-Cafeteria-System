@@ -6,6 +6,7 @@ import PasswordInput from '../../components/PasswordInput.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import GlassTooltip from '../../components/GlassTooltip.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
+import cheerfulAvatar from '../../assets/avatars/Cheerful_Student_with_Green_Checkmark.png';
 
 export default function Signup() {
   const { signUp, signInWithGoogle, loading: authLoading } = useAuth();
@@ -65,6 +66,7 @@ export default function Signup() {
   if (success) {
     return (
       <>
+        <img src={cheerfulAvatar} alt="" className="auth-callback-avatar--hero" />
         <h1 className="auth-heading">Check your email</h1>
         <p className="auth-subtitle">
           We've sent a verification link to <strong>{form.email}</strong>. Please confirm your account.
