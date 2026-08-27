@@ -70,7 +70,7 @@ create table if not exists public.profiles (
   department text,
   business_unit text,
   cost_centre text,
-  preferred_campus_id uuid,
+  preferred_site_id uuid,
   preferred_building_id uuid,
   dietary_preferences jsonb not null default '[]'::jsonb,
   allergy_indicators jsonb not null default '[]'::jsonb,
@@ -93,7 +93,7 @@ create table if not exists public.user_roles (
 -- -----------------------------------------------------------------------------
 -- LOCATIONS
 -- -----------------------------------------------------------------------------
-create table if not exists public.campuses (
+create table if not exists public.sites (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
   code text unique,
@@ -108,7 +108,7 @@ create table if not exists public.campuses (
 
 create table if not exists public.buildings (
   id uuid primary key default gen_random_uuid(),
-  campus_id uuid not null references public.campuses(id) on delete restrict,
+  site_id uuid not null references public.sites(id) on delete restrict,
   name text not null,
   code text,
   address text,
@@ -117,8 +117,8 @@ create table if not exists public.buildings (
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (campus_id, name),
-  unique (campus_id, code)
+  unique (site_id, name),
+  unique (site_id, code)
 );
 
 create table if not exists public.floors (
@@ -153,8 +153,8 @@ create table if not exists public.delivery_locations (
 );
 
 alter table public.profiles
-  add constraint profiles_preferred_campus_fk
-  foreign key (preferred_campus_id) references public.campuses(id) on delete set null;
+  add constraint profiles_preferred_site_fk
+  foreign key (preferred_site_id) references public.sites(id) on delete set null;
 
 alter table public.profiles
   add constraint profiles_preferred_building_fk
@@ -194,7 +194,7 @@ create table if not exists public.vendor_users (
 create table if not exists public.vendor_locations (
   id uuid primary key default gen_random_uuid(),
   vendor_id uuid not null references public.vendors(id) on delete cascade,
-  campus_id uuid not null references public.campuses(id) on delete restrict,
+  site_id uuid not null references public.sites(id) on delete restrict,
   building_id uuid not null references public.buildings(id) on delete restrict,
   collection_point_id uuid references public.collection_points(id) on delete set null,
   service_status public.service_status not null default 'closed',
@@ -204,7 +204,7 @@ create table if not exists public.vendor_locations (
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (vendor_id, campus_id, building_id)
+  unique (vendor_id, site_id, building_id)
 );
 
 create table if not exists public.operating_hours (
@@ -397,7 +397,7 @@ create table if not exists public.orders (
   vendor_id uuid not null references public.vendors(id) on delete restrict,
   vendor_location_id uuid not null references public.vendor_locations(id) on delete restrict,
   order_type public.order_type not null default 'personal',
-  campus_id uuid not null references public.campuses(id) on delete restrict,
+  site_id uuid not null references public.sites(id) on delete restrict,
   building_id uuid not null references public.buildings(id) on delete restrict,
   collection_point_id uuid references public.collection_points(id) on delete restrict,
   delivery_location_id uuid references public.delivery_locations(id) on delete restrict,
@@ -626,7 +626,7 @@ create table if not exists public.corporate_orders (
   meeting_start_at timestamptz not null,
   meeting_end_at timestamptz not null,
   required_delivery_at timestamptz not null,
-  campus_id uuid not null references public.campuses(id) on delete restrict,
+  site_id uuid not null references public.sites(id) on delete restrict,
   building_id uuid not null references public.buildings(id) on delete restrict,
   floor_id uuid references public.floors(id) on delete set null,
   venue text not null,
@@ -707,8 +707,8 @@ create table if not exists public.corporate_deliveries (
 create table if not exists public.fee_rules (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  scope text not null check (scope in ('platform','campus','vendor_location')),
-  campus_id uuid references public.campuses(id) on delete cascade,
+  scope text not null check (scope in ('platform','site','vendor_location')),
+  site_id uuid references public.sites(id) on delete cascade,
   vendor_location_id uuid references public.vendor_locations(id) on delete cascade,
   fee_type text not null check (fee_type in ('service_fee','delivery_fee','processing_fee')),
   calculation_type text not null check (calculation_type in ('fixed','percentage')),
@@ -718,8 +718,8 @@ create table if not exists public.fee_rules (
   active_until timestamptz,
   priority integer not null default 0,
   is_active boolean not null default true,
-  check ((scope = 'platform' and campus_id is null and vendor_location_id is null)
-      or (scope = 'campus' and campus_id is not null and vendor_location_id is null)
+  check ((scope = 'platform' and site_id is null and vendor_location_id is null)
+      or (scope = 'site' and site_id is not null and vendor_location_id is null)
       or (scope = 'vendor_location' and vendor_location_id is not null)),
   check (active_until is null or active_until > active_from)
 );
@@ -727,7 +727,7 @@ create table if not exists public.fee_rules (
 create table if not exists public.tax_rates (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  campus_id uuid references public.campuses(id) on delete cascade,
+  site_id uuid references public.sites(id) on delete cascade,
   rate numeric(8,5) not null check (rate >= 0),
   active_from timestamptz not null default now(),
   active_until timestamptz,
@@ -758,19 +758,19 @@ create table if not exists public.feature_flags (
   key text primary key,
   description text,
   enabled boolean not null default false,
-  campus_id uuid references public.campuses(id) on delete cascade,
+  site_id uuid references public.sites(id) on delete cascade,
   vendor_id uuid references public.vendors(id) on delete cascade,
   rollout_percent smallint not null default 100 check (rollout_percent between 0 and 100),
   updated_by uuid references public.profiles(id) on delete set null,
   updated_at timestamptz not null default now(),
-  check (not (campus_id is not null and vendor_id is not null))
+  check (not (site_id is not null and vendor_id is not null))
 );
 
 create table if not exists public.announcements (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   body text not null,
-  campus_id uuid references public.campuses(id) on delete cascade,
+  site_id uuid references public.sites(id) on delete cascade,
   audience_roles public.app_role[] not null default '{}',
   starts_at timestamptz not null default now(),
   ends_at timestamptz,
@@ -871,10 +871,10 @@ create table if not exists public.security_events (
 -- -----------------------------------------------------------------------------
 -- INDEXES
 -- -----------------------------------------------------------------------------
-create index if not exists idx_profiles_campus on public.profiles(preferred_campus_id);
+create index if not exists idx_profiles_site on public.profiles(preferred_site_id);
 create index if not exists idx_user_roles_user on public.user_roles(user_id);
 create index if not exists idx_vendor_users_vendor on public.vendor_users(vendor_id, is_active);
-create index if not exists idx_vendor_locations_campus on public.vendor_locations(campus_id, is_active);
+create index if not exists idx_vendor_locations_site on public.vendor_locations(site_id, is_active);
 create index if not exists idx_vendor_locations_vendor on public.vendor_locations(vendor_id, is_active);
 create index if not exists idx_menus_location_date on public.menus(vendor_location_id, menu_date, status);
 create index if not exists idx_menu_items_vendor on public.menu_items(vendor_id, is_active);
@@ -1302,7 +1302,7 @@ DECLARE
   t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY[
-    'profiles','campuses','buildings','vendors','vendor_locations','menus','menu_items',
+    'profiles','sites','buildings','vendors','vendor_locations','menus','menu_items',
     'carts','cart_items','orders','payments','refunds','notifications','complaints',
     'corporate_orders','corporate_quotes','corporate_deliveries','cancellation_rules',
     'platform_settings','feature_flags','notification_templates'
@@ -1337,7 +1337,7 @@ DECLARE
   t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY[
-    'profiles','user_roles','campuses','buildings','floors','collection_points','delivery_locations',
+    'profiles','user_roles','sites','buildings','floors','collection_points','delivery_locations',
     'vendors','vendor_users','vendor_locations','operating_hours','menu_categories','menus','menu_items',
     'menu_menu_items','dietary_tags','allergens','menu_item_dietary_tags','menu_item_allergens',
     'option_groups','options','menu_item_option_groups','menu_item_inventory','collection_slots',
@@ -1358,7 +1358,7 @@ END $$;
 -- -----------------------------------------------------------------------------
 -- No anonymous access to application data.
 revoke all on table
-  public.profiles, public.user_roles, public.campuses, public.buildings, public.floors,
+  public.profiles, public.user_roles, public.sites, public.buildings, public.floors,
   public.collection_points, public.delivery_locations, public.vendors, public.vendor_users,
   public.vendor_locations, public.operating_hours, public.menu_categories, public.menus,
   public.menu_items, public.menu_menu_items, public.dietary_tags, public.allergens,
@@ -1378,7 +1378,7 @@ from anon, authenticated;
 -- RLS policies do not grant table privileges. Grant only the operations the
 -- client actually needs; RLS still decides which rows are accessible.
 grant select on table
-  public.profiles, public.user_roles, public.campuses, public.buildings, public.floors,
+  public.profiles, public.user_roles, public.sites, public.buildings, public.floors,
   public.collection_points, public.delivery_locations, public.vendors, public.vendor_users,
   public.vendor_locations, public.operating_hours, public.menu_categories, public.menus,
   public.menu_items, public.menu_menu_items, public.dietary_tags, public.allergens,
@@ -1428,7 +1428,7 @@ on table public.orders to authenticated;
 
 -- Service role is server-only and may bypass RLS.
 grant all privileges on table
-  public.profiles, public.user_roles, public.campuses, public.buildings, public.floors,
+  public.profiles, public.user_roles, public.sites, public.buildings, public.floors,
   public.collection_points, public.delivery_locations, public.vendors, public.vendor_users,
   public.vendor_locations, public.operating_hours, public.menu_categories, public.menus,
   public.menu_items, public.menu_menu_items, public.dietary_tags, public.allergens,
@@ -1465,7 +1465,7 @@ using (
   or (select private.is_auditor())
 );
 
-create policy campuses_authenticated_read on public.campuses
+create policy sites_authenticated_read on public.sites
 for select to authenticated using (is_active or (select private.is_admin()));
 create policy buildings_authenticated_read on public.buildings
 for select to authenticated using (is_active or (select private.is_admin()));

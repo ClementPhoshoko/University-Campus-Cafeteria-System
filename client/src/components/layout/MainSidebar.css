@@ -1,0 +1,206 @@
+/* ============================================
+   MainSidebar — reusable vertical section navigation
+   All classes prefixed main-sidebar_
+   Breakpoints: 360 (compact) / 768 (primary) — project standard.
+   ============================================ */
+
+.main-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.main-sidebar_heading {
+  margin: 0;
+  padding: 0 var(--space-3);
+  color: var(--color-text-tertiary);
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.main-sidebar_list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.main-sidebar_item {
+  margin: 0;
+  padding: 0;
+}
+
+.main-sidebar_button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.main-sidebar_button::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 3px;
+  height: 60%;
+  border-radius: var(--radius-full);
+  background: var(--color-action-primary);
+  transition: transform var(--transition-smooth);
+}
+
+.main-sidebar_button:hover {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-primary);
+}
+
+.main-sidebar_button--active {
+  background: var(--color-surface-selected);
+  border-color: var(--color-border-selected);
+  color: var(--color-text-primary);
+}
+
+.main-sidebar_button--active::before {
+  transform: translateY(-50%) scaleY(1);
+}
+
+.main-sidebar_icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-default);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-icon-secondary);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.main-sidebar_button:hover .main-sidebar_icon {
+  color: var(--color-icon-active);
+}
+
+.main-sidebar_button--active .main-sidebar_icon {
+  background: var(--color-surface-default);
+  border-color: var(--color-border-selected);
+  color: var(--color-icon-active);
+}
+
+.main-sidebar_text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.main-sidebar_title {
+  font-size: 0.9rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.01em;
+  color: inherit;
+}
+
+.main-sidebar_subtitle {
+  font-size: 0.76rem;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.main-sidebar_button--active .main-sidebar_subtitle {
+  color: var(--color-text-secondary);
+}
+
+/* ── Mobile: horizontal tab strip ── */
+
+@media (max-width: 768px) {
+  .main-sidebar {
+    gap: var(--space-2);
+  }
+
+  .main-sidebar_heading {
+    display: none;
+  }
+
+  .main-sidebar_list {
+    flex-direction: row;
+    gap: var(--space-2);
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: var(--space-1);
+    margin: 0 calc(-1 * var(--screen-padding-compact));
+    padding-left: var(--screen-padding-compact);
+    padding-right: var(--screen-padding-compact);
+  }
+
+  .main-sidebar_list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .main-sidebar_item {
+    flex: 0 0 auto;
+  }
+
+  .main-sidebar_button {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    width: auto;
+    min-width: 96px;
+    padding: var(--space-3) var(--space-4);
+    text-align: center;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-default);
+  }
+
+  .main-sidebar_button::before {
+    display: none;
+  }
+
+  .main-sidebar_button--active {
+    background: var(--color-surface-selected);
+    border-color: var(--color-border-selected);
+  }
+
+  .main-sidebar_icon {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+  }
+
+  .main-sidebar_button--active .main-sidebar_icon {
+    background: transparent;
+    border: none;
+  }
+
+  .main-sidebar_text {
+    align-items: center;
+  }
+
+  .main-sidebar_title {
+    font-size: 0.8rem;
+  }
+
+  .main-sidebar_subtitle {
+    display: none;
+  }
+}

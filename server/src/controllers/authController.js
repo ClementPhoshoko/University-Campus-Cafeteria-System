@@ -92,7 +92,7 @@ export async function me(req, res) {
     department: profile.department,
     business_unit: profile.business_unit,
     cost_centre: profile.cost_centre,
-    preferred_campus_id: profile.preferred_campus_id,
+    preferred_site_id: profile.preferred_site_id,
     preferred_building_id: profile.preferred_building_id
   };
 

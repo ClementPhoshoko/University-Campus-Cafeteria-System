@@ -17,6 +17,7 @@ import AuthCallback from './features/auth/AuthCallback.jsx';
 import EmailConfirmation from './features/auth/EmailConfirmation.jsx';
 import PasswordRecovery from './features/auth/PasswordRecovery.jsx';
 import HomePage from './features/home/HomePage.jsx';
+import ProfilePage from './features/profile/ProfilePage.jsx';
 import './features/auth/auth.css';
 
 function isOnboardingCompleted(profile) {
@@ -81,7 +82,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/cafeterias" element={<PlaceholderPage title="Cafeterias" />} />
           <Route path="/orders" element={<PlaceholderPage title="Orders" />} />
-          <Route path="/profile" element={<PlaceholderPage title="Profile" />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/corporate" element={<PlaceholderPage title="Corporate Catering" />} />
           <Route path="/vendor" element={<PlaceholderPage title="Vendor Dashboard" />} />
           <Route path="/admin" element={<PlaceholderPage title="Admin Panel" />} />

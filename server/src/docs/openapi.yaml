@@ -16,8 +16,8 @@ tags:
     description: Authenticate and manage user sessions
   - name: Profile
     description: User profile management
-  - name: Campuses
-    description: Campus and building management
+  - name: Sites
+    description: Site and building management
   - name: Vendors
     description: Vendor/outlet management
   - name: Menus
@@ -682,7 +682,7 @@ components:
           type: string
         cost_centre:
           type: string
-        preferred_campus_id:
+        preferred_site_id:
           type: string
           format: uuid
         preferred_building_id:
