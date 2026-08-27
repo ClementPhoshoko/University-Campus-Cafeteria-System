@@ -139,6 +139,13 @@ export const deliveryImage = imgDelivery;
 export const reviewsImage = imgReviews;
 export const heroImage = heroPattern;
 
+export const heroFoods = [
+  { id: 'paella', name: 'Seafood Paella Bowl', price: 'R64', image: paella },
+  { id: 'fettuccine', name: 'Creamy Chicken Fettuccine', price: 'R58', image: fettuccine },
+  { id: 'salmon-veg', name: 'Grilled Salmon & Veg', price: 'R68', image: salmonVeg },
+  { id: 'chicken-wrap', name: 'Chicken Wrap & Salad', price: 'R45', image: chickenWraps },
+];
+
 export const categories = [
   { id: 'halal', name: 'Halal', image: catHalal },
   { id: 'breakfast', name: 'Breakfast', image: catBreakfast },

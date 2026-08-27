@@ -18,7 +18,8 @@ import FoodCard from '../../components/cards/FoodCard.jsx';
 import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import androidBadge from '../../assets/android_download-PJqqAvJc.png';
 import iosBadge from '../../assets/ios_download-Dn_KtiFi.png';
-import { cafeterias, popularMeals, categories, deliveryImage, reviews, reviewsImage, heroImage } from './homeData.js';
+import HeroFoodShowcase from '../../components/hero/HeroFoodShowcase.jsx';
+import { cafeterias, popularMeals, categories, deliveryImage, reviews, reviewsImage, heroImage, heroFoods } from './homeData.js';
 import './home.css';
 
 function greeting() {
@@ -86,25 +87,30 @@ export default function HomePage() {
       <div className="home-hero">
         <img src={heroImage} alt="" className="home-hero-bg" aria-hidden="true" />
         <div className="home-hero-inner">
-          <PageHeader
-            eyebrow={greeting()}
-            title={`${firstName} 👋`}
-            subtitle="What are you eating today?"
-            actions={
-              <button type="button" className="home_location-pill" aria-label="Change campus">
-                <IconMapPin size={16} stroke={1.8} />
-                Main Campus
-                <IconChevronDown size={15} stroke={2} />
-              </button>
-            }
-          />
-          <div className="search-field">
-            <IconSearch size={18} stroke={1.8} />
-            <input
-              type="search"
-              placeholder="Search cafeterias or meals…"
-              aria-label="Search cafeterias or meals"
+          <div className="home-hero-left">
+            <PageHeader
+              eyebrow={greeting()}
+              title={`${firstName} 👋`}
+              subtitle="What are you eating today?"
+              actions={
+                <button type="button" className="home_location-pill" aria-label="Change campus">
+                  <IconMapPin size={16} stroke={1.8} />
+                  Main Campus
+                  <IconChevronDown size={15} stroke={2} />
+                </button>
+              }
             />
+            <div className="search-field">
+              <IconSearch size={18} stroke={1.8} />
+              <input
+                type="search"
+                placeholder="Search cafeterias or meals…"
+                aria-label="Search cafeterias or meals"
+              />
+            </div>
+          </div>
+          <div className="home-hero-right">
+            <HeroFoodShowcase items={heroFoods} />
           </div>
         </div>
       </div>
