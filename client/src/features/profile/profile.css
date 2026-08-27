@@ -596,6 +596,13 @@
   flex-direction: column;
 }
 
+.profile_favourite-empty {
+  margin: 0;
+  padding: var(--space-4) 0;
+  color: var(--color-text-tertiary);
+  font-size: 0.8rem;
+}
+
 .profile_favourite-item {
   display: flex;
   align-items: center;

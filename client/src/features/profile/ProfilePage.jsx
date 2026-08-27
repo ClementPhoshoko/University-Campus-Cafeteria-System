@@ -288,7 +288,9 @@ function FavouritesSection() {
             <span className="profile_favourites-count">{vendors.length}</span>
           </div>
           <div className="profile_favourite-list">
-            {vendors.map((vendor) => (
+            {vendors.length === 0 ? (
+              <p className="profile_favourite-empty">Nothing to show here</p>
+            ) : vendors.map((vendor) => (
               <div key={vendor.name} className="profile_favourite-item">
                 <div>
                   <div className="profile_favourite-title-row">
@@ -311,7 +313,9 @@ function FavouritesSection() {
             <span className="profile_favourites-count">{meals.length}</span>
           </div>
           <div className="profile_favourite-list">
-            {meals.map((meal) => (
+            {meals.length === 0 ? (
+              <p className="profile_favourite-empty">Nothing to show here</p>
+            ) : meals.map((meal) => (
               <div key={meal.name} className="profile_favourite-item">
                 <div>
                   <div className="profile_favourite-title-row">
