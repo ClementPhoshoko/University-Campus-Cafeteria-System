@@ -16,6 +16,7 @@ import AuthCallback from './features/auth/AuthCallback.jsx';
 import EmailConfirmation from './features/auth/EmailConfirmation.jsx';
 import PasswordRecovery from './features/auth/PasswordRecovery.jsx';
 import HomePage from './features/home/HomePage.jsx';
+import CafeteriaPage from './features/cafeteria/CafeteriaPage.jsx';
 import ProfilePage from './features/profile/ProfilePage.jsx';
 import './features/auth/auth.css';
 
@@ -78,7 +79,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomePage />} />
-          <Route path="/cafeterias" element={<PlaceholderPage title="Cafeterias" />} />
+          <Route path="/cafeterias" element={<CafeteriaPage />} />
           <Route path="/orders" element={<PlaceholderPage title="Orders" />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/corporate" element={<PlaceholderPage title="Corporate Catering" />} />

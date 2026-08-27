@@ -29,6 +29,10 @@ export default function CafeteriaCard({
   description,
   walkTime,
   prepWindow,
+  rating,
+  reviewCount,
+  location,
+  variant = 'default',
   to = '/cafeterias',
 }) {
   const CategoryIcon = CATEGORY_ICONS[category] || IconToolsKitchen2;
@@ -36,7 +40,7 @@ export default function CafeteriaCard({
   return (
     <Link
       to={to}
-      className={`home_vendor-card${status === 'closed' ? ' home_closed' : ''}`}
+      className={`home_vendor-card${status === 'closed' ? ' home_closed' : ''}${variant === 'directory' ? ' home_vendor-card--directory' : ''}`}
     >
       <div className="home_vendor-media">
         <img src={image} alt={name} loading="lazy" />
@@ -57,6 +61,16 @@ export default function CafeteriaCard({
       <div className="home_vendor-body">
         <h3>{name}</h3>
         <p className="home_vendor-desc">{description}</p>
+        {variant === 'directory' && (
+          <div className="home_vendor-directory-meta">
+            {rating && (
+              <span className="home_vendor-rating" aria-label={`${rating} out of 5 stars`}>
+                <span aria-hidden="true">★</span> {rating} <small>({reviewCount || 0})</small>
+              </span>
+            )}
+            {location && <span className="home_vendor-location">{location}</span>}
+          </div>
+        )}
         <div className="home_vendor-divider" />
         <div className="home_vendor-meta">
           <span>
