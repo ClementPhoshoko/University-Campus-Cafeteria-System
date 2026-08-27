@@ -1,32 +1,32 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from "react";
 import {
   IconAdjustmentsHorizontal,
-  IconBuildingCommunity,
   IconMap,
   IconSearch,
-} from '@tabler/icons-react';
-import PageContainer from '../../components/layout/PageContainer.jsx';
-import CafeteriaCard from '../../components/cards/CafeteriaCard.jsx';
-import { cafeterias } from '../home/homeData.js';
-import './cafeteria.css';
+} from "@tabler/icons-react";
+import PageContainer from "../../components/layout/PageContainer.jsx";
+import PageHeader from "../../components/layout/PageHeader.jsx";
+import CafeteriaCard from "../../components/cards/CafeteriaCard.jsx";
+import { cafeterias, heroImage } from "../home/homeData.js";
+import "./cafeteria.css";
 
 const DIRECTORY_FILTERS = [
-  { id: 'all', label: 'All' },
-  { id: 'open', label: 'Open now' },
-  { id: 'main', label: 'Main site' },
-  { id: 'north', label: 'North site' },
-  { id: 'south', label: 'South site' },
+  { id: "all", label: "All" },
+  { id: "open", label: "Open now" },
+  { id: "main", label: "Main site" },
+  { id: "north", label: "North site" },
+  { id: "south", label: "South site" },
 ];
 
 const DIRECTORY_DETAILS = {
-  'main-campus-cafe': { site: 'main', location: 'Main site · Near the atrium', rating: '4.6', reviewCount: 230 },
-  'library-bistro': { site: 'north', location: 'North site · Library level', rating: '4.8', reviewCount: 184 },
-  'res-court-kitchen': { site: 'south', location: 'South site · Residence court', rating: '4.7', reviewCount: 156 },
-  'science-snack-bar': { site: 'north', location: 'North site · Science building', rating: '4.4', reviewCount: 98 },
-  'grill-house-court': { site: 'main', location: 'Main site · Courtyard', rating: '4.5', reviewCount: 212 },
-  'dining-hall-central': { site: 'main', location: 'Main site · Central hall', rating: '4.6', reviewCount: 301 },
-  'east-gate-gather': { site: 'south', location: 'South site · East gate', rating: '4.5', reviewCount: 127 },
-  'courtyard-eats': { site: 'south', location: 'South site · Open courtyard', rating: '4.3', reviewCount: 89 },
+  "main-campus-cafe": { site: "main", location: "Main site · Near the atrium", rating: "4.6", reviewCount: 230 },
+  "library-bistro": { site: "north", location: "North site · Library level", rating: "4.8", reviewCount: 184 },
+  "res-court-kitchen": { site: "south", location: "South site · Residence court", rating: "4.7", reviewCount: 156 },
+  "science-snack-bar": { site: "north", location: "North site · Science building", rating: "4.4", reviewCount: 98 },
+  "grill-house-court": { site: "main", location: "Main site · Courtyard", rating: "4.5", reviewCount: 212 },
+  "dining-hall-central": { site: "main", location: "Main site · Central hall", rating: "4.6", reviewCount: 301 },
+  "east-gate-gather": { site: "south", location: "South site · East gate", rating: "4.5", reviewCount: 127 },
+  "courtyard-eats": { site: "south", location: "South site · Open courtyard", rating: "4.3", reviewCount: 89 },
 };
 
 const DIRECTORY_CAFETERIAS = cafeterias.map((cafeteria) => ({
@@ -38,7 +38,7 @@ function FilterChip({ active, children, onClick }) {
   return (
     <button
       type="button"
-      className={`cafeteria_filter-chip${active ? ' cafeteria_filter-chip--active' : ''}`}
+      className={`cafeteria_filter-chip${active ? " cafeteria_filter-chip--active" : ""}`}
       onClick={onClick}
       aria-pressed={active}
     >
@@ -64,8 +64,8 @@ function FilterChipGroup({ activeFilter, onChange }) {
 }
 
 export default function CafeteriaPage() {
-  const [query, setQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [query, setQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(true);
 
   const visibleCafeterias = useMemo(() => {
@@ -75,8 +75,8 @@ export default function CafeteriaPage() {
       const matchesQuery = !normalizedQuery
         || [cafeteria.name, cafeteria.description, cafeteria.location]
           .some((value) => value.toLowerCase().includes(normalizedQuery));
-      const matchesFilter = activeFilter === 'all'
-        || (activeFilter === 'open' && cafeteria.status === 'open')
+      const matchesFilter = activeFilter === "all"
+        || (activeFilter === "open" && cafeteria.status === "open")
         || cafeteria.site === activeFilter;
 
       return matchesQuery && matchesFilter;
@@ -84,49 +84,56 @@ export default function CafeteriaPage() {
   }, [activeFilter, query]);
 
   return (
-    <PageContainer className="cafeteria_page-container">
-      <main className="cafeteria_page">
-        <header className="cafeteria_header">
-          <div className="cafeteria_header-copy">
-            <span className="cafeteria_overline"><IconBuildingCommunity size={16} /> Food at work</span>
-            <h1 className="cafeteria_title">Cafeterias</h1>
-            <p className="cafeteria_subtitle">Discover cafeterias across Merchant Place.</p>
-          </div>
-          <button type="button" className="cafeteria_map-button" aria-label="Open cafeteria map">
-            <IconMap size={18} stroke={1.8} />
-            <span>Map view</span>
-          </button>
-        </header>
-
-        <section className="cafeteria_controls" aria-label="Search and filter cafeterias">
-          <label className="cafeteria_search">
-            <IconSearch size={19} stroke={1.8} aria-hidden="true" />
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search cafeterias..."
-              aria-label="Search cafeterias"
+    <PageContainer noPad>
+      <div className="cafeteria_hero">
+        <img src={heroImage} alt="" className="cafeteria_hero-bg" aria-hidden="true" />
+        <div className="cafeteria_hero-inner">
+          <div className="cafeteria_hero-left">
+            <PageHeader
+              eyebrow="Food at work"
+              title="Cafeterias"
+              subtitle="Discover cafeterias across Merchant Place."
             />
-          </label>
-          <button
-            type="button"
-            className="cafeteria_filter-button"
-            aria-label="Toggle cafeteria filters"
-            aria-expanded={showFilters}
-            onClick={() => setShowFilters((visible) => !visible)}
-          >
-            <IconAdjustmentsHorizontal size={18} stroke={1.8} />
-            <span>Filters</span>
-          </button>
-        </section>
+            <div className="cafeteria_search-row">
+              <div className="search-field">
+                <IconSearch size={18} stroke={1.8} />
+                <input
+                  type="search"
+                  placeholder="Search cafeterias..."
+                  aria-label="Search cafeterias"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </div>
+              <button
+                type="button"
+                className="cafeteria_filter-button"
+                aria-label="Toggle cafeteria filters"
+                aria-expanded={showFilters}
+                onClick={() => setShowFilters((visible) => !visible)}
+              >
+                <IconAdjustmentsHorizontal size={18} stroke={1.8} />
+                <span>Filters</span>
+              </button>
+            </div>
+            <div className={`cafeteria_filters-bar${showFilters ? " cafeteria_filters-bar--visible" : ""}`}>
+              <FilterChipGroup activeFilter={activeFilter} onChange={setActiveFilter} />
+            </div>
+          </div>
+          <div className="cafeteria_hero-right">
+            <div className="cafeteria_map-placeholder" aria-label="Map view placeholder">
+              <IconMap size={32} stroke={1.4} />
+              <span>Map view coming soon</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        {showFilters && <FilterChipGroup activeFilter={activeFilter} onChange={setActiveFilter} />}
-
+      <main className="cafeteria_page">
         <section className="cafeteria_results" aria-live="polite" aria-label="Cafeteria results">
           <div className="cafeteria_results-heading">
             <span>{visibleCafeterias.length} cafeterias</span>
-            {query && <span className="cafeteria_results-query">for “{query}”</span>}
+            {query && <span className="cafeteria_results-query">for "{query}"</span>}
           </div>
           {visibleCafeterias.length > 0 ? (
             <div className="cafeteria_grid">
@@ -138,7 +145,7 @@ export default function CafeteriaPage() {
             <div className="cafeteria_empty">
               <h2>No cafeterias found</h2>
               <p>Try changing your search or filters.</p>
-              <button type="button" className="cafeteria_clear-button" onClick={() => { setQuery(''); setActiveFilter('all'); }}>
+              <button type="button" className="cafeteria_clear-button" onClick={() => { setQuery(""); setActiveFilter("all"); }}>
                 Clear filters
               </button>
             </div>
