@@ -1,5 +1,5 @@
 -- Verification queries for migration 002
--- Run in Supabase SQL Editor AFTER 002_default_role_and_helper_functions.sql
+-- Run in Supabase SQL Editor to verify role functions and helpers
 -- These checks are read-only; they do not mutate data.
 
 -- =============================================================================
