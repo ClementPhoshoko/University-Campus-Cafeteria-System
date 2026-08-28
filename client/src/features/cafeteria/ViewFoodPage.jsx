@@ -5,6 +5,7 @@ import PageContainer from '../../components/layout/PageContainer.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
+import ViewFoodBackground from '../../components/ViewFoodBackground.jsx';
 import { cafeterias, popularMeals } from '../home/homeData.js';
 import './ViewFoodPage.css';
 
@@ -97,6 +98,7 @@ export default function ViewFoodPage() {
 
   return (
     <PageContainer className="view-food-page-container">
+      <ViewFoodBackground />
       <main className="view-food-page">
         <button type="button" className="view-food__back" onClick={() => navigate(`/cafeterias/${cafeteriaId}`)}>
           <IconArrowLeft size={18} stroke={1.8} />
@@ -115,38 +117,43 @@ export default function ViewFoodPage() {
             </div>
 
             <div className="view-food__details">
-              <div className="view-food__header">
-                <div>
-                  <h1 className="view-food__name">{menuItem.name}</h1>
-                  <p className="view-food__description">{menuItem.description}</p>
-                </div>
+              <div className="view-food__section">
+                <h1 className="view-food__name">{menuItem.name}</h1>
+                <p className="view-food__description">{menuItem.description}</p>
               </div>
 
-              <div className="view-food__meta">
+              <div className="view-food__section view-food__section--row">
                 <span className="view-food__price">{menuItem.basePrice}</span>
+                <span className="view-food__divider" />
                 <span className="view-food__prep">
-                  <IconClock size={15} stroke={1.5} />
+                  <IconClock size={14} stroke={1.8} />
                   {menuItem.prepMinutes} min
                 </span>
               </div>
 
               {menuItem.dietaryTags.length > 0 && (
-                <div className="view-food__tags">
-                  {menuItem.dietaryTags.map((tag) => (
-                    <span key={tag} className="view-food__tag">
-                      {tag === 'Halal' && <IconCheck size={12} stroke={2} />}
-                      {tag === 'High Protein' && <IconFlame size={12} stroke={2} />}
-                      {tag === 'Vegetarian' && <IconLeaf size={12} stroke={2} />}
-                      {tag}
-                    </span>
-                  ))}
+                <div className="view-food__section">
+                  <span className="view-food__section-label">Dietary</span>
+                  <div className="view-food__tags">
+                    {menuItem.dietaryTags.map((tag) => (
+                      <span key={tag} className="view-food__tag">
+                        {tag === 'Halal' && <IconCheck size={14} stroke={2} />}
+                        {tag === 'High Protein' && <IconFlame size={14} stroke={2} />}
+                        {tag === 'Vegetarian' && <IconLeaf size={14} stroke={2} />}
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
 
               {menuItem.allergens.length > 0 && (
-                <div className="view-food__allergens">
-                  <IconInfoCircle size={14} stroke={1.5} />
-                  <span>Contains: {menuItem.allergens.join(', ')}</span>
+                <div className="view-food__section">
+                  <span className="view-food__section-label">
+                    <IconInfoCircle size={14} stroke={1.8} />
+                    Contains
+                  </span>
+                  <span className="view-food__allergen-list">{menuItem.allergens.join(', ')}</span>
                 </div>
               )}
             </div>
@@ -237,6 +244,7 @@ export default function ViewFoodPage() {
                 key={item.id}
                 {...item}
                 price={item.price}
+                to={`/cafeterias/${item.cafeteriaId}/menu/${item.id}`}
               />
             ))}
           </div>
