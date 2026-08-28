@@ -10,13 +10,6 @@ export default function ReviewStats({ rating, totalReviews, ratingBreakdown, sel
         <div className="review-stats-overview">
           <span className="review-stats-rating">{rating.toFixed(1)}</span>
           <div className="review-stats-meta">
-            <div className="review-stats-stars">
-              {Array.from({ length: 5 }, (_, i) =>
-                i < Math.round(rating)
-                  ? <IconStarFilled key={i} size={14} stroke={0} />
-                  : <IconStar key={i} size={14} stroke={1.5} />
-              )}
-            </div>
             <span className="review-stats-count">{totalReviews} reviews</span>
           </div>
         </div>

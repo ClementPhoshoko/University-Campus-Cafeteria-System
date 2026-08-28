@@ -136,9 +136,9 @@ function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating,
                       onClick={() => setReviewRating(star)}
                     >
                       {(hoverRating || reviewRating) >= star ? (
-                        <IconStarFilled size={12} stroke={0} />
+                        <IconStarFilled size={20} stroke={0} />
                       ) : (
-                        <IconStar size={12} stroke={1.5} />
+                        <IconStar size={20} stroke={1.5} />
                       )}
                     </button>
                   ))}
