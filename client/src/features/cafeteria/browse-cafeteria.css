@@ -336,6 +336,7 @@
   grid-template-columns: 280px minmax(0, 1fr);
   gap: var(--space-6);
   align-items: start;
+  overflow: visible;
 }
 
 .browse_cafeteria-reviews-list {
