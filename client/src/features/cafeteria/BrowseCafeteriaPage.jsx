@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react';
-import { IconArrowLeft, IconClock, IconMapPin, IconStar } from '@tabler/icons-react';
+import { IconArrowLeft, IconClock, IconMapPin, IconStar, IconStarFilled } from '@tabler/icons-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import ReviewStats from '../../components/reviews/ReviewStats.jsx';
-import AddReviewModal from '../../components/reviews/AddReviewModal.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
 import { cafeterias, popularMeals, reviews } from '../home/homeData.js';
 import imgSlusher from '../../assets/drinks/Refreshing_Slusher_with_Ice.png';
@@ -68,11 +67,30 @@ function SearchRow() {
   );
 }
 
-function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating, onRatingClick, onClose, cafeteriaName, hasOrdered, onAddReview }) {
+function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating, onRatingClick, onClose, cafeteriaName, hasOrdered, showAddReview, onToggleAddReview, onSubmitReview }) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hoverRating, setHoverRating] = useState(0);
   const totalPages = Math.ceil(filteredReviews.length / REVIEWS_PER_PAGE);
   const startIndex = (currentPage - 1) * REVIEWS_PER_PAGE;
   const visibleReviews = filteredReviews.slice(startIndex, startIndex + REVIEWS_PER_PAGE);
+
+  const handleSubmit = async () => {
+    if (reviewRating === 0) return;
+    setIsSubmitting(true);
+    await onSubmitReview({ rating: reviewRating, comment: reviewComment });
+    setReviewRating(0);
+    setReviewComment('');
+    setIsSubmitting(false);
+  };
+
+  const handleCancel = () => {
+    setReviewRating(0);
+    setReviewComment('');
+    onToggleAddReview();
+  };
 
   return (
     <section className="browse_cafeteria-reviews" aria-live="polite" aria-label="Reviews">
@@ -82,8 +100,8 @@ function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating,
           <h2>{selectedRating ? `${selectedRating} Star Reviews` : 'Reviews'}</h2>
         </div>
         <div className="browse_cafeteria-reviews-actions">
-          {hasOrdered && (
-            <button type="button" className="browse_cafeteria-reviews-new" onClick={onAddReview}>
+          {hasOrdered && !showAddReview && (
+            <button type="button" className="browse_cafeteria-reviews-new" onClick={onToggleAddReview}>
               New
             </button>
           )}
@@ -103,6 +121,53 @@ function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating,
         />
 
         <div className="browse_cafeteria-reviews-list">
+          {showAddReview && (
+            <div className="browse_cafeteria-reviews-add">
+              <div className="browse_cafeteria-reviews-add-stars">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    className="browse_cafeteria-reviews-add-star"
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    onClick={() => setReviewRating(star)}
+                  >
+                    {(hoverRating || reviewRating) >= star ? (
+                      <IconStarFilled size={24} stroke={0} />
+                    ) : (
+                      <IconStar size={24} stroke={1.5} />
+                    )}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                className="browse_cafeteria-reviews-add-input"
+                placeholder="Share your experience..."
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                rows={3}
+              />
+              <div className="browse_cafeteria-reviews-add-actions">
+                <button
+                  type="button"
+                  className="browse_cafeteria-reviews-add-cancel"
+                  onClick={handleCancel}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="browse_cafeteria-reviews-add-submit"
+                  onClick={handleSubmit}
+                  disabled={reviewRating === 0 || isSubmitting}
+                >
+                  {isSubmitting ? 'Posting...' : 'Post Review'}
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="browse_cafeteria-reviews-items">
             {visibleReviews.map((review) => (
               <ReviewItem
@@ -132,7 +197,7 @@ export default function BrowseCafeteriaPage() {
   const [activeCategory, setActiveCategory] = useState('Popular');
   const [addedItems, setAddedItems] = useState([]);
   const [selectedRating, setSelectedRating] = useState(null);
-  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showAddReview, setShowAddReview] = useState(false);
   const cafeteria = cafeterias.find((item) => item.id === cafeteriaId) || cafeterias[0];
 
   const isReviewsView = searchParams.get('view') === 'reviews';
@@ -156,6 +221,7 @@ export default function BrowseCafeteriaPage() {
 
   const showReviews = () => {
     setSelectedRating(null);
+    setShowAddReview(false);
     setSearchParams({ view: 'reviews' });
   };
 
@@ -212,7 +278,9 @@ export default function BrowseCafeteriaPage() {
             onClose={() => setSearchParams({})}
             cafeteriaName={cafeteria.name}
             hasOrdered={hasOrdered}
-            onAddReview={() => setShowReviewModal(true)}
+            showAddReview={showAddReview}
+            onToggleAddReview={() => setShowAddReview(!showAddReview)}
+            onSubmitReview={handleReviewSubmit}
           />
         ) : (
           <section className="browse_cafeteria-menu" aria-live="polite" aria-label={`${activeCategory} menu`}>
@@ -245,13 +313,6 @@ export default function BrowseCafeteriaPage() {
           </section>
         )}
       </main>
-
-      <AddReviewModal
-        isOpen={showReviewModal}
-        onClose={() => setShowReviewModal(false)}
-        onSubmit={handleReviewSubmit}
-        cafeteriaName={cafeteria.name}
-      />
     </PageContainer>
   );
 }
