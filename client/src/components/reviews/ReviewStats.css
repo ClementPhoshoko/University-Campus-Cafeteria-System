@@ -113,24 +113,3 @@
   color: var(--color-text-tertiary);
   text-align: right;
 }
-
-.review-stats-clear {
-  width: 100%;
-  margin-top: var(--space-4);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
-  background: var(--glass-bg);
-  color: var(--color-text-secondary);
-  font-family: var(--font-primary);
-  font-size: 0.78rem;
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.review-stats-clear:hover {
-  background: var(--color-action-primary);
-  border-color: var(--color-action-primary);
-  color: var(--color-action-primary-text);
-}

@@ -38,16 +38,6 @@ export default function ReviewStats({ rating, totalReviews, ratingBreakdown, sel
             );
           })}
         </div>
-
-        {selectedRating && (
-          <button
-            type="button"
-            className="review-stats-clear"
-            onClick={() => onRatingClick(null)}
-          >
-            Show all reviews
-          </button>
-        )}
       </div>
     </div>
   );
