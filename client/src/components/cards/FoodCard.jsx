@@ -78,7 +78,7 @@ export default function FoodCard({
     );
   }
 
-  return (
+  const cardContent = (
     <div className="home_vendor-card home_meal-card">
       {bestSeller && <span className="home_best-seller">Best Seller</span>}
       <div className="home_vendor-media">
@@ -98,4 +98,10 @@ export default function FoodCard({
       </div>
     </div>
   );
+
+  if (to) {
+    return <Link to={to} className="home_meal-card-link">{cardContent}</Link>;
+  }
+
+  return cardContent;
 }

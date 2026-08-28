@@ -4,6 +4,11 @@
   height: 280px;
 }
 
+.home_meal-card-link {
+  text-decoration: none;
+  color: inherit;
+}
+
 .home_meal-card .home_vendor-body {
   padding-top: var(--space-4);
 }
