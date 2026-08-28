@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { IconArrowLeft, IconClock, IconCheck, IconPlus, IconFlame, IconLeaf, IconInfoCircle } from '@tabler/icons-react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
@@ -63,6 +63,7 @@ export default function ViewFoodPage() {
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState({});
   const [addedToCart, setAddedToCart] = useState(false);
+  const specialInstructionsRef = useRef(null);
   const cafeteria = cafeterias.find((c) => c.id === cafeteriaId) || cafeterias[0];
   const menuItem = SAMPLE_MENU_ITEM;
 
@@ -185,9 +186,13 @@ export default function ViewFoodPage() {
                 </label>
                 <textarea
                   id="special-instructions"
+                  ref={specialInstructionsRef}
                   className="view-food__special-input"
                   placeholder="Any special requests or dietary requirements..."
-                  rows={2}
+                  onChange={(e) => {
+                    e.target.style.height = 'auto';
+                    e.target.style.height = `${e.target.scrollHeight}px`;
+                  }}
                 />
               </div>
             </div>
