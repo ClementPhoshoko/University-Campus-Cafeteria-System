@@ -101,12 +101,12 @@ function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating,
         </div>
         <div className="browse_cafeteria-reviews-actions">
           {hasOrdered && !showAddReview && (
-            <button type="button" className="browse_cafeteria-reviews-close" onClick={onToggleAddReview} aria-label="Add review">
-              <IconStarFilled size={16} stroke={1.5} />
+            <button type="button" className="browse_cafeteria-reviews-new" onClick={onToggleAddReview}>
+              New
             </button>
           )}
-          <button type="button" className="browse_cafeteria-reviews-close" onClick={onClose} aria-label="Close reviews">
-            <IconX size={16} stroke={1.5} />
+          <button type="button" className="browse_cafeteria-reviews-close" onClick={onClose}>
+            Close
           </button>
         </div>
       </div>
@@ -124,6 +124,7 @@ function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating,
           {showAddReview && (
             <div className="browse_cafeteria-reviews-add">
               <div className="home_review-head">
+                <span className="browse_cafeteria-reviews-add-label">Give us rating</span>
                 <div className="home_review-stars">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -163,7 +164,7 @@ function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating,
                 </div>
               </div>
               <textarea
-                className="home_review-text"
+                className="browse_cafeteria-reviews-add-input"
                 placeholder="Share your experience..."
                 value={reviewComment}
                 onChange={(e) => setReviewComment(e.target.value)}
