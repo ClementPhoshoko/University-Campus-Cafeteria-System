@@ -300,23 +300,26 @@
   flex: 0 0 auto;
   height: 38px;
   padding: 0 var(--space-4);
-  border: 1px solid var(--color-action-primary);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-xs);
-  background: var(--color-action-primary);
-  color: var(--color-action-primary-text);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
+  color: var(--color-text-secondary);
   font-family: var(--font-primary);
   font-size: 0.78rem;
-  font-weight: var(--font-weight-semibold);
-  box-shadow: var(--elevation-sm);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 .browse_cafeteria-reviews-new:hover,
 .browse_cafeteria-reviews-close:hover {
-  background: var(--color-action-primary-hover);
-  border-color: var(--color-action-primary-hover);
-  box-shadow: var(--elevation-md);
+  background: var(--color-action-primary);
+  border-color: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+  box-shadow: var(--elevation-sm);
 }
 
 .browse_cafeteria-reviews-new:active,
@@ -416,6 +419,7 @@
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -441,13 +445,14 @@
 .browse_cafeteria-reviews-add-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+  box-shadow: var(--glass-shadow);
 }
 
 .browse_cafeteria-reviews-add-btn:disabled:hover {
   background: var(--glass-bg);
   border-color: var(--glass-border);
   color: var(--color-text-secondary);
-  box-shadow: none;
+  box-shadow: var(--glass-shadow);
 }
 
 .browse_cafeteria-reviews-add-input {
