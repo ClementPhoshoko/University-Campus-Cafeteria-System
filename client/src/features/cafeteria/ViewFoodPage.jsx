@@ -226,13 +226,12 @@ export default function ViewFoodPage() {
           <div className="view-food__suggestions-header">
             <h2 className="view-food__suggestions-title">We think you might like these</h2>
           </div>
-          <div className="view-food__suggestions-scroll" ref={() => {}}>
+          <div className="view-food__suggestions-scroll">
             {SUGGESTED_ITEMS.map((item) => (
               <FoodCard
                 key={item.id}
                 {...item}
                 price={item.price}
-                variant="browse"
               />
             ))}
           </div>
