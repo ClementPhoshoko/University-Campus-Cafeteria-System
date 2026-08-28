@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { IconArrowLeft, IconClock, IconMapPin, IconStar, IconStarFilled, IconX, IconCheck } from '@tabler/icons-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
@@ -73,6 +73,7 @@ function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating,
   const [reviewComment, setReviewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hoverRating, setHoverRating] = useState(0);
+  const reviewTextareaRef = useRef(null);
   const totalPages = Math.ceil(filteredReviews.length / REVIEWS_PER_PAGE);
   const startIndex = (currentPage - 1) * REVIEWS_PER_PAGE;
   const visibleReviews = filteredReviews.slice(startIndex, startIndex + REVIEWS_PER_PAGE);
@@ -164,10 +165,15 @@ function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating,
                 </div>
               </div>
               <textarea
+                ref={reviewTextareaRef}
                 className="browse_cafeteria-reviews-add-input"
                 placeholder="Share your experience..."
                 value={reviewComment}
-                onChange={(e) => setReviewComment(e.target.value)}
+                onChange={(e) => {
+                  setReviewComment(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = `${e.target.scrollHeight}px`;
+                }}
               />
             </div>
           )}
