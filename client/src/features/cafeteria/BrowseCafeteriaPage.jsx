@@ -311,6 +311,7 @@ export default function BrowseCafeteriaPage() {
                     variant="browse"
                     added={addedItems.includes(item.id)}
                     onAdd={() => addItem(item.id)}
+                    to={`/cafeterias/${cafeteriaId}/menu/${item.id}`}
                   />
                 ))}
               </div>
