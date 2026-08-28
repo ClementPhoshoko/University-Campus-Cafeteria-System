@@ -10,7 +10,8 @@ export default function ReviewStats({ rating, totalReviews, ratingBreakdown, sel
         <div className="review-stats-overview">
           <span className="review-stats-rating">{rating.toFixed(1)}</span>
           <div className="review-stats-meta">
-            <span className="review-stats-count">{totalReviews} reviews</span>
+            <span className="review-stats-count">{totalReviews}</span>
+            <span className="review-stats-label-text">reviews</span>
           </div>
         </div>
 

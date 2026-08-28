@@ -34,6 +34,7 @@
 .review-stats-meta {
   display: flex;
   align-items: center;
+  gap: var(--space-2);
 }
 
 .review-stats-stars {
@@ -43,7 +44,13 @@
 }
 
 .review-stats-overview .review-stats-count {
-  font-size: 0.9rem;
+  font-size: 0.98rem;
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.review-stats-overview .review-stats-label-text {
+  font-size: 0.98rem;
   color: var(--color-text-tertiary);
   font-weight: var(--font-weight-medium);
 }

@@ -372,7 +372,7 @@
 }
 
 .browse_cafeteria-reviews-add-label {
-  font-size: 0.78rem;
+  font-size: 0.98rem;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-tertiary);
 }
@@ -451,7 +451,6 @@
 
 .browse_cafeteria-reviews-add-input {
   width: 100%;
-  min-height: 80px;
   padding: var(--space-3);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-sm);
