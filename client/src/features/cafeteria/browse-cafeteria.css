@@ -300,26 +300,23 @@
   flex: 0 0 auto;
   height: 38px;
   padding: 0 var(--space-4);
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--color-action-primary);
   border-radius: var(--radius-xs);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  color: var(--color-text-secondary);
+  background: var(--color-action-primary);
+  color: var(--color-action-primary-text);
   font-family: var(--font-primary);
   font-size: 0.78rem;
-  font-weight: var(--font-weight-medium);
-  box-shadow: var(--glass-shadow);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: var(--elevation-sm);
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 .browse_cafeteria-reviews-new:hover,
 .browse_cafeteria-reviews-close:hover {
-  background: var(--color-action-primary);
-  border-color: var(--color-action-primary);
-  color: var(--color-action-primary-text);
-  box-shadow: var(--elevation-sm);
+  background: var(--color-action-primary-hover);
+  border-color: var(--color-action-primary-hover);
+  box-shadow: var(--elevation-md);
 }
 
 .browse_cafeteria-reviews-new:active,
