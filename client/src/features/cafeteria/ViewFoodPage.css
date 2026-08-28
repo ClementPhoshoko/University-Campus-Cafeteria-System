@@ -46,13 +46,15 @@
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  background: var(--color-surface-subtle);
+  padding: var(--space-6);
+  background: var(--color-surface-default);
 }
 
 .view-food__image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  border-radius: var(--radius-md);
 }
 
 .view-food__status-badge {
@@ -153,9 +155,6 @@
 }
 
 .view-food__sidebar {
-  position: sticky;
-  top: var(--space-6);
-  align-self: start;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
