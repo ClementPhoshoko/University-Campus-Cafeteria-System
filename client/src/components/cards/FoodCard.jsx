@@ -1,4 +1,5 @@
 import { IconCheck, IconPlus } from '@tabler/icons-react';
+import { Link } from 'react-router-dom';
 import './FoodCard.css';
 
 export default function FoodCard({
@@ -15,17 +16,18 @@ export default function FoodCard({
   variant = 'default',
   added = false,
   onAdd,
+  to,
 }) {
   if (variant === 'browse') {
     const unavailable = status !== 'available' || !onAdd;
 
-    return (
-      <article className={`food_browse-item${unavailable ? ' food_browse-item--unavailable' : ''}`}>
+    const cardContent = (
+      <>
         <div className="food_browse-image-wrap">
           {bestSeller && <span className="home_best-seller">Best Seller</span>}
           <img src={image} alt={name} className="food_browse-image" loading="lazy" />
         </div>
-        <div className="food_browse-content">
+        <div className="food_browse-body">
           <div className="food_browse-heading">
             <h3 className="food_browse-name">{name}</h3>
             {status !== 'available' && (
@@ -46,7 +48,11 @@ export default function FoodCard({
             <button
               type="button"
               className={`food_browse-add${added ? ' food_browse-add--added' : ''}`}
-              onClick={onAdd}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAdd?.();
+              }}
               disabled={unavailable}
               aria-label={added ? `${name} added to cart` : `Add ${name} to cart`}
             >
@@ -54,6 +60,20 @@ export default function FoodCard({
             </button>
           </div>
         </div>
+      </>
+    );
+
+    if (to) {
+      return (
+        <Link to={to} className={`food_browse-item${unavailable ? ' food_browse-item--unavailable' : ''}`}>
+          {cardContent}
+        </Link>
+      );
+    }
+
+    return (
+      <article className={`food_browse-item${unavailable ? ' food_browse-item--unavailable' : ''}`}>
+        {cardContent}
       </article>
     );
   }

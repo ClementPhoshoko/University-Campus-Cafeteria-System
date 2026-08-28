@@ -81,7 +81,8 @@
 }
 
 /* Browse-menu list variant. The home tile remains unchanged. */
-.food_browse-item {
+.food_browse-item,
+a.food_browse-item {
   display: flex;
   gap: var(--space-4);
   padding: var(--space-3);
@@ -90,9 +91,12 @@
   background: var(--color-surface-default);
   box-shadow: var(--elevation-sm);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  text-decoration: none;
+  color: inherit;
 }
 
-.food_browse-item:hover {
+.food_browse-item:hover,
+a.food_browse-item:hover {
   border-color: var(--color-border-selected);
   box-shadow: var(--elevation-md);
   transform: translateY(-2px);

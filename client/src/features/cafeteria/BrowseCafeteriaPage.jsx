@@ -5,6 +5,7 @@ import PageContainer from '../../components/layout/PageContainer.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import ReviewStats from '../../components/reviews/ReviewStats.jsx';
+import AddReviewModal from '../../components/reviews/AddReviewModal.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
 import { cafeterias, popularMeals, reviews } from '../home/homeData.js';
 import imgSlusher from '../../assets/drinks/Refreshing_Slusher_with_Ice.png';
@@ -67,7 +68,7 @@ function SearchRow() {
   );
 }
 
-function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating, onRatingClick, onClose }) {
+function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating, onRatingClick, onClose, cafeteriaName, hasOrdered, onAddReview }) {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(filteredReviews.length / REVIEWS_PER_PAGE);
   const startIndex = (currentPage - 1) * REVIEWS_PER_PAGE;
@@ -80,9 +81,16 @@ function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating,
           <span className="browse_cafeteria-eyebrow">Customer feedback</span>
           <h2>{selectedRating ? `${selectedRating} Star Reviews` : 'Reviews'}</h2>
         </div>
-        <button type="button" className="browse_cafeteria-reviews-close" onClick={onClose}>
-          Close
-        </button>
+        <div className="browse_cafeteria-reviews-actions">
+          {hasOrdered && (
+            <button type="button" className="browse_cafeteria-reviews-new" onClick={onAddReview}>
+              New
+            </button>
+          )}
+          <button type="button" className="browse_cafeteria-reviews-close" onClick={onClose}>
+            Close
+          </button>
+        </div>
       </div>
 
       <div className="browse_cafeteria-reviews-grid">
@@ -124,11 +132,13 @@ export default function BrowseCafeteriaPage() {
   const [activeCategory, setActiveCategory] = useState('Popular');
   const [addedItems, setAddedItems] = useState([]);
   const [selectedRating, setSelectedRating] = useState(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const cafeteria = cafeterias.find((item) => item.id === cafeteriaId) || cafeterias[0];
 
   const isReviewsView = searchParams.get('view') === 'reviews';
   const rating = 4.6;
   const totalReviews = 230;
+  const hasOrdered = true;
 
   const visibleItems = useMemo(() => {
     if (activeCategory === 'Popular') return MENU_ITEMS.filter((item) => item.categoryId === 'popular' || item.categoryId === 'lunch');
@@ -147,6 +157,11 @@ export default function BrowseCafeteriaPage() {
   const showReviews = () => {
     setSelectedRating(null);
     setSearchParams({ view: 'reviews' });
+  };
+
+  const handleReviewSubmit = async (reviewData) => {
+    console.log('Submitting review:', reviewData);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   };
 
   return (
@@ -195,6 +210,9 @@ export default function BrowseCafeteriaPage() {
             selectedRating={selectedRating}
             onRatingClick={setSelectedRating}
             onClose={() => setSearchParams({})}
+            cafeteriaName={cafeteria.name}
+            hasOrdered={hasOrdered}
+            onAddReview={() => setShowReviewModal(true)}
           />
         ) : (
           <section className="browse_cafeteria-menu" aria-live="polite" aria-label={`${activeCategory} menu`}>
@@ -227,6 +245,13 @@ export default function BrowseCafeteriaPage() {
           </section>
         )}
       </main>
+
+      <AddReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        onSubmit={handleReviewSubmit}
+        cafeteriaName={cafeteria.name}
+      />
     </PageContainer>
   );
 }

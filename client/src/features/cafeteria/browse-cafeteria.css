@@ -290,6 +290,37 @@
   margin-bottom: var(--space-6);
 }
 
+.browse_cafeteria-reviews-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.browse_cafeteria-reviews-new {
+  flex: 0 0 auto;
+  height: 38px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-action-primary);
+  border-radius: var(--radius-xs);
+  background: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+  font-family: var(--font-primary);
+  font-size: 0.78rem;
+  font-weight: var(--font-weight-semibold);
+  box-shadow: var(--elevation-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.browse_cafeteria-reviews-new:hover {
+  background: var(--color-action-primary-hover);
+  border-color: var(--color-action-primary-hover);
+  box-shadow: var(--elevation-md);
+}
+
+.browse_cafeteria-reviews-new:active {
+  transform: scale(0.97);
+}
+
 .browse_cafeteria-reviews-close {
   flex: 0 0 auto;
   height: 38px;
