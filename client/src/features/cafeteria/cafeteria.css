@@ -45,8 +45,8 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  width: 280px;
-  height: 200px;
+  width: 320px;
+  height: 210px;
   border-radius: var(--radius-lg);
   border: 1px dashed var(--color-border-default);
   background: rgba(255, 255, 255, 0.4);
