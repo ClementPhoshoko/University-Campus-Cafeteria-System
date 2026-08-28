@@ -162,6 +162,7 @@ export default function HomePage() {
                 vendor={m.vendor}
                 image={m.image}
                 bestSeller={m.bestSeller}
+                to={`/cafeterias/${m.cafeteriaId}/menu/${m.id}`}
               />
             ))}
             <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all meals">

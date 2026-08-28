@@ -129,16 +129,16 @@ export const cafeterias = [
 ];
 
 export const popularMeals = [
-  { id: 'chicken-wrap', name: 'Chicken Wrap & Salad', price: 'R45', vendor: 'Main Campus Cafe', image: chickenWraps, bestSeller: true },
-  { id: 'fish-bowl', name: 'Grilled Fish Rice Bowl', price: 'R52', vendor: 'Res Court Kitchen', image: fishBowl },
-  { id: 'tea-scones', name: 'Tea & Berry Scones', price: 'R28', vendor: 'East Gate Gathering', image: teaScones },
-  { id: 'fettuccine', name: 'Creamy Chicken Fettuccine', price: 'R58', vendor: 'Library Bistro', image: fettuccine, bestSeller: true },
-  { id: 'paella', name: 'Seafood Paella Bowl', price: 'R64', vendor: 'Res Court Kitchen', image: paella, bestSeller: true },
-  { id: 'chicken-dinner', name: 'Grilled Chicken Platter', price: 'R62', vendor: 'Grill House Court', image: chickenDinner },
-  { id: 'teriyaki-bowl', name: 'Beef Teriyaki Rice Bowl', price: 'R56', vendor: 'Dining Hall Central', image: teriyakiBowl },
-  { id: 'chicken-wedges', name: 'Chicken Wrap & Wedges', price: 'R50', vendor: 'Grill House Court', image: chickenWedges },
-  { id: 'penne-pasta', name: 'Creamy Chicken Penne', price: 'R54', vendor: 'Library Bistro', image: pennePasta },
-  { id: 'salmon-veg', name: 'Grilled Salmon & Veg', price: 'R68', vendor: 'Res Court Kitchen', image: salmonVeg, bestSeller: true },
+  { id: 'chicken-wrap', name: 'Chicken Wrap & Salad', price: 'R45', vendor: 'Main Campus Cafe', image: chickenWraps, bestSeller: true, cafeteriaId: 'main-campus-cafe' },
+  { id: 'fish-bowl', name: 'Grilled Fish Rice Bowl', price: 'R52', vendor: 'Res Court Kitchen', image: fishBowl, cafeteriaId: 'res-court-kitchen' },
+  { id: 'tea-scones', name: 'Tea & Berry Scones', price: 'R28', vendor: 'East Gate Gathering', image: teaScones, cafeteriaId: 'east-gate-gather' },
+  { id: 'fettuccine', name: 'Creamy Chicken Fettuccine', price: 'R58', vendor: 'Library Bistro', image: fettuccine, bestSeller: true, cafeteriaId: 'library-bistro' },
+  { id: 'paella', name: 'Seafood Paella Bowl', price: 'R64', vendor: 'Res Court Kitchen', image: paella, bestSeller: true, cafeteriaId: 'res-court-kitchen' },
+  { id: 'chicken-dinner', name: 'Grilled Chicken Platter', price: 'R62', vendor: 'Grill House Court', image: chickenDinner, cafeteriaId: 'grill-house-court' },
+  { id: 'teriyaki-bowl', name: 'Beef Teriyaki Rice Bowl', price: 'R56', vendor: 'Dining Hall Central', image: teriyakiBowl, cafeteriaId: 'dining-hall-central' },
+  { id: 'chicken-wedges', name: 'Chicken Wrap & Wedges', price: 'R50', vendor: 'Grill House Court', image: chickenWedges, cafeteriaId: 'grill-house-court' },
+  { id: 'penne-pasta', name: 'Creamy Chicken Penne', price: 'R54', vendor: 'Library Bistro', image: pennePasta, cafeteriaId: 'library-bistro' },
+  { id: 'salmon-veg', name: 'Grilled Salmon & Veg', price: 'R68', vendor: 'Res Court Kitchen', image: salmonVeg, bestSeller: true, cafeteriaId: 'res-court-kitchen' },
 ];
 
 export const deliveryImage = imgDelivery;
