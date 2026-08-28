@@ -5,7 +5,6 @@ import PageContainer from '../../components/layout/PageContainer.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
-import AddReviewModal from '../../components/reviews/AddReviewModal.jsx';
 import { cafeterias, popularMeals } from '../home/homeData.js';
 import './ViewFoodPage.css';
 
@@ -63,7 +62,6 @@ export default function ViewFoodPage() {
   const { cafeteriaId, menuItemId } = useParams();
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState({});
-  const [showReviewModal, setShowReviewModal] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const cafeteria = cafeterias.find((c) => c.id === cafeteriaId) || cafeterias[0];
   const menuItem = SAMPLE_MENU_ITEM;
@@ -94,11 +92,6 @@ export default function ViewFoodPage() {
   const handleAddToCart = () => {
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
-  };
-
-  const handleReviewSubmit = async (reviewData) => {
-    console.log('Submitting review:', reviewData);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
   };
 
   return (
@@ -245,13 +238,6 @@ export default function ViewFoodPage() {
           </div>
         </section>
       </main>
-
-      <AddReviewModal
-        isOpen={showReviewModal}
-        onClose={() => setShowReviewModal(false)}
-        onSubmit={handleReviewSubmit}
-        cafeteriaName={cafeteria.name}
-      />
     </PageContainer>
   );
 }

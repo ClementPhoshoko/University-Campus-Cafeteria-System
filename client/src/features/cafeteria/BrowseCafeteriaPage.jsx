@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { IconArrowLeft, IconClock, IconMapPin, IconStar, IconStarFilled } from '@tabler/icons-react';
+import { IconArrowLeft, IconClock, IconMapPin, IconStar, IconStarFilled, IconX, IconCheck } from '@tabler/icons-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
@@ -101,12 +101,12 @@ function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating,
         </div>
         <div className="browse_cafeteria-reviews-actions">
           {hasOrdered && !showAddReview && (
-            <button type="button" className="browse_cafeteria-reviews-new" onClick={onToggleAddReview}>
-              New
+            <button type="button" className="browse_cafeteria-reviews-close" onClick={onToggleAddReview} aria-label="Add review">
+              <IconStarFilled size={16} stroke={1.5} />
             </button>
           )}
-          <button type="button" className="browse_cafeteria-reviews-close" onClick={onClose}>
-            Close
+          <button type="button" className="browse_cafeteria-reviews-close" onClick={onClose} aria-label="Close reviews">
+            <IconX size={16} stroke={1.5} />
           </button>
         </div>
       </div>
@@ -123,48 +123,51 @@ function ReviewsSection({ rating, totalReviews, filteredReviews, selectedRating,
         <div className="browse_cafeteria-reviews-list">
           {showAddReview && (
             <div className="browse_cafeteria-reviews-add">
-              <div className="browse_cafeteria-reviews-add-stars">
-                {[1, 2, 3, 4, 5].map((star) => (
+              <div className="home_review-head">
+                <div className="home_review-stars">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      className="browse_cafeteria-reviews-add-star"
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      onClick={() => setReviewRating(star)}
+                    >
+                      {(hoverRating || reviewRating) >= star ? (
+                        <IconStarFilled size={12} stroke={0} />
+                      ) : (
+                        <IconStar size={12} stroke={1.5} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div className="browse_cafeteria-reviews-add-actions">
                   <button
-                    key={star}
                     type="button"
-                    className="browse_cafeteria-reviews-add-star"
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    onClick={() => setReviewRating(star)}
+                    className="browse_cafeteria-reviews-add-btn"
+                    onClick={handleCancel}
+                    aria-label="Cancel"
                   >
-                    {(hoverRating || reviewRating) >= star ? (
-                      <IconStarFilled size={24} stroke={0} />
-                    ) : (
-                      <IconStar size={24} stroke={1.5} />
-                    )}
+                    <IconX size={14} stroke={1.5} />
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    className="browse_cafeteria-reviews-add-btn browse_cafeteria-reviews-add-btn-submit"
+                    onClick={handleSubmit}
+                    disabled={reviewRating === 0 || isSubmitting}
+                    aria-label="Submit review"
+                  >
+                    <IconCheck size={14} stroke={1.5} />
+                  </button>
+                </div>
               </div>
               <textarea
-                className="browse_cafeteria-reviews-add-input"
+                className="home_review-text"
                 placeholder="Share your experience..."
                 value={reviewComment}
                 onChange={(e) => setReviewComment(e.target.value)}
-                rows={3}
               />
-              <div className="browse_cafeteria-reviews-add-actions">
-                <button
-                  type="button"
-                  className="browse_cafeteria-reviews-add-cancel"
-                  onClick={handleCancel}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="browse_cafeteria-reviews-add-submit"
-                  onClick={handleSubmit}
-                  disabled={reviewRating === 0 || isSubmitting}
-                >
-                  {isSubmitting ? 'Posting...' : 'Post Review'}
-                </button>
-              </div>
             </div>
           )}
 
