@@ -1,0 +1,89 @@
+.collection-slot-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+.collection-slot-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.collection-slot-picker__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.collection-slot-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: var(--space-2);
+}
+
+.collection-slot-picker__slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.collection-slot-picker__slot:hover:not(:disabled) {
+  border-color: var(--color-action-primary);
+  background: rgba(10, 140, 255, 0.05);
+}
+
+.collection-slot-picker__slot--selected {
+  border-color: var(--color-action-primary);
+  background: rgba(10, 140, 255, 0.1);
+}
+
+.collection-slot-picker__slot--unavailable {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.collection-slot-picker__time {
+  font-size: 0.82rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.collection-slot-picker__slot--unavailable .collection-slot-picker__time {
+  color: var(--color-text-tertiary);
+}
+
+.collection-slot-picker__check {
+  color: var(--color-action-primary);
+}
+
+.collection-slot-picker__unavailable {
+  font-size: 0.65rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

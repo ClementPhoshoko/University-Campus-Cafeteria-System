@@ -19,6 +19,7 @@ import HomePage from './features/home/HomePage.jsx';
 import CafeteriaPage from './features/cafeteria/CafeteriaPage.jsx';
 import BrowseCafeteriaPage from './features/cafeteria/BrowseCafeteriaPage.jsx';
 import ViewFoodPage from './features/cafeteria/ViewFoodPage.jsx';
+import CartPage from './features/cart/CartPage.jsx';
 import ProfilePage from './features/profile/ProfilePage.jsx';
 import './features/auth/auth.css';
 
@@ -84,6 +85,7 @@ export default function App() {
           <Route path="/cafeterias" element={<CafeteriaPage />} />
           <Route path="/cafeterias/:cafeteriaId" element={<BrowseCafeteriaPage />} />
           <Route path="/cafeterias/:cafeteriaId/menu/:menuItemId" element={<ViewFoodPage />} />
+          <Route path="/cart" element={<CartPage />} />
           <Route path="/orders" element={<PlaceholderPage title="Orders" />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/corporate" element={<PlaceholderPage title="Corporate Catering" />} />

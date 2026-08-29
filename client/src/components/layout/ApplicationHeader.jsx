@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { IconBell } from '@tabler/icons-react';
+import { IconBell, IconShoppingCart, IconChefHat } from '@tabler/icons-react';
 import DesktopNav from './DesktopNav.jsx';
 import logo from '../../assets/main_logo.png';
 
@@ -38,6 +38,9 @@ export default function ApplicationHeader({ actions }) {
 
         <div className="topbar-actions">
           {actions}
+          <button type="button" className="icon-button" aria-label="Your cart">
+            <IconShoppingCart size={19} stroke={1.8} />
+          </button>
           <button type="button" className="icon-button" aria-label="Notifications">
             <IconBell size={19} stroke={1.8} />
           </button>
