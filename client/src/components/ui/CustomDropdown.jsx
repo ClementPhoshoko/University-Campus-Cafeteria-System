@@ -96,7 +96,7 @@ export default function CustomDropdown({
                   onClick={() => option.available && handleSelect(option)}
                   disabled={!option.available}
                 >
-                  <span className="custom-dropdown__option-content">
+                  <span className="custom-dropdown__option-left">
                     {showClockIcon && (
                       <IconClock size={14} stroke={1.8} className="custom-dropdown__option-icon" />
                     )}
@@ -104,14 +104,16 @@ export default function CustomDropdown({
                       {option.name}
                       {option.timeRange && <span className="custom-dropdown__option-time"> - {option.timeRange}</span>}
                     </span>
-                    {option.priceDelta && option.priceDelta !== 'R0.00' && (
-                      <span className="custom-dropdown__option-price">+{option.priceDelta}</span>
-                    )}
+                  </span>
+                  <span className="custom-dropdown__option-right">
                     {!option.available && (
                       <span className="custom-dropdown__option-unavailable">Full</span>
                     )}
+                    {option.priceDelta && option.priceDelta !== 'R0.00' && (
+                      <span className="custom-dropdown__option-price">+{option.priceDelta}</span>
+                    )}
+                    {isSelected && <IconCheck size={16} stroke={2.5} className="custom-dropdown__check" />}
                   </span>
-                  {isSelected && <IconCheck size={16} stroke={2.5} className="custom-dropdown__check" />}
                 </button>
               );
             })
