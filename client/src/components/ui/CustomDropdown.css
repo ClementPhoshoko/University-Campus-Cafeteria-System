@@ -77,7 +77,7 @@
   top: calc(100% + var(--space-1));
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: 9999;
   background: var(--color-surface-default);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);

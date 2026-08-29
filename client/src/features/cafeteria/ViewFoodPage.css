@@ -158,9 +158,11 @@
 }
 
 .view-food__sidebar {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+  z-index: 1;
 }
 
 .view-food__customize {
