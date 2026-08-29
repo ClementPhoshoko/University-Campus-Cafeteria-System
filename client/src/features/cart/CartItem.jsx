@@ -5,11 +5,19 @@ import './CartItem.css';
 export default function CartItem({ item, onUpdateQuantity, onRemove }) {
   const { menuItem, quantity, selectedOptions, specialInstructions } = item;
 
+  const getBasePrice = () => {
+    if (typeof menuItem.basePrice === 'string') {
+      return parseFloat(menuItem.basePrice.replace(/[^0-9.]/g, ''));
+    }
+    return menuItem.basePrice || 0;
+  };
+
   const optionsTotal = selectedOptions.reduce((sum, opt) => sum + opt.priceDelta, 0);
-  const lineTotal = (menuItem.basePrice + optionsTotal) * quantity;
+  const lineTotal = (getBasePrice() + optionsTotal) * quantity;
 
   const formatPrice = (price) => {
-    const numPrice = typeof price === 'string' ? parseFloat(price.replace('R', '')) : price;
+    const numPrice = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.]/g, '')) : price;
+    if (isNaN(numPrice)) return 'R0.00';
     return `R${numPrice.toFixed(2)}`;
   };
 
