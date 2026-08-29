@@ -38,9 +38,9 @@ export default function ApplicationHeader({ actions }) {
 
         <div className="topbar-actions">
           {actions}
-          <button type="button" className="icon-button" aria-label="Your cart">
+          <Link to="/cart" className="icon-button" aria-label="Your cart">
             <IconShoppingCart size={19} stroke={1.8} />
-          </button>
+          </Link>
           <button type="button" className="icon-button" aria-label="Notifications">
             <IconBell size={19} stroke={1.8} />
           </button>
