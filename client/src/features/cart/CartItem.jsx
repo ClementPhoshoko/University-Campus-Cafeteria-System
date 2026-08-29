@@ -17,85 +17,27 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, to }) {
 
   return (
     <div className="cart-item">
-      <Link to={to} className="cart-item__image-link">
-        <div className="cart-item__image">
-          {menuItem.image ? (
-            <img src={menuItem.image} alt={menuItem.name} />
-          ) : (
-            <div className="cart-item__image-placeholder">
-              <IconLeaf size={20} stroke={1.2} />
-            </div>
-          )}
-        </div>
+      <Link to={to} className="cart-item__image">
+        {menuItem.image ? (
+          <img src={menuItem.image} alt={menuItem.name} />
+        ) : (
+          <div className="cart-item__image-placeholder">
+            <IconLeaf size={20} stroke={1.2} />
+          </div>
+        )}
       </Link>
 
       <div className="cart-item__content">
-        <Link to={to} className="cart-item__name-link">
-          <h3 className="cart-item__name">{menuItem.name}</h3>
-          {menuItem.description && (
-            <p className="cart-item__description">{menuItem.description}</p>
-          )}
-        </Link>
-
-        {selectedOptions.length > 0 && (
-          <Link to={to} className="cart-item__customizations-link">
-            <div className="cart-item__section">
-              <span className="cart-item__section-label">Customizations</span>
-              <div className="cart-item__options">
-                {selectedOptions.map((opt) => (
-                  <span key={opt.id} className="cart-item__option">
-                    {opt.name}
-                    {opt.priceDelta > 0 && (
-                      <span className="cart-item__option-price">+{formatPrice(opt.priceDelta)}</span>
-                    )}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </Link>
-        )}
-
-        {(menuItem.dietaryTags?.length > 0 || menuItem.allergens?.length > 0) && (
-          <Link to={to} className="cart-item__dietary-link">
-            <div className="cart-item__section cart-item__section--row">
-              {menuItem.dietaryTags?.length > 0 && (
-                <div className="cart-item__tags">
-                  {menuItem.dietaryTags.map((tag) => (
-                    <span key={tag} className="cart-item__tag">
-                      {tag === 'Halal' && <IconCheck size={10} stroke={2} />}
-                      {tag === 'High Protein' && <IconFlame size={10} stroke={2} />}
-                      {tag === 'Vegetarian' && <IconLeaf size={10} stroke={2} />}
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {menuItem.allergens?.length > 0 && (
-                <span className="cart-item__allergens">
-                  Contains: {menuItem.allergens.join(', ')}
-                </span>
+        <div className="cart-item__section">
+          <div className="cart-item__header">
+            <div>
+              <Link to={to} className="cart-item__name-link">
+                <h3 className="cart-item__name">{menuItem.name}</h3>
+              </Link>
+              {menuItem.description && (
+                <p className="cart-item__description">{menuItem.description}</p>
               )}
             </div>
-          </Link>
-        )}
-
-        {specialInstructions && (
-          <Link to={to} className="cart-item__instructions-link">
-            <div className="cart-item__section">
-              <span className="cart-item__instructions">{specialInstructions}</span>
-            </div>
-          </Link>
-        )}
-
-        <div className="cart-item__section cart-item__section--actions">
-          <QuantitySelector
-            value={quantity}
-            onChange={(val) => onUpdateQuantity(item.id, val)}
-            min={1}
-            max={10}
-          />
-          <div className="cart-item__right">
-            <span className="cart-item__price">{formatPrice(lineTotal)}</span>
             <button
               type="button"
               className="cart-item__remove"
@@ -105,6 +47,60 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, to }) {
               <IconX size={16} stroke={1.8} />
             </button>
           </div>
+        </div>
+
+        {selectedOptions.length > 0 && (
+          <div className="cart-item__section">
+            <span className="cart-item__section-label">Customizations</span>
+            <div className="cart-item__options">
+              {selectedOptions.map((opt) => (
+                <span key={opt.id} className="cart-item__option">
+                  {opt.name}
+                  {opt.priceDelta > 0 && (
+                    <span className="cart-item__option-price">+{formatPrice(opt.priceDelta)}</span>
+                  )}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(menuItem.dietaryTags?.length > 0 || menuItem.allergens?.length > 0) && (
+          <div className="cart-item__section cart-item__section--row">
+            {menuItem.dietaryTags?.length > 0 && (
+              <div className="cart-item__tags">
+                {menuItem.dietaryTags.map((tag) => (
+                  <span key={tag} className="cart-item__tag">
+                    {tag === 'Halal' && <IconCheck size={10} stroke={2} />}
+                    {tag === 'High Protein' && <IconFlame size={10} stroke={2} />}
+                    {tag === 'Vegetarian' && <IconLeaf size={10} stroke={2} />}
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            {menuItem.allergens?.length > 0 && (
+              <span className="cart-item__allergens">
+                Contains: {menuItem.allergens.join(', ')}
+              </span>
+            )}
+          </div>
+        )}
+
+        {specialInstructions && (
+          <div className="cart-item__section">
+            <span className="cart-item__instructions">{specialInstructions}</span>
+          </div>
+        )}
+
+        <div className="cart-item__section cart-item__section--actions">
+          <QuantitySelector
+            value={quantity}
+            onChange={(val) => onUpdateQuantity(item.id, val)}
+            min={1}
+            max={10}
+          />
+          <span className="cart-item__price">{formatPrice(lineTotal)}</span>
         </div>
       </div>
     </div>

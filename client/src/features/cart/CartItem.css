@@ -10,29 +10,12 @@
   -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
-.cart-item__image-link,
-.cart-item__name-link,
-.cart-item__customizations-link,
-.cart-item__dietary-link,
-.cart-item__instructions-link {
-  text-decoration: none;
-  color: inherit;
-}
-
 .cart-item__image {
   flex: 0 0 100px;
   width: 100px;
   height: 100px;
   border-radius: var(--radius-md);
   overflow: hidden;
-}
-
-.cart-item__image-link:hover .cart-item__image {
-  box-shadow: var(--elevation-md);
-}
-
-.cart-item__name-link:hover .cart-item__name {
-  color: var(--color-action-link);
 }
 
 .cart-item__image img {
@@ -102,6 +85,15 @@
   letter-spacing: -0.01em;
 }
 
+.cart-item__name-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.cart-item__name-link:hover .cart-item__name {
+  color: var(--color-action-link);
+}
+
 .cart-item__description {
   margin: var(--space-1) 0 0;
   font-size: 0.78rem;
@@ -131,12 +123,6 @@
 .cart-item__remove:hover {
   background: var(--color-surface-subtle);
   color: var(--color-status-error);
-}
-
-.cart-item__right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
 }
 
 .cart-item__section-label {
