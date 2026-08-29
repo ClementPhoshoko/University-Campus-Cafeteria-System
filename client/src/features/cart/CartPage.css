@@ -53,14 +53,33 @@
 
 .cart__vendor {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--space-4);
+}
+
+.cart__vendor-image {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface-subtle);
+}
+
+.cart__vendor-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cart__vendor-details {
+  flex: 1;
+  min-width: 0;
 }
 
 .cart__vendor-name {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   letter-spacing: -0.02em;
@@ -70,7 +89,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  margin-top: var(--space-2);
+  margin-top: var(--space-1);
 }
 
 .cart__vendor-location,
@@ -78,7 +97,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--color-text-tertiary);
 }
 
@@ -90,14 +109,15 @@
 }
 
 .cart__expiry-label {
-  font-size: 0.7rem;
-  color: var(--color-text-tertiary);
+  font-size: 0.65rem;
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  color: var(--color-text-tertiary);
 }
 
 .cart__expiry-time {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   letter-spacing: -0.02em;

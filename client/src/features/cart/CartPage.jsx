@@ -1,36 +1,26 @@
 import { useState } from 'react';
-import { IconArrowLeft, IconClock, IconMapPin, IconX, IconCheck } from '@tabler/icons-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { IconArrowLeft, IconClock, IconMapPin } from '@tabler/icons-react';
+import { useNavigate } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import CartItem from './CartItem.jsx';
 import CollectionSlotPicker from './CollectionSlotPicker.jsx';
 import CartSummary from './CartSummary.jsx';
-import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
 import { IconToolsKitchen2 } from '@tabler/icons-react';
+import { cafeterias, popularMeals } from '../home/homeData.js';
 import './CartPage.css';
 
 const SAMPLE_CART = {
   id: 'cart-1',
   vendor: {
-    id: 'main-campus-cafe',
-    name: 'Main Campus Cafe',
+    ...cafeterias[0],
     location: 'Building A, Ground Floor',
-    image: null,
     estimatedPrepMinutes: 15,
   },
   expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
   items: [
     {
       id: 'item-1',
-      menuItem: {
-        id: 'chicken-wrap',
-        name: 'Chicken Wrap & Salad',
-        description: 'Grilled chicken, lettuce, tomato, cucumber and mayo wrapped in a soft tortilla.',
-        image: null,
-        basePrice: 45.00,
-        dietaryTags: ['Halal', 'High Protein'],
-        allergens: ['Gluten', 'Dairy'],
-      },
+      menuItem: popularMeals[0],
       quantity: 2,
       unitPriceSnapshot: 45.00,
       selectedOptions: [
@@ -41,15 +31,7 @@ const SAMPLE_CART = {
     },
     {
       id: 'item-2',
-      menuItem: {
-        id: 'fish-bowl',
-        name: 'Grilled Fish Rice Bowl',
-        description: 'Fresh grilled fish with seasoned rice and vegetables.',
-        image: null,
-        basePrice: 52.00,
-        dietaryTags: ['High Protein'],
-        allergens: ['Fish', 'Soy'],
-      },
+      menuItem: popularMeals[1],
       quantity: 1,
       unitPriceSnapshot: 52.00,
       selectedOptions: [
@@ -153,21 +135,24 @@ export default function CartPage() {
           <div className="cart__main">
             <div className="cart__header">
               <div className="cart__vendor">
-                <div className="cart__vendor-info">
+                <div className="cart__vendor-image">
+                  <img src={cart.vendor.image} alt={cart.vendor.name} />
+                </div>
+                <div className="cart__vendor-details">
                   <h1 className="cart__vendor-name">{cart.vendor.name}</h1>
                   <div className="cart__vendor-meta">
                     <span className="cart__vendor-location">
-                      <IconMapPin size={14} stroke={1.5} />
+                      <IconMapPin size={13} stroke={1.5} />
                       {cart.vendor.location}
                     </span>
                     <span className="cart__vendor-prep">
-                      <IconClock size={14} stroke={1.5} />
+                      <IconClock size={13} stroke={1.5} />
                       {cart.vendor.estimatedPrepMinutes} min
                     </span>
                   </div>
                 </div>
                 <div className="cart__expiry">
-                  <span className="cart__expiry-label">Cart expires in</span>
+                  <span className="cart__expiry-label">Expires in</span>
                   <span className="cart__expiry-time">{formatExpiry()}</span>
                 </div>
               </div>
