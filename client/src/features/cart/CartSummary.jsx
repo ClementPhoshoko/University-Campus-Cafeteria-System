@@ -1,7 +1,22 @@
 import { IconClock, IconShoppingBag } from '@tabler/icons-react';
+import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import './CartSummary.css';
 
-export default function CartSummary({ subtotal, serviceFee, total, selectedSlot, itemCount }) {
+export default function CartSummary({ subtotal, serviceFee, total, selectedSlot, onSelectSlot, slots, itemCount }) {
+  const slotOptions = slots.map(slot => ({
+    id: slot.id,
+    name: `${slot.startsAt} - ${slot.endsAt}`,
+    available: slot.available,
+  }));
+
+  const handleSlotChange = (option) => {
+    if (option) {
+      onSelectSlot(option.id);
+    }
+  };
+
+  const selectedSlotData = slots.find(s => s.id === selectedSlot);
+
   return (
     <div className="cart-summary">
       <div className="cart-summary__header">
@@ -27,12 +42,15 @@ export default function CartSummary({ subtotal, serviceFee, total, selectedSlot,
         <span className="cart-summary__value">R{total.toFixed(2)}</span>
       </div>
 
-      {selectedSlot && (
-        <div className="cart-summary__slot">
-          <IconClock size={14} stroke={1.5} />
-          <span>Collect at {selectedSlot.startsAt} - {selectedSlot.endsAt}</span>
-        </div>
-      )}
+      <div className="cart-summary__slot">
+        <CustomDropdown
+          label="Collection Time"
+          options={slotOptions}
+          value={selectedSlotData ? { id: selectedSlotData.id, name: `${selectedSlotData.startsAt} - ${selectedSlotData.endsAt}` } : null}
+          onChange={handleSlotChange}
+          placeholder="Select time..."
+        />
+      </div>
 
       <button
         type="button"

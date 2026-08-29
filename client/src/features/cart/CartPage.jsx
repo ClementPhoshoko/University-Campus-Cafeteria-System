@@ -3,7 +3,6 @@ import { IconArrowLeft, IconClock, IconMapPin } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import CartItem from './CartItem.jsx';
-import CollectionSlotPicker from './CollectionSlotPicker.jsx';
 import CartSummary from './CartSummary.jsx';
 import { IconToolsKitchen2 } from '@tabler/icons-react';
 import { cafeterias, popularMeals } from '../home/homeData.js';
@@ -185,19 +184,16 @@ export default function CartPage() {
               />
             </div>
 
-            <CollectionSlotPicker
-              slots={cart.collectionSlots}
-              selectedSlot={selectedSlot}
-              onSelectSlot={handleSelectSlot}
-            />
-          </div>
+            </div>
 
           <div className="cart__sidebar">
             <CartSummary
               subtotal={subtotal}
               serviceFee={serviceFee}
               total={total}
-              selectedSlot={cart.collectionSlots.find((s) => s.id === selectedSlot)}
+              selectedSlot={selectedSlot}
+              onSelectSlot={handleSelectSlot}
+              slots={cart.collectionSlots}
               itemCount={cart.items.reduce((sum, item) => sum + item.quantity, 0)}
             />
           </div>

@@ -67,17 +67,11 @@
 }
 
 .cart-summary__slot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
   margin-bottom: var(--space-4);
-  border-radius: var(--radius-md);
-  background: rgba(10, 140, 255, 0.08);
-  font-size: 0.8rem;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-action-primary);
+}
+
+.cart-summary__slot .custom-dropdown {
+  width: 100%;
 }
 
 .cart-summary__checkout {
