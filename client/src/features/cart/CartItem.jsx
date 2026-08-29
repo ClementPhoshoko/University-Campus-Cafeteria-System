@@ -3,23 +3,16 @@ import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
 import './CartItem.css';
 
 export default function CartItem({ item, onUpdateQuantity, onRemove }) {
-  const { menuItem, quantity, selectedOptions, specialInstructions } = item;
-
-  const getBasePrice = () => {
-    if (typeof menuItem.basePrice === 'string') {
-      return parseFloat(menuItem.basePrice.replace(/[^0-9.]/g, ''));
-    }
-    return menuItem.basePrice || 0;
-  };
-
-  const optionsTotal = selectedOptions.reduce((sum, opt) => sum + opt.priceDelta, 0);
-  const lineTotal = (getBasePrice() + optionsTotal) * quantity;
+  const { menuItem, quantity, unitPriceSnapshot, selectedOptions, specialInstructions } = item;
 
   const formatPrice = (price) => {
-    const numPrice = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.]/g, '')) : price;
+    const numPrice = typeof price === 'string' ? parseFloat(price.toString().replace(/[^0-9.]/g, '')) : price;
     if (isNaN(numPrice)) return 'R0.00';
     return `R${numPrice.toFixed(2)}`;
   };
+
+  const optionsTotal = selectedOptions.reduce((sum, opt) => sum + opt.priceDelta, 0);
+  const lineTotal = (unitPriceSnapshot + optionsTotal) * quantity;
 
   return (
     <div className="cart-item">
