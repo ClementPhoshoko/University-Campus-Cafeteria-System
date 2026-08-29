@@ -6,7 +6,7 @@ import CartItem from './CartItem.jsx';
 import CartSummary from './CartSummary.jsx';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
-import { IconToolsKitchen2 } from '@tabler/icons-react';
+import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.png';
 import { cafeterias, popularMeals } from '../home/homeData.js';
 import './CartPage.css';
 
@@ -101,19 +101,28 @@ export default function CartPage() {
     return (
       <PageContainer className="cart-page-container">
         <div className="cart-page">
+          <Breadcrumb
+            items={[
+              { label: 'Your Cart' }
+            ]}
+          />
+
           <div className="cart-empty">
-            <div className="cart-empty-icon">
-              <IconToolsKitchen2 size={48} stroke={1.2} />
+            <div className="cart-empty__header">
+              <h1 className="cart-empty__title">Your cart is waiting</h1>
+              <p className="cart-empty__subtitle">Start your order and fill it with delicious items from our campus cafeterias</p>
+              <button
+                type="button"
+                className="cart-empty__btn"
+                onClick={() => navigate('/cafeterias')}
+              >
+                Order Now
+              </button>
             </div>
-            <h2>Your cart is empty</h2>
-            <p>Browse our menu and add some delicious items</p>
-            <button
-              type="button"
-              className="cart-empty-btn"
-              onClick={() => navigate('/cafeterias')}
-            >
-              Browse Menu
-            </button>
+            <div className="cart-empty__visual">
+              <img src={avoidQueuesImg} alt="" className="cart-empty__image" />
+              <p className="cart-empty__hint">Explore our menu and add your favorites</p>
+            </div>
           </div>
         </div>
       </PageContainer>
