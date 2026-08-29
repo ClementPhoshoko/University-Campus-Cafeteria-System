@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { IconClock, IconMapPin, IconStar, IconStarFilled, IconX, IconCheck } from '@tabler/icons-react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import ReviewItem from '../../components/reviews/ReviewItem.jsx';
