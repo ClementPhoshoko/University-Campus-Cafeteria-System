@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react';
-import { IconArrowLeft, IconClock, IconCheck, IconPlus, IconFlame, IconLeaf, IconInfoCircle } from '@tabler/icons-react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { IconClock, IconCheck, IconPlus, IconFlame, IconLeaf, IconInfoCircle } from '@tabler/icons-react';
+import { useParams } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
+import BackButton from '../../components/ui/BackButton.jsx';
 import ViewFoodBackground from '../../components/ViewFoodBackground.jsx';
 import { cafeterias, popularMeals } from '../home/homeData.js';
 import './ViewFoodPage.css';
@@ -59,7 +60,6 @@ const SAMPLE_MENU_ITEM = {
 const SUGGESTED_ITEMS = popularMeals.slice(0, 6);
 
 export default function ViewFoodPage() {
-  const navigate = useNavigate();
   const { cafeteriaId, menuItemId } = useParams();
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState({});
@@ -100,10 +100,7 @@ export default function ViewFoodPage() {
     <PageContainer className="view-food-page-container">
       <ViewFoodBackground />
       <main className="view-food-page">
-        <button type="button" className="view-food__back" onClick={() => navigate(`/cafeterias/${cafeteriaId}`)}>
-          <IconArrowLeft size={18} stroke={1.8} />
-          <span>Back to {cafeteria.name}</span>
-        </button>
+        <BackButton to={`/cafeterias/${cafeteriaId}`} label={`Back to ${cafeteria.name}`} />
 
         <div className="view-food__content">
           <div className="view-food__main">

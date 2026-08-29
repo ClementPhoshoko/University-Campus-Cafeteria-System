@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { IconArrowLeft, IconClock, IconMapPin } from '@tabler/icons-react';
+import { IconClock, IconMapPin } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import CartItem from './CartItem.jsx';
 import CartSummary from './CartSummary.jsx';
+import BackButton from '../../components/ui/BackButton.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import { IconToolsKitchen2 } from '@tabler/icons-react';
 import { cafeterias, popularMeals } from '../home/homeData.js';
@@ -122,14 +123,7 @@ export default function CartPage() {
   return (
     <PageContainer className="cart-page-container">
       <div className="cart-page">
-        <button
-          type="button"
-          className="cart__back"
-          onClick={() => navigate(-1)}
-        >
-          <IconArrowLeft size={18} stroke={1.8} />
-          <span>Back</span>
-        </button>
+        <BackButton label="Back" />
 
         <div className="cart__content">
           <div className="cart__main">

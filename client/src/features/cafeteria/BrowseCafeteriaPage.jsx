@@ -1,11 +1,12 @@
 import { useMemo, useRef, useState } from 'react';
-import { IconArrowLeft, IconClock, IconMapPin, IconStar, IconStarFilled, IconX, IconCheck } from '@tabler/icons-react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { IconClock, IconMapPin, IconStar, IconStarFilled, IconX, IconCheck } from '@tabler/icons-react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import ReviewStats from '../../components/reviews/ReviewStats.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
+import BackButton from '../../components/ui/BackButton.jsx';
 import { cafeterias, popularMeals, reviews } from '../home/homeData.js';
 import imgSlusher from '../../assets/drinks/Refreshing_Slusher_with_Ice.png';
 import imgWater from '../../assets/drinks/Merchant_Munchies_H2O_Refreshment.png';
@@ -243,10 +244,7 @@ export default function BrowseCafeteriaPage() {
   return (
     <PageContainer className="browse_cafeteria-page-container">
       <main className="browse_cafeteria-page">
-        <button type="button" className="browse_cafeteria-back" onClick={() => navigate('/cafeterias')}>
-          <IconArrowLeft size={18} stroke={1.8} />
-          <span>All cafeterias</span>
-        </button>
+        <BackButton to="/cafeterias" label="All Cafeterias" />
 
         <header className="browse_cafeteria-header">
           <div className="browse_cafeteria-header-image">
