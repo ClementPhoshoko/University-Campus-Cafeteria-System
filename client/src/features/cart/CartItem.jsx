@@ -1,8 +1,9 @@
+import { Link } from 'react-router-dom';
 import { IconX, IconCheck, IconLeaf, IconFlame } from '@tabler/icons-react';
 import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
 import './CartItem.css';
 
-export default function CartItem({ item, onUpdateQuantity, onRemove }) {
+export default function CartItem({ item, onUpdateQuantity, onRemove, to }) {
   const { menuItem, quantity, unitPriceSnapshot, selectedOptions, specialInstructions } = item;
 
   const formatPrice = (price) => {
@@ -14,8 +15,8 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }) {
   const optionsTotal = selectedOptions.reduce((sum, opt) => sum + opt.priceDelta, 0);
   const lineTotal = (unitPriceSnapshot + optionsTotal) * quantity;
 
-  return (
-    <div className="cart-item">
+  const cardContent = (
+    <>
       <div className="cart-item__image">
         {menuItem.image ? (
           <img src={menuItem.image} alt={menuItem.name} />
@@ -38,7 +39,11 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }) {
             <button
               type="button"
               className="cart-item__remove"
-              onClick={() => onRemove(item.id)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onRemove(item.id);
+              }}
               aria-label={`Remove ${menuItem.name}`}
             >
               <IconX size={16} stroke={1.8} />
@@ -100,6 +105,16 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }) {
           <span className="cart-item__price">{formatPrice(lineTotal)}</span>
         </div>
       </div>
-    </div>
+    </>
   );
+
+  if (to) {
+    return (
+      <Link to={to} className="cart-item cart-item--clickable">
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return <div className="cart-item">{cardContent}</div>;
 }

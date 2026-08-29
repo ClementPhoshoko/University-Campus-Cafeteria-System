@@ -6,8 +6,23 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur);
   -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+a.cart-item,
+.cart-item--clickable {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+a.cart-item:hover,
+.cart-item--clickable:hover {
+  border-color: var(--color-border-selected);
+  box-shadow: var(--elevation-md);
+  transform: translateY(-1px);
 }
 
 .cart-item__image {
