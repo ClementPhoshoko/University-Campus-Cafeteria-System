@@ -176,7 +176,7 @@ export default function HomePage() {
           <SectionHeader title="Shop by category" />
           <div className="home_category-scroll">
             {categories.map((c) => (
-              <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} />
+              <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} filterId={c.id} />
             ))}
           </div>
         </section>

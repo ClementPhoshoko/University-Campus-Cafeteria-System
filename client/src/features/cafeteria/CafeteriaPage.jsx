@@ -1,4 +1,5 @@
 ﻿import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   IconAdjustmentsHorizontal,
   IconMap,
@@ -11,22 +12,24 @@ import { cafeterias, heroImage } from "../home/homeData.js";
 import "./cafeteria.css";
 
 const DIRECTORY_FILTERS = [
-  { id: "all", label: "All" },
-  { id: "open", label: "Open now" },
-  { id: "main", label: "Main site" },
-  { id: "north", label: "North site" },
-  { id: "south", label: "South site" },
+  { id: "open", label: "Open Now" },
+  { id: "popular", label: "Popular" },
+  { id: "breakfast", label: "Breakfast" },
+  { id: "lunch", label: "Lunch" },
+  { id: "meals", label: "Meals" },
+  { id: "snacks", label: "Snacks" },
+  { id: "drinks", label: "Drinks" },
 ];
 
 const DIRECTORY_DETAILS = {
-  "main-campus-cafe": { site: "main", location: "Main site · Near the atrium", rating: "4.6", reviewCount: 230 },
-  "library-bistro": { site: "north", location: "North site · Library level", rating: "4.8", reviewCount: 184 },
-  "res-court-kitchen": { site: "south", location: "South site · Residence court", rating: "4.7", reviewCount: 156 },
-  "science-snack-bar": { site: "north", location: "North site · Science building", rating: "4.4", reviewCount: 98 },
-  "grill-house-court": { site: "main", location: "Main site · Courtyard", rating: "4.5", reviewCount: 212 },
-  "dining-hall-central": { site: "main", location: "Main site · Central hall", rating: "4.6", reviewCount: 301 },
-  "east-gate-gather": { site: "south", location: "South site · East gate", rating: "4.5", reviewCount: 127 },
-  "courtyard-eats": { site: "south", location: "South site · Open courtyard", rating: "4.3", reviewCount: 89 },
+  "main-campus-cafe": { category: "popular", location: "Main site · Near the atrium", rating: "4.6", reviewCount: 230 },
+  "library-bistro": { category: "lunch", location: "North site · Library level", rating: "4.8", reviewCount: 184 },
+  "res-court-kitchen": { category: "meals", location: "South site · Residence court", rating: "4.7", reviewCount: 156 },
+  "science-snack-bar": { category: "snacks", location: "North site · Science building", rating: "4.4", reviewCount: 98 },
+  "grill-house-court": { category: "lunch", location: "Main site · Courtyard", rating: "4.5", reviewCount: 212 },
+  "dining-hall-central": { category: "breakfast", location: "Main site · Central hall", rating: "4.6", reviewCount: 301 },
+  "east-gate-gather": { category: "drinks", location: "South site · East gate", rating: "4.5", reviewCount: 127 },
+  "courtyard-eats": { category: "snacks", location: "South site · Open courtyard", rating: "4.3", reviewCount: 89 },
 };
 
 const DIRECTORY_CAFETERIAS = cafeterias.map((cafeteria) => ({
@@ -64,8 +67,9 @@ function FilterChipGroup({ activeFilter, onChange }) {
 }
 
 export default function CafeteriaPage() {
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState(searchParams.get("filter") || "open");
   const [showFilters, setShowFilters] = useState(true);
 
   const visibleCafeterias = useMemo(() => {
@@ -75,9 +79,9 @@ export default function CafeteriaPage() {
       const matchesQuery = !normalizedQuery
         || [cafeteria.name, cafeteria.description, cafeteria.location]
           .some((value) => value.toLowerCase().includes(normalizedQuery));
-      const matchesFilter = activeFilter === "all"
-        || (activeFilter === "open" && cafeteria.status === "open")
-        || cafeteria.site === activeFilter;
+      const matchesFilter = activeFilter === "open"
+        ? cafeteria.status === "open"
+        : cafeteria.category === activeFilter;
 
       return matchesQuery && matchesFilter;
     });
@@ -145,7 +149,7 @@ export default function CafeteriaPage() {
             <div className="cafeteria_empty">
               <h2>No cafeterias found</h2>
               <p>Try changing your search or filters.</p>
-              <button type="button" className="cafeteria_clear-button" onClick={() => { setQuery(""); setActiveFilter("all"); }}>
+              <button type="button" className="cafeteria_clear-button" onClick={() => { setQuery(""); setActiveFilter("open"); }}>
                 Clear filters
               </button>
             </div>

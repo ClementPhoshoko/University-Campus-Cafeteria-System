@@ -116,9 +116,15 @@
 
 .cafeteria_filter-scroll {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--space-2);
+  overflow-x: auto;
   padding-bottom: var(--space-2);
+  scrollbar-width: none;
+}
+
+.cafeteria_filter-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .cafeteria_filter-chip {
