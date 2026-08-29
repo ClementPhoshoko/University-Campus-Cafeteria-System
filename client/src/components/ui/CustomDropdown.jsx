@@ -106,8 +106,10 @@ export default function CustomDropdown({
                     </span>
                   </span>
                   <span className="custom-dropdown__option-right">
-                    {!option.available && (
-                      <span className="custom-dropdown__option-unavailable">Full</span>
+                    {option.available ? (
+                      <span className="custom-dropdown__option-available">Available</span>
+                    ) : (
+                      <span className="custom-dropdown__option-unavailable">Still Busy</span>
                     )}
                     {option.priceDelta && option.priceDelta !== 'R0.00' && (
                       <span className="custom-dropdown__option-price">+{option.priceDelta}</span>

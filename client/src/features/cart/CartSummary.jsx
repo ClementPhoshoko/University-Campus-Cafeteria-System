@@ -1,15 +1,26 @@
 import { IconClock, IconShoppingBag } from '@tabler/icons-react';
-import { IconClock as IconClockOutline } from '@tabler/icons-react';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import './CartSummary.css';
 
+const formatTime = (timestamp) => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+};
+
+const isSlotAvailable = (slot) => {
+  return !slot.paused && (slot.reserved_count || 0) < (slot.capacity || Infinity);
+};
+
 export default function CartSummary({ subtotal, serviceFee, total, selectedSlot, onSelectSlot, slots, itemCount }) {
-  const slotOptions = slots.map(slot => ({
-    id: slot.id,
-    name: slot.startsAt,
-    timeRange: slot.endsAt,
-    available: slot.available,
-  }));
+  const slotOptions = slots.map(slot => {
+    const available = isSlotAvailable(slot);
+    return {
+      id: slot.id,
+      name: formatTime(slot.starts_at),
+      timeRange: formatTime(slot.ends_at),
+      available,
+    };
+  });
 
   const handleSlotChange = (option) => {
     if (option) {
@@ -48,7 +59,7 @@ export default function CartSummary({ subtotal, serviceFee, total, selectedSlot,
         <CustomDropdown
           label="Collection Time"
           options={slotOptions}
-          value={selectedSlotData ? { id: selectedSlotData.id, name: selectedSlotData.startsAt, timeRange: selectedSlotData.endsAt } : null}
+          value={selectedSlotData ? { id: selectedSlotData.id, name: formatTime(selectedSlotData.starts_at), timeRange: formatTime(selectedSlotData.ends_at) } : null}
           onChange={handleSlotChange}
           placeholder="Select time..."
           showClockIcon

@@ -40,12 +40,12 @@ const SAMPLE_CART = {
     },
   ],
   collectionSlots: [
-    { id: 'slot-1', startsAt: '12:00', endsAt: '12:15', available: true },
-    { id: 'slot-2', startsAt: '12:15', endsAt: '12:30', available: true },
-    { id: 'slot-3', startsAt: '12:30', endsAt: '12:45', available: false },
-    { id: 'slot-4', startsAt: '12:45', endsAt: '13:00', available: true },
-    { id: 'slot-5', startsAt: '13:00', endsAt: '13:15', available: true },
-    { id: 'slot-6', startsAt: '13:15', endsAt: '13:30', available: true },
+    { id: 'slot-1', starts_at: '2024-01-01T12:00:00Z', ends_at: '2024-01-01T12:15:00Z', capacity: 10, reserved_count: 3, paused: false },
+    { id: 'slot-2', starts_at: '2024-01-01T12:15:00Z', ends_at: '2024-01-01T12:30:00Z', capacity: 10, reserved_count: 8, paused: false },
+    { id: 'slot-3', starts_at: '2024-01-01T12:30:00Z', ends_at: '2024-01-01T12:45:00Z', capacity: 10, reserved_count: 10, paused: false },
+    { id: 'slot-4', starts_at: '2024-01-01T12:45:00Z', ends_at: '2024-01-01T13:00:00Z', capacity: 10, reserved_count: 0, paused: false },
+    { id: 'slot-5', starts_at: '2024-01-01T13:00:00Z', ends_at: '2024-01-01T13:15:00Z', capacity: 10, reserved_count: 5, paused: false },
+    { id: 'slot-6', starts_at: '2024-01-01T13:15:00Z', ends_at: '2024-01-01T13:30:00Z', capacity: 10, reserved_count: 0, paused: true },
   ],
 };
 
