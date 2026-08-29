@@ -152,7 +152,7 @@ export default function CartPage() {
                   </div>
                 </div>
                 <div className="cart__expiry">
-                  <span className="cart__expiry-label">Expires in</span>
+                  <span className="cart__expiry-label">Cart expires in</span>
                   <span className="cart__expiry-time">{formatExpiry()}</span>
                 </div>
               </div>
@@ -217,7 +217,6 @@ export default function CartPage() {
                   image={meal.image}
                   bestSeller={meal.bestSeller}
                   description={meal.description}
-                  variant="browse"
                   to={`/cafeteria/${cart.vendor.id}/item/${meal.id}`}
                 />
               ))}
