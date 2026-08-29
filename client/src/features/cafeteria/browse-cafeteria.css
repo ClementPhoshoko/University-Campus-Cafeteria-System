@@ -439,6 +439,7 @@
 
 .browse_cafeteria-reviews-add-input {
   width: 100%;
+  min-height: 80px;
   padding: var(--space-3);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-sm);
