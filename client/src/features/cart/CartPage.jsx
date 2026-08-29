@@ -108,9 +108,10 @@ export default function CartPage() {
           />
 
           <div className="cart-empty">
-            <div className="cart-empty__header">
-              <h1 className="cart-empty__title">Your cart is waiting</h1>
-              <p className="cart-empty__subtitle">Start your order and fill it with delicious items from our campus cafeterias</p>
+            <img src={avoidQueuesImg} alt="" className="cart-empty__image" />
+            <div className="cart-empty__content">
+              <h2 className="cart-empty__title">Your cart is empty</h2>
+              <p className="cart-empty__text">Start your order and fill it with delicious items from our campus cafeterias</p>
               <button
                 type="button"
                 className="cart-empty__btn"
@@ -118,10 +119,6 @@ export default function CartPage() {
               >
                 Order Now
               </button>
-            </div>
-            <div className="cart-empty__visual">
-              <img src={avoidQueuesImg} alt="" className="cart-empty__image" />
-              <p className="cart-empty__hint">Explore our menu and add your favorites</p>
             </div>
           </div>
         </div>
