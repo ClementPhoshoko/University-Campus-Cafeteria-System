@@ -181,7 +181,11 @@ export default function CartPage() {
                 className="cart__special-input"
                 placeholder="Any special requests or notes for your order..."
                 value={specialInstructions}
-                onChange={(e) => setSpecialInstructions(e.target.value)}
+                onChange={(e) => {
+                  setSpecialInstructions(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = `${e.target.scrollHeight}px`;
+                }}
               />
             </div>
 
