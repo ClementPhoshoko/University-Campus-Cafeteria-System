@@ -13,7 +13,7 @@ const isSlotAvailable = (slot) => {
   return !slot.paused && (slot.reserved_count || 0) < (slot.capacity || Infinity);
 };
 
-export default function CartSummary({ subtotal, serviceFee, total, selectedSlot, onSelectSlot, slots, itemCount }) {
+export default function CartSummary({ subtotal, serviceFee, total, selectedSlot, onSelectSlot, slots, itemCount, onPlaceOrder }) {
   const slotOptions = slots.map(slot => {
     const available = isSlotAvailable(slot);
     return {
@@ -72,6 +72,7 @@ export default function CartSummary({ subtotal, serviceFee, total, selectedSlot,
         type="button"
         className="cart-summary__checkout"
         disabled={!selectedSlot}
+        onClick={onPlaceOrder}
       >
         <IconShoppingBag size={18} stroke={2} />
         <span>Proceed to Checkout</span>

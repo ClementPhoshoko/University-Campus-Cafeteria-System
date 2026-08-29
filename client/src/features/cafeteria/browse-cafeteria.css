@@ -461,3 +461,33 @@
   border-color: var(--color-border-focus);
   box-shadow: 0 0 0 3px var(--blue-100);
 }
+
+.browse-bg {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 500px;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.browse-bg-icon {
+  position: absolute;
+  color: var(--blue-300);
+  opacity: 0.3;
+  width: 56px;
+  height: 56px;
+}
+
+.browse-bg-icon--1 { top: 6%; right: 8%; transform: rotate(12deg); }
+.browse-bg-icon--2 { top: 16%; right: 22%; transform: rotate(-8deg); }
+.browse-bg-icon--3 { top: 26%; right: 5%; transform: rotate(6deg); }
+.browse-bg-icon--4 { top: 36%; right: 18%; transform: rotate(-12deg); }
+.browse-bg-icon--5 { top: 46%; right: 3%; transform: rotate(9deg); }
+.browse-bg-icon--6 { top: 56%; right: 14%; transform: rotate(-5deg); }
+.browse-bg-icon--7 { top: 66%; right: 6%; transform: rotate(11deg); }
+.browse-bg-icon--8 { top: 76%; right: 20%; transform: rotate(-7deg); }
+.browse-bg-icon--9 { top: 86%; right: 4%; transform: rotate(4deg); }
+.browse-bg-icon--10 { top: 12%; right: 35%; transform: rotate(-10deg); }

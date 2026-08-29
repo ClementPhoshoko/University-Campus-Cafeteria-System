@@ -7,6 +7,7 @@ import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import ReviewStats from '../../components/reviews/ReviewStats.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
+import BrowseCafeteriaBackground from '../../components/BrowseCafeteriaBackground.jsx';
 import { cafeterias, popularMeals, reviews } from '../home/homeData.js';
 import imgSlusher from '../../assets/drinks/Refreshing_Slusher_with_Ice.png';
 import imgWater from '../../assets/drinks/Merchant_Munchies_H2O_Refreshment.png';
@@ -243,6 +244,7 @@ export default function BrowseCafeteriaPage() {
 
   return (
     <PageContainer className="browse_cafeteria-page-container">
+      <BrowseCafeteriaBackground />
       <main className="browse_cafeteria-page">
         <Breadcrumb
           items={[
