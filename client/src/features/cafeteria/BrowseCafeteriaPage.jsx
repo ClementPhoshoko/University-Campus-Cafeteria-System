@@ -6,7 +6,7 @@ import FoodCard from '../../components/cards/FoodCard.jsx';
 import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import ReviewStats from '../../components/reviews/ReviewStats.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
-import BackButton from '../../components/ui/BackButton.jsx';
+import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import { cafeterias, popularMeals, reviews } from '../home/homeData.js';
 import imgSlusher from '../../assets/drinks/Refreshing_Slusher_with_Ice.png';
 import imgWater from '../../assets/drinks/Merchant_Munchies_H2O_Refreshment.png';
@@ -244,7 +244,12 @@ export default function BrowseCafeteriaPage() {
   return (
     <PageContainer className="browse_cafeteria-page-container">
       <main className="browse_cafeteria-page">
-        <BackButton to="/cafeterias" label="All Cafeterias" />
+        <Breadcrumb
+          items={[
+            { label: 'Cafeterias', to: '/cafeterias' },
+            { label: cafeteria.name }
+          ]}
+        />
 
         <header className="browse_cafeteria-header">
           <div className="browse_cafeteria-header-image">

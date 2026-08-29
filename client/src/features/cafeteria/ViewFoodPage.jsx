@@ -5,7 +5,7 @@ import PageContainer from '../../components/layout/PageContainer.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
-import BackButton from '../../components/ui/BackButton.jsx';
+import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import ViewFoodBackground from '../../components/ViewFoodBackground.jsx';
 import { cafeterias, popularMeals } from '../home/homeData.js';
 import './ViewFoodPage.css';
@@ -100,7 +100,13 @@ export default function ViewFoodPage() {
     <PageContainer className="view-food-page-container">
       <ViewFoodBackground />
       <main className="view-food-page">
-        <BackButton to={`/cafeterias/${cafeteriaId}`} label={`Back to ${cafeteria.name}`} />
+        <Breadcrumb
+          items={[
+            { label: 'Cafeterias', to: '/cafeterias' },
+            { label: cafeteria.name, to: `/cafeterias/${cafeteriaId}` },
+            { label: menuItem.name }
+          ]}
+        />
 
         <div className="view-food__content">
           <div className="view-food__main">
