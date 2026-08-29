@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import CartItem from './CartItem.jsx';
 import CartSummary from './CartSummary.jsx';
+import FoodCard from '../../components/cards/FoodCard.jsx';
 import { IconToolsKitchen2 } from '@tabler/icons-react';
 import { cafeterias, popularMeals } from '../home/homeData.js';
 import './CartPage.css';
@@ -196,6 +197,30 @@ export default function CartPage() {
               slots={cart.collectionSlots}
               itemCount={cart.items.reduce((sum, item) => sum + item.quantity, 0)}
             />
+          </div>
+        </div>
+
+        <div className="cart__suggestions">
+          <div className="cart__suggestions-header">
+            <h2 className="cart__suggestions-title">More at {cart.vendor.name}</h2>
+          </div>
+          <div className="cart__suggestions-scroll">
+            {popularMeals
+              .filter(meal => meal.cafeteriaId === cart.vendor.id)
+              .map(meal => (
+                <FoodCard
+                  key={meal.id}
+                  id={meal.id}
+                  name={meal.name}
+                  price={meal.price}
+                  vendor={meal.vendor}
+                  image={meal.image}
+                  bestSeller={meal.bestSeller}
+                  description={meal.description}
+                  variant="browse"
+                  to={`/cafeteria/${cart.vendor.id}/item/${meal.id}`}
+                />
+              ))}
           </div>
         </div>
       </div>
