@@ -22,7 +22,30 @@ export default function CollectionSlotPicker({ slots, selectedSlot, onSelectSlot
         </h2>
       </div>
 
-      <div className="collection-slot-picker__clock">
+      <div className="collection-slot-picker__body">
+        <div className="collection-slot-picker__list">
+          {slots.map((slot) => (
+            <button
+              key={slot.id}
+              type="button"
+              className={`collection-slot-picker__item${selectedSlot === slot.id ? ' collection-slot-picker__item--selected' : ''}${!slot.available ? ' collection-slot-picker__item--unavailable' : ''}`}
+              onClick={() => slot.available && onSelectSlot(slot.id)}
+              disabled={!slot.available}
+            >
+              <span className="collection-slot-picker__item-time">
+                {slot.startsAt} - {slot.endsAt}
+              </span>
+              {selectedSlot === slot.id && (
+                <IconCheck size={14} stroke={2.5} className="collection-slot-picker__item-check" />
+              )}
+              {!slot.available && (
+                <span className="collection-slot-picker__item-full">Full</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="collection-slot-picker__clock">
         <svg viewBox="-100 -100 200 200" className="collection-slot-picker__svg">
           <circle cx="0" cy="0" r="85" className="collection-slot-picker__clock-face" />
           <circle cx="0" cy="0" r="3" className="collection-slot-picker__center" />
@@ -73,28 +96,7 @@ export default function CollectionSlotPicker({ slots, selectedSlot, onSelectSlot
             </span>
           )}
         </div>
-      </div>
-
-      <div className="collection-slot-picker__list">
-        {slots.map((slot) => (
-          <button
-            key={slot.id}
-            type="button"
-            className={`collection-slot-picker__item${selectedSlot === slot.id ? ' collection-slot-picker__item--selected' : ''}${!slot.available ? ' collection-slot-picker__item--unavailable' : ''}`}
-            onClick={() => slot.available && onSelectSlot(slot.id)}
-            disabled={!slot.available}
-          >
-            <span className="collection-slot-picker__item-time">
-              {slot.startsAt} - {slot.endsAt}
-            </span>
-            {selectedSlot === slot.id && (
-              <IconCheck size={14} stroke={2.5} className="collection-slot-picker__item-check" />
-            )}
-            {!slot.available && (
-              <span className="collection-slot-picker__item-full">Full</span>
-            )}
-          </button>
-        ))}
+        </div>
       </div>
     </div>
   );
