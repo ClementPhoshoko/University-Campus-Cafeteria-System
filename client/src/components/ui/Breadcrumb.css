@@ -39,7 +39,7 @@
 
 .breadcrumb__separator {
   color: var(--color-text-tertiary);
-  transform: rotate(180deg);
+  font-size: 0.75rem;
 }
 
 .breadcrumb__current {

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { IconArrowLeft, IconHome } from '@tabler/icons-react';
+import { IconHome } from '@tabler/icons-react';
 import './Breadcrumb.css';
 
 export default function Breadcrumb({ items = [] }) {
@@ -18,7 +18,7 @@ export default function Breadcrumb({ items = [] }) {
           const isLast = index === items.length - 1;
           return (
             <li key={item.to || item.label} className="breadcrumb__item">
-              <IconArrowLeft size={12} stroke={2} className="breadcrumb__separator" />
+              <span className="breadcrumb__separator">/</span>
               {isLast ? (
                 <span className="breadcrumb__current">{item.label}</span>
               ) : (
