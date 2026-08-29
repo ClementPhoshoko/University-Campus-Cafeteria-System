@@ -61,7 +61,7 @@ export default function CartSummary({ subtotal, serviceFee, total, selectedSlot,
         <CustomDropdown
           label="Collection Time"
           options={slotOptions}
-          value={selectedSlotData ? { id: selectedSlotData.id, name: formatTime(selectedSlotData.starts_at), timeRange: formatTime(selectedSlotData.ends_at) } : null}
+          value={selectedSlotData ? { id: selectedSlotData.id, name: `${formatTime(selectedSlotData.starts_at)} - ${formatTime(selectedSlotData.ends_at)}` } : null}
           onChange={handleSlotChange}
           placeholder="Select time..."
           showClockIcon
