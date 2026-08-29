@@ -3,7 +3,9 @@ import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import './CartSummary.css';
 
 const formatTime = (timestamp) => {
+  if (!timestamp) return '';
   const date = new Date(timestamp);
+  if (isNaN(date.getTime())) return '';
   return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 };
 
