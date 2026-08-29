@@ -163,9 +163,11 @@
   flex-direction: column;
   gap: var(--space-5);
   z-index: 1;
+  isolation: isolate;
 }
 
 .view-food__customize {
+  position: relative;
   padding: var(--space-5);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -173,6 +175,21 @@
   box-shadow: var(--glass-shadow);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
+  z-index: 10;
+}
+
+.view-food__actions {
+  position: relative;
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  z-index: 1;
 }
 
 .view-food__section-title {
