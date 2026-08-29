@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { IconCheck, IconChevronDown } from '@tabler/icons-react';
+import { IconCheck, IconChevronDown, IconClock } from '@tabler/icons-react';
 import './CustomDropdown.css';
 
 export default function CustomDropdown({
@@ -11,6 +11,7 @@ export default function CustomDropdown({
   placeholder = 'Select...',
   error,
   disabled,
+  showClockIcon = false,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState([]);
@@ -72,6 +73,9 @@ export default function CustomDropdown({
         disabled={disabled}
       >
         <span className={`custom-dropdown__value${selectedOptions.length === 0 ? ' custom-dropdown__value--placeholder' : ''}`}>
+          {showClockIcon && selectedOptions.length > 0 && (
+            <IconClock size={14} stroke={1.8} className="custom-dropdown__value-icon" />
+          )}
           {displayValue()}
         </span>
         <IconChevronDown size={16} stroke={2} className={`custom-dropdown__icon${isOpen ? ' custom-dropdown__icon--open' : ''}`} />
@@ -88,13 +92,23 @@ export default function CustomDropdown({
                 <button
                   key={option.id}
                   type="button"
-                  className={`custom-dropdown__option${isSelected ? ' custom-dropdown__option--selected' : ''}`}
-                  onClick={() => handleSelect(option)}
+                  className={`custom-dropdown__option${isSelected ? ' custom-dropdown__option--selected' : ''}${!option.available ? ' custom-dropdown__option--unavailable' : ''}`}
+                  onClick={() => option.available && handleSelect(option)}
+                  disabled={!option.available}
                 >
                   <span className="custom-dropdown__option-content">
-                    <span className="custom-dropdown__option-name">{option.name}</span>
+                    {showClockIcon && (
+                      <IconClock size={14} stroke={1.8} className="custom-dropdown__option-icon" />
+                    )}
+                    <span className="custom-dropdown__option-name">
+                      {option.name}
+                      {option.timeRange && <span className="custom-dropdown__option-time"> - {option.timeRange}</span>}
+                    </span>
                     {option.priceDelta && option.priceDelta !== 'R0.00' && (
                       <span className="custom-dropdown__option-price">+{option.priceDelta}</span>
+                    )}
+                    {!option.available && (
+                      <span className="custom-dropdown__option-unavailable">Full</span>
                     )}
                   </span>
                   {isSelected && <IconCheck size={16} stroke={2.5} className="custom-dropdown__check" />}

@@ -1,11 +1,13 @@
 import { IconClock, IconShoppingBag } from '@tabler/icons-react';
+import { IconClock as IconClockOutline } from '@tabler/icons-react';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import './CartSummary.css';
 
 export default function CartSummary({ subtotal, serviceFee, total, selectedSlot, onSelectSlot, slots, itemCount }) {
   const slotOptions = slots.map(slot => ({
     id: slot.id,
-    name: `${slot.startsAt} - ${slot.endsAt}`,
+    name: slot.startsAt,
+    timeRange: slot.endsAt,
     available: slot.available,
   }));
 
@@ -46,9 +48,10 @@ export default function CartSummary({ subtotal, serviceFee, total, selectedSlot,
         <CustomDropdown
           label="Collection Time"
           options={slotOptions}
-          value={selectedSlotData ? { id: selectedSlotData.id, name: `${selectedSlotData.startsAt} - ${selectedSlotData.endsAt}` } : null}
+          value={selectedSlotData ? { id: selectedSlotData.id, name: selectedSlotData.startsAt, timeRange: selectedSlotData.endsAt } : null}
           onChange={handleSlotChange}
           placeholder="Select time..."
+          showClockIcon
         />
       </div>
 
