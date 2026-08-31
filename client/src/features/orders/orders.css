@@ -85,6 +85,157 @@
   gap: var(--space-4);
 }
 
+/* ── Layout: list + aside ── */
+
+.orders-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.orders-layout__main {
+  min-width: 0;
+}
+
+.orders-layout__aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  position: sticky;
+  top: 88px;
+}
+
+/* ── Stats ── */
+
+.orders-stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-default);
+  box-shadow: var(--elevation-sm);
+}
+
+.orders-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.orders-stat__icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  flex: 0 0 auto;
+}
+
+.orders-stat__icon--total {
+  background: var(--blue-100);
+  color: var(--blue-700);
+}
+
+.orders-stat__icon--active {
+  background: var(--success-50);
+  color: var(--success-700);
+}
+
+.orders-stat__icon--completed {
+  background: var(--neutral-100);
+  color: var(--neutral-700);
+}
+
+.orders-stat__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.orders-stat__value {
+  font-size: 1.1rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}
+
+.orders-stat__label {
+  font-size: 0.76rem;
+  color: var(--color-text-tertiary);
+}
+
+/* ── Info card ── */
+
+.orders-info-card {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+}
+
+.orders-info-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  color: var(--color-action-secondary-text);
+}
+
+.orders-info-card__title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.orders-info-card__steps {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.orders-info-card__steps li::marker {
+  color: var(--color-action-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+/* ── Help link ── */
+
+.orders-help-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-default);
+  box-shadow: var(--elevation-sm);
+  color: var(--color-text-secondary);
+  font-size: 0.84rem;
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  transition: color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.orders-help-link:hover {
+  color: var(--color-action-primary);
+  box-shadow: var(--elevation-md);
+}
+
+@media (max-width: 768px) {
+  .orders-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .orders-layout__aside {
+    position: static;
+  }
+}
+
 /* ── Order card ── */
 
 .order-card {

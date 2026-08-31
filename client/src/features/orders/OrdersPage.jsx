@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { IconHelpCircle, IconClipboardCheck, IconClock, IconCircleCheck, IconReceipt2 } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import OrdersBackground from '../../components/OrdersBackground.jsx';
@@ -68,6 +70,9 @@ export default function OrdersPage() {
     setCurrentPage(1);
   };
 
+  const activeCount = orders.filter((o) => ACTIVE_STATUSES.includes(o.status)).length;
+  const completedCount = orders.filter((o) => o.status === ORDER_STATUSES.COMPLETED || o.status === ORDER_STATUSES.COLLECTED).length;
+
   return (
     <PageContainer className="orders-page-container">
       <OrdersBackground />
@@ -105,28 +110,80 @@ export default function OrdersPage() {
         {loading ? (
           <p style={{ color: 'var(--color-text-secondary)' }}>Loading orders...</p>
         ) : (
-          <>
-            {filteredOrders.length > 0 ? (
-              <>
-                <OrderList orders={paginatedOrders} />
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                />
-              </>
-            ) : (
-              <div className="orders-empty">
-                <div className="orders-empty__content">
-                  <h2 className="orders-empty__title">No orders yet</h2>
-                  <p className="orders-empty__text">Start your first order from one of our campus cafeterias.</p>
-                  <button type="button" className="orders-empty__btn" onClick={() => window.location.href = '/cafeterias'}>
-                    Browse Cafeterias
-                  </button>
+          <div className="orders-layout">
+            <div className="orders-layout__main">
+              {filteredOrders.length > 0 ? (
+                <>
+                  <OrderList orders={paginatedOrders} />
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                </>
+              ) : (
+                <div className="orders-empty">
+                  <div className="orders-empty__content">
+                    <h2 className="orders-empty__title">No orders yet</h2>
+                    <p className="orders-empty__text">Start your first order from one of our campus cafeterias.</p>
+                    <button type="button" className="orders-empty__btn" onClick={() => window.location.href = '/cafeterias'}>
+                      Browse Cafeterias
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <aside className="orders-layout__aside">
+              <div className="orders-stats">
+                <div className="orders-stat">
+                  <div className="orders-stat__icon orders-stat__icon--total">
+                    <IconReceipt2 size={18} stroke={1.8} />
+                  </div>
+                  <div className="orders-stat__body">
+                    <span className="orders-stat__value">{orders.length}</span>
+                    <span className="orders-stat__label">Total orders</span>
+                  </div>
+                </div>
+                <div className="orders-stat">
+                  <div className="orders-stat__icon orders-stat__icon--active">
+                    <IconClock size={18} stroke={1.8} />
+                  </div>
+                  <div className="orders-stat__body">
+                    <span className="orders-stat__value">{activeCount}</span>
+                    <span className="orders-stat__label">Active</span>
+                  </div>
+                </div>
+                <div className="orders-stat">
+                  <div className="orders-stat__icon orders-stat__icon--completed">
+                    <IconCircleCheck size={18} stroke={1.8} />
+                  </div>
+                  <div className="orders-stat__body">
+                    <span className="orders-stat__value">{completedCount}</span>
+                    <span className="orders-stat__label">Completed</span>
+                  </div>
                 </div>
               </div>
-            )}
-          </>
+
+              <div className="orders-info-card">
+                <div className="orders-info-card__header">
+                  <IconClipboardCheck size={18} stroke={1.8} />
+                  <h3 className="orders-info-card__title">How collection works</h3>
+                </div>
+                <ol className="orders-info-card__steps">
+                  <li>Place your order and choose a collection slot</li>
+                  <li>Wait for the vendor to prepare your food</li>
+                  <li>Head to the collection point when ready</li>
+                  <li>Show your 4-digit code to collect</li>
+                </ol>
+              </div>
+
+              <Link to="/help" className="orders-help-link">
+                <IconHelpCircle size={18} stroke={1.8} />
+                <span>Need help with an order?</span>
+              </Link>
+            </aside>
+          </div>
         )}
       </div>
     </PageContainer>
