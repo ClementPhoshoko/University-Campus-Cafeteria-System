@@ -5,7 +5,7 @@ import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import OrdersBackground from '../../components/OrdersBackground.jsx';
 import OrderList from '../../components/orders/OrderList.jsx';
-import Pagination from '../../components/orders/Pagination.jsx';
+import Pagination from '../../components/ui/Pagination.jsx';
 import { fetchOrders } from '../../services/orders.js';
 import { ORDER_STATUSES } from './orderMockData.js';
 import './orders.css';
