@@ -112,19 +112,28 @@ export default function OrderDetailPage() {
 
             <div className="order-detail__panel">
               <h3 className="order-detail__panel-title">Collection Details</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--color-text-secondary)', fontSize: '0.86rem' }}>
-                  <IconMapPin size={16} stroke={1.8} />
-                  {getCollectionPointName(order)}
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--color-text-secondary)', fontSize: '0.86rem' }}>
-                  <IconClock size={16} stroke={1.8} />
-                  Ready around {formatCollectionSlot(order)}
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--color-text-secondary)', fontSize: '0.86rem' }}>
-                  <IconCreditCard size={16} stroke={1.8} />
-                  Paid with {order.payment_method?.replace(/_/g, ' ')}
-                </span>
+              <div className="order-detail__detail-rows">
+                <div className="order-detail__detail-row">
+                  <IconMapPin size={18} stroke={1.8} />
+                  <div className="order-detail__detail-row-text">
+                    <span className="order-detail__detail-row-label">Pickup point</span>
+                    <span className="order-detail__detail-row-value">{getCollectionPointName(order)}</span>
+                  </div>
+                </div>
+                <div className="order-detail__detail-row">
+                  <IconClock size={18} stroke={1.8} />
+                  <div className="order-detail__detail-row-text">
+                    <span className="order-detail__detail-row-label">Ready around</span>
+                    <span className="order-detail__detail-row-value">{formatCollectionSlot(order)}</span>
+                  </div>
+                </div>
+                <div className="order-detail__detail-row">
+                  <IconCreditCard size={18} stroke={1.8} />
+                  <div className="order-detail__detail-row-text">
+                    <span className="order-detail__detail-row-label">Payment</span>
+                    <span className="order-detail__detail-row-value">{order.payment_method?.replace(/_/g, ' ')}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

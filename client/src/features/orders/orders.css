@@ -410,84 +410,149 @@
   color: var(--error-700);
 }
 
-/* ── Order progress timeline ── */
+/* ── Order timeline (horizontal, premium) ── */
 
-.order-progress {
+.order-timeline {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   gap: 0;
   padding: var(--space-4) 0;
 }
 
-.order-progress__step {
+.order-timeline__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.order-timeline__step:last-child {
+  flex: 0 0 auto;
+}
+
+.order-timeline__marker-wrap {
   position: relative;
   display: flex;
-  gap: var(--space-4);
-  padding-bottom: var(--space-5);
+  align-items: center;
+  justify-content: center;
 }
 
-.order-progress__step:last-child {
-  padding-bottom: 0;
-}
-
-.order-progress__step:last-child .order-progress__connector {
-  display: none;
-}
-
-.order-progress__marker {
+.order-timeline__marker {
   position: relative;
   z-index: 2;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-full);
   background: var(--color-surface-disabled);
   color: var(--color-text-disabled);
-  font-size: 0.75rem;
-  font-weight: var(--font-weight-bold);
-  flex: 0 0 auto;
+  transition: background var(--transition-smooth), color var(--transition-smooth), box-shadow var(--transition-smooth);
 }
 
-.order-progress__step--completed .order-progress__marker,
-.order-progress__step--current .order-progress__marker {
+.order-timeline__step--completed .order-timeline__marker {
   background: var(--color-action-primary);
   color: var(--color-action-primary-text);
+  box-shadow: 0 2px 8px rgba(10, 140, 255, 0.25);
 }
 
-.order-progress__connector {
-  position: absolute;
-  top: 28px;
-  left: 13px;
-  width: 2px;
-  height: calc(100% - 28px);
-  background: var(--color-border-default);
-}
-
-.order-progress__step--completed .order-progress__connector {
+.order-timeline__step--current .order-timeline__marker {
   background: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+  box-shadow: 0 0 0 4px rgba(10, 140, 255, 0.15), 0 2px 8px rgba(10, 140, 255, 0.3);
 }
 
-.order-progress__content {
-  flex: 1;
-  padding-top: 3px;
+.order-timeline__pulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-action-primary);
+  opacity: 0;
+  animation: timeline-pulse 2s ease-in-out infinite;
 }
 
-.order-progress__title {
-  margin: 0;
-  font-size: 0.92rem;
+@keyframes timeline-pulse {
+  0%, 100% { opacity: 0; transform: scale(0.9); }
+  50% { opacity: 0.4; transform: scale(1.1); }
+}
+
+.order-timeline__connector {
+  position: absolute;
+  top: 19px;
+  left: calc(50% + 20px);
+  right: calc(-50% + 20px);
+  height: 3px;
+  background: var(--color-border-default);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.order-timeline__connector-fill {
+  height: 100%;
+  width: 0;
+  background: var(--color-action-primary);
+  border-radius: 2px;
+  transition: width var(--transition-smooth);
+}
+
+.order-timeline__step--completed .order-timeline__connector-fill {
+  width: 100%;
+}
+
+.order-timeline__step:last-child .order-timeline__connector {
+  display: none;
+}
+
+.order-timeline__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: var(--space-2);
+  text-align: center;
+}
+
+.order-timeline__step-name {
+  font-size: 0.76rem;
   font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.order-timeline__step--completed .order-timeline__step-name {
   color: var(--color-text-primary);
 }
 
-.order-progress__step--upcoming .order-progress__title {
+.order-timeline__step--current .order-timeline__step-name {
+  color: var(--color-action-primary);
+}
+
+.order-timeline__step--upcoming .order-timeline__step-name {
   color: var(--color-text-tertiary);
 }
 
-.order-progress__time {
-  margin: var(--space-1) 0 0;
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
+.order-timeline__time {
+  font-size: 0.68rem;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .order-timeline__marker {
+    width: 32px;
+    height: 32px;
+  }
+
+  .order-timeline__connector {
+    top: 15px;
+    left: calc(50% + 16px);
+    right: calc(-50% + 16px);
+  }
+
+  .order-timeline__step-name {
+    font-size: 0.68rem;
+  }
 }
 
 /* ── Order detail page ── */
@@ -571,11 +636,52 @@
 
 .order-detail__panel-title {
   margin: 0 0 var(--space-4);
-  font-size: 0.92rem;
+  font-size: 0.78rem;
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Collection details rows ── */
+
+.order-detail__detail-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.order-detail__detail-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
+.order-detail__detail-row svg {
+  flex: 0 0 auto;
+  color: var(--color-action-secondary-text);
+}
+
+.order-detail__detail-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.order-detail__detail-row-label {
+  font-size: 0.72rem;
+  color: var(--color-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.order-detail__detail-row-value {
+  font-size: 0.88rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 /* ── Collection code ── */
