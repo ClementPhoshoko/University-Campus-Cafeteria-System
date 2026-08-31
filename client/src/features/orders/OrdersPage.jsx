@@ -3,6 +3,7 @@ import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import OrdersBackground from '../../components/OrdersBackground.jsx';
 import OrderList from '../../components/orders/OrderList.jsx';
+import Pagination from '../../components/orders/Pagination.jsx';
 import { fetchOrders } from '../../services/orders.js';
 import { ORDER_STATUSES } from './orderMockData.js';
 import './orders.css';
@@ -24,10 +25,13 @@ const ACTIVE_STATUSES = [
   ORDER_STATUSES.READY_FOR_COLLECTION,
 ];
 
+const PER_PAGE = 5;
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +55,18 @@ export default function OrdersPage() {
     if (activeFilter === 'cancelled') return orders.filter((o) => o.status === ORDER_STATUSES.CANCELLED || o.status === ORDER_STATUSES.REJECTED || o.status === ORDER_STATUSES.REFUNDED);
     return orders;
   }, [orders, activeFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PER_PAGE));
+
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * PER_PAGE;
+    return filteredOrders.slice(start, start + PER_PAGE);
+  }, [filteredOrders, currentPage]);
+
+  const handleFilterChange = (filterId) => {
+    setActiveFilter(filterId);
+    setCurrentPage(1);
+  };
 
   return (
     <PageContainer className="orders-page-container">
@@ -76,7 +92,7 @@ export default function OrdersPage() {
                 key={filter.id}
                 type="button"
                 className={`orders-filter-chip${activeFilter === filter.id ? ' orders-filter-chip--active' : ''}`}
-                onClick={() => setActiveFilter(filter.id)}
+                onClick={() => handleFilterChange(filter.id)}
                 aria-pressed={activeFilter === filter.id}
               >
                 {filter.label}
@@ -91,7 +107,14 @@ export default function OrdersPage() {
         ) : (
           <>
             {filteredOrders.length > 0 ? (
-              <OrderList orders={filteredOrders} />
+              <>
+                <OrderList orders={paginatedOrders} />
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </>
             ) : (
               <div className="orders-empty">
                 <div className="orders-empty__content">
