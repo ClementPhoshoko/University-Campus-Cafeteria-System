@@ -3,7 +3,6 @@ import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import OrdersBackground from '../../components/OrdersBackground.jsx';
 import OrderList from '../../components/orders/OrderList.jsx';
-import OrderEmptyState from '../../components/orders/OrderEmptyState.jsx';
 import { fetchOrders } from '../../services/orders.js';
 import { ORDER_STATUSES } from './orderMockData.js';
 import './orders.css';
@@ -94,7 +93,15 @@ export default function OrdersPage() {
             {filteredOrders.length > 0 ? (
               <OrderList orders={filteredOrders} />
             ) : (
-              <OrderEmptyState />
+              <div className="orders-empty">
+                <div className="orders-empty__content">
+                  <h2 className="orders-empty__title">No orders yet</h2>
+                  <p className="orders-empty__text">Start your first order from one of our campus cafeterias.</p>
+                  <button type="button" className="orders-empty__btn" onClick={() => window.location.href = '/cafeterias'}>
+                    Browse Cafeterias
+                  </button>
+                </div>
+              </div>
             )}
           </>
         )}
