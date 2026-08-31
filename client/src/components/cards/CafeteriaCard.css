@@ -13,7 +13,7 @@
 
 .home_vendor-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 22px rgba(31, 41, 51, 0.1), 0 3px 8px rgba(31, 41, 51, 0.05);
+  box-shadow: var(--elevation-card-hover);
 }
 
 .home_vendor-media {

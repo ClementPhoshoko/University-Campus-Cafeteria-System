@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { IconChevronLeft, IconMapPin, IconClock, IconCreditCard } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
+import OrderDetailBackground from '../../components/OrderDetailBackground.jsx';
 import OrderProgress from '../../components/orders/OrderProgress.jsx';
 import OrderItemList from '../../components/orders/OrderItemList.jsx';
 import OrderSummary from '../../components/orders/OrderSummary.jsx';
@@ -84,6 +85,7 @@ export default function OrderDetailPage() {
 
   return (
     <PageContainer className="order-detail-container">
+      <OrderDetailBackground />
       <div className="order-detail">
         <div className="order-detail__header">
           <Link to="/orders" className="order-detail__back">
