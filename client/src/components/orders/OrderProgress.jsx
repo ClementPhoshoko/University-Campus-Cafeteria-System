@@ -2,7 +2,7 @@ import { IconCheck } from '@tabler/icons-react';
 import {
   ORDER_STATUSES,
   formatOrderTime,
-} from '../orderMockData.js';
+} from '../../features/orders/orderMockData.js';
 
 const PROGRESS_STEPS = [
   { key: 'placed', label: 'Order placed', match: [ORDER_STATUSES.PAYMENT_PENDING, ORDER_STATUSES.SUBMITTED] },

@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { IconChevronLeft, IconMapPin, IconClock, IconCreditCard } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
-import OrderProgress from './components/OrderProgress.jsx';
-import OrderItemList from './components/OrderItemList.jsx';
-import OrderSummary from './components/OrderSummary.jsx';
-import CollectionCode from './components/CollectionCode.jsx';
-import OrderActions from './components/OrderActions.jsx';
+import OrderProgress from '../../components/orders/OrderProgress.jsx';
+import OrderItemList from '../../components/orders/OrderItemList.jsx';
+import OrderSummary from '../../components/orders/OrderSummary.jsx';
+import CollectionCode from '../../components/orders/CollectionCode.jsx';
+import OrderActions from '../../components/orders/OrderActions.jsx';
 
 import { fetchOrderById, cancelOrder, reorderOrder, rateOrder } from '../../services/orders.js';
 import {

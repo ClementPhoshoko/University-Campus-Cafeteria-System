@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ORDER_STATUSES } from '../orderMockData.js';
+import { ORDER_STATUSES } from '../../features/orders/orderMockData.js';
 
 export default function OrderActions({ order, onCancel, onReorder, onRate }) {
   const [isCancelling, setIsCancelling] = useState(false);

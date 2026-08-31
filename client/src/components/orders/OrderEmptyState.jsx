@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import illustration from '../../../assets/avatars/illustration_collect_order.png';
+import illustration from '../../assets/avatars/illustration_collect_order.png';
 
 export default function OrderEmptyState() {
   const navigate = useNavigate();

@@ -5,7 +5,7 @@ import {
   getItemsForOrder,
   formatOrderDate,
   formatOrderTime,
-} from '../orderMockData.js';
+} from '../../features/orders/orderMockData.js';
 
 export default function OrderCard({ order }) {
   const vendor = getVendorById(order.vendor_id);

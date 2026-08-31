@@ -7,7 +7,7 @@ import CartSummary from './CartSummary.jsx';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import CartBackground from '../../components/CartBackground.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
-import OrderConfirmation from '../orders/components/OrderConfirmation.jsx';
+import OrderConfirmation from '../../components/orders/OrderConfirmation.jsx';
 import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.png';
 import { cafeterias, popularMeals } from '../home/homeData.js';
 import './CartPage.css';

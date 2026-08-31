@@ -1,6 +1,6 @@
 import {
   ORDER_STATUSES,
-} from '../orderMockData.js';
+} from '../../features/orders/orderMockData.js';
 
 const LABELS = {
   [ORDER_STATUSES.PAYMENT_PENDING]: 'Payment Pending',

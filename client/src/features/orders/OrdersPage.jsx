@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
-import OrderList from './components/OrderList.jsx';
-import OrderEmptyState from './components/OrderEmptyState.jsx';
+import OrderList from '../../components/orders/OrderList.jsx';
+import OrderEmptyState from '../../components/orders/OrderEmptyState.jsx';
 import { fetchOrders } from '../../services/orders.js';
 import { ORDER_STATUSES } from './orderMockData.js';
 import './orders.css';

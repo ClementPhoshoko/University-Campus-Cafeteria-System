@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import successImg from '../../../assets/avatars/Cheerful_Student_with_Green_Checkmark.png';
+import successImg from '../../assets/avatars/Cheerful_Student_with_Green_Checkmark.png';
 
 export default function OrderConfirmation({ orderId, onContinue }) {
   const navigate = useNavigate();
