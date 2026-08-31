@@ -415,8 +415,8 @@
 .order-timeline {
   display: flex;
   align-items: flex-start;
-  gap: 0;
-  padding: var(--space-4) 0;
+  padding: var(--space-4) var(--space-2);
+  overflow: hidden;
 }
 
 .order-timeline__step {
@@ -424,11 +424,13 @@
   flex-direction: column;
   align-items: center;
   flex: 1;
+  min-width: 0;
   position: relative;
 }
 
 .order-timeline__step:last-child {
   flex: 0 0 auto;
+  min-width: 60px;
 }
 
 .order-timeline__marker-wrap {
@@ -436,6 +438,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .order-timeline__marker {
@@ -448,6 +451,7 @@
   border-radius: var(--radius-full);
   background: var(--color-surface-disabled);
   color: var(--color-text-disabled);
+  flex-shrink: 0;
   transition: background var(--transition-smooth), color var(--transition-smooth), box-shadow var(--transition-smooth);
 }
 
@@ -478,18 +482,20 @@
 }
 
 .order-timeline__connector {
-  position: absolute;
-  top: 19px;
-  left: calc(50% + 20px);
-  right: calc(-50% + 20px);
+  flex: 1;
   height: 3px;
   background: var(--color-border-default);
   border-radius: 2px;
+  margin: 0 -2px;
+  align-self: center;
+  margin-top: -28px;
+  position: relative;
   overflow: hidden;
 }
 
 .order-timeline__connector-fill {
-  height: 100%;
+  position: absolute;
+  inset: 0;
   width: 0;
   background: var(--color-action-primary);
   border-radius: 2px;
@@ -511,6 +517,7 @@
   gap: 2px;
   margin-top: var(--space-2);
   text-align: center;
+  min-width: 0;
 }
 
 .order-timeline__step-name {
@@ -518,6 +525,9 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .order-timeline__step--completed .order-timeline__step-name {
@@ -539,15 +549,17 @@
 }
 
 @media (max-width: 480px) {
+  .order-timeline {
+    padding: var(--space-3) 0;
+  }
+
   .order-timeline__marker {
     width: 32px;
     height: 32px;
   }
 
   .order-timeline__connector {
-    top: 15px;
-    left: calc(50% + 16px);
-    right: calc(-50% + 16px);
+    margin-top: -24px;
   }
 
   .order-timeline__step-name {
