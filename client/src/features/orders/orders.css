@@ -737,8 +737,8 @@
   position: absolute;
   color: var(--blue-300);
   opacity: 0.35;
-  width: 24px;
-  height: 24px;
+  width: 56px;
+  height: 56px;
 }
 
 .orders-bg-icon--1 { top: 8%; right: 6%; transform: rotate(12deg); }
