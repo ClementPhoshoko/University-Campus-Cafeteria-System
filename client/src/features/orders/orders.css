@@ -722,3 +722,38 @@
     transition: none;
   }
 }
+
+/* ── Orders background icons ── */
+
+.orders-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.orders-bg-icon {
+  position: absolute;
+  color: var(--blue-300);
+  opacity: 0.35;
+  width: 24px;
+  height: 24px;
+}
+
+.orders-bg-icon--1 { top: 8%; right: 6%; transform: rotate(12deg); }
+.orders-bg-icon--2 { top: 18%; right: 20%; transform: rotate(-8deg); }
+.orders-bg-icon--3 { top: 28%; right: 4%; transform: rotate(6deg); }
+.orders-bg-icon--4 { top: 38%; right: 16%; transform: rotate(-12deg); }
+.orders-bg-icon--5 { top: 48%; right: 3%; transform: rotate(9deg); }
+.orders-bg-icon--6 { top: 58%; right: 12%; transform: rotate(-5deg); }
+.orders-bg-icon--7 { top: 68%; right: 5%; transform: rotate(11deg); }
+.orders-bg-icon--8 { top: 78%; right: 18%; transform: rotate(-7deg); }
+.orders-bg-icon--9 { top: 88%; right: 4%; transform: rotate(4deg); }
+.orders-bg-icon--10 { top: 14%; right: 32%; transform: rotate(-10deg); }
+
+@media (max-width: 768px) {
+  .orders-bg {
+    display: none;
+  }
+}

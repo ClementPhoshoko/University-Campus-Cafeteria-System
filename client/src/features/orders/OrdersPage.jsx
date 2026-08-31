@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
+import OrdersBackground from '../../components/OrdersBackground.jsx';
 import OrderList from '../../components/orders/OrderList.jsx';
 import OrderEmptyState from '../../components/orders/OrderEmptyState.jsx';
 import { fetchOrders } from '../../services/orders.js';
@@ -54,6 +55,7 @@ export default function OrdersPage() {
 
   return (
     <PageContainer className="orders-page-container">
+      <OrdersBackground />
       <div className="orders-page">
         <PageHeader
           title="My Orders"
