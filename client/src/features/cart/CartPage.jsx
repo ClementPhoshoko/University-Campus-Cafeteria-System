@@ -7,9 +7,8 @@ import CartSummary from './CartSummary.jsx';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import CartBackground from '../../components/CartBackground.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
+import OrderConfirmation from '../orders/components/OrderConfirmation.jsx';
 import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.png';
-import successImg from '../../assets/avatars/Cheerful_Student_with_Green_Checkmark.png';
-import errorImg from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 import { cafeterias, popularMeals } from '../home/homeData.js';
 import './CartPage.css';
 
@@ -105,6 +104,18 @@ export default function CartPage() {
       setCart(prev => ({ ...prev, items: [] }));
     }
   };
+
+  if (orderStatus === 'success') {
+    return (
+      <OrderConfirmation
+        orderId="ord-preparing-001"
+        onContinue={() => {
+          setOrderStatus(null);
+          setCart(prev => ({ ...prev, items: [] }));
+        }}
+      />
+    );
+  }
 
   const formatExpiry = () => {
     const now = new Date();
@@ -254,46 +265,13 @@ export default function CartPage() {
         </div>
       </div>
 
-      {orderStatus && (
+      {orderStatus === 'loading' && (
         <div className="order-status">
-          <div className="order-status__overlay" onClick={handleCloseOrderStatus} />
+          <div className="order-status__overlay" />
           <div className="order-status__card">
-            {orderStatus === 'loading' && (
-              <>
-                <div className="order-status__spinner" />
-                <h2 className="order-status__title">Placing your order...</h2>
-                <p className="order-status__text">Please wait a moment</p>
-              </>
-            )}
-            {orderStatus === 'success' && (
-              <>
-                <img src={successImg} alt="" className="order-status__avatar" />
-                <h2 className="order-status__title">Order Placed!</h2>
-                <p className="order-status__text">Your order has been received and is being prepared.</p>
-                <p className="order-status__hint">Check your collection time slot for updates.</p>
-                <button
-                  type="button"
-                  className="order-status__btn"
-                  onClick={handleCloseOrderStatus}
-                >
-                  Continue
-                </button>
-              </>
-            )}
-            {orderStatus === 'error' && (
-              <>
-                <img src={errorImg} alt="" className="order-status__avatar" />
-                <h2 className="order-status__title">Something went wrong</h2>
-                <p className="order-status__text">We couldn't process your order. Please try again.</p>
-                <button
-                  type="button"
-                  className="order-status__btn"
-                  onClick={handleCloseOrderStatus}
-                >
-                  Try Again
-                </button>
-              </>
-            )}
+            <div className="order-status__spinner" />
+            <h2 className="order-status__title">Placing your order...</h2>
+            <p className="order-status__text">Please wait a moment</p>
           </div>
         </div>
       )}
