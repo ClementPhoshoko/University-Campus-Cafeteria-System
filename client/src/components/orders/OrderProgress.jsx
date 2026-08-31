@@ -1,4 +1,4 @@
-import { IconCheck, IconClock, IconChefHat, IconClipboardCheck, IconCircleCheck } from '@tabler/icons-react';
+import { IconCheck, IconWalk, IconChefHat, IconClipboardCheck, IconCircleCheck, IconBike } from '@tabler/icons-react';
 import {
   ORDER_STATUSES,
   formatOrderTime,
@@ -8,7 +8,8 @@ const PROGRESS_STEPS = [
   { key: 'placed', label: 'Placed', icon: IconClipboardCheck, match: [ORDER_STATUSES.PAYMENT_PENDING, ORDER_STATUSES.SUBMITTED] },
   { key: 'confirmed', label: 'Confirmed', icon: IconCircleCheck, match: [ORDER_STATUSES.PAYMENT_CONFIRMED, ORDER_STATUSES.RECEIVED_BY_VENDOR, ORDER_STATUSES.ACCEPTED] },
   { key: 'preparing', label: 'Preparing', icon: IconChefHat, match: [ORDER_STATUSES.PREPARING] },
-  { key: 'ready', label: 'Ready', icon: IconClock, match: [ORDER_STATUSES.READY_FOR_COLLECTION, ORDER_STATUSES.COLLECTED, ORDER_STATUSES.COMPLETED] },
+  { key: 'ready', label: 'Ready', icon: IconWalk, match: [ORDER_STATUSES.READY_FOR_COLLECTION] },
+  { key: 'collected', label: 'Collected', icon: IconBike, match: [ORDER_STATUSES.COLLECTED, ORDER_STATUSES.COMPLETED] },
 ];
 
 export default function OrderProgress({ order }) {

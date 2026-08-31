@@ -113,25 +113,27 @@ export default function OrderDetailPage() {
             <div className="order-detail__panel">
               <h3 className="order-detail__panel-title">Collection Details</h3>
               <div className="order-detail__detail-rows">
-                <div className="order-detail__detail-row">
-                  <IconMapPin size={18} stroke={1.8} />
-                  <div className="order-detail__detail-row-text">
-                    <span className="order-detail__detail-row-label">Pickup point</span>
-                    <span className="order-detail__detail-row-value">{getCollectionPointName(order)}</span>
+                <div className="order-detail__detail-row-grid">
+                  <div className="order-detail__detail-row">
+                    <IconMapPin size={18} stroke={1.8} />
+                    <div className="order-detail__detail-row-content">
+                      <span className="order-detail__detail-row-label">Pickup point</span>
+                      <span className="order-detail__detail-row-value">{getCollectionPointName(order)}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="order-detail__detail-row">
-                  <IconClock size={18} stroke={1.8} />
-                  <div className="order-detail__detail-row-text">
-                    <span className="order-detail__detail-row-label">Ready around</span>
-                    <span className="order-detail__detail-row-value">{formatCollectionSlot(order)}</span>
+                  <div className="order-detail__detail-row">
+                    <IconClock size={18} stroke={1.8} />
+                    <div className="order-detail__detail-row-content">
+                      <span className="order-detail__detail-row-label">Ready around</span>
+                      <span className="order-detail__detail-row-value">{formatCollectionSlot(order)}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="order-detail__detail-row">
-                  <IconCreditCard size={18} stroke={1.8} />
-                  <div className="order-detail__detail-row-text">
-                    <span className="order-detail__detail-row-label">Payment</span>
-                    <span className="order-detail__detail-row-value">{order.payment_method?.replace(/_/g, ' ')}</span>
+                  <div className="order-detail__detail-row">
+                    <IconCreditCard size={18} stroke={1.8} />
+                    <div className="order-detail__detail-row-content">
+                      <span className="order-detail__detail-row-label">Payment</span>
+                      <span className="order-detail__detail-row-value">{order.payment_method?.replace(/_/g, ' ')}</span>
+                    </div>
                   </div>
                 </div>
               </div>
