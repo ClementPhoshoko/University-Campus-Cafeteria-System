@@ -19,28 +19,64 @@
 }
 
 .orders-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   flex: 0 0 auto;
-  height: 36px;
+  height: 42px;
   padding: 0 var(--space-4);
-  border: none;
-  border-radius: var(--radius-full);
-  background: var(--color-surface-raised);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xs);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   color: var(--color-text-secondary);
   font-family: var(--font-primary);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: var(--font-weight-medium);
+  box-shadow: var(--glass-shadow);
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 .orders-filter-chip:hover {
-  background: var(--color-surface-subtle);
-  color: var(--color-text-primary);
+  background: var(--color-action-primary);
+  border-color: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+  box-shadow: var(--elevation-sm);
 }
 
 .orders-filter-chip--active {
-  background: var(--color-action-secondary);
-  color: var(--color-action-secondary-text);
+  background: var(--color-action-primary);
+  border-color: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+}
+
+.orders-filter-chip:active {
+  transform: scale(0.97);
+}
+
+.orders-filter-chip:focus-visible {
+  outline: 3px solid rgba(10, 140, 255, 0.22);
+  outline-offset: 2px;
+}
+
+.orders-filter-chip__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.orders-filter-chip:not(.orders-filter-chip--active) .orders-filter-chip__count {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-tertiary);
 }
 
 .orders-list {
@@ -125,8 +161,15 @@
   white-space: nowrap;
 }
 
-.order-card__total {
+.order-card__end {
   flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.order-card__total {
   font-size: 1rem;
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);

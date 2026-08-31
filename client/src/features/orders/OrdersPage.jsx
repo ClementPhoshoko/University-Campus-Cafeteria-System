@@ -56,23 +56,33 @@ export default function OrdersPage() {
     <PageContainer className="orders-page-container">
       <div className="orders-page">
         <PageHeader
-          eyebrow="Your orders"
           title="My Orders"
           subtitle="Track, collect, and review your campus cafeteria orders."
         />
 
         <div className="orders-filters" role="group" aria-label="Order filters">
-          {FILTERS.map((filter) => (
-            <button
-              key={filter.id}
-              type="button"
-              className={`orders-filter-chip${activeFilter === filter.id ? ' orders-filter-chip--active' : ''}`}
-              onClick={() => setActiveFilter(filter.id)}
-              aria-pressed={activeFilter === filter.id}
-            >
-              {filter.label}
-            </button>
-          ))}
+          {FILTERS.map((filter) => {
+            const count = filter.id === 'all'
+              ? orders.length
+              : filter.id === 'active'
+                ? orders.filter((o) => ACTIVE_STATUSES.includes(o.status)).length
+                : filter.id === 'completed'
+                  ? orders.filter((o) => o.status === ORDER_STATUSES.COMPLETED || o.status === ORDER_STATUSES.COLLECTED).length
+                  : orders.filter((o) => o.status === ORDER_STATUSES.CANCELLED || o.status === ORDER_STATUSES.REJECTED || o.status === ORDER_STATUSES.REFUNDED).length;
+
+            return (
+              <button
+                key={filter.id}
+                type="button"
+                className={`orders-filter-chip${activeFilter === filter.id ? ' orders-filter-chip--active' : ''}`}
+                onClick={() => setActiveFilter(filter.id)}
+                aria-pressed={activeFilter === filter.id}
+              >
+                {filter.label}
+                <span className="orders-filter-chip__count">{count}</span>
+              </button>
+            );
+          })}
         </div>
 
         {loading ? (

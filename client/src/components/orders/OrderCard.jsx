@@ -22,7 +22,6 @@ export default function OrderCard({ order }) {
       <div className="order-card__body">
         <div className="order-card__header">
           <h3 className="order-card__vendor">{vendor?.name || 'Unknown vendor'}</h3>
-          <OrderStatusBadge status={order.status} />
         </div>
         <div className="order-card__meta">
           <span>#{order.order_number}</span>
@@ -34,7 +33,10 @@ export default function OrderCard({ order }) {
           {remaining > 0 && ` +${remaining} more`}
         </p>
       </div>
-      <span className="order-card__total">R {order.total.toFixed(2)}</span>
+      <div className="order-card__end">
+        <span className="order-card__total">R {order.total.toFixed(2)}</span>
+        <OrderStatusBadge status={order.status} />
+      </div>
     </Link>
   );
 }
