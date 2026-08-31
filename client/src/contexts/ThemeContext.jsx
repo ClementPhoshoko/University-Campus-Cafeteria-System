@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 const ThemeContext = createContext(null);
 
@@ -102,13 +102,45 @@ const lightTheme = {
   },
 };
 
+const darkTheme = {
+  name: 'dark',
+  colors: lightTheme.colors,
+  glass: lightTheme.glass,
+  radius: lightTheme.radius,
+  elevation: lightTheme.elevation,
+  space: lightTheme.space,
+};
+
+function getInitialTheme() {
+  try {
+    const stored = localStorage.getItem('mm-theme');
+    if (stored === 'dark' || stored === 'light') return stored;
+  } catch {}
+  return 'light';
+}
+
 export function ThemeProvider({ children }) {
-  const [theme] = useState(lightTheme);
+  const [mode, setMode] = useState(getInitialTheme);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', mode);
+    try {
+      localStorage.setItem('mm-theme', mode);
+    } catch {}
+  }, [mode]);
+
+  const toggleTheme = useCallback(() => {
+    setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
+  }, []);
+
+  const theme = mode === 'dark' ? darkTheme : lightTheme;
+  const isDark = mode === 'dark';
 
   const value = useMemo(() => ({
     theme,
-    isDark: false,
-  }), [theme]);
+    isDark,
+    toggleTheme,
+  }), [theme, isDark, toggleTheme]);
 
   return (
     <ThemeContext.Provider value={value}>

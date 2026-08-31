@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { IconBell, IconShoppingCart, IconChefHat } from '@tabler/icons-react';
+import { IconBell, IconShoppingCart, IconChefHat, IconSun, IconMoon } from '@tabler/icons-react';
 import DesktopNav from './DesktopNav.jsx';
+import { useTheme } from '../../contexts/ThemeContext.jsx';
 import logo from '../../assets/main_logo.png';
 
 /**
@@ -13,6 +14,7 @@ import logo from '../../assets/main_logo.png';
  */
 export default function ApplicationHeader({ actions }) {
   const ref = useRef(null);
+  const { isDark, toggleTheme } = useTheme();
 
   useEffect(() => {
     const onScroll = () => {
@@ -38,6 +40,14 @@ export default function ApplicationHeader({ actions }) {
 
         <div className="topbar-actions">
           {actions}
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={toggleTheme}
+          >
+            {isDark ? <IconSun size={19} stroke={1.8} /> : <IconMoon size={19} stroke={1.8} />}
+          </button>
           <Link to="/cart" className="icon-button" aria-label="Your cart">
             <IconShoppingCart size={19} stroke={1.8} />
           </Link>

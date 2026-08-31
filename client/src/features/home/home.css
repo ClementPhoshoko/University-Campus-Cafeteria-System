@@ -97,7 +97,7 @@
 
 .search-btn:hover {
   background: var(--glass-bg-heavy);
-  border-color: var(--blue-300);
+  border-color: var(--color-border-selected);
   box-shadow: var(--elevation-sm);
 }
 

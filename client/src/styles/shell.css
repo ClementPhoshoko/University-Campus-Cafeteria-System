@@ -262,3 +262,20 @@
   color: var(--color-icon-tertiary);
   pointer-events: none;
 }
+
+/* ============================================
+   Dark Mode Overrides
+   ============================================ */
+
+[data-theme="dark"] .brand-munchies {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .bottom-nav {
+  background: rgba(30, 40, 55, 0.92);
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .search-field {
+  background: rgba(30, 40, 55, 0.6);
+}

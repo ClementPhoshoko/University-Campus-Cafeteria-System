@@ -51,14 +51,13 @@
   border-radius: var(--radius-full);
   color: var(--color-action-primary);
   background: var(--color-surface-default);
-  border: 1px solid var(--color-border-subtle);
+  border: none;
   box-shadow: var(--elevation-md);
   transition: all var(--transition-fast);
 }
 
 .home_add-btn:hover {
   color: var(--color-action-primary-hover);
-  border-color: var(--blue-300);
   transform: scale(1.06);
 }
 
@@ -91,18 +90,17 @@ a.food_browse-item {
   display: flex;
   gap: var(--space-4);
   padding: var(--space-3);
-  border: 1px solid var(--color-border-subtle);
+  border: none;
   border-radius: var(--radius-lg);
   background: var(--color-surface-default);
   box-shadow: var(--elevation-sm);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
   text-decoration: none;
   color: inherit;
 }
 
 .food_browse-item:hover,
 a.food_browse-item:hover {
-  border-color: var(--color-border-selected);
   box-shadow: var(--elevation-md);
   transform: translateY(-2px);
 }
@@ -217,17 +215,16 @@ a.food_browse-item:hover {
   width: 34px;
   height: 34px;
   flex-shrink: 0;
-  border: 1px solid var(--color-border-subtle);
+  border: none;
   border-radius: var(--radius-full);
   background: var(--color-surface-default);
   color: var(--color-action-primary);
   box-shadow: var(--elevation-sm);
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
 .food_browse-add:hover {
-  border-color: var(--blue-300);
   background: var(--color-action-secondary);
   color: var(--color-action-secondary-text);
   transform: scale(1.06);
@@ -238,7 +235,6 @@ a.food_browse-item:hover {
 }
 
 .food_browse-add--added {
-  border-color: var(--success-500);
   background: var(--success-50);
   color: var(--success-700);
 }

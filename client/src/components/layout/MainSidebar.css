@@ -79,7 +79,7 @@
 
 .main-sidebar_button--active .main-sidebar_icon {
   background: var(--color-surface-default);
-  border-color: var(--color-border-selected);
+  /* border-color: var(--color-border-selected); */
   color: var(--color-icon-active);
 }
 

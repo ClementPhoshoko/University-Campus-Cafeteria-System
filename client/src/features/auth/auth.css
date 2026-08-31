@@ -15,6 +15,82 @@
   overflow-y: auto;
 }
 
+/* ── Session Check Loading ── */
+
+.session-check {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.session-check_avatars {
+  position: relative;
+  width: 96px;
+  height: 96px;
+}
+
+.session-check_img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: session-avatar-swap 2s ease-in-out infinite;
+}
+
+.session-check_img--not-connected {
+  opacity: 0;
+}
+
+.session-check_text {
+  color: var(--color-text-secondary);
+  font-size: 0.92rem;
+  font-weight: var(--font-weight-medium);
+}
+
+@keyframes session-avatar-swap {
+  0%, 40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  45%, 50% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  55%, 90% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  95%, 100% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.session-check_img--not-connected {
+  animation: session-avatar-swap-reverse 2s ease-in-out infinite;
+}
+
+@keyframes session-avatar-swap-reverse {
+  0%, 40% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  45%, 50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  55%, 90% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  95%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* ── Decorative Background ── */
 
 .auth-bg {

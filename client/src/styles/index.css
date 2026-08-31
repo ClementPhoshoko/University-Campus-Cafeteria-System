@@ -448,3 +448,44 @@ h2 {
     height: 140px;
   }
 }
+
+/* ============================================
+   Dark Mode Overrides
+   ============================================ */
+
+[data-theme="dark"] .app-shell {
+  background: linear-gradient(165deg, rgba(10, 140, 255, 0.05) 0%, var(--neutral-900) 35%, var(--neutral-950) 100%);
+}
+
+[data-theme="dark"] .glass-heavy {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .glass-light {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .brand-mark {
+  box-shadow: 0 2px 8px rgba(10, 140, 255, 0.35);
+}
+
+[data-theme="dark"] .vendor-image::after {
+  background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+[data-theme="dark"] .vendor-card:hover {
+  box-shadow: var(--elevation-lg), 0 0 0 1px rgba(10, 140, 255, 0.15);
+}
+
+[data-theme="dark"] .hero-illustration {
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .location-pill {
+  border-color: rgba(10, 140, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(10, 140, 255, 0.15);
+}
+
+[data-theme="dark"] .search-field {
+  background: rgba(30, 40, 55, 0.6);
+}

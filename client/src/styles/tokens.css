@@ -166,3 +166,74 @@
   --screen-padding-compact: 16px;
   --bottom-nav-height: 72px;
 }
+
+/* ============================================
+   Dark Theme — overrides semantic tokens only
+   ============================================ */
+
+[data-theme="dark"] {
+  /* ── Semantic: Background ── */
+  --color-bg-app:           var(--neutral-950);
+  --color-bg-default:       var(--neutral-900);
+  --color-bg-secondary:     var(--neutral-800);
+  --color-bg-tertiary:      var(--neutral-800);
+
+  /* ── Semantic: Surface ── */
+  --color-surface-default:  var(--neutral-900);
+  --color-surface-raised:   var(--neutral-800);
+  --color-surface-subtle:   rgba(10, 140, 255, 0.12);
+  --color-surface-selected: rgba(10, 140, 255, 0.18);
+  --color-surface-disabled: var(--neutral-800);
+
+  /* ── Semantic: Text ── */
+  --color-text-primary:     var(--neutral-50);
+  --color-text-secondary:   var(--neutral-300);
+  --color-text-tertiary:    var(--neutral-400);
+  --color-text-placeholder: var(--neutral-500);
+  --color-text-disabled:    var(--neutral-600);
+  --color-text-inverse:     var(--neutral-900);
+
+  /* ── Semantic: Border ── */
+  --color-border-default:   rgba(255, 255, 255, 0.08);
+  --color-border-subtle:    rgba(255, 255, 255, 0.05);
+  --color-border-strong:    rgba(255, 255, 255, 0.12);
+  --color-border-focus:     var(--blue-400);
+  --color-border-selected:  var(--blue-500);
+
+  /* ── Semantic: Action ── */
+  --color-action-primary:        var(--blue-500);
+  --color-action-primary-hover:  var(--blue-400);
+  --color-action-primary-pressed: var(--blue-600);
+  --color-action-primary-text:   var(--neutral-0);
+  --color-action-secondary:      rgba(10, 140, 255, 0.15);
+  --color-action-secondary-text: var(--blue-300);
+  --color-action-link:           var(--blue-400);
+  --color-action-disabled:       var(--neutral-700);
+  --color-action-disabled-text:  var(--neutral-500);
+
+  /* ── Semantic: Icon ── */
+  --color-icon-primary:   var(--neutral-200);
+  --color-icon-secondary: var(--neutral-400);
+  --color-icon-tertiary:  var(--neutral-500);
+  --color-icon-active:    var(--blue-400);
+  --color-icon-disabled:  var(--neutral-600);
+  --color-icon-inverse:   var(--neutral-900);
+
+  /* ── Semantic: Status ── */
+  --color-status-success: var(--success-500);
+  --color-status-warning: var(--warning-500);
+  --color-status-error:   var(--error-500);
+  --color-status-info:    var(--blue-400);
+
+  /* ── Elevation ── */
+  --elevation-sm:   0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elevation-md:   0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --elevation-lg:   0 10px 30px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+
+  /* ── Glass Morphism ── */
+  --glass-bg:         rgba(30, 40, 55, 0.72);
+  --glass-bg-heavy:   rgba(30, 40, 55, 0.88);
+  --glass-bg-light:   rgba(30, 40, 55, 0.55);
+  --glass-border:     rgba(255, 255, 255, 0.05);
+  --glass-shadow:     0 8px 32px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
