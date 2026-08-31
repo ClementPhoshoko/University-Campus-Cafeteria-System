@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { IconHelpCircle, IconClipboardCheck, IconClock, IconCircleCheck, IconReceipt2 } from '@tabler/icons-react';
+import { IconHelpCircle, IconClipboardCheck, IconKey } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import OrdersBackground from '../../components/OrdersBackground.jsx';
@@ -70,9 +70,6 @@ export default function OrdersPage() {
     setCurrentPage(1);
   };
 
-  const activeCount = orders.filter((o) => ACTIVE_STATUSES.includes(o.status)).length;
-  const completedCount = orders.filter((o) => o.status === ORDER_STATUSES.COMPLETED || o.status === ORDER_STATUSES.COLLECTED).length;
-
   return (
     <PageContainer className="orders-page-container">
       <OrdersBackground />
@@ -135,33 +132,17 @@ export default function OrdersPage() {
             </div>
 
             <aside className="orders-layout__aside">
-              <div className="orders-stats">
-                <div className="orders-stat">
-                  <div className="orders-stat__icon orders-stat__icon--total">
-                    <IconReceipt2 size={18} stroke={1.8} />
-                  </div>
-                  <div className="orders-stat__body">
-                    <span className="orders-stat__value">{orders.length}</span>
-                    <span className="orders-stat__label">Total orders</span>
-                  </div>
+              <div className="orders-code-reminder">
+                <div className="orders-code-reminder__header">
+                  <IconKey size={18} stroke={1.8} />
+                  <h3 className="orders-code-reminder__title">Collection Code</h3>
                 </div>
-                <div className="orders-stat">
-                  <div className="orders-stat__icon orders-stat__icon--active">
-                    <IconClock size={18} stroke={1.8} />
-                  </div>
-                  <div className="orders-stat__body">
-                    <span className="orders-stat__value">{activeCount}</span>
-                    <span className="orders-stat__label">Active</span>
-                  </div>
-                </div>
-                <div className="orders-stat">
-                  <div className="orders-stat__icon orders-stat__icon--completed">
-                    <IconCircleCheck size={18} stroke={1.8} />
-                  </div>
-                  <div className="orders-stat__body">
-                    <span className="orders-stat__value">{completedCount}</span>
-                    <span className="orders-stat__label">Completed</span>
-                  </div>
+                <p className="orders-code-reminder__text">
+                  When your order is ready, you'll receive a 4-digit code. Show it at the collection point to pick up your food.
+                </p>
+                <div className="orders-code-reminder__example">
+                  <span className="orders-code-reminder__code">8X2P</span>
+                  <span className="orders-code-reminder__label">Example code</span>
                 </div>
               </div>
 
