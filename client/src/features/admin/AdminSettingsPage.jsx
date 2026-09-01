@@ -238,7 +238,7 @@ function FeeRuleModal({ rule, onClose, onSave }) {
           </div>
           <div>
             <h3 className="admin-modal__title">Edit fee rule</h3>
-            <p className="admin-modal__sub">{rule.name} · {rule.scopeLabel}</p>
+            <p className="admin-modal__sub">{rule.name} · {rule.scope}</p>
           </div>
         </header>
 
@@ -249,7 +249,7 @@ function FeeRuleModal({ rule, onClose, onSave }) {
           </label>
           <label className="admin-modal__field">
             <span>Fee type</span>
-            <select className="admin-input" defaultValue={rule.feeType}>
+            <select className="admin-input" defaultValue={rule.fee_type}>
               <option value="service_fee">Service fee</option>
               <option value="delivery_fee">Delivery fee</option>
               <option value="processing_fee">Processing fee</option>
@@ -348,22 +348,22 @@ function FeesSection() {
                     <small>{r.description}</small>
                   </div>
                 </td>
-                <td>{FEE_TYPE_LABEL[r.feeType]}</td>
+                <td>{FEE_TYPE_LABEL[r.fee_type]}</td>
                 <td>
-                  <span className="admin-tag">{r.scopeLabel}</span>
-                  {r.siteLabel !== '—' && (
-                    <span className="admin-tag admin-tag--blue">{r.siteLabel}</span>
+                  <span className="admin-tag">{r.scope}</span>
+                  {r.site_id && (
+                    <span className="admin-tag admin-tag--blue">{r.site_id}</span>
                   )}
                 </td>
-                <td className="admin-vendor-name">{r.calculationType === 'fixed' ? 'Fixed amount' : 'Percentage'}</td>
-                <td><strong>{r.displayAmount}</strong></td>
+                <td className="admin-vendor-name">{r.calculation_type === 'fixed' ? 'Fixed amount' : 'Percentage'}</td>
+                <td><strong>{r.display_amount}</strong></td>
                 <td><span className="admin-kpi__sub">{r.priority}</span></td>
                 <td>
-                  <span>{r.activeFrom}</span>
-                  {r.activeUntil && (
+                  <span>{r.active_from}</span>
+                  {r.active_until && (
                     <>
                       <br />
-                      <small className="admin-cmp-time">→ {r.activeUntil}</small>
+                      <small className="admin-cmp-time">→ {r.active_until}</small>
                     </>
                   )}
                 </td>
@@ -660,17 +660,17 @@ function TemplateRow({ template, onEdit }) {
         </div>
       </td>
       <td>
-        <span className="admin-kpi__sub">{template.key}</span>
+          <span className="admin-kpi__sub">{template.event_key}</span>
       </td>
       <td>
         <div className="admin-tpl-preview">
-          <span className="admin-tpl-preview__title">{template.titleTemplate}</span>
-          <span className="admin-tpl-preview__body">{template.bodyTemplate}</span>
+          <span className="admin-tpl-preview__title">{template.title_template}</span>
+          <span className="admin-tpl-preview__body">{template.body_template}</span>
         </div>
       </td>
       <td>
         <span className="admin-ann-channel-chips">
-          {template.enabledChannels.map((c) => (
+          {template.enabled_channels.map((c) => (
             <span key={c} className="admin-tag admin-tag--blue">{CHANNEL_LABEL[c]}</span>
           ))}
         </span>
@@ -701,7 +701,7 @@ function TemplateModal({ template, onClose, onSave }) {
           </div>
           <div>
             <h3 className="admin-modal__title">Edit notification template</h3>
-            <p className="admin-modal__sub">{template.name} · {template.key}</p>
+            <p className="admin-modal__sub">{template.name} · {template.event_key}</p>
           </div>
         </header>
 
@@ -709,29 +709,29 @@ function TemplateModal({ template, onClose, onSave }) {
 
         <label className="admin-modal__field">
           <span>Title template</span>
-          <input type="text" className="admin-input" defaultValue={template.titleTemplate} />
+          <input type="text" className="admin-input" defaultValue={template.title_template} />
         </label>
 
         <label className="admin-modal__field">
           <span>Body template</span>
           <textarea
             className="admin-modal__textarea"
-            defaultValue={template.bodyTemplate}
+            defaultValue={template.body_template}
             rows={4}
           />
         </label>
 
         <div className="admin-form-grid">
           <label className="admin-modal__check">
-            <input type="checkbox" defaultChecked={template.enabledChannels.includes('in_app')} />
+            <input type="checkbox" defaultChecked={template.enabled_channels.includes('in_app')} />
             <span>In-app banner</span>
           </label>
           <label className="admin-modal__check">
-            <input type="checkbox" defaultChecked={template.enabledChannels.includes('push')} />
+            <input type="checkbox" defaultChecked={template.enabled_channels.includes('push')} />
             <span>Push notification</span>
           </label>
           <label className="admin-modal__check">
-            <input type="checkbox" defaultChecked={template.enabledChannels.includes('email')} />
+            <input type="checkbox" defaultChecked={template.enabled_channels.includes('email')} />
             <span>Email</span>
           </label>
         </div>
