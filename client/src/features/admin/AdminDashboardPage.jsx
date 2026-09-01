@@ -57,7 +57,7 @@ function KpiItem({ kpi, showDivider }) {
   return (
     <div className={`admin-kpi${showDivider ? ' admin-kpi--bordered' : ''}`}>
       <div className="admin-kpi__icon-wrap">
-        {KpiIcon && <KpiIcon size={18} stroke={1.8} />}
+        {KpiIcon && <KpiIcon size={22} stroke={1.8} />}
       </div>
       <div className="admin-kpi__body">
         <span className="admin-kpi__label">{kpi.label}</span>

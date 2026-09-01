@@ -46,10 +46,8 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: var(--glass-bg);
-  border-right: 1px solid var(--glass-border);
-  backdrop-filter: blur(var(--glass-blur-heavy));
-  -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
+  background: var(--color-surface-default);
+  border-right: 1px solid var(--color-border-subtle);
   z-index: 5;
 }
 
@@ -230,11 +228,9 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-5) var(--screen-padding) var(--space-3);
-  background: var(--glass-bg);
-  border-bottom: 1px solid var(--glass-border);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  padding: var(--space-4) var(--screen-padding);
+  background: var(--color-surface-default);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .admin-topbar__title-wrap {
@@ -285,7 +281,7 @@
 }
 
 .admin-page-container {
-  padding: var(--space-6) var(--screen-padding) var(--space-12);
+  padding: var(--space-6) var(--screen-padding) var(--space-10);
 }
 
 /* ── Dashboard ── */
@@ -298,9 +294,10 @@
 
 /* KPI Strip */
 .admin-kpis {
-  background: var(--color-bg-default);
+  background: var(--color-surface-default);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-sm);
   overflow: hidden;
 }
 
@@ -347,8 +344,8 @@
 
 .admin-kpi {
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
+  align-items: center;
+  gap: var(--space-4);
   padding: var(--space-5);
 }
 
@@ -359,10 +356,10 @@
 .admin-kpi__icon-wrap {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-sm);
-  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-subtle);
   color: var(--color-action-primary);
   flex-shrink: 0;
 }
@@ -370,7 +367,7 @@
 .admin-kpi__body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
   min-width: 0;
 }
 
@@ -392,7 +389,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-top: var(--space-1);
+  margin-top: 2px;
 }
 
 .admin-kpi__delta {
@@ -460,12 +457,10 @@
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-5);
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--color-surface-default);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--elevation-sm);
 }
 
 .admin-card--wide {
