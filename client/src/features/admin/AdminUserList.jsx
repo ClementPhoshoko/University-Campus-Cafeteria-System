@@ -145,7 +145,7 @@ export default function AdminUserList() {
   const totalUsers = ADMIN_PLATFORM_USERS.length;
   const activeCount = ADMIN_PLATFORM_USERS.filter((u) => u.status === 'active').length;
   const pendingCount = ADMIN_PLATFORM_USERS.filter((u) => u.status === 'pending').length;
-  const adminCount = ADMIN_PLATFORM_USERS.filter((u) => u.roles.includes('company_admin')).length;
+  const adminCount = ADMIN_PLATFORM_USERS.filter((u) => u.roles.includes('admin')).length;
 
   return (
     <div className="admin-orders">

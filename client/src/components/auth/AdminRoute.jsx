@@ -5,7 +5,7 @@ import connectedAvatar from '../../assets/avatars/connected_avatar.png';
 import notConnectedAvatar from '../../assets/avatars/not_connected_avatar.png';
 import '../../features/auth/auth.css';
 
-const ADMIN_ROLES = ['company_admin', 'admin', 'super_admin'];
+const ADMIN_ROLES = ['admin'];
 
 export default function AdminRoute() {
   const { user, initialized } = useAuth();

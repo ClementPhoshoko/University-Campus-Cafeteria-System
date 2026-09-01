@@ -43,7 +43,7 @@ export const navigationItems = [
     label: 'Admin',
     route: '/admin',
     Icon: IconSettings,
-    roles: ['company_admin', 'admin', 'super_admin'],
+    roles: ['admin'],
   },
   {
     key: 'finance',

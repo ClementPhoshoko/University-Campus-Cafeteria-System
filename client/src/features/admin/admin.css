@@ -3966,7 +3966,7 @@
   gap: var(--space-2);
 }
 
-.admin-audit-avatar--company_admin {
+.admin-audit-avatar--admin {
   background: var(--error-500);
 }
 .admin-audit-avatar--finance {

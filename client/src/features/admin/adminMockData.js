@@ -1,5 +1,5 @@
 export const ADMIN_ROLES = {
-  COMPANY_ADMIN: 'company_admin',
+  COMPANY_ADMIN: 'admin',
   FINANCE: 'finance',
   SUPPORT: 'support',
   AUDITOR: 'auditor',
@@ -610,7 +610,7 @@ export const ADMIN_PLATFORM_USERS = [
     name: 'Nomvula Dube',
     email: 'nomvula.admin@merchantmunnies.local',
     number: 'ADM-00001',
-    roles: ['company_admin'],
+    roles: ['admin'],
     status: 'active',
     lastSeen: 'Now',
     site: 'Main site',
@@ -701,7 +701,7 @@ export const ROLE_FILTERS = [
   { id: 'vendor', label: 'Vendor' },
   { id: 'finance', label: 'Finance' },
   { id: 'support', label: 'Support' },
-  { id: 'company_admin', label: 'Admin' },
+  { id: 'admin', label: 'Admin' },
 ];
 
 export const ROLE_FILTER_MATCH = {
@@ -710,7 +710,7 @@ export const ROLE_FILTER_MATCH = {
   vendor: (u) => u.roles.some((r) => ['vendor_staff', 'vendor_manager'].includes(r)),
   finance: (u) => u.roles.includes('finance'),
   support: (u) => u.roles.includes('support'),
-  company_admin: (u) => u.roles.includes('company_admin'),
+  admin: (u) => u.roles.includes('admin'),
 };
 
 export const ALL_ROLES = [
@@ -721,7 +721,7 @@ export const ALL_ROLES = [
   { id: 'vendor_manager', label: 'Vendor Manager', tone: 'success' },
   { id: 'finance', label: 'Finance', tone: 'warning' },
   { id: 'support', label: 'Support', tone: 'warning' },
-  { id: 'company_admin', label: 'Company Admin', tone: 'error' },
+  { id: 'admin', label: 'Company Admin', tone: 'error' },
 ];
 
 
@@ -1300,7 +1300,7 @@ export const AUDIT_LOGS = [
   {
     id: 'a1',
     actor: 'Nomvula Dube',
-    actorRole: 'company_admin',
+    actorRole: 'admin',
     action: 'Approved vendor',
     actionType: 'approve',
     resource: 'Vendor',
@@ -1375,7 +1375,7 @@ export const AUDIT_LOGS = [
   {
     id: 'a6',
     actor: 'Nomvula Dube',
-    actorRole: 'company_admin',
+    actorRole: 'admin',
     action: 'Changed user role',
     actionType: 'role',
     resource: 'User',
@@ -1390,7 +1390,7 @@ export const AUDIT_LOGS = [
   {
     id: 'a7',
     actor: 'Nomvula Dube',
-    actorRole: 'company_admin',
+    actorRole: 'admin',
     action: 'Created cafeteria',
     actionType: 'create',
     resource: 'Building',
@@ -1450,7 +1450,7 @@ export const AUDIT_LOGS = [
   {
     id: 'a11',
     actor: 'Nomvula Dube',
-    actorRole: 'company_admin',
+    actorRole: 'admin',
     action: 'Deactivated vendor',
     actionType: 'reject',
     resource: 'Vendor',
@@ -2039,7 +2039,7 @@ export const ANNOUNCEMENTS = [
     categoryLabel: 'Maintenance',
     severity: 'warning',
     channels: ['in_app', 'email'],
-    audienceRoles: ['employee', 'vendor_staff', 'vendor_manager', 'company_admin'],
+    audienceRoles: ['employee', 'vendor_staff', 'vendor_manager', 'admin'],
     audienceSites: null,
     audienceSitesNames: ['All campuses'],
     status: 'archived',
@@ -2126,7 +2126,7 @@ export const ANNOUNCEMENT_TARGET_TEMPLATES = [
     id: 'finance-and-admin',
     label: 'Finance & admin',
     icon: 'IconShieldCheck',
-    roles: ['finance', 'company_admin'],
+    roles: ['finance', 'admin'],
     sites: null,
     sitesLabels: ['All campuses'],
     reach: 18,

@@ -126,7 +126,7 @@ function RoleAssignmentModal({ user, onSave, onCancel }) {
                 <label htmlFor={`role-${role.id}`} className="admin-role-list__label">
                   <span className={`admin-tag admin-tag--${role.tone}`}>{role.label}</span>
                   <span className="admin-role-list__hint">
-                    {role.id === 'company_admin' && 'Full platform control and configuration access.'}
+                    {role.id === 'admin' && 'Full platform control and configuration access.'}
                     {role.id === 'finance' && 'Settlement, reconciliation and refund processing.'}
                     {role.id === 'support' && 'Order intervention, complaints and customer messages.'}
                     {role.id === 'vendor_staff' && 'Manage assigned vendor orders and menu updates.'}

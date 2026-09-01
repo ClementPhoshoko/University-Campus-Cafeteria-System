@@ -28,7 +28,7 @@ import {
 } from './adminMockData.js';
 
 const ROLE_TONE = {
-  company_admin: 'error',
+  admin: 'error',
   finance: 'warning',
   support: 'warning',
   vendor_manager: 'success',
@@ -38,7 +38,7 @@ const ROLE_TONE = {
 };
 
 const ROLE_LABEL = {
-  company_admin: 'Admin',
+  admin: 'Admin',
   finance: 'Finance',
   support: 'Support',
   vendor_manager: 'Vendor manager',
