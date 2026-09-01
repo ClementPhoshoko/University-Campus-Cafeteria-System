@@ -287,7 +287,7 @@ export default function AdminCafeteriaDetail() {
                   <BuildingRow
                     key={b.id}
                     building={b}
-                    vendors={ACTIVE_VENDORS.filter((v) => v.vendorId === b.id)}
+                    vendors={ACTIVE_VENDORS.filter((v) => v.id === b.id)}
                     collectionPoints={ADMIN_COLLECTION_POINTS.filter((cp) => cp.building_id === b.id)}
                   />
                 ))}

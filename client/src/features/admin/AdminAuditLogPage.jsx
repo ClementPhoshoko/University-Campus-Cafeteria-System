@@ -260,10 +260,10 @@ export default function AdminAuditLogPage() {
   const filteredLogs = useMemo(() => {
     return AUDIT_LOGS.filter((entry) => {
       const matchesQuery = !query
-        || `${entry.actorName} ${entry.resourceName} ${entry.action} ${entry.detail}`.toLowerCase().includes(query.toLowerCase());
+        || `${entry.actor_name} ${entry.resource_name} ${entry.action} ${entry.metadata?.detail}`.toLowerCase().includes(query.toLowerCase());
       const matchesResource = resourceFilter === 'all'
-        || entry.tableName.toLowerCase().startsWith(resourceFilter.slice(0, -1));
-      const matchesAction = actionFilter === 'all' || entry.actionType === actionFilter;
+        || entry.table_name.toLowerCase().startsWith(resourceFilter.slice(0, -1));
+      const matchesAction = actionFilter === 'all' || entry.action_type === actionFilter;
       return matchesQuery && matchesResource && matchesAction;
     });
   }, [query, resourceFilter, actionFilter]);
@@ -275,7 +275,7 @@ export default function AdminAuditLogPage() {
           <span className="admin-card__eyebrow">Compliance &amp; security</span>
           <h2 className="admin-vendors__title">Audit logs</h2>
           <p className="admin-vendors__sub">
-            Searchable, tamper-evident record of admin and system actions. Retained for {AUDIT_SUMMARY.retentionDays} days per POPIA.
+            Searchable, tamper-evident record of admin and system actions. Retained for {AUDIT_SUMMARY.retention_days} days per POPIA.
           </p>
         </div>
         <div className="admin-vendors__actions">
@@ -291,10 +291,10 @@ export default function AdminAuditLogPage() {
       </header>
 
       <section className="admin-kpis" aria-label="Audit summary">
-        <StatTile label="Total events" value={AUDIT_SUMMARY.totalEvents.toLocaleString()} sub="lifetime" tone="blue" icon={IconActivity} />
+        <StatTile label="Total events" value={AUDIT_SUMMARY.total_events.toLocaleString()} sub="lifetime" tone="blue" icon={IconActivity} />
         <StatTile label="Events today" value={AUDIT_SUMMARY.today} sub="across all actors" tone="green" icon={IconClock} />
-        <StatTile label="Critical alerts" value={AUDIT_SUMMARY.criticalAlerts} sub="last 24 hours" tone="amber" icon={IconAlertTriangle} />
-        <StatTile label="Unique actors" value={AUDIT_SUMMARY.uniqueActors} sub="employees + vendors + admins" tone="blue" icon={IconUser} />
+        <StatTile label="Critical alerts" value={AUDIT_SUMMARY.critical_alerts} sub="last 24 hours" tone="amber" icon={IconAlertTriangle} />
+        <StatTile label="Unique actors" value={AUDIT_SUMMARY.unique_actors} sub="employees + vendors + admins" tone="blue" icon={IconUser} />
       </section>
 
       <div className="admin-vendors__tabs" role="tablist">

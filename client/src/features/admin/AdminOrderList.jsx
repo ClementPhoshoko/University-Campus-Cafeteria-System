@@ -49,7 +49,7 @@ function FlagPill({ flag }) {
 }
 
 function OrderRow({ order }) {
-  const customer = order.customerName;
+  const customer = order.user_full_name;
   return (
     <tr className="admin-order-row">
       <td>
@@ -62,22 +62,22 @@ function OrderRow({ order }) {
           <span className="admin-order-customer-name">{customer}</span>
           <span className="admin-order-customer-meta">
             <IconUser size={11} stroke={1.8} />
-            {order.customerNumber}
+            {order.employee_number}
           </span>
         </div>
       </td>
       <td>
         <span className="admin-order-vendor">
           <IconBuildingStore size={13} stroke={1.8} />
-          {order.vendorName}
+          {order.vendor_name}
         </span>
       </td>
       <td>
         <div className="admin-order-time">
-          <span>{order.items} items · {formatCurrency(order.total)}</span>
+          <span>{order.item_count} items · {formatCurrency(order.total)}</span>
           <span className="admin-order-time-meta">
             <IconClock size={11} stroke={1.8} />
-            {order.collectionSlot}
+            {order.collection_point_name}
           </span>
         </div>
       </td>
@@ -118,14 +118,14 @@ export default function AdminOrderList() {
   const filtered = useMemo(() => {
     return ADMIN_ORDERS.filter((order) => {
       const matchesQuery = !query
-        || `${order.id} ${order.customerName} ${order.customerNumber} ${order.vendorName}`.toLowerCase().includes(query.toLowerCase());
+        || `${order.id} ${order.user_full_name} ${order.employee_number} ${order.vendor_name}`.toLowerCase().includes(query.toLowerCase());
       const matchesStatus = ORDER_STATUS_FILTER_MATCH[statusFilter](order);
-      const matchesVendor = vendorFilter === 'all' || order.vendorId === vendorFilter;
+      const matchesVendor = vendorFilter === 'all' || order.vendor_id === vendorFilter;
       return matchesQuery && matchesStatus && matchesVendor;
     });
   }, [query, statusFilter, vendorFilter]);
 
-  const todayCount = ADMIN_ORDERS.filter((o) => o.placedAt.startsWith('2026-09-01')).length;
+  const todayCount = ADMIN_ORDERS.filter((o) => o.created_at.startsWith('2026-09-01')).length;
   const preparingCount = ADMIN_ORDERS.filter((o) => o.status === 'preparing').length;
   const readyCount = ADMIN_ORDERS.filter((o) => o.status === 'ready_for_collection').length;
   const issueCount = ADMIN_ORDERS.filter((o) =>

@@ -271,7 +271,7 @@ export default function AdminVendorDetail() {
                     <div className="admin-vendor-order__meta">
                       <span>{order.when}</span>
                       <span>·</span>
-                      <span>{order.items} items</span>
+                      <span>{order.item_count} items</span>
                       <span>·</span>
                       <span className={`admin-vendor-order__status admin-vendor-order__status--${order.status.toLowerCase()}`}>
                         {order.status}

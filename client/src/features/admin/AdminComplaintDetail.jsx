@@ -309,9 +309,9 @@ export default function AdminComplaintDetail() {
 
           <div className="admin-cmp-hero__meta">
             <span><IconClock size={13} stroke={1.8} /> {complaint.created_at}</span>
-            {complaint.vendor && (
-              <Link to={`/admin/vendors/${complaint.vendorId}`} className="admin-cmp-hero__vendor">
-                <IconBuildingStore size={13} stroke={1.8} /> {complaint.vendor}
+            {complaint.vendor_name && (
+              <Link to={`/admin/vendors/${complaint.vendor_id}`} className="admin-cmp-hero__vendor">
+                <IconBuildingStore size={13} stroke={1.8} /> {complaint.vendor_name}
               </Link>
             )}
             {complaint.order && (

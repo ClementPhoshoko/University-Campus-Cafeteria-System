@@ -243,13 +243,13 @@ export default function AdminOrderDetail() {
           <section className="admin-card">
             <header className="admin-card__head">
               <div>
-                <span className="admin-card__eyebrow">{order.items} item{order.items !== 1 ? 's' : ''}</span>
+                <span className="admin-card__eyebrow">{order.item_count} item{order.item_count !== 1 ? 's' : ''}</span>
                 <h3 className="admin-card__title">Order contents</h3>
               </div>
               <span className="admin-card__chip">Total · {formatCurrency(order.total)}</span>
             </header>
             <ul className="admin-order-items">
-              {SAMPLE_ITEMS.slice(0, order.items).map((item, idx) => (
+              {SAMPLE_ITEMS.slice(0, order.item_count).map((item, idx) => (
                 <li key={idx} className="admin-order-item">
                   <span className="admin-order-item__qty">{item.qty}×</span>
                   <div className="admin-order-item__body">
@@ -309,17 +309,17 @@ export default function AdminOrderDetail() {
 
             <div className="admin-vendor-section">
               <h4 className="admin-vendor-section__heading">Customer</h4>
-              <InfoRow icon={IconUser} label="Name" value={order.customerName} />
-              <InfoRow icon={IconInfoCircle} label="Employee #" value={order.customerNumber} />
-              <InfoRow icon={IconMail} label="Email" value={`${order.customerName.split(' ')[0].toLowerCase()}@merchantmunnies.local`} />
+              <InfoRow icon={IconUser} label="Name" value={order.user_full_name} />
+              <InfoRow icon={IconInfoCircle} label="Employee #" value={order.employee_number} />
+              <InfoRow icon={IconMail} label="Email" value={`${order.user_full_name.split(' ')[0].toLowerCase()}@merchantmunnies.local`} />
             </div>
 
             <div className="admin-vendor-section">
               <h4 className="admin-vendor-section__heading">Order details</h4>
-              <InfoRow icon={IconBuildingStore} label="Vendor" value={order.vendorName} />
-              <InfoRow icon={IconMapPin} label="Collection point" value={order.collectionPoint} />
-              <InfoRow icon={IconClock} label="Collection slot" value={order.collectionSlot} />
-              <InfoRow icon={IconCash} label="Payment" value={`${order.paymentMethod} · ${order.paymentStatus}`} />
+              <InfoRow icon={IconBuildingStore} label="Vendor" value={order.vendor_name} />
+              <InfoRow icon={IconMapPin} label="Collection point" value={order.collection_point_name} />
+              <InfoRow icon={IconClock} label="Submitted at" value={order.submitted_at} />
+              <InfoRow icon={IconCash} label="Payment" value={`${order.payment_method} · ${order.payment_status}`} />
             </div>
           </section>
 

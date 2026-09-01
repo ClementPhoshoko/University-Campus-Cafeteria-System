@@ -1784,13 +1784,13 @@ export const SECURITY_EVENTS = [
 ];
 
 export const AUDIT_SUMMARY = {
-  totalEvents: 1248,
+  total_events: 1248,
   today: 318,
-  criticalAlerts: 3,
-  uniqueActors: 84,
-  resourceChanges: 412,
-  failedSignIns: 7,
-  retentionDays: 365,
+  critical_alerts: 3,
+  unique_actors: 84,
+  resource_changes: 412,
+  failed_sign_ins: 7,
+  retention_days: 365,
 };
 
 export const COMPLAINT_STATUSES = [
