@@ -194,20 +194,24 @@
 .admin-sidebar__logout {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xs);
-  background: var(--glass-bg);
-  color: var(--color-text-secondary);
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
 .admin-sidebar__logout:hover {
-  background: var(--color-status-error);
-  border-color: var(--color-status-error);
-  color: white;
+  background: rgba(217, 74, 74, 0.1);
+  color: var(--error-500);
+  transform: scale(1.05);
+}
+
+.admin-sidebar__logout:active {
+  transform: scale(0.95);
 }
 
 /* ── Main area ── */
