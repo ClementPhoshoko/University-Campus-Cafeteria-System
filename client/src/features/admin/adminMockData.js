@@ -12,10 +12,10 @@ export const ADMIN_ROLES = {
 };
 
 export const KPIS = [
-  { id: 'orders', label: 'Orders Today', value: '1,284', delta: '+12.4%', trend: 'up', tone: 'blue' },
-  { id: 'vendors', label: 'Active Vendors', value: '24 / 26', delta: '+2 active', trend: 'up', tone: 'green' },
-  { id: 'failed', label: 'Failed Payments', value: '7', delta: '-3 vs yest.', trend: 'down', tone: 'amber' },
-  { id: 'revenue', label: 'Revenue Today', value: 'R 48,260', delta: '+8.1%', trend: 'up', tone: 'blue' },
+  { id: 'orders', label: 'Orders Today', value: '1,284', delta: '+12.4% vs yesterday', trend: 'up' },
+  { id: 'revenue', label: 'Revenue Today', value: 'R 48,260', delta: '+8.1% vs yesterday', trend: 'up' },
+  { id: 'vendors', label: 'Active Vendors', value: '24 / 26', delta: '+2 active', trend: 'up' },
+  { id: 'failed', label: 'Failed Payments', value: '7', delta: '-3 vs yesterday', trend: 'down' },
 ];
 
 export const ORDER_VOLUME_TREND = [

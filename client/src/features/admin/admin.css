@@ -296,79 +296,150 @@
   gap: var(--space-6);
 }
 
+/* KPI Strip */
 .admin-kpis {
+  background: var(--color-bg-default);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.admin-kpis__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.admin-kpis__title {
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-tertiary);
+  letter-spacing: 0.06em;
+}
+
+.admin-kpis__period {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-family: var(--font-primary);
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.admin-kpis__period:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.admin-kpis__row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .admin-kpi {
   display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+.admin-kpi--bordered {
+  border-left: 1px solid var(--color-border-subtle);
+}
+
+.admin-kpi__icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  color: var(--color-action-primary);
+  flex-shrink: 0;
+}
+
+.admin-kpi__body {
+  display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--space-5);
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.admin-kpi:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--elevation-card-hover);
-}
-
-.admin-kpi--blue {
-  border-top: 3px solid var(--color-action-primary);
-}
-.admin-kpi--green {
-  border-top: 3px solid var(--success-500);
-}
-.admin-kpi--amber {
-  border-top: 3px solid var(--warning-500);
+  min-width: 0;
 }
 
 .admin-kpi__label {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: var(--color-text-tertiary);
   font-weight: var(--font-weight-medium);
 }
 
 .admin-kpi__value {
-  font-size: 1.85rem;
+  font-size: 1.5rem;
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .admin-kpi__foot {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  font-size: 0.75rem;
-  font-weight: var(--font-weight-semibold);
-  margin-top: var(--space-2);
+  gap: 4px;
+  margin-top: var(--space-1);
 }
 
 .admin-kpi__delta {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-medium);
 }
 
 .admin-kpi__delta--up {
   color: var(--success-700);
-  background: rgba(34, 165, 89, 0.1);
 }
 
 .admin-kpi__delta--down {
-  color: var(--color-status-success);
-  background: rgba(34, 165, 89, 0.1);
+  color: var(--error-500);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .admin-kpis__row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-kpi:nth-child(2) {
+    border-left: 1px solid var(--color-border-subtle);
+  }
+
+  .admin-kpi:nth-child(1),
+  .admin-kpi:nth-child(2) {
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+}
+
+@media (max-width: 540px) {
+  .admin-kpis__row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-kpi {
+    border-left: none !important;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  .admin-kpi:last-child {
+    border-bottom: none;
+  }
 }
 
 /* ── Card grid ── */

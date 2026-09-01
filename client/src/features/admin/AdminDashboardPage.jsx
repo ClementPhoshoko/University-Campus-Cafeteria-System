@@ -5,6 +5,10 @@ import {
   IconCircleCheck,
   IconArrowRight,
   IconBuildingStore,
+  IconCalendar,
+  IconChevronDown,
+  IconChartBar,
+  IconCoin,
 } from '@tabler/icons-react';
 import {
   ResponsiveContainer,
@@ -34,21 +38,34 @@ import {
   formatCurrency,
 } from './adminMockData.js';
 
+const KPI_ICONS = {
+  orders: IconChartBar,
+  revenue: IconCoin,
+  vendors: IconBuildingStore,
+  failed: IconAlertTriangle,
+};
+
 const TONE_TONE = {
   up: { icon: IconTrendingUp, className: 'admin-kpi__delta admin-kpi__delta--up' },
   down: { icon: IconTrendingDown, className: 'admin-kpi__delta admin-kpi__delta--down' },
 };
 
-function KpiCard({ kpi }) {
+function KpiItem({ kpi, showDivider }) {
   const trend = TONE_TONE[kpi.trend];
   const TrendIcon = trend?.icon;
+  const KpiIcon = KPI_ICONS[kpi.id];
   return (
-    <div className={`admin-kpi admin-kpi--${kpi.tone}`}>
-      <span className="admin-kpi__label">{kpi.label}</span>
-      <span className="admin-kpi__value">{kpi.value}</span>
-      <div className="admin-kpi__foot">
-        {TrendIcon && <TrendIcon size={14} stroke={2} />}
-        <span className={trend?.className}>{kpi.delta}</span>
+    <div className={`admin-kpi${showDivider ? ' admin-kpi--bordered' : ''}`}>
+      <div className="admin-kpi__icon-wrap">
+        {KpiIcon && <KpiIcon size={18} stroke={1.8} />}
+      </div>
+      <div className="admin-kpi__body">
+        <span className="admin-kpi__label">{kpi.label}</span>
+        <span className="admin-kpi__value">{kpi.value}</span>
+        <div className="admin-kpi__foot">
+          {TrendIcon && <TrendIcon size={12} stroke={2} />}
+          <span className={trend?.className}>{kpi.delta}</span>
+        </div>
       </div>
     </div>
   );
@@ -129,11 +146,21 @@ function FailedPaymentRow({ payment }) {
 export default function AdminDashboardPage() {
   return (
     <div className="admin-dashboard">
-      {/* KPI grid */}
+      {/* KPI strip */}
       <section className="admin-kpis" aria-label="Key metrics">
-        {KPIS.map((kpi) => (
-          <KpiCard key={kpi.id} kpi={kpi} />
-        ))}
+        <header className="admin-kpis__header">
+          <span className="admin-kpis__title">OVERVIEW</span>
+          <button type="button" className="admin-kpis__period">
+            <IconCalendar size={13} stroke={1.8} />
+            Last 24 hours
+            <IconChevronDown size={12} stroke={2} />
+          </button>
+        </header>
+        <div className="admin-kpis__row">
+          {KPIS.map((kpi, idx) => (
+            <KpiItem key={kpi.id} kpi={kpi} showDivider={idx < KPIS.length - 1} />
+          ))}
+        </div>
       </section>
 
       {/* Charts row */}
