@@ -23,6 +23,11 @@ import {
   IconDownload,
   IconAdjustments,
   IconRefresh,
+  IconBriefcase,
+  IconBolt,
+  IconGift,
+  IconStar,
+  IconReceipt,
 } from '@tabler/icons-react';
 import {
   SETTINGS_TABS,
