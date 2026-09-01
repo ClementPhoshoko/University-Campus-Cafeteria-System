@@ -181,7 +181,7 @@ export default function AdminComplaintsPage() {
       const matchesQuery = !query
         || `${c.subject} ${c.user} ${c.vendor} ${c.id}`.toLowerCase().includes(query.toLowerCase());
       const matchesCategory = categoryFilter === 'all' || c.category === categoryFilter;
-      const matchesTeam = teamFilter === 'all' || c.assignedTo === teamFilter || (teamFilter === 'unassigned' && !c.assignedTo);
+      const matchesTeam = teamFilter === 'all' || c.assigned_to === teamFilter || (teamFilter === 'unassigned' && !c.assigned_to);
       return inTab && matchesQuery && matchesCategory && matchesTeam;
     });
   }, [tab, query, categoryFilter, teamFilter]);
@@ -210,9 +210,9 @@ export default function AdminComplaintsPage() {
 
       <section className="admin-kpis">
         <StatTile label="Open" value={COMPLAINTS_SUMMARY.open} sub="awaiting triage" tone="amber" icon={IconAlertTriangle} />
-        <StatTile label="In progress" value={COMPLAINTS_SUMMARY.inProgress} sub="assigned + in review" tone="blue" icon={IconClock} />
+        <StatTile label="In progress" value={COMPLAINTS_SUMMARY.in_progress} sub="assigned + in review" tone="blue" icon={IconClock} />
         <StatTile label="Resolved" value={COMPLAINTS_SUMMARY.resolved} sub="this period" tone="green" icon={IconCircleCheck} />
-        <StatTile label="Avg resolution" value={`${COMPLAINTS_SUMMARY.avgResolutionHours} h`} sub={`${COMPLAINTS_SUMMARY.slaPercent}% within SLA`} tone="blue" icon={IconShield} />
+        <StatTile label="Avg resolution" value={`${COMPLAINTS_SUMMARY.avg_resolution_hours} h`} sub={`${COMPLAINTS_SUMMARY.sla_percent}% within SLA`} tone="blue" icon={IconShield} />
       </section>
 
       <div className="admin-vendors__tabs" role="tablist">
@@ -230,7 +230,7 @@ export default function AdminComplaintsPage() {
             {t.id === 'resolved' && <IconCircleCheck size={16} stroke={1.8} />}
             {t.label}
             <span className="admin-vendors__tab-count">
-              {t.id === 'open' ? COMPLAINTS_SUMMARY.open : t.id === 'in_progress' ? COMPLAINTS_SUMMARY.inProgress : COMPLAINTS_SUMMARY.resolved}
+              {t.id === 'open' ? COMPLAINTS_SUMMARY.open : t.id === 'in_progress' ? COMPLAINTS_SUMMARY.in_progress : COMPLAINTS_SUMMARY.resolved}
             </span>
           </button>
         ))}
@@ -338,7 +338,7 @@ export default function AdminComplaintsPage() {
             </header>
             <ul className="admin-cmp-team">
               {COMPLAINT_TEAM.map((member) => {
-                const open = COMPLAINTS.filter((c) => c.assignedTo === member.name && c.status !== 'resolved' && c.status !== 'closed').length;
+                const open = COMPLAINTS.filter((c) => c.assigned_to === member.name && c.status !== 'resolved' && c.status !== 'closed').length;
                 return (
                   <li key={member.id} className="admin-cmp-team__row">
                     <Avatar name={member.name} />

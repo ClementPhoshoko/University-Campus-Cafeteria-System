@@ -1826,10 +1826,10 @@ export const COMPLAINT_TEAM = [
 
 export const COMPLAINTS_SUMMARY = {
   open: 14,
-  inProgress: 22,
+  in_progress: 22,
   resolved: 168,
-  avgResolutionHours: 6.4,
-  slaPercent: 92,
+  avg_resolution_hours: 6.4,
+  sla_percent: 92,
 };
 
 export const COMPLAINTS = [

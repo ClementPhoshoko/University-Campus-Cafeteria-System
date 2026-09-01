@@ -132,11 +132,11 @@ function AuditEntry({ entry, isLast }) {
       <div className="admin-audit-row__body">
         <header className="admin-audit-row__head">
           <div className="admin-audit-row__lead">
-            <Avatar name={entry.actorName} role={entry.actorRole} />
+            <Avatar name={entry.actor_name} role={entry.actor_role} />
             <span className="admin-audit-row__actor">
-              {entry.actorName}
-              <span className={`admin-tag admin-tag--${ROLE_TONE[entry.actorRole] || 'info'}`}>
-                {ROLE_LABEL[entry.actorRole] || entry.actorRole}
+              {entry.actor_name}
+              <span className={`admin-tag admin-tag--${ROLE_TONE[entry.actor_role] || 'info'}`}>
+                {ROLE_LABEL[entry.actor_role] || entry.actor_role}
               </span>
             </span>
           </div>

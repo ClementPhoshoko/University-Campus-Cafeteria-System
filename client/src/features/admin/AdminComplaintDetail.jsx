@@ -325,7 +325,7 @@ export default function AdminComplaintDetail() {
         <div className="admin-order-hero__actions">
           <button type="button" className="admin-action" onClick={() => setAssigning(true)}>
             <IconUserPlus size={13} stroke={2} />
-            {complaint.assignedTo ? 'Reassign' : 'Assign'}
+            {complaint.assigned_to ? 'Reassign' : 'Assign'}
           </button>
           <button type="button" className="admin-action" onClick={() => setRefunding(true)}>
             <IconArrowBackUp size={13} stroke={2} />
