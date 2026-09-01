@@ -1,0 +1,24 @@
+<svg
+  width="48"
+  height="48"
+  viewBox="0 0 48 48"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <!-- Head -->
+  <circle
+    cx="24"
+    cy="14"
+    r="8"
+    fill="currentColor"
+  />
+
+  <!-- Upper body / shoulders -->
+  <path
+    d="M8 43
+       C9 34, 15 27, 24 27
+       C33 27, 39 34, 40 43
+       H8Z"
+    fill="currentColor"
+  />
+</svg>

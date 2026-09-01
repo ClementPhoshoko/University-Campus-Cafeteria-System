@@ -58,21 +58,19 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-5) var(--space-5) var(--space-4);
-  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .admin-sidebar__logo {
-  display: grid;
-  place-items: center;
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
-  background: var(--color-action-primary);
-  color: var(--color-action-primary-text);
-  font-size: 0.82rem;
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.02em;
-  box-shadow: var(--elevation-sm);
+  overflow: hidden;
+}
+
+.admin-sidebar__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .admin-sidebar__brand-text {
@@ -135,13 +133,13 @@
 }
 
 .admin-sidebar__link--active {
-  background: var(--color-action-primary);
+  background: var(--color-action-secondary);
   color: var(--color-action-primary-text);
   box-shadow: var(--elevation-sm);
 }
 
 .admin-sidebar__link--active:hover {
-  background: var(--color-action-primary-hover);
+  background: var(--color-action-secondary);
   color: var(--color-action-primary-text);
   transform: none;
 }
@@ -156,21 +154,20 @@
 }
 
 .admin-sidebar__avatar {
-  position: relative;
-  display: grid;
-  place-items: center;
   width: 36px;
   height: 36px;
   border-radius: var(--radius-full);
-  background: var(--color-action-primary);
-  color: var(--color-action-primary-text);
+  overflow: hidden;
+  color: var(--color-action-primary);
+}
+
+.admin-sidebar__avatar svg {
+  width: 100%;
+  height: 100%;
 }
 
 .admin-sidebar__avatar-text {
-  position: absolute;
-  font-size: 0.78rem;
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.03em;
+  display: none;
 }
 
 .admin-sidebar__user-info {

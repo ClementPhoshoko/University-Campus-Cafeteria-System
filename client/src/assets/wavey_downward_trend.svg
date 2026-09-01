@@ -1,0 +1,19 @@
+<svg
+  width="120"
+  height="48"
+  viewBox="0 0 120 48"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M4 7
+       C14 23, 24 31, 34 31
+       C45 31, 49 19, 60 19
+       C72 19, 79 35, 91 38
+       C101 41, 109 39, 116 42"
+    stroke="currentColor"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

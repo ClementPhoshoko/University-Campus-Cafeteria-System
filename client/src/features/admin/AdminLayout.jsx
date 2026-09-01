@@ -11,12 +11,12 @@ import {
   IconShieldCheck,
   IconSettings,
   IconLogout,
-  IconUserCircle,
 } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import AdminBackground from '../../components/AdminBackground.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { ADMIN_NAV_ITEMS } from './adminMockData.js';
+import mainLogo from '../../assets/main_logo.png';
 import './admin.css';
 
 const ICON_MAP = {
@@ -58,12 +58,6 @@ export default function AdminLayout() {
   );
 
   const displayName = profile?.full_name || profile?.email || user?.email || 'Admin';
-  const initials = displayName
-    .split(' ')
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 
   return (
     <div className="admin-shell">
@@ -71,7 +65,7 @@ export default function AdminLayout() {
 
       <aside className="admin-sidebar">
         <div className="admin-sidebar__brand">
-          <span className="admin-sidebar__logo">MM</span>
+          <img src={mainLogo} alt="Logo" className="admin-sidebar__logo" />
           <div className="admin-sidebar__brand-text">
             <span className="admin-sidebar__brand-title">Merchant Munchies</span>
             <span className="admin-sidebar__brand-sub">Admin Console</span>
@@ -95,8 +89,10 @@ export default function AdminLayout() {
 
         <div className="admin-sidebar__user">
           <div className="admin-sidebar__avatar" aria-hidden="true">
-            <IconUserCircle size={18} stroke={1.8} />
-            <span className="admin-sidebar__avatar-text">{initials}</span>
+            <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="14" r="8" fill="currentColor" />
+              <path d="M8 43 C9 34, 15 27, 24 27 C33 27, 39 34, 40 43 H8Z" fill="currentColor" />
+            </svg>
           </div>
           <div className="admin-sidebar__user-info">
             <span className="admin-sidebar__user-name">{displayName}</span>
