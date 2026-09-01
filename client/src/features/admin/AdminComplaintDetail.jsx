@@ -411,10 +411,10 @@ export default function AdminComplaintDetail() {
             <div className="admin-vendor-section">
               <h4 className="admin-vendor-section__heading">Identity</h4>
               <div className="admin-cmp-customer-large">
-                <Avatar name={complaint.user} size={48} />
+                <Avatar name={complaint.user_name} size={48} />
                 <div>
-                  <span className="admin-cmp-customer-large__name">{complaint.user}</span>
-                  <span className="admin-cmp-customer-large__num">{complaint.userNumber}</span>
+                  <span className="admin-cmp-customer-large__name">{complaint.user_name}</span>
+                  <span className="admin-cmp-customer-large__num">{complaint.employee_number}</span>
                 </div>
               </div>
             </div>

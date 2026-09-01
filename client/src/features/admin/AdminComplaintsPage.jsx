@@ -116,17 +116,17 @@ function ComplaintRow({ complaint }) {
       </td>
       <td>
         <div className="admin-cmp-customer">
-          <Avatar name={complaint.user} />
+          <Avatar name={complaint.user_name} />
           <div>
-            <span className="admin-cmp-customer__name">{complaint.user}</span>
-            <span className="admin-cmp-customer__num">{complaint.userNumber}</span>
+            <span className="admin-cmp-customer__name">{complaint.user_name}</span>
+            <span className="admin-cmp-customer__num">{complaint.employee_number}</span>
           </div>
         </div>
       </td>
       <td>
         <span className="admin-cmp-vendor">
           <IconBuildingStore size={12} stroke={1.8} />
-          {complaint.vendor}
+          {complaint.vendor_name}
         </span>
       </td>
       <td>
