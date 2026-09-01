@@ -119,22 +119,22 @@ function ResourceIcon({ resource }) {
 }
 
 function AuditEntry({ entry, isLast }) {
-  const delta = entry.delta;
   const actionTone = ACTION_TONE[entry.actionType] || 'info';
+  const hasDiff = entry.oldData || entry.newData;
 
   return (
     <li className={`admin-audit-row admin-audit-row--${actionTone}`}>
       <div className="admin-audit-row__rail">
-        <ResourceIcon resource={entry.resource} />
+        <ResourceIcon resource={entry.tableName} />
         {!isLast && <span className="admin-audit-row__line" aria-hidden="true" />}
       </div>
 
       <div className="admin-audit-row__body">
         <header className="admin-audit-row__head">
           <div className="admin-audit-row__lead">
-            <Avatar name={entry.actor} role={entry.actorRole} />
+            <Avatar name={entry.actorName} role={entry.actorRole} />
             <span className="admin-audit-row__actor">
-              {entry.actor}
+              {entry.actorName}
               <span className={`admin-tag admin-tag--${ROLE_TONE[entry.actorRole] || 'info'}`}>
                 {ROLE_LABEL[entry.actorRole] || entry.actorRole}
               </span>
@@ -147,17 +147,17 @@ function AuditEntry({ entry, isLast }) {
 
         <div className="admin-audit-row__detail">
           <span className="admin-audit-row__resource">
-            <strong>{entry.resource}:</strong>{' '}
-            {entry.resourceId && (
+            <strong>{entry.tableName}:</strong>{' '}
+            {entry.recordKey && (
               <span className="admin-audit-row__resource-name">{entry.resourceName}</span>
             )}
           </span>
           <span className="admin-audit-row__meta">
-            <IconClock size={11} stroke={1.8} /> {entry.timestamp}
-            {entry.ip && entry.ip !== '—' && (
+            <IconClock size={11} stroke={1.8} /> {entry.createdAt}
+            {entry.ipAddress && entry.ipAddress !== '—' && (
               <>
                 <span>·</span>
-                <IconWorld size={11} stroke={1.8} /> {entry.ip}
+                <IconWorld size={11} stroke={1.8} /> {entry.ipAddress}
               </>
             )}
             {entry.userAgent && entry.userAgent !== 'System' && entry.userAgent !== 'Cron' && (
@@ -171,12 +171,19 @@ function AuditEntry({ entry, isLast }) {
 
         <p className="admin-audit-row__copy">{entry.detail}</p>
 
-        {delta && (
+        {hasDiff && (
           <div className="admin-audit-row__delta">
-            <span className="admin-audit-row__delta-label">{delta.field}</span>
-            <span className="admin-audit-row__delta-from">{delta.from || '—'}</span>
-            <span className="admin-audit-row__delta-arrow">→</span>
-            <span className="admin-audit-row__delta-to">{delta.to || '—'}</span>
+            {Object.entries(entry.newData || entry.oldData || {}).map(([key, newVal]) => {
+              const oldVal = entry.oldData?.[key];
+              return (
+                <div key={key} className="admin-audit-row__delta-row">
+                  <span className="admin-audit-row__delta-label">{key}</span>
+                  <span className="admin-audit-row__delta-from">{oldVal ?? '—'}</span>
+                  <span className="admin-audit-row__delta-arrow">→</span>
+                  <span className="admin-audit-row__delta-to">{newVal ?? '—'}</span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -185,7 +192,7 @@ function AuditEntry({ entry, isLast }) {
 }
 
 function SecurityEntry({ entry }) {
-  const sevTone = SEVERITY_TONE[entry.severity] || 'info';
+  const sevTone = SEVERITY_TONE[entry.metadata?.severity] || 'info';
   return (
     <li className={`admin-security-row admin-security-row--${sevTone}`}>
       <div className="admin-security-row__icon">
@@ -205,22 +212,22 @@ function SecurityEntry({ entry }) {
             </span>
           </div>
           <span className={`admin-status admin-status--${sevTone}`}>
-            {entry.severity}
+            {entry.metadata?.severity}
           </span>
         </header>
 
         <span className="admin-audit-row__meta">
-          <IconClock size={11} stroke={1.8} /> {entry.timestamp}
-          {entry.ip && (
+          <IconClock size={11} stroke={1.8} /> {entry.createdAt}
+          {entry.ipAddress && (
             <>
               <span>·</span>
-              <IconWorld size={11} stroke={1.8} /> {entry.ip}
+              <IconWorld size={11} stroke={1.8} /> {entry.ipAddress}
             </>
           )}
-          {entry.location && (
+          {entry.metadata?.location && (
             <>
               <span>·</span>
-              {entry.location}
+              {entry.metadata.location}
             </>
           )}
           {entry.userAgent && (
@@ -231,12 +238,12 @@ function SecurityEntry({ entry }) {
           )}
         </span>
 
-        <p className="admin-audit-row__copy">{entry.detail}</p>
+        <p className="admin-audit-row__copy">{entry.metadata?.detail}</p>
 
-        {entry.actionTaken && (
+        {entry.metadata?.actionTaken && (
           <div className="admin-security-row__action">
             <span className="admin-security-row__action-label">Action taken:</span>
-            <span>{entry.actionTaken}</span>
+            <span>{entry.metadata.actionTaken}</span>
           </div>
         )}
       </div>
@@ -253,9 +260,9 @@ export default function AdminAuditLogPage() {
   const filteredLogs = useMemo(() => {
     return AUDIT_LOGS.filter((entry) => {
       const matchesQuery = !query
-        || `${entry.actor} ${entry.resourceName} ${entry.action} ${entry.detail}`.toLowerCase().includes(query.toLowerCase());
+        || `${entry.actorName} ${entry.resourceName} ${entry.action} ${entry.detail}`.toLowerCase().includes(query.toLowerCase());
       const matchesResource = resourceFilter === 'all'
-        || entry.resource.toLowerCase().startsWith(resourceFilter.slice(0, -1));
+        || entry.tableName.toLowerCase().startsWith(resourceFilter.slice(0, -1));
       const matchesAction = actionFilter === 'all' || entry.actionType === actionFilter;
       return matchesQuery && matchesResource && matchesAction;
     });

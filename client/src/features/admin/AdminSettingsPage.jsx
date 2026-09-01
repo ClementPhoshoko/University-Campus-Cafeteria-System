@@ -303,7 +303,7 @@ function FeeRuleModal({ rule, onClose, onSave }) {
 
 function FeesSection() {
   const [editing, setEditing] = useState(null);
-  const activeFees = FEE_RULES.filter((f) => f.isActive).length;
+  const activeFees = FEE_RULES.filter((f) => f.is_active).length;
 
   return (
     <div className="admin-report-stack">
@@ -368,8 +368,8 @@ function FeesSection() {
                   )}
                 </td>
                 <td>
-                  <span className={`admin-status admin-status--${r.isActive ? 'success' : 'info'}`}>
-                    {r.isActive ? 'Active' : 'Inactive'}
+                  <span className={`admin-status admin-status--${r.is_active ? 'success' : 'info'}`}>
+                    {r.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </td>
                 <td className="admin-order-cta">
@@ -412,8 +412,8 @@ function FeesSection() {
                 <td>{t.activeFrom}</td>
                 <td>{t.activeUntil || <span className="admin-tag admin-tag--success">Ongoing</span>}</td>
                 <td>
-                  <span className={`admin-status admin-status--${t.isActive ? 'success' : 'info'}`}>
-                    {t.isActive ? 'Active' : 'Inactive'}
+                  <span className={`admin-status admin-status--${t.is_active ? 'success' : 'info'}`}>
+                    {t.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </td>
               </tr>
@@ -532,8 +532,8 @@ function CancellationsSection() {
                   Edited by {r.lastEditedBy} · {r.lastEditedAt}
                 </span>
               </div>
-              <span className={`admin-status admin-status--${r.isActive ? 'success' : 'info'}`}>
-                {r.isActive ? 'Active' : 'Inactive'}
+              <span className={`admin-status admin-status--${r.is_active ? 'success' : 'info'}`}>
+                {r.is_active ? 'Active' : 'Inactive'}
               </span>
             </header>
 
@@ -676,8 +676,8 @@ function TemplateRow({ template, onEdit }) {
         </span>
       </td>
       <td>
-        <span className={`admin-status admin-status--${template.isActive ? 'success' : 'info'}`}>
-          {template.isActive ? 'Active' : 'Paused'}
+        <span className={`admin-status admin-status--${template.is_active ? 'success' : 'info'}`}>
+          {template.is_active ? 'Active' : 'Paused'}
         </span>
       </td>
       <td className="admin-order-cta">
@@ -796,7 +796,7 @@ function NotificationsSection() {
 /* ── Tab 6: Maintenance ── */
 
 function MaintenanceCard({ window }) {
-  const isHistory = window.isActive === 'history';
+  const isHistory = window.status === 'history';
   return (
     <article className={`admin-mw-card ${isHistory ? 'admin-mw-card--history' : 'admin-mw-card--scheduled'}`}>
       <header className="admin-mw-card__head">
@@ -848,8 +848,8 @@ function MaintenanceCard({ window }) {
 }
 
 function MaintenanceSection() {
-  const scheduled = MAINTENANCE_WINDOWS.filter((w) => w.isActive === 'scheduled');
-  const history = MAINTENANCE_WINDOWS.filter((w) => w.isActive === 'history');
+  const scheduled = MAINTENANCE_WINDOWS.filter((w) => w.status === 'scheduled');
+  const history = MAINTENANCE_WINDOWS.filter((w) => w.status === 'history');
 
   return (
     <div className="admin-report-stack">

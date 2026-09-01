@@ -103,7 +103,7 @@ function RoleAssignmentModal({ user, onSave, onCancel }) {
           <div>
             <h3 className="admin-modal__title">Manage roles</h3>
             <p className="admin-modal__sub">
-              {user.name} · {user.number}
+              {user.full_name} · {user.employee_number}
             </p>
           </div>
         </header>
@@ -189,34 +189,33 @@ export default function AdminUserDetail() {
       </Link>
 
       {/* Hero */}
-      <section className={`admin-user-hero${user.status !== 'active' ? ' admin-user-hero--inactive' : ''}`}>
-        <Avatar name={user.name} />
-        <div className="admin-user-hero__info">
-          <div className="admin-user-hero__head">
-            <span className="admin-vendor-hero__slug">{user.number}</span>
-            <StatusPill status={user.status} />
-          </div>
-          <h2 className="admin-user-hero__name">{user.name}</h2>
+      <section className={`admin-user-hero${!user.is_active ? ' admin-user-hero--inactive' : ''}`}>
+        <Avatar name={user.full_name} />
+
+        <div className="admin-user-hero__meta">
+          <span className="admin-vendor-hero__slug">{user.employee_number}</span>
+          <StatusPill is_active={user.is_active} />
+        </div>
+        <h2 className="admin-user-hero__name">{user.full_name}</h2>
           <span className="admin-user-hero__email">{user.email}</span>
 
           <div className="admin-user-hero__roles">
             {user.roles.map((role) => (
               <RoleBadge key={role} role={role} />
             ))}
-            {user.vendor && (
-              <span className="admin-tag">
-                <IconBuildingStore size={11} stroke={2} />
-                {user.vendor}
-              </span>
-            )}
+          {user.vendor_id && (
+              <div className="admin-user-hero__vendor">
+                <IconBuildingStore size={13} stroke={1.8} />
+                {user.vendor_id}
+              </div>
+          )}
           </div>
-        </div>
         <div className="admin-order-hero__actions">
           <button type="button" className="admin-action">
             <IconMessage size={14} stroke={2} />
             Message
           </button>
-          {user.status === 'active' ? (
+          {user.is_active ? (
             <button type="button" className="admin-action admin-action--reject">
               <IconUserOff size={14} stroke={2} />
               Suspend
@@ -241,11 +240,11 @@ export default function AdminUserDetail() {
       <div className="admin-order-grid">
         <div className="admin-order-grid__main">
           {/* Recent orders */}
-          {user.orders > 0 && (
+          {user.order_count > 0 && (
             <section className="admin-card">
               <header className="admin-card__head">
                 <div>
-                  <span className="admin-card__eyebrow">{user.orders} lifetime orders</span>
+                  <span className="admin-card__eyebrow">{user.order_count} lifetime orders</span>
                   <h3 className="admin-card__title">Recent activity</h3>
                 </div>
                 <span className="admin-card__chip">Last 7 days</span>
@@ -258,9 +257,9 @@ export default function AdminUserDetail() {
                       <span className="admin-vendor-order__total">{formatCurrency(order.total)}</span>
                     </div>
                     <div className="admin-vendor-order__meta">
-                      <span>{order.at}</span>
+                      <span>{order.created_at}</span>
                       <span>·</span>
-                      <span>{order.vendor}</span>
+                      <span>{order.vendor_name}</span>
                       <span>·</span>
                       <span className={`admin-vendor-order__status admin-vendor-order__status--${order.status}`}>
                         {order.status}
@@ -311,17 +310,17 @@ export default function AdminUserDetail() {
 
             <div className="admin-vendor-section">
               <h4 className="admin-vendor-section__heading">Profile</h4>
-              <InfoRow icon={IconUser} label="Name" value={user.name} />
-              <InfoRow icon={IconInfoCircle} label="Employee #" value={user.number} />
+              <InfoRow icon={IconUser} label="Name" value={user.full_name} />
+              <InfoRow icon={IconInfoCircle} label="Employee #" value={user.employee_number} />
               <InfoRow icon={IconMail} label="Email" value={user.email} />
-              <InfoRow icon={IconClock} label="Joined" value={user.joinedAt} />
+              <InfoRow icon={IconClock} label="Joined" value={user.created_at} />
             </div>
 
             <div className="admin-vendor-section">
               <h4 className="admin-vendor-section__heading">Location & vendor</h4>
-              <InfoRow icon={IconUserCircle} label="Campus" value={user.site} />
-              <InfoRow icon={IconBuildingStore} label="Building" value={user.building} />
-              {user.vendor && <InfoRow icon={IconBuildingStore} label="Vendor" value={user.vendor} />}
+              <InfoRow icon={IconUserCircle} label="Campus" value={user.site_id} />
+              <InfoRow icon={IconBuildingStore} label="Building" value={user.building_id} />
+              {user.vendor_id && <InfoRow icon={IconBuildingStore} label="Vendor" value={user.vendor_id} />}
             </div>
 
             <div className="admin-vendor-section">
@@ -329,7 +328,7 @@ export default function AdminUserDetail() {
               <InfoRow
                 icon={IconReceipt}
                 label="Dietary"
-                value={user.dietary?.length ? user.dietary.join(', ') : 'None'}
+                value={user.dietary_preferences?.length ? user.dietary_preferences.join(', ') : 'None'}
               />
               <InfoRow
                 icon={IconBuildingStore}

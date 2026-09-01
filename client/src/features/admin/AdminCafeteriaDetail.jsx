@@ -58,8 +58,8 @@ function VendorMiniRow({ vendor }) {
         <span className="admin-cp-vendor__cats">{vendor.categories.join(' · ')}</span>
       </div>
       <div className="admin-cp-vendor__meta">
-        <StatusPill active={vendor.status === 'open'} />
-        <span>{vendor.ordersToday} orders today</span>
+        <StatusPill active={vendor.service_status === 'open'} />
+        <span>{vendor.orders_today} orders today</span>
       </div>
     </li>
   );
@@ -82,16 +82,16 @@ function BuildingRow({ building, vendors, collectionPoints }) {
           </Link>
           <span className="admin-cp-building__code">{building.code}</span>
         </div>
-        <StatusPill active={building.isActive} />
+        <StatusPill active={building.is_active} />
       </div>
       <p className="admin-cp-building__address">
         <IconMapPin size={12} stroke={1.8} /> {building.address}
       </p>
       <div className="admin-cp-building__stats">
-        <span><strong>{building.floors}</strong> floors</span>
+        <span><strong>{building.floor_count}</strong> floors</span>
         <span><strong>{collectionPoints.length}</strong> pickup</span>
         <span><strong>{vendors.length}</strong> vendors</span>
-        <span><strong>{building.ordersToday}</strong> orders today</span>
+        <span><strong>{building.orders_today}</strong> orders today</span>
       </div>
 
       {vendors.length > 0 && (
@@ -117,14 +117,14 @@ function BuildingRow({ building, vendors, collectionPoints }) {
               <li key={cp.id} className="admin-cp-mini">
                 <div className="admin-cp-mini__head">
                   <span className="admin-cp-mini__name">{cp.name}</span>
-                  <span className={`admin-cp-mini__express${cp.isExpress ? ' admin-cp-mini__express--yes' : ' admin-cp-mini__express--no'}`}>
-                    {cp.isExpress ? 'Express' : 'Catering'}
+                  <span className={`admin-cp-mini__express${cp.is_express ? ' admin-cp-mini__express--yes' : ' admin-cp-mini__express--no'}`}>
+                    {cp.is_express ? 'Express' : 'Catering'}
                   </span>
                 </div>
                 <span className="admin-cp-mini__instr">{cp.instructions}</span>
                 <div className="admin-cp-mini__meta">
-                  <span><strong>{cp.ordersToday}</strong> orders today</span>
-                  <span><strong>{cp.avgPickupMins ? `${cp.avgPickupMins} min` : '—'}</strong> avg pickup</span>
+                  <span><strong>{cp.orders_today}</strong> orders today</span>
+                  <span><strong>{cp.avg_pickup_minutes ? `${cp.avg_pickup_minutes} min` : '—'}</strong> avg pickup</span>
                 </div>
               </li>
             ))}
@@ -164,23 +164,23 @@ export default function AdminCafeteriaDetail() {
     );
   }
 
-  const backLink = `/admin/cafeterias${kind === 'building' && entity.siteId ? `?site=${entity.siteId}` : ''}`;
+  const backLink = `/admin/cafeterias${kind === 'building' && entity.site_id ? `?site=${entity.site_id}` : ''}`;
 
   if (kind === 'site') {
     const site = entity;
-    const buildings = ADMIN_BUILDINGS.filter((b) => b.siteId === site.id);
+    const buildings = ADMIN_BUILDINGS.filter((b) => b.site_id === site.id);
     const buildingIds = buildings.map((b) => b.id);
-    const cps = ADMIN_COLLECTION_POINTS.filter((cp) => buildingIds.includes(cp.buildingId));
+    const cps = ADMIN_COLLECTION_POINTS.filter((cp) => buildingIds.includes(cp.building_id));
     const vendorIds = new Set();
     cps.forEach((cp) => {
       // attach all vendors that operate at this building
       ACTIVE_VENDORS
-        .filter((v) => buildings.some((b) => b.id === buildingIds.find((bid) => bid === cp.buildingId)))
+        .filter((v) => buildings.some((b) => b.id === buildingIds.find((bid) => bid === cp.building_id)))
         .forEach((v) => vendorIds.add(v.id));
     });
     // All vendors whose vendorId matches any buildings in this site (matches by id string)
     const siteVendors = ACTIVE_VENDORS.filter((v) =>
-      buildings.some((b) => b.id === v.vendorId)
+      buildings.some((b) => b.id === v.vendor_location_id)
     );
 
     return (
@@ -191,14 +191,14 @@ export default function AdminCafeteriaDetail() {
         </Link>
 
         {/* Hero */}
-        <section className={`admin-site-hero${!site.isActive ? ' admin-site-hero--inactive' : ''}`}>
+        <section className={`admin-site-hero${!site.is_active ? ' admin-site-hero--inactive' : ''}`}>
           <div className="admin-site-hero__cover">
             <img src={site.image} alt="" />
           </div>
           <div className="admin-site-hero__info">
             <div className="admin-site-hero__head">
               <span className="admin-vendor-hero__slug">{site.code}</span>
-              <StatusPill active={site.isActive} />
+              <StatusPill active={site.is_active} />
             </div>
             <h2 className="admin-site-hero__name">{site.name}</h2>
             <p className="admin-site-hero__addr">
@@ -208,9 +208,9 @@ export default function AdminCafeteriaDetail() {
             <div className="admin-site-hero__tags">
               <span className="admin-tag">{site.timezone}</span>
               <span className="admin-tag admin-tag--blue">
-                {site.coordinates.lat.toFixed(4)}, {site.coordinates.lng.toFixed(4)}
+                {site.latitude.toFixed(4)}, {site.longitude.toFixed(4)}
               </span>
-              <span className="admin-tag">Joined {site.createdAt}</span>
+              <span className="admin-tag">Joined {site.created_at}</span>
             </div>
           </div>
           <div className="admin-order-hero__actions">
@@ -218,7 +218,7 @@ export default function AdminCafeteriaDetail() {
               <IconEdit size={14} stroke={2} />
               Edit
             </button>
-            {site.isActive ? (
+            {site.is_active ? (
               <button type="button" className="admin-action admin-action--reject">
                 <IconPower size={14} stroke={2} />
                 Deactivate
@@ -243,7 +243,7 @@ export default function AdminCafeteriaDetail() {
             <div className="admin-vendor-stat__body">
               <span className="admin-vendor-stat__label">Buildings</span>
               <span className="admin-vendor-stat__value">{buildings.length}</span>
-              <span className="admin-vendor-stat__sub">{buildings.filter((b) => b.isActive).length} active</span>
+              <span className="admin-vendor-stat__sub">{buildings.filter((b) => b.is_active).length} active</span>
             </div>
           </div>
           <div className="admin-vendor-stat">
@@ -251,7 +251,7 @@ export default function AdminCafeteriaDetail() {
             <div className="admin-vendor-stat__body">
               <span className="admin-vendor-stat__label">Vendors</span>
               <span className="admin-vendor-stat__value">{siteVendors.length}</span>
-              <span className="admin-vendor-stat__sub">{siteVendors.filter((v) => v.status === 'open').length} open now</span>
+              <span className="admin-vendor-stat__sub">{siteVendors.filter((v) => v.service_status === 'open').length} open now</span>
             </div>
           </div>
           <div className="admin-vendor-stat">
@@ -259,15 +259,15 @@ export default function AdminCafeteriaDetail() {
             <div className="admin-vendor-stat__body">
               <span className="admin-vendor-stat__label">Pickup points</span>
               <span className="admin-vendor-stat__value">{cps.length}</span>
-              <span className="admin-vendor-stat__sub">{cps.filter((cp) => cp.isActive).length} active</span>
+              <span className="admin-vendor-stat__sub">{cps.filter((cp) => cp.is_active).length} active</span>
             </div>
           </div>
           <div className="admin-vendor-stat">
             <span className="admin-vendor-stat__icon"><IconReceipt size={16} stroke={1.8} /></span>
             <div className="admin-vendor-stat__body">
               <span className="admin-vendor-stat__label">30-day revenue</span>
-              <span className="admin-vendor-stat__value">{formatCurrency(site.orderVolume30d)}</span>
-              <span className="admin-vendor-stat__sub">{site.ordersToday} orders today</span>
+              <span className="admin-vendor-stat__value">{formatCurrency(site.order_volume_30d)}</span>
+              <span className="admin-vendor-stat__sub">{site.orders_today} orders today</span>
             </div>
           </div>
         </section>
@@ -288,7 +288,7 @@ export default function AdminCafeteriaDetail() {
                     key={b.id}
                     building={b}
                     vendors={ACTIVE_VENDORS.filter((v) => v.vendorId === b.id)}
-                    collectionPoints={ADMIN_COLLECTION_POINTS.filter((cp) => cp.buildingId === b.id)}
+                    collectionPoints={ADMIN_COLLECTION_POINTS.filter((cp) => cp.building_id === b.id)}
                   />
                 ))}
               </ul>
@@ -309,13 +309,13 @@ export default function AdminCafeteriaDetail() {
                 <InfoRow icon={IconMapPin} label="Site code" value={site.code} />
                 <InfoRow icon={IconMapPin} label="Site name" value={site.name} />
                 <InfoRow icon={IconClock} label="Timezone" value={site.timezone} />
-                <InfoRow icon={IconUsers} label="Registered" value={site.createdAt} />
+                <InfoRow icon={IconUsers} label="Registered" value={site.created_at} />
               </div>
 
               <div className="admin-vendor-section">
                 <h4 className="admin-vendor-section__heading">Coordinates</h4>
-                <InfoRow icon={IconMapPin} label="Latitude" value={site.coordinates.lat.toFixed(6)} />
-                <InfoRow icon={IconMapPin} label="Longitude" value={site.coordinates.lng.toFixed(6)} />
+                <InfoRow icon={IconMapPin} label="Latitude" value={site.latitude.toFixed(6)} />
+                <InfoRow icon={IconMapPin} label="Longitude" value={site.longitude.toFixed(6)} />
                 <InfoRow icon={IconInfoCircle} label="Geofence radius" value="75 m" />
               </div>
             </section>
@@ -362,8 +362,8 @@ export default function AdminCafeteriaDetail() {
 
   // Building detail
   const building = entity;
-  const cps = ADMIN_COLLECTION_POINTS.filter((cp) => cp.buildingId === building.id);
-  const vendors = ACTIVE_VENDORS.filter((v) => v.vendorId === building.id);
+  const cps = ADMIN_COLLECTION_POINTS.filter((cp) => cp.building_id === building.id);
+  const vendors = ACTIVE_VENDORS.filter((v) => v.vendor_location_id === building.id);
 
   return (
     <div className="admin-order-detail">
@@ -372,7 +372,7 @@ export default function AdminCafeteriaDetail() {
         Back to locations
       </Link>
 
-      <section className={`admin-site-hero${!building.isActive ? ' admin-site-hero--inactive' : ''}`}>
+      <section className={`admin-site-hero${!building.is_active ? ' admin-site-hero--inactive' : ''}`}>
         <div className="admin-site-hero__cover">
           {building.images?.length > 0 ? (
             <img src={building.images[0]} alt="" />
@@ -384,8 +384,8 @@ export default function AdminCafeteriaDetail() {
         </div>
         <div className="admin-site-hero__info">
           <div className="admin-site-hero__head">
-            <span className="admin-vendor-hero__slug">{building.code} · {building.siteName}</span>
-            <StatusPill active={building.isActive} />
+            <span className="admin-vendor-hero__slug">{building.code} · {building.site_name}</span>
+            <StatusPill active={building.is_active} />
           </div>
           <h2 className="admin-site-hero__name">{building.name}</h2>
           <p className="admin-site-hero__addr">
@@ -410,8 +410,8 @@ export default function AdminCafeteriaDetail() {
           <span className="admin-vendor-stat__icon"><IconBuilding size={16} stroke={1.8} /></span>
           <div className="admin-vendor-stat__body">
             <span className="admin-vendor-stat__label">Floors</span>
-            <span className="admin-vendor-stat__value">{building.floors}</span>
-            <span className="admin-vendor-stat__sub">{building.floors - 1} occupied</span>
+            <span className="admin-vendor-stat__value">{building.floor_count}</span>
+            <span className="admin-vendor-stat__sub">{building.floor_count - 1} occupied</span>
           </div>
         </div>
         <div className="admin-vendor-stat">
@@ -419,7 +419,7 @@ export default function AdminCafeteriaDetail() {
           <div className="admin-vendor-stat__body">
             <span className="admin-vendor-stat__label">Vendors</span>
             <span className="admin-vendor-stat__value">{vendors.length}</span>
-            <span className="admin-vendor-stat__sub">{vendors.filter((v) => v.status === 'open').length} open now</span>
+              <span className="admin-vendor-stat__sub">{vendors.filter((v) => v.service_status === 'open').length} open now</span>
           </div>
         </div>
         <div className="admin-vendor-stat">
@@ -427,15 +427,15 @@ export default function AdminCafeteriaDetail() {
           <div className="admin-vendor-stat__body">
             <span className="admin-vendor-stat__label">Pickup points</span>
             <span className="admin-vendor-stat__value">{cps.length}</span>
-            <span className="admin-vendor-stat__sub">{cps.filter((cp) => cp.isActive).length} active</span>
+              <span className="admin-vendor-stat__sub">{cps.filter((cp) => cp.is_active).length} active</span>
           </div>
         </div>
         <div className="admin-vendor-stat">
           <span className="admin-vendor-stat__icon"><IconReceipt size={16} stroke={1.8} /></span>
           <div className="admin-vendor-stat__body">
             <span className="admin-vendor-stat__label">30-day volume</span>
-            <span className="admin-vendor-stat__value">{building.ordersToday * 30}</span>
-            <span className="admin-vendor-stat__sub">{building.ordersToday} orders today</span>
+              <span className="admin-vendor-stat__value">{building.orders_today * 30}</span>
+              <span className="admin-vendor-stat__sub">{building.orders_today} orders today</span>
           </div>
         </div>
       </section>
@@ -460,22 +460,22 @@ export default function AdminCafeteriaDetail() {
                     <div className="admin-cp-row__body">
                       <div className="admin-cp-row__head">
                         <span className="admin-cp-row__name">{cp.name}</span>
-                        <span className={`admin-cp-row__express${cp.isExpress ? ' admin-cp-row__express--yes' : ' admin-cp-row__express--no'}`}>
-                          {cp.isExpress ? 'Express' : 'Catering'}
+                        <span className={`admin-cp-row__express${cp.is_express ? ' admin-cp-row__express--yes' : ' admin-cp-row__express--no'}`}>
+                          {cp.is_express ? 'Express' : 'Catering'}
                         </span>
                       </div>
                       <p className="admin-cp-row__instr">{cp.instructions}</p>
                     </div>
                     <div className="admin-cp-row__meta">
                       <span className="admin-cp-row__stat">
-                        <strong>{cp.ordersToday}</strong>
+                        <strong>{cp.orders_today}</strong>
                         <small>orders today</small>
                       </span>
                       <span className="admin-cp-row__stat">
-                        <strong>{cp.avgPickupMins ? `${cp.avgPickupMins} min` : '—'}</strong>
+                        <strong>{cp.avg_pickup_minutes ? `${cp.avg_pickup_minutes} min` : '—'}</strong>
                         <small>avg pickup</small>
                       </span>
-                      <StatusPill active={cp.isActive} />
+                      <StatusPill active={cp.is_active} />
                     </div>
                   </li>
                 ))}
@@ -521,16 +521,16 @@ export default function AdminCafeteriaDetail() {
               <h4 className="admin-vendor-section__heading">Identity</h4>
               <InfoRow icon={IconBuilding} label="Building code" value={building.code} />
               <InfoRow icon={IconBuilding} label="Building name" value={building.name} />
-              <InfoRow icon={IconMapPin} label="Site" value={building.siteName} />
+              <InfoRow icon={IconMapPin} label="Site" value={building.site_name} />
               <InfoRow icon={IconMapPin} label="Address" value={building.address} />
             </div>
 
             <div className="admin-vendor-section">
               <h4 className="admin-vendor-section__heading">Capacity</h4>
-              <InfoRow icon={IconBuilding} label="Floors" value={building.floors} />
+              <InfoRow icon={IconBuilding} label="Floors" value={building.floor_count} />
               <InfoRow icon={IconBuildingStore} label="Vendor tenants" value={vendors.length} />
               <InfoRow icon={IconClipboardCheck} label="Pickup points" value={cps.length} />
-              <InfoRow icon={IconReceipt} label="Daily orders" value={building.ordersToday} />
+              <InfoRow icon={IconReceipt} label="Daily orders" value={building.orders_today} />
             </div>
           </section>
         </div>

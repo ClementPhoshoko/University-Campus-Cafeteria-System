@@ -308,7 +308,7 @@ export default function AdminComplaintDetail() {
           <p className="admin-cmp-hero__copy">{complaint.description}</p>
 
           <div className="admin-cmp-hero__meta">
-            <span><IconClock size={13} stroke={1.8} /> {complaint.submitted}</span>
+            <span><IconClock size={13} stroke={1.8} /> {complaint.created_at}</span>
             {complaint.vendor && (
               <Link to={`/admin/vendors/${complaint.vendorId}`} className="admin-cmp-hero__vendor">
                 <IconBuildingStore size={13} stroke={1.8} /> {complaint.vendor}
@@ -432,7 +432,7 @@ export default function AdminComplaintDetail() {
           </section>
 
           {/* Resolution */}
-          {isResolved && complaint.resolution && (
+          {isResolved && complaint.resolution_notes && (
             <section className="admin-card admin-cmp-resolved">
               <header className="admin-card__head">
                 <div>
@@ -442,7 +442,7 @@ export default function AdminComplaintDetail() {
                   <h3 className="admin-card__title">Resolution</h3>
                 </div>
               </header>
-              <p className="admin-cmp-resolved__copy">{complaint.resolution}</p>
+              <p className="admin-cmp-resolved__copy">{complaint.resolution_notes}</p>
               <span className="admin-cmp-resolved__time">
                 <IconClock size={11} stroke={1.8} /> Resolved {complaint.resolvedAt}
               </span>

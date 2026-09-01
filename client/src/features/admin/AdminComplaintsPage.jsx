@@ -141,7 +141,7 @@ function ComplaintRow({ complaint }) {
       <td>
         <div className="admin-cmp-priority-cell">
           <PriorityPill priority={complaint.priority} />
-          <span className="admin-cmp-time">{complaint.submitted}</span>
+          <span className="admin-cmp-time">{complaint.created_at}</span>
         </div>
       </td>
       <td className="admin-order-cta">

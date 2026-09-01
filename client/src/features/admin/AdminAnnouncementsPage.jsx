@@ -116,10 +116,10 @@ function AnnouncementCard({ announcement }) {
 
       <div className="admin-ann-card__audience">
         <IconUsers size={13} stroke={1.8} />
-        <span>{announcement.audienceRoles.length} role{announcement.audienceRoles.length !== 1 ? 's' : ''}</span>
+        <span>{announcement.audience_roles.length} role{announcement.audience_roles.length !== 1 ? 's' : ''}</span>
         <span>·</span>
         <IconBuilding size={13} stroke={1.8} />
-        <span>{announcement.audienceSitesNames.join(', ')}</span>
+        <span>{announcement.site_name || 'All campuses'}</span>
       </div>
 
       {reach && (

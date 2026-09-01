@@ -77,9 +77,9 @@ function VendorRow({ vendor }) {
       <td>
         <span className={`admin-status admin-status--${vendor.status}`}>{vendor.status}</span>
       </td>
-      <td>{vendor.ordersToday}</td>
+      <td>{vendor.orders_today}</td>
       <td>
-        <span className="admin-vendor-rating">★ {vendor.rating}</span>
+        <span className="admin-vendor-rating">★ {vendor.average_rating}</span>
       </td>
       <td className="admin-vendor-cta">
         <Link to={`/admin/vendors`} className="admin-link-cta">

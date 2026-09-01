@@ -46,7 +46,7 @@ function SiteCard({ site, buildingCount, vendorCount, cpCount }) {
       <div className="admin-site-card__body">
         <div className="admin-site-card__head">
           <h3 className="admin-site-card__name">{site.name}</h3>
-          <StatusPill active={site.isActive} />
+          <StatusPill active={site.is_active} />
         </div>
         <p className="admin-site-card__address">
           <IconMapPin size={12} stroke={1.8} />
@@ -67,14 +67,14 @@ function SiteCard({ site, buildingCount, vendorCount, cpCount }) {
             <span className="admin-site-card__stat-label">Pickup points</span>
           </div>
           <div className="admin-site-card__stat">
-            <span className="admin-site-card__stat-value">{site.ordersToday}</span>
+            <span className="admin-site-card__stat-value">{site.orders_today}</span>
             <span className="admin-site-card__stat-label">Orders today</span>
           </div>
         </div>
 
         <div className="admin-site-card__foot">
           <span className="admin-site-card__revenue">
-            30d revenue <strong>{formatCurrency(site.orderVolume30d)}</strong>
+            30d revenue <strong>{formatCurrency(site.order_volume_30d)}</strong>
           </span>
           <span className="admin-link-cta">
             Manage <IconChevronRight size={13} stroke={2} />
@@ -100,19 +100,19 @@ function BuildingCard({ building }) {
       <div className="admin-building-card__body">
         <div className="admin-building-card__head">
           <span className="admin-building-card__code">{building.code}</span>
-          <StatusPill active={building.isActive} />
+          <StatusPill active={building.is_active} />
         </div>
         <h4 className="admin-building-card__name">{building.name}</h4>
         <p className="admin-building-card__site">
           <IconMapPin size={11} stroke={1.8} />
-          {building.siteName}
+          {building.site_name}
         </p>
 
-        <div className="admin-building-card__stats">
-          <span><strong>{building.floors}</strong> floors</span>
-          <span><strong>{building.collectionPoints}</strong> pickup</span>
-          <span><strong>{building.vendors}</strong> vendors</span>
-          <span><strong>{building.ordersToday}</strong> orders</span>
+          <div className="admin-building-card__stats">
+          <span><strong>{building.floor_count}</strong> floors</span>
+          <span><strong>{building.collection_point_count}</strong> pickup</span>
+          <span><strong>{building.vendor_count}</strong> vendors</span>
+          <span><strong>{building.orders_today}</strong> orders</span>
         </div>
       </div>
     </Link>
@@ -128,25 +128,25 @@ function CollectionPointRow({ point }) {
       <div className="admin-cp-row__body">
         <div className="admin-cp-row__head">
           <span className="admin-cp-row__name">{point.name}</span>
-          <span className={`admin-cp-row__express${point.isExpress ? ' admin-cp-row__express--yes' : ' admin-cp-row__express--no'}`}>
-            {point.isExpress ? 'Express' : 'Catering'}
+          <span className={`admin-cp-row__express${point.is_express ? ' admin-cp-row__express--yes' : ' admin-cp-row__express--no'}`}>
+            {point.is_express ? 'Express' : 'Catering'}
           </span>
         </div>
         <span className="admin-cp-row__loc">
-          <IconMapPin size={11} stroke={1.8} /> {point.buildingName} · {point.siteName}
+          <IconMapPin size={11} stroke={1.8} /> {point.building_name} · {point.site_name}
         </span>
         <p className="admin-cp-row__instr">{point.instructions}</p>
       </div>
       <div className="admin-cp-row__meta">
         <span className="admin-cp-row__stat">
-          <strong>{point.ordersToday}</strong>
+          <strong>{point.orders_today}</strong>
           <small>orders today</small>
         </span>
         <span className="admin-cp-row__stat">
-          <strong>{point.avgPickupMins ? `${point.avgPickupMins} min` : '—'}</strong>
+          <strong>{point.avg_pickup_minutes ? `${point.avg_pickup_minutes} min` : '—'}</strong>
           <small>avg pickup</small>
         </span>
-        <StatusPill active={point.isActive} />
+        <StatusPill active={point.is_active} />
       </div>
     </li>
   );
@@ -239,26 +239,26 @@ export default function AdminCafeteriaList() {
     if (!query) return ADMIN_BUILDINGS;
     const q = query.toLowerCase();
     return ADMIN_BUILDINGS.filter((b) =>
-      `${b.name} ${b.code} ${b.siteName} ${b.address}`.toLowerCase().includes(q)
+      `${b.name} ${b.code} ${b.site_name} ${b.address}`.toLowerCase().includes(q)
     );
   }, [query]);
 
   const filteredCollectionPoints = useMemo(() => {
     let list = ADMIN_COLLECTION_POINTS;
     if (initialSite !== 'all') {
-      list = list.filter((cp) => cp.buildingId && ADMIN_BUILDINGS.find((b) => b.id === cp.buildingId)?.siteId === initialSite);
+      list = list.filter((cp) => cp.building_id && ADMIN_BUILDINGS.find((b) => b.id === cp.building_id)?.site_id === initialSite);
     }
     if (!query) return list;
     const q = query.toLowerCase();
-    return list.filter((cp) => `${cp.name} ${cp.buildingName} ${cp.siteName}`.toLowerCase().includes(q));
+    return list.filter((cp) => `${cp.name} ${cp.building_name} ${cp.site_name}`.toLowerCase().includes(q));
   }, [query, initialSite]);
 
-  const activeSites = ADMIN_SITES.filter((s) => s.isActive).length;
-  const activeBuildings = ADMIN_BUILDINGS.filter((b) => b.isActive).length;
-  const activeCollectionPoints = ADMIN_COLLECTION_POINTS.filter((cp) => cp.isActive).length;
+  const activeSites = ADMIN_SITES.filter((s) => s.is_active).length;
+  const activeBuildings = ADMIN_BUILDINGS.filter((b) => b.is_active).length;
+  const activeCollectionPoints = ADMIN_COLLECTION_POINTS.filter((cp) => cp.is_active).length;
 
   const renderBuildingsFor = (siteId) =>
-    ADMIN_BUILDINGS.filter((b) => b.siteId === siteId);
+    ADMIN_BUILDINGS.filter((b) => b.site_id === siteId);
 
   return (
     <div className="admin-orders">
@@ -359,8 +359,8 @@ export default function AdminCafeteriaList() {
         <div className="admin-site-grid">
           {filteredSites.map((site) => {
             const buildingCount = renderBuildingsFor(site.id).length;
-            const vendorCount = renderBuildingsFor(site.id).reduce((s, b) => s + b.vendors, 0);
-            const cpCount = renderBuildingsFor(site.id).reduce((s, b) => s + b.collectionPoints, 0);
+            const vendorCount = renderBuildingsFor(site.id).reduce((s, b) => s + b.vendor_count, 0);
+            const cpCount = renderBuildingsFor(site.id).reduce((s, b) => s + b.collection_point_count, 0);
             return (
               <SiteCard
                 key={site.id}

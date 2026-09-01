@@ -292,11 +292,9 @@ export default function AdminAnnouncementDetail() {
             <div className="admin-vendor-section">
               <h4 className="admin-vendor-section__heading">Sites</h4>
               <div className="admin-ann-target-chips">
-                {announcement.audienceSitesNames.map((site) => (
-                  <span key={site} className="admin-tag admin-tag--success">
-                    <IconBuilding size={11} stroke={1.8} /> {site}
+                <span className="admin-tag admin-tag--success">
+                    <IconBuilding size={11} stroke={1.8} /> {announcement.site_name || 'All campuses'}
                   </span>
-                ))}
               </div>
             </div>
 

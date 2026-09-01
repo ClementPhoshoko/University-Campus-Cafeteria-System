@@ -124,7 +124,7 @@ export default function AdminVendorDetail() {
             {vendor.categories.map((cat) => (
               <span key={cat} className="admin-tag admin-tag--blue">{cat}</span>
             ))}
-            {vendor.cateringEnabled && (
+            {vendor.corporate_catering_enabled && (
               <span className="admin-tag admin-tag--success">Corporate catering</span>
             )}
           </div>
@@ -158,25 +158,25 @@ export default function AdminVendorDetail() {
           <StatBlock
             icon={IconReceipt}
             label="Orders today"
-            value={vendor.ordersToday}
+            value={vendor.orders_today}
             sub="vs 184 yesterday"
           />
           <StatBlock
             icon={IconChartLine}
             label="30-day revenue"
-            value={formatCurrency(vendor.revenue30d)}
+            value={formatCurrency(vendor.revenue_30d)}
             sub="+8.2% vs prev period"
           />
           <StatBlock
             icon={IconStarFilled}
             label="Average rating"
-            value={vendor.rating.toFixed(1)}
-            sub={`${vendor.ratingCount} reviews`}
+            value={vendor.average_rating.toFixed(1)}
+            sub={`${vendor.rating_count} reviews`}
           />
           <StatBlock
             icon={IconList}
             label="Menu items"
-            value={vendor.menuItems}
+            value={vendor.menu_item_count}
             sub="3 sold out today"
           />
         </section>
@@ -202,17 +202,14 @@ export default function AdminVendorDetail() {
             <InfoRow icon={IconMapPin} label="Campus" value={vendor.campus} />
             <InfoRow icon={IconMapPin} label="Building / location" value={vendor.building} />
             <InfoRow icon={IconClock} label="Operating hours" value={vendor.operatingHours} />
-            <InfoRow icon={IconClock} label="Estimated prep" value={vendor.estimatedPrep} />
+            <InfoRow icon={IconClock} label="Estimated prep" value={vendor.estimated_prep_minutes} />
           </div>
 
           <div className="admin-vendor-section">
             <h4 className="admin-vendor-section__heading">Contact & management</h4>
-            <InfoRow icon={IconUser} label="Onsite manager" value={vendor.manager || vendor.contactName || '—'} />
-            <InfoRow icon={IconMail} label="Support email" value={vendor.contactEmail || vendor.support_email} />
-            <InfoRow icon={IconPhone} label="Support phone" value={vendor.contactPhone || '—'} />
-            {vendor.contactName && (
-              <InfoRow icon={IconBriefcase} label="Applicant" value={vendor.contactName} />
-            )}
+            <InfoRow icon={IconUser} label="Onsite manager" value={vendor.manager_name || '—'} />
+            <InfoRow icon={IconMail} label="Support email" value={vendor.support_email} />
+            <InfoRow icon={IconPhone} label="Support phone" value={vendor.support_phone || '—'} />
           </div>
 
           <div className="admin-vendor-section">

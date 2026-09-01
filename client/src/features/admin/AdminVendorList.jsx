@@ -109,20 +109,20 @@ function VendorCard({ vendor }) {
       <div className="admin-vendors__card-stats">
         <div className="admin-vendors__stat">
           <IconReceipt size={14} stroke={2} />
-          <span><strong>{vendor.ordersToday}</strong> orders today</span>
+          <span><strong>{vendor.orders_today}</strong> orders today</span>
         </div>
         <div className="admin-vendors__stat">
           <IconStarFilled size={14} stroke={0} />
-          <span><strong>{vendor.rating.toFixed(1)}</strong> ({vendor.ratingCount})</span>
+          <span><strong>{vendor.average_rating.toFixed(1)}</strong> ({vendor.rating_count})</span>
         </div>
         <div className="admin-vendors__stat">
-          <span><strong>{vendor.menuItems}</strong> menu items</span>
+          <span><strong>{vendor.menu_item_count}</strong> menu items</span>
         </div>
       </div>
 
       <div className="admin-vendors__card-foot">
         <span className="admin-vendors__card-revenue">
-          30d revenue <strong>{formatCurrency(vendor.revenue30d)}</strong>
+          30d revenue <strong>{formatCurrency(vendor.revenue_30d)}</strong>
         </span>
         <span className="admin-link-cta">
           Manage <IconChevronRight size={13} stroke={2} />

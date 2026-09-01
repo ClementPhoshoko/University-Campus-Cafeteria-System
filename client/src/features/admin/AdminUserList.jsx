@@ -40,13 +40,12 @@ function Avatar({ name, size = 36 }) {
   );
 }
 
-function StatusPill({ status }) {
+function StatusPill({ is_active }) {
   const map = {
-    active: { label: 'Active', tone: 'success' },
-    pending: { label: 'Pending', tone: 'warning' },
-    inactive: { label: 'Inactive', tone: 'info' },
+    true: { label: 'Active', tone: 'success' },
+    false: { label: 'Inactive', tone: 'info' },
   };
-  const cfg = map[status] || { label: status, tone: 'info' };
+  const cfg = map[String(is_active)] || { label: is_active ? 'Active' : 'Inactive', tone: 'info' };
   return <span className={`admin-status admin-status--${cfg.tone}`}>{cfg.label}</span>;
 }
 
@@ -65,10 +64,10 @@ function UserRow({ user }) {
     <tr className="admin-order-row">
       <td>
         <div className="admin-user-cell">
-          <Avatar name={user.name} />
+          <Avatar name={user.full_name} />
           <div className="admin-user-cell__body">
             <Link to={`/admin/users/${user.id}`} className="admin-user-cell__name">
-              {user.name}
+              {user.full_name}
             </Link>
             <span className="admin-user-cell__email">{user.email}</span>
           </div>
@@ -91,19 +90,19 @@ function UserRow({ user }) {
         </div>
       </td>
       <td>
-        <StatusPill status={user.status} />
-        {user.vendor && (
+        <StatusPill is_active={user.is_active} />
+        {user.vendor_id && (
           <div className="admin-user-vendor">
             <IconBuildingStore size={11} stroke={1.8} />
-            {user.vendor}
+            {user.vendor_id}
           </div>
         )}
       </td>
       <td className="admin-user-meta">
         <span className="admin-user-meta__orders">
-          <strong>{user.orders}</strong> orders
+          <strong>{user.order_count}</strong> orders
         </span>
-        <span className="admin-user-meta__seen">{user.lastSeen}</span>
+        <span className="admin-user-meta__seen">{user.last_seen_at}</span>
       </td>
       <td className="admin-order-cta">
         <Link to={`/admin/users/${user.id}`} className="admin-link-cta">
@@ -135,16 +134,16 @@ export default function AdminUserList() {
   const filtered = useMemo(() => {
     return ADMIN_PLATFORM_USERS.filter((user) => {
       const matchesQuery = !query
-        || `${user.name} ${user.email} ${user.number}`.toLowerCase().includes(query.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+        || `${user.full_name} ${user.email} ${user.employee_number}`.toLowerCase().includes(query.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' && user.is_active) || (statusFilter === 'inactive' && !user.is_active) || (statusFilter === 'pending' && !user.is_active);
       const matchesRole = ROLE_FILTER_MATCH[roleFilter](user);
       return matchesQuery && matchesStatus && matchesRole;
     });
   }, [query, statusFilter, roleFilter]);
 
   const totalUsers = ADMIN_PLATFORM_USERS.length;
-  const activeCount = ADMIN_PLATFORM_USERS.filter((u) => u.status === 'active').length;
-  const pendingCount = ADMIN_PLATFORM_USERS.filter((u) => u.status === 'pending').length;
+  const activeCount = ADMIN_PLATFORM_USERS.filter((u) => u.is_active).length;
+  const pendingCount = ADMIN_PLATFORM_USERS.filter((u) => !u.is_active).length;
   const adminCount = ADMIN_PLATFORM_USERS.filter((u) => u.roles.includes('admin')).length;
 
   return (
