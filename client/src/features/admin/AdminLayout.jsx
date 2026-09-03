@@ -51,6 +51,7 @@ function NavItem({ item }) {
 export default function AdminLayout() {
   const { profile, user, signOut } = useAuth();
   const location = useLocation();
+
   const currentItem = ADMIN_NAV_ITEMS.find((item) =>
     item.to === '/admin'
       ? location.pathname === '/admin'
@@ -121,9 +122,11 @@ export default function AdminLayout() {
           </div>
         </header>
 
-        <PageContainer className="admin-page-container" noPad>
-          <Outlet />
-        </PageContainer>
+        <div className="admin-content">
+          <PageContainer className="admin-page-container">
+            <Outlet />
+          </PageContainer>
+        </div>
       </main>
     </div>
   );

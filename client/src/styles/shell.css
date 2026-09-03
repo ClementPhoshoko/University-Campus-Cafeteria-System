@@ -10,7 +10,6 @@
   max-width: var(--content-max-width);
   margin: 0 auto;
   padding: var(--space-6) var(--screen-padding);
-  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-8));
 }
 
 @media (max-width: 768px) {
@@ -29,18 +28,6 @@
 @media (max-width: 768px) {
   .page-container--no-pad {
     padding: 0;
-  }
-}
-
-.page-container--no-pad > * {
-  padding-left: var(--screen-padding);
-  padding-right: var(--screen-padding);
-}
-
-@media (max-width: 768px) {
-  .page-container--no-pad > * {
-    padding-left: var(--screen-padding-compact);
-    padding-right: var(--screen-padding-compact);
   }
 }
 

@@ -86,8 +86,8 @@
   --color-action-primary-hover:  var(--blue-400);
   --color-action-primary-pressed: var(--blue-600);
   --color-action-primary-text:   var(--neutral-0);
-  --color-action-secondary:      var(--blue-100);
-  --color-action-secondary-text: var(--blue-700);
+  --color-action-secondary:      rgba(10, 140, 255, 0.12);
+  --color-action-secondary-text: var(--blue-600);
   --color-action-link:           var(--blue-600);
   --color-action-disabled:       var(--neutral-200);
   --color-action-disabled-text:  var(--neutral-400);
