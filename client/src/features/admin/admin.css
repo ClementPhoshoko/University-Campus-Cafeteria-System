@@ -273,14 +273,6 @@
   letter-spacing: 0.06em;
 }
 
-.admin-topbar__title {
-  margin: 0;
-  font-size: clamp(1.25rem, 2vw, 1.6rem);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  letter-spacing: -0.025em;
-}
-
 .admin-topbar__meta {
   display: flex;
   gap: var(--space-2);
@@ -312,10 +304,9 @@
 }
 
 .admin-page-container {
-  max-width: none;
-  margin: 0;
-  padding: var(--space-5) var(--screen-padding);
-  padding-bottom: var(--space-10);
+  max-width: none !important;
+  margin: 0 !important;
+  padding: var(--space-1) var(--screen-padding) !important;
 }
 
 /* ── Dashboard ── */
@@ -902,48 +893,34 @@
 /* ── Tables ── */
 
 .admin-table-wrap {
-  display: flex;
-  flex-direction: column;
+  display: block;
   max-height: 320px;
-}
-
-.admin-table-scroll {
-  flex: 1;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--color-border-default) transparent;
 }
 
-.admin-table-scroll::-webkit-scrollbar {
+.admin-table-wrap::-webkit-scrollbar {
   width: 4px;
 }
 
-.admin-table-scroll::-webkit-scrollbar-track {
+.admin-table-wrap::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.admin-table-scroll::-webkit-scrollbar-thumb {
+.admin-table-wrap::-webkit-scrollbar-thumb {
   background: var(--color-border-default);
   border-radius: var(--radius-full);
 }
 
-.admin-table-scroll::-webkit-scrollbar-thumb:hover {
+.admin-table-wrap::-webkit-scrollbar-thumb:hover {
   background: var(--color-border-strong);
 }
 
 .admin-table {
   width: 100%;
-  table-layout: fixed;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
   font-size: 0.82rem;
-}
-
-.admin-table thead,
-.admin-table tbody {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
 }
 
 .admin-table thead th {
@@ -958,32 +935,7 @@
   text-align: left;
   border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-bg-default);
-}
-
-.admin-table thead th:first-child {
-  width: auto;
-}
-
-.admin-table thead th {
-  position: sticky;
-  top: 0;
-  padding: var(--space-2) var(--space-3);
-  font-size: 0.7rem;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  text-align: left;
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-
-.admin-table thead th:first-child {
-  width: auto;
-}
-
-.admin-table thead th:last-child {
-  width: 60px;
-  text-align: left;
+  z-index: 1;
 }
 
 .admin-table tbody tr {

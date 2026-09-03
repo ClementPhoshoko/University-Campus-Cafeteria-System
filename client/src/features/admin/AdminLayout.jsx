@@ -114,7 +114,6 @@ export default function AdminLayout() {
         <header className="admin-topbar">
           <div className="admin-topbar__title-wrap">
             <span className="admin-topbar__eyebrow">Admin Console</span>
-            <h1 className="admin-topbar__title">{currentItem?.label || 'Dashboard'}</h1>
           </div>
           <div className="admin-topbar__meta">
             <span className="admin-topbar__chip">Merchant Place · Pilot</span>

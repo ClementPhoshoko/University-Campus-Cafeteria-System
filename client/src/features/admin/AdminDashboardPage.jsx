@@ -523,23 +523,19 @@ export default function AdminDashboardPage() {
                   <th></th>
                 </tr>
               </thead>
+              <tbody>
+                {TOP_CAFETERIAS.slice(0, cafeteriaCount).map((vendor) => (
+                  <VendorRow key={vendor.id} vendor={vendor} />
+                ))}
+              </tbody>
             </table>
-            <div className="admin-table-scroll">
-              <table className="admin-table">
-                <tbody>
-                  {TOP_CAFETERIAS.slice(0, cafeteriaCount).map((vendor) => (
-                    <VendorRow key={vendor.id} vendor={vendor} />
-                  ))}
-                </tbody>
-              </table>
-              {cafeteriaLoading && (
-                <div className="admin-activity-loading">
-                  <div className="skeleton skeleton--text" style={{ width: '100%', height: '20px' }} />
-                  <div className="skeleton skeleton--text" style={{ width: '100%', height: '20px' }} />
-                </div>
-              )}
-              <div ref={cafeteriaBottomRef} />
-            </div>
+            {cafeteriaLoading && (
+              <div className="admin-activity-loading">
+                <div className="skeleton skeleton--text" style={{ width: '100%', height: '20px' }} />
+                <div className="skeleton skeleton--text" style={{ width: '100%', height: '20px' }} />
+              </div>
+            )}
+            <div ref={cafeteriaBottomRef} />
             {cafeteriaCount < TOP_CAFETERIAS.length && !cafeteriaLoading && (
               <button
                 type="button"
