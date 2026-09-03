@@ -1143,9 +1143,6 @@
   padding: 0 var(--space-3);
   font-size: 0.78rem;
 }
-  gap: var(--space-2);
-  flex-shrink: 0;
-}
 
 .admin-action {
   display: inline-flex;
@@ -1270,6 +1267,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+  padding-bottom: var(--space-8);
 }
 
 .admin-vendors__header {
@@ -1847,11 +1845,11 @@
 .admin-vendors__kpi-icon {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-sm);
-  background: var(--color-action-secondary);
-  color: var(--color-action-secondary-text);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-action-primary);
   flex-shrink: 0;
 }
 
@@ -2046,6 +2044,82 @@
 .admin-vendors__rating-count {
   font-size: 0.72rem;
   color: var(--color-text-tertiary);
+}
+
+/* Checkbox Styles */
+.admin-vendors__th-check,
+.admin-vendors__td-check {
+  width: 44px;
+  text-align: center;
+}
+
+.admin-vendors__checkbox {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-raised);
+  cursor: pointer;
+  appearance: none;
+  transition: all var(--transition-fast);
+}
+
+.admin-vendors__checkbox:hover {
+  border-color: var(--color-action-primary);
+}
+
+.admin-vendors__checkbox:checked {
+  background: var(--color-action-primary);
+  border-color: var(--color-action-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+  background-size: 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.admin-vendors__bulk-approve {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 28px;
+  min-width: 90px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-xs);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
+  color: var(--color-text-primary);
+  font-family: var(--font-primary);
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.15s ease,
+    visibility 0.15s ease,
+    background var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.admin-vendors__bulk-approve--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.admin-vendors__bulk-approve:hover {
+  background: var(--glass-bg-heavy);
+  box-shadow: var(--elevation-sm);
+}
+
+.admin-vendors__bulk-approve:active {
+  transform: scale(0.97);
 }
 
 /* Actions Cell */

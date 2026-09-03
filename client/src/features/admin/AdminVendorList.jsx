@@ -91,6 +91,7 @@ export default function AdminVendorList() {
   const [campusFilter, setCampusFilter] = useState('all');
   const [modal, setModal] = useState(null);
   const [approvals, setApprovals] = useState(PENDING_VENDOR_APPROVALS);
+  const [selectedApprovals, setSelectedApprovals] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
@@ -105,6 +106,7 @@ export default function AdminVendorList() {
   const handleTabChange = (next) => {
     setTab(next);
     setCurrentPage(1);
+    setSelectedApprovals([]);
     if (next === 'approvals') setSearchParams({ tab: 'approvals' });
     else setSearchParams({});
   };
@@ -134,7 +136,27 @@ export default function AdminVendorList() {
 
   const handleConfirm = (vendor, mode) => {
     setApprovals((items) => items.filter((i) => i.id !== vendor.id));
+    setSelectedApprovals((prev) => prev.filter((id) => id !== vendor.id));
     setModal(null);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedApprovals.length === paginatedApprovals.length) {
+      setSelectedApprovals([]);
+    } else {
+      setSelectedApprovals(paginatedApprovals.map((v) => v.id));
+    }
+  };
+
+  const handleSelectOne = (id) => {
+    setSelectedApprovals((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleApproveSelected = () => {
+    setApprovals((items) => items.filter((i) => !selectedApprovals.includes(i.id)));
+    setSelectedApprovals([]);
   };
 
   const filteredActive = useMemo(() => {
@@ -149,6 +171,12 @@ export default function AdminVendorList() {
 
   const totalActivePages = Math.ceil(filteredActive.length / itemsPerPage);
   const paginatedActive = filteredActive.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const totalApprovalsPages = Math.ceil(approvals.length / itemsPerPage);
+  const paginatedApprovals = approvals.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -199,7 +227,7 @@ export default function AdminVendorList() {
       <div className="admin-vendors__kpis">
         <div className="admin-vendors__kpi">
           <div className="admin-vendors__kpi-icon">
-            <IconBuildingStore size={18} stroke={1.8} />
+            <IconBuildingStore size={24} stroke={1.8} />
           </div>
           <div className="admin-vendors__kpi-body">
             <span className="admin-vendors__kpi-label">Total vendors</span>
@@ -208,7 +236,7 @@ export default function AdminVendorList() {
         </div>
         <div className="admin-vendors__kpi">
           <div className="admin-vendors__kpi-icon">
-            <IconCheck size={18} stroke={1.8} />
+            <IconCheck size={24} stroke={1.8} />
           </div>
           <div className="admin-vendors__kpi-body">
             <span className="admin-vendors__kpi-label">Active vendors</span>
@@ -217,7 +245,7 @@ export default function AdminVendorList() {
         </div>
         <div className="admin-vendors__kpi">
           <div className="admin-vendors__kpi-icon">
-            <IconAlertTriangle size={18} stroke={1.8} />
+            <IconAlertTriangle size={24} stroke={1.8} />
           </div>
           <div className="admin-vendors__kpi-body">
             <span className="admin-vendors__kpi-label">Pending approvals</span>
@@ -226,7 +254,7 @@ export default function AdminVendorList() {
         </div>
         <div className="admin-vendors__kpi">
           <div className="admin-vendors__kpi-icon">
-            <IconCoin size={18} stroke={1.8} />
+            <IconCoin size={24} stroke={1.8} />
           </div>
           <div className="admin-vendors__kpi-body">
             <span className="admin-vendors__kpi-label">Total revenue (30d)</span>
@@ -388,62 +416,92 @@ export default function AdminVendorList() {
       {tab === 'approvals' && (
         <>
           {approvals.length > 0 ? (
-            <div className="admin-vendors__table-wrap">
-              <table className="admin-vendors__table">
-                <thead>
-                  <tr>
-                    <th>Vendor</th>
-                    <th>Categories</th>
-                    <th>Location</th>
-                    <th>Submitted</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {approvals.map((vendor) => (
-                    <tr key={vendor.id}>
-                      <td>
-                        <div className="admin-vendors__vendor-cell">
-                          <VendorLogo src={vendor.logo_url} alt={vendor.name} />
-                          <div className="admin-vendors__vendor-info">
-                            <span className="admin-vendors__vendor-name">{vendor.name}</span>
-                            <span className="admin-vendors__vendor-desc">{vendor.description}</span>
+            <>
+              <div className="admin-vendors__table-wrap">
+                <table className="admin-vendors__table">
+                  <thead>
+                    <tr>
+                      <th className="admin-vendors__th-check">
+                        <input
+                          type="checkbox"
+                          className="admin-vendors__checkbox"
+                          checked={selectedApprovals.length === paginatedApprovals.length && paginatedApprovals.length > 0}
+                          onChange={handleSelectAll}
+                          aria-label="Select all"
+                        />
+                      </th>
+                      <th>Vendor</th>
+                      <th>Categories</th>
+                      <th>Location</th>
+                      <th>Submitted</th>
+                      <th>
+                        <button
+                          type="button"
+                          className={`admin-vendors__bulk-approve${selectedApprovals.length === 0 ? ' admin-vendors__bulk-approve--hidden' : ''}`}
+                          onClick={handleApproveSelected}
+                        >
+                          Approve ({selectedApprovals.length})
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedApprovals.map((vendor) => (
+                      <tr key={vendor.id}>
+                        <td className="admin-vendors__td-check">
+                          <input
+                            type="checkbox"
+                            className="admin-vendors__checkbox"
+                            checked={selectedApprovals.includes(vendor.id)}
+                            onChange={() => handleSelectOne(vendor.id)}
+                            aria-label={`Select ${vendor.name}`}
+                          />
+                        </td>
+                        <td>
+                          <div className="admin-vendors__vendor-cell">
+                            <VendorLogo src={vendor.logo_url} alt={vendor.name} />
+                            <div className="admin-vendors__vendor-info">
+                              <span className="admin-vendors__vendor-name">{vendor.name}</span>
+                              <span className="admin-vendors__vendor-desc">{vendor.description}</span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="admin-vendors__category-pills">
-                          {renderCategories(vendor.categories)}
-                        </div>
-                      </td>
-                      <td>
-                        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
-                          {vendor.vendor_location_name}
-                        </span>
-                      </td>
-                      <td>
-                        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
-                          {formatDate(vendor.created_at)}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="admin-vendors__row-actions">
-                          <button type="button" className="admin-action admin-action--reject" onClick={() => handleReject(vendor)}>
-                            <IconX size={13} stroke={2} />
-                          </button>
-                          <button type="button" className="admin-action admin-action--approve" onClick={() => handleApprove(vendor)}>
-                            <IconCheck size={13} stroke={2} />
-                          </button>
+                        </td>
+                        <td>
+                          <div className="admin-vendors__category-pills">
+                            {renderCategories(vendor.categories)}
+                          </div>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
+                            {vendor.vendor_location_name}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
+                            {formatDate(vendor.created_at)}
+                          </span>
+                        </td>
+                        <td>
                           <Link to={`/admin/vendors/${vendor.id}`} className="admin-link-cta">
                             Review <IconChevronRight size={13} stroke={2} />
                           </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {totalApprovalsPages > 1 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalApprovalsPages}
+                  totalItems={approvals.length}
+                  itemsPerPage={itemsPerPage}
+                  label="applications"
+                  onPageChange={handlePageChange}
+                />
+              )}
+            </>
           ) : (
             <div className="admin-empty">
               <IconShieldCheck size={32} stroke={1.4} />
