@@ -14,6 +14,8 @@ import {
   IconUsers,
   IconReceipt,
   IconInfoCircle,
+  IconCalendarTime,
+  IconBrandTelegram,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import {
@@ -23,6 +25,24 @@ import {
   ACTIVE_VENDORS,
   formatCurrency,
 } from './adminMockData.js';
+
+function formatLocalTime(timezone = 'Africa/Johannesburg') {
+  return new Date().toLocaleTimeString('en-ZA', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-ZA', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
 
 function StatusPill({ active }) {
   return (
@@ -66,70 +86,66 @@ function VendorMiniRow({ vendor }) {
   );
 }
 
-function BuildingRow({ building, vendors, collectionPoints }) {
+function BuildingCard({ building, collectionPoints }) {
   return (
-    <li className="admin-cp-building">
-      <div className="admin-cp-building__head">
-        <span className="admin-cp-building__icon">
+    <li className="admin-building-row">
+      <div className="admin-building-row__main">
+        <div className="admin-building-row__image">
           {building.images?.length > 0 ? (
             <img src={building.images[0]} alt="" />
           ) : (
-            <IconBuilding size={22} stroke={1.4} />
+            <IconBuilding size={28} stroke={1.4} />
           )}
-        </span>
-        <div className="admin-cp-building__id">
-          <Link to={`/admin/cafeterias/${building.id}`} className="admin-cp-building__name">
-            {building.name}
-          </Link>
-          <span className="admin-cp-building__code">{building.code}</span>
         </div>
-        <StatusPill active={building.is_active} />
-      </div>
-      <p className="admin-cp-building__address">
-        <IconMapPin size={12} stroke={1.8} /> {building.address}
-      </p>
-      <div className="admin-cp-building__stats">
-        <span><strong>{building.floor_count}</strong> floors</span>
-        <span><strong>{collectionPoints.length}</strong> pickup</span>
-        <span><strong>{vendors.length}</strong> vendors</span>
-        <span><strong>{building.orders_today}</strong> orders today</span>
-      </div>
-
-      {vendors.length > 0 && (
-        <div className="admin-cp-building__vendors">
-          <span className="admin-vendor-section__heading">
-            <IconBuildingStore size={13} stroke={1.8} /> Active vendors
-          </span>
-          <ul className="admin-cp-vendor-list">
-            {vendors.map((v) => (
-              <VendorMiniRow key={v.id} vendor={v} />
-            ))}
-          </ul>
+        <div className="admin-building-row__info">
+          <div className="admin-building-row__header">
+            <Link to={`/admin/cafeterias/${building.id}`} className="admin-building-row__name">
+              {building.name}
+            </Link>
+            <span className="admin-building-row__code">{building.code}</span>
+            <StatusPill active={building.is_active} />
+          </div>
+          <p className="admin-building-row__location">
+            <IconMapPin size={12} stroke={1.8} />
+            {building.address}
+          </p>
+          <div className="admin-building-row__metrics">
+            <span><strong>{building.floor_count}</strong> floors</span>
+            <span><strong>{collectionPoints.length}</strong> pickup</span>
+            <span><strong>{building.orders_today}</strong> orders today</span>
+          </div>
         </div>
-      )}
+      </div>
 
       {collectionPoints.length > 0 && (
-        <div className="admin-cp-building__cps">
-          <span className="admin-vendor-section__heading">
-            <IconClipboardCheck size={13} stroke={1.8} /> Collection points ({collectionPoints.length})
-          </span>
-          <ul className="admin-cp-points">
-            {collectionPoints.map((cp) => (
-              <li key={cp.id} className="admin-cp-mini">
-                <div className="admin-cp-mini__head">
-                  <span className="admin-cp-mini__name">{cp.name}</span>
-                  <span className={`admin-cp-mini__express${cp.is_express ? ' admin-cp-mini__express--yes' : ' admin-cp-mini__express--no'}`}>
-                    {cp.is_express ? 'Express' : 'Catering'}
-                  </span>
+        <div className="admin-cp-children">
+          <div className="admin-cp-children__header">
+            <span className="admin-cp-children__title">Collection points ({collectionPoints.length})</span>
+          </div>
+          {collectionPoints.map((cp) => (
+            <div key={cp.id} className="admin-cp-child">
+              <div className="admin-cp-child__icon">
+                <IconClipboardCheck size={16} stroke={1.8} />
+              </div>
+              <div className="admin-cp-child__info">
+                <span className="admin-cp-child__name">{cp.name}</span>
+                <span className="admin-cp-child__desc">{cp.instructions}</span>
+              </div>
+              <span className={`admin-cp-child__express${cp.is_express ? ' admin-cp-child__express--yes' : ' admin-cp-child__express--no'}`}>
+                {cp.is_express ? 'Express' : 'Catering'}
+              </span>
+              <div className="admin-cp-child__metrics">
+                <div className="admin-cp-child__metric">
+                  <strong>{cp.orders_today}</strong>
+                  <span>today</span>
                 </div>
-                <span className="admin-cp-mini__instr">{cp.instructions}</span>
-                <div className="admin-cp-mini__meta">
-                  <span><strong>{cp.orders_today}</strong> orders today</span>
-                  <span><strong>{cp.avg_pickup_minutes ? `${cp.avg_pickup_minutes} min` : '—'}</strong> avg pickup</span>
+                <div className="admin-cp-child__metric">
+                  <strong>{cp.avg_pickup_minutes ? `${cp.avg_pickup_minutes} min` : '—'}</strong>
+                  <span>avg pickup</span>
                 </div>
-              </li>
-            ))}
-          </ul>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </li>
@@ -211,30 +227,37 @@ export default function AdminCafeteriaDetail() {
               {site.address}
             </p>
             <div className="admin-site-hero__tags">
-              <span className="admin-tag">{site.timezone}</span>
+              <span className="admin-tag">
+                <IconClock size={12} stroke={2} />
+                {formatLocalTime(site.timezone)} SAST
+              </span>
               <span className="admin-tag admin-tag--blue">
+                <IconMapPin size={12} stroke={2} />
                 {site.latitude.toFixed(4)}, {site.longitude.toFixed(4)}
               </span>
-              <span className="admin-tag">Joined {site.created_at}</span>
+              <span className="admin-tag">
+                <IconCalendarTime size={12} stroke={2} />
+                Joined {formatDate(site.created_at)}
+              </span>
             </div>
           </div>
           <div className="admin-order-hero__actions">
-            <button type="button" className="admin-action">
+            <button type="button" className="admin-action--ghost">
               <IconEdit size={14} stroke={2} />
               Edit
             </button>
             {site.is_active ? (
-              <button type="button" className="admin-action admin-action--reject">
+              <button type="button" className="admin-action--ghost admin-action--ghost-danger">
                 <IconPower size={14} stroke={2} />
                 Deactivate
               </button>
             ) : (
-              <button type="button" className="admin-action admin-action--approve">
+              <button type="button" className="admin-action--ghost">
                 <IconCheck size={14} stroke={2} />
                 Activate
               </button>
             )}
-            <button type="button" className="admin-action admin-action--approve">
+            <button type="button" className="admin-action--ghost">
               <IconPlus size={14} stroke={2} />
               Add building
             </button>
@@ -279,20 +302,25 @@ export default function AdminCafeteriaDetail() {
 
         <div className="admin-order-grid">
           <div className="admin-order-grid__main">
-            <section className="admin-card">
-              <header className="admin-card__head">
-                <div>
-                  <span className="admin-card__eyebrow">Hierarchy</span>
-                  <h3 className="admin-card__title">Buildings in {site.name}</h3>
+            <section className="admin-hierarchy">
+              <header className="admin-hierarchy__header">
+                <div className="admin-hierarchy__header-start">
+                  <span className="admin-hierarchy__eyebrow">Hierarchy</span>
+                  <h3 className="admin-hierarchy__title">Buildings in {site.name}</h3>
                 </div>
-                <span className="admin-card__chip">{buildings.length} total</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="admin-hierarchy__count">{buildings.length} total</span>
+                  <button type="button" className="admin-action--ghost" style={{ height: '32px', padding: '0 12px', fontSize: '0.78rem' }}>
+                    <IconPlus size={13} stroke={2} />
+                    Add building
+                  </button>
+                </div>
               </header>
-              <ul className="admin-cp-building-list">
+              <ul className="admin-hierarchy__body">
                 {buildings.map((b) => (
-                  <BuildingRow
+                  <BuildingCard
                     key={b.id}
                     building={b}
-                    vendors={ACTIVE_VENDORS.filter((v) => v.id === b.id)}
                     collectionPoints={ADMIN_COLLECTION_POINTS.filter((cp) => cp.building_id === b.id)}
                   />
                 ))}
@@ -304,24 +332,22 @@ export default function AdminCafeteriaDetail() {
             <section className="admin-card">
               <header className="admin-card__head">
                 <div>
-                  <span className="admin-card__eyebrow">Profile</span>
+                  <span className="admin-card__eyebrow">Profile details</span>
                   <h3 className="admin-card__title">Site details</h3>
                 </div>
               </header>
-
               <div className="admin-vendor-section">
                 <h4 className="admin-vendor-section__heading">Identity</h4>
                 <InfoRow icon={IconMapPin} label="Site code" value={site.code} />
-                <InfoRow icon={IconMapPin} label="Site name" value={site.name} />
+                <InfoRow icon={IconBuilding} label="Site name" value={site.name} />
                 <InfoRow icon={IconClock} label="Timezone" value={site.timezone} />
-                <InfoRow icon={IconUsers} label="Registered" value={site.created_at} />
+                <InfoRow icon={IconCalendarTime} label="Registered" value={formatDate(site.created_at)} />
               </div>
-
               <div className="admin-vendor-section">
                 <h4 className="admin-vendor-section__heading">Coordinates</h4>
                 <InfoRow icon={IconMapPin} label="Latitude" value={site.latitude.toFixed(6)} />
                 <InfoRow icon={IconMapPin} label="Longitude" value={site.longitude.toFixed(6)} />
-                <InfoRow icon={IconInfoCircle} label="Geofence radius" value="75 m" />
+                <InfoRow icon={IconBrandTelegram} label="Geofence radius" value="75 m" />
               </div>
             </section>
 
@@ -334,28 +360,34 @@ export default function AdminCafeteriaDetail() {
               </header>
               <ul className="admin-feature-flags">
                 <li>
-                  <span>Express pickup</span>
-                  <span className="admin-status admin-status--success">
-                    <IconCheck size={11} stroke={2.5} /> On
+                  <div className="admin-flag-row__info">
+                    <span className="admin-flag-row__name">Express pickup</span>
+                    <span className="admin-flag-row__desc">Enable express order pickup flow</span>
+                  </div>
+                  <span className="admin-flag-row__state admin-flag-row__state--on">On</span>
+                </li>
+                <li>
+                  <div className="admin-flag-row__info">
+                    <span className="admin-flag-row__name">Corporate catering</span>
+                    <span className="admin-flag-row__desc">Enable corporate catering orders</span>
+                  </div>
+                  <span className={`admin-flag-row__state ${site.id !== 'site-pilot-sandton' ? 'admin-flag-row__state--on' : 'admin-flag-row__state--off'}`}>
+                    {site.id !== 'site-pilot-sandton' ? 'On' : 'Off'}
                   </span>
                 </li>
                 <li>
-                  <span>Corporate catering</span>
-                  <span className={`admin-status ${site.id !== 'site-pilot-sandton' ? 'admin-status--success' : 'admin-status--info'}`}>
-                    <IconCheck size={11} stroke={2.5} /> {site.id !== 'site-pilot-sandton' ? 'On' : 'Off'}
-                  </span>
+                  <div className="admin-flag-row__info">
+                    <span className="admin-flag-row__name">Subsidy / meal benefits</span>
+                    <span className="admin-flag-row__desc">Enable meal subsidy program</span>
+                  </div>
+                  <span className="admin-flag-row__state admin-flag-row__state--on">On</span>
                 </li>
                 <li>
-                  <span>Subsidy / meal benefits</span>
-                  <span className="admin-status admin-status--success">
-                    <IconCheck size={11} stroke={2.5} /> On
-                  </span>
-                </li>
-                <li>
-                  <span>Real-time slots</span>
-                  <span className="admin-status admin-status--success">
-                    <IconCheck size={11} stroke={2.5} /> On
-                  </span>
+                  <div className="admin-flag-row__info">
+                    <span className="admin-flag-row__name">Real-time slots</span>
+                    <span className="admin-flag-row__desc">Enable real-time pickup slots</span>
+                  </div>
+                  <span className="admin-flag-row__state admin-flag-row__state--on">On</span>
                 </li>
               </ul>
             </section>
@@ -405,11 +437,11 @@ export default function AdminCafeteriaDetail() {
           </p>
         </div>
         <div className="admin-order-hero__actions">
-          <button type="button" className="admin-action">
+          <button type="button" className="admin-action--ghost">
             <IconEdit size={14} stroke={2} />
             Edit
           </button>
-          <button type="button" className="admin-action admin-action--approve">
+          <button type="button" className="admin-action--ghost">
             <IconPlus size={14} stroke={2} />
             Add pickup point
           </button>
