@@ -128,28 +128,24 @@ function CollectionPointRow({ point }) {
           <span className={`admin-cp-row__express${point.is_express ? ' admin-cp-row__express--yes' : ' admin-cp-row__express--no'}`}>
             {point.is_express ? 'Express' : 'Catering'}
           </span>
+          <StatusPill active={point.is_active} />
         </div>
         <span className="admin-cp-row__loc">
           <IconMapPin size={11} stroke={1.8} />{point.building_name} · {point.site_name}
         </span>
         <p className="admin-cp-row__instr">{point.instructions}</p>
+        <div className="admin-cp-row__stats">
+          <span className="admin-cp-row__stat">
+            <strong>{point.orders_today}</strong> orders today
+          </span>
+          <span className="admin-cp-row__stat">
+            <strong>{point.avg_pickup_minutes ? `${point.avg_pickup_minutes} min` : '—'}</strong> avg pickup
+          </span>
+        </div>
       </div>
-      <div className="admin-cp-row__metrics">
-        <span className="admin-cp-row__stat">
-          <strong>{point.orders_today}</strong>
-          <small>Orders</small>
-        </span>
-        <span className="admin-cp-row__stat">
-          <strong>{point.avg_pickup_minutes ? `${point.avg_pickup_minutes}` : '—'}</strong>
-          <small>Min avg</small>
-        </span>
-      </div>
-      <div className="admin-cp-row__status">
-        <StatusPill active={point.is_active} />
-        <button type="button" className="admin-cp-row__actions" aria-label="Actions">
-          <IconDotsVertical size={16} stroke={2} />
-        </button>
-      </div>
+      <button type="button" className="admin-cp-row__actions" aria-label="Actions">
+        <IconDotsVertical size={16} stroke={2} />
+      </button>
     </li>
   );
 }

@@ -506,19 +506,17 @@ export default function AdminCafeteriaDetail() {
                         <span className={`admin-cp-row__express${cp.is_express ? ' admin-cp-row__express--yes' : ' admin-cp-row__express--no'}`}>
                           {cp.is_express ? 'Express' : 'Catering'}
                         </span>
+                        <StatusPill active={cp.is_active} />
                       </div>
                       <p className="admin-cp-row__instr">{cp.instructions}</p>
-                    </div>
-                    <div className="admin-cp-row__meta">
-                      <span className="admin-cp-row__stat">
-                        <strong>{cp.orders_today}</strong>
-                        <small>orders today</small>
-                      </span>
-                      <span className="admin-cp-row__stat">
-                        <strong>{cp.avg_pickup_minutes ? `${cp.avg_pickup_minutes} min` : '—'}</strong>
-                        <small>avg pickup</small>
-                      </span>
-                      <StatusPill active={cp.is_active} />
+                      <div className="admin-cp-row__stats">
+                        <span className="admin-cp-row__stat">
+                          <strong>{cp.orders_today}</strong> orders today
+                        </span>
+                        <span className="admin-cp-row__stat">
+                          <strong>{cp.avg_pickup_minutes ? `${cp.avg_pickup_minutes} min` : '—'}</strong> avg pickup
+                        </span>
+                      </div>
                     </div>
                   </li>
                 ))}
