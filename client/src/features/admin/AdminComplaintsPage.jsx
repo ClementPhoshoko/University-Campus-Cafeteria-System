@@ -191,7 +191,6 @@ export default function AdminComplaintsPage() {
       <header className="admin-vendors__header">
         <div>
           <span className="admin-card__eyebrow">Support &amp; feedback</span>
-          <h2 className="admin-vendors__title">Complaints &amp; feedback</h2>
           <p className="admin-vendors__sub">
             Triage complaints routed from orders, ratings and support cases. SLA tracked per category.
           </p>

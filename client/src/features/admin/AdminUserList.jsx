@@ -151,7 +151,6 @@ export default function AdminUserList() {
       <header className="admin-vendors__header">
         <div>
           <span className="admin-card__eyebrow">Identity & access</span>
-          <h2 className="admin-vendors__title">Users & roles</h2>
           <p className="admin-vendors__sub">
             Search employees, vendors and admins. Manage roles, activation status and access boundaries across the platform.
           </p>

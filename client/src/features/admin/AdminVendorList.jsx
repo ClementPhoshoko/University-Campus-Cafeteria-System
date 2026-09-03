@@ -211,7 +211,6 @@ export default function AdminVendorList() {
       <header className="admin-vendors__header">
         <div>
           <span className="admin-card__eyebrow">Vendor operations</span>
-          <h2 className="admin-vendors__title">All vendors</h2>
           <p className="admin-vendors__sub">
             Manage active vendors, approve new applications and monitor performance across the platform.
           </p>

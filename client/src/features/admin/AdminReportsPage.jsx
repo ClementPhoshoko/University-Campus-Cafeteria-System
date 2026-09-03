@@ -726,7 +726,6 @@ export default function AdminReportsPage() {
       <header className="admin-vendors__header">
         <div>
           <span className="admin-card__eyebrow">Analytics</span>
-          <h2 className="admin-vendors__title">Reports</h2>
           <p className="admin-vendors__sub">
             Generate sales, vendor performance, demand & wastage, peak times and corporate catering reports.
           </p>

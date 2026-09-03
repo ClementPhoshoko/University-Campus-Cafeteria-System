@@ -943,7 +943,6 @@ export default function AdminSettingsPage() {
       <header className="admin-vendors__header">
         <div>
           <span className="admin-card__eyebrow">Configuration</span>
-          <h2 className="admin-vendors__title">Platform settings</h2>
           <p className="admin-vendors__sub">
             Configure fees, taxes, cancellation rules, feature rollouts, notification templates and scheduled maintenance windows. All changes are audit-logged.
           </p>

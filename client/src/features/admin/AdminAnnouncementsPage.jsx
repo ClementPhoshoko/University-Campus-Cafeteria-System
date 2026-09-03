@@ -180,7 +180,6 @@ export default function AdminAnnouncementsPage() {
       <header className="admin-vendors__header">
         <div>
           <span className="admin-card__eyebrow">Communications</span>
-          <h2 className="admin-vendors__title">Announcements &amp; banners</h2>
           <p className="admin-vendors__sub">
             Broadcast operational updates, maintenance windows, compliance notes and promotions across the platform.
           </p>

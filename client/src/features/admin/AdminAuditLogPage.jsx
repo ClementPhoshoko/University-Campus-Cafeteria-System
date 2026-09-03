@@ -273,7 +273,6 @@ export default function AdminAuditLogPage() {
       <header className="admin-vendors__header">
         <div>
           <span className="admin-card__eyebrow">Compliance &amp; security</span>
-          <h2 className="admin-vendors__title">Audit logs</h2>
           <p className="admin-vendors__sub">
             Searchable, tamper-evident record of admin and system actions. Retained for {AUDIT_SUMMARY.retention_days} days per POPIA.
           </p>

@@ -137,7 +137,6 @@ export default function AdminOrderList() {
       <header className="admin-vendors__header">
         <div>
           <span className="admin-card__eyebrow">Order oversight</span>
-          <h2 className="admin-vendors__title">All orders</h2>
           <p className="admin-vendors__sub">
             Search, filter and intervene across all customer orders. Late, refunded and rejected orders are flagged for action.
           </p>

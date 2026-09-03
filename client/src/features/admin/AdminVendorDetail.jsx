@@ -73,12 +73,6 @@ export default function AdminVendorDetail() {
         ]}
       />
 
-      {/* Back link */}
-      <Link to="/admin/vendors" className="admin-vendor-back">
-        <IconChevronLeft size={14} stroke={2} />
-        Back to vendors
-      </Link>
-
       {/* Vendor Header */}
       <header className="admin-vendor-header">
         <div className="admin-vendor-header__logo">
