@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  IconChevronLeft,
   IconUser,
   IconMail,
   IconShield,
@@ -19,6 +18,7 @@ import {
   IconEdit,
   IconInfoCircle,
 } from '@tabler/icons-react';
+import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import {
   ADMIN_PLATFORM_USERS,
   ALL_ROLES,
@@ -183,10 +183,12 @@ export default function AdminUserDetail() {
 
   return (
     <div className="admin-order-detail">
-      <Link to="/admin/users" className="admin-back-link">
-        <IconChevronLeft size={14} stroke={2} />
-        Back to users
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: 'Users', to: '/admin/users' },
+          { label: user.full_name }
+        ]}
+      />
 
       {/* Hero */}
       <section className={`admin-user-hero${!user.is_active ? ' admin-user-hero--inactive' : ''}`}>

@@ -17,6 +17,7 @@ import {
   IconCircleCheck,
   IconAlertTriangle,
 } from '@tabler/icons-react';
+import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import {
   ANNOUNCEMENTS,
   ANNOUNCEMENT_ACTIVITY,
@@ -119,10 +120,12 @@ export default function AdminAnnouncementDetail() {
 
   return (
     <div className="admin-order-detail">
-      <Link to="/admin/announcements" className="admin-back-link">
-        <IconChevronLeft size={14} stroke={2} />
-        Back to announcements
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: 'Announcements', to: '/admin/announcements' },
+          { label: announcement.title }
+        ]}
+      />
 
       {/* Hero */}
       <section className={`admin-ann-hero ${SEVERITY_BORDER[announcement.severity] || ''}`}>

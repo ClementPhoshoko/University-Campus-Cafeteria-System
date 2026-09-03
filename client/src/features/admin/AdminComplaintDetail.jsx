@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  IconChevronLeft,
   IconAlertTriangle,
   IconUser,
   IconReceipt,
@@ -18,6 +17,7 @@ import {
   IconArrowBackUp,
   IconNote,
 } from '@tabler/icons-react';
+import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import {
   COMPLAINTS,
   COMPLAINT_MESSAGES,
@@ -290,10 +290,12 @@ export default function AdminComplaintDetail() {
 
   return (
     <div className="admin-order-detail">
-      <Link to="/admin/complaints" className="admin-back-link">
-        <IconChevronLeft size={14} stroke={2} />
-        Back to complaints
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: 'Complaints', to: '/admin/complaints' },
+          { label: complaint.subject }
+        ]}
+      />
 
       {/* Hero */}
       <section className={`admin-cmp-hero${complaint.priority === 'urgent' ? ' admin-cmp-hero--urgent' : ''}`}>

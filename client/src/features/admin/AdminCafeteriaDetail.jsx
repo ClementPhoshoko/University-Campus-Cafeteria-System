@@ -15,6 +15,7 @@ import {
   IconReceipt,
   IconInfoCircle,
 } from '@tabler/icons-react';
+import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import {
   ADMIN_SITES,
   ADMIN_BUILDINGS,
@@ -185,10 +186,12 @@ export default function AdminCafeteriaDetail() {
 
     return (
       <div className="admin-order-detail">
-        <Link to="/admin/cafeterias" className="admin-back-link">
-          <IconChevronLeft size={14} stroke={2} />
-          Back to locations
-        </Link>
+        <Breadcrumb
+          items={[
+            { label: 'Locations', to: '/admin/cafeterias' },
+            { label: site.name }
+          ]}
+        />
 
         {/* Hero */}
         <section className={`admin-site-hero${!site.is_active ? ' admin-site-hero--inactive' : ''}`}>
@@ -364,13 +367,17 @@ export default function AdminCafeteriaDetail() {
   const building = entity;
   const cps = ADMIN_COLLECTION_POINTS.filter((cp) => cp.building_id === building.id);
   const vendors = ACTIVE_VENDORS.filter((v) => v.vendor_location_id === building.id);
+  const site = building.site_id ? ADMIN_SITES.find((s) => s.id === building.site_id) : null;
 
   return (
     <div className="admin-order-detail">
-      <Link to="/admin/cafeterias" className="admin-back-link">
-        <IconChevronLeft size={14} stroke={2} />
-        Back to locations
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: 'Locations', to: '/admin/cafeterias' },
+          ...(site ? [{ label: site.name, to: `/admin/cafeterias/${site.id}` }] : []),
+          { label: building.name }
+        ]}
+      />
 
       <section className={`admin-site-hero${!building.is_active ? ' admin-site-hero--inactive' : ''}`}>
         <div className="admin-site-hero__cover">

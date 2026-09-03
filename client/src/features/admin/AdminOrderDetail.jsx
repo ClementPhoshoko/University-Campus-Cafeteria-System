@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  IconChevronLeft,
   IconReceipt,
   IconBuildingStore,
   IconUser,
@@ -19,6 +18,7 @@ import {
   IconFlag,
   IconNotes,
 } from '@tabler/icons-react';
+import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import {
   ADMIN_ORDERS,
   ORDER_STATUS,
@@ -202,10 +202,12 @@ export default function AdminOrderDetail() {
 
   return (
     <div className="admin-order-detail">
-      <Link to="/admin/orders" className="admin-back-link">
-        <IconChevronLeft size={14} stroke={2} />
-        Back to orders
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: 'Orders', to: '/admin/orders' },
+          { label: `#${order.id}` }
+        ]}
+      />
 
       {/* Hero */}
       <section className={`admin-order-hero${isIssue ? ' admin-order-hero--issue' : ''}`}>

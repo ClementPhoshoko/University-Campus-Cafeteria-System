@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   IconBuildingStore,
-  IconChevronLeft,
   IconMapPin,
   IconClock,
   IconMail,
@@ -21,6 +20,7 @@ import {
   IconEdit,
   IconPower,
 } from '@tabler/icons-react';
+import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import { ACTIVE_VENDORS, PENDING_VENDOR_APPROVALS, formatCurrency } from './adminMockData.js';
 
 const RECENT_ORDERS = [
@@ -96,10 +96,12 @@ export default function AdminVendorDetail() {
 
   return (
     <div className="admin-vendor-detail">
-      <Link to="/admin/vendors" className="admin-back-link">
-        <IconChevronLeft size={14} stroke={2} />
-        Back to vendors
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: 'Vendors', to: '/admin/vendors' },
+          { label: vendor.name }
+        ]}
+      />
 
       {/* Hero / identity */}
       <section className={`admin-vendor-hero${vendor.isPending ? ' admin-vendor-hero--pending' : ''}`}>
