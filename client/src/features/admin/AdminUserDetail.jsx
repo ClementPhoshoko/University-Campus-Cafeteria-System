@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
+  IconChevronLeft,
   IconUser,
   IconMail,
   IconShield,
@@ -184,6 +185,8 @@ export default function AdminUserDetail() {
   return (
     <div className="admin-order-detail">
       <Breadcrumb
+        homeLabel="Dashboard"
+        homeTo="/admin"
         items={[
           { label: 'Users', to: '/admin/users' },
           { label: user.full_name }

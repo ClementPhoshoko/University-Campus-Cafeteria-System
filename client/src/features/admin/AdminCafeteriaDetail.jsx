@@ -187,6 +187,8 @@ export default function AdminCafeteriaDetail() {
     return (
       <div className="admin-order-detail">
         <Breadcrumb
+          homeLabel="Dashboard"
+          homeTo="/admin"
           items={[
             { label: 'Locations', to: '/admin/cafeterias' },
             { label: site.name }
@@ -372,6 +374,8 @@ export default function AdminCafeteriaDetail() {
   return (
     <div className="admin-order-detail">
       <Breadcrumb
+        homeLabel="Dashboard"
+        homeTo="/admin"
         items={[
           { label: 'Locations', to: '/admin/cafeterias' },
           ...(site ? [{ label: site.name, to: `/admin/cafeterias/${site.id}` }] : []),

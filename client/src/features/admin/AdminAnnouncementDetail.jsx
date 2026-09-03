@@ -121,6 +121,8 @@ export default function AdminAnnouncementDetail() {
   return (
     <div className="admin-order-detail">
       <Breadcrumb
+        homeLabel="Dashboard"
+        homeTo="/admin"
         items={[
           { label: 'Announcements', to: '/admin/announcements' },
           { label: announcement.title }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
+  IconChevronLeft,
   IconReceipt,
   IconBuildingStore,
   IconUser,
@@ -203,6 +204,8 @@ export default function AdminOrderDetail() {
   return (
     <div className="admin-order-detail">
       <Breadcrumb
+        homeLabel="Dashboard"
+        homeTo="/admin"
         items={[
           { label: 'Orders', to: '/admin/orders' },
           { label: `#${order.id}` }

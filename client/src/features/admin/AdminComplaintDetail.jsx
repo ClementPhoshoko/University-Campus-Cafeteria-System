@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
+  IconChevronLeft,
   IconAlertTriangle,
   IconUser,
   IconReceipt,
@@ -291,6 +292,8 @@ export default function AdminComplaintDetail() {
   return (
     <div className="admin-order-detail">
       <Breadcrumb
+        homeLabel="Dashboard"
+        homeTo="/admin"
         items={[
           { label: 'Complaints', to: '/admin/complaints' },
           { label: complaint.subject }

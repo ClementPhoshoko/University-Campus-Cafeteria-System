@@ -2,16 +2,16 @@ import { Link } from 'react-router-dom';
 import { IconHome } from '@tabler/icons-react';
 import './Breadcrumb.css';
 
-export default function Breadcrumb({ items = [] }) {
+export default function Breadcrumb({ items = [], homeLabel = 'Home', homeTo = '/' }) {
   if (items.length === 0) return null;
 
   return (
     <nav className="breadcrumb" aria-label="Breadcrumb">
       <ol className="breadcrumb__list">
         <li className="breadcrumb__item breadcrumb__item--home">
-          <Link to="/" className="breadcrumb__link">
+          <Link to={homeTo} className="breadcrumb__link">
             <IconHome size={14} stroke={2} />
-            <span>Home</span>
+            <span>{homeLabel}</span>
           </Link>
         </li>
         {items.map((item, index) => {

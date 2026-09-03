@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
+  IconChevronLeft,
   IconBuildingStore,
   IconMapPin,
   IconClock,
@@ -97,6 +98,8 @@ export default function AdminVendorDetail() {
   return (
     <div className="admin-vendor-detail">
       <Breadcrumb
+        homeLabel="Dashboard"
+        homeTo="/admin"
         items={[
           { label: 'Vendors', to: '/admin/vendors' },
           { label: vendor.name }
