@@ -27,7 +27,7 @@ export default function FoodCard({
           {bestSeller && <span className="home_best-seller">Best Seller</span>}
           <img src={image} alt={name} className="food_browse-image" loading="lazy" />
         </div>
-        <div className="food_browse-body">
+        <div className="food_browse-content">
           <div className="food_browse-heading">
             <h3 className="food_browse-name">{name}</h3>
             {status !== 'available' && (

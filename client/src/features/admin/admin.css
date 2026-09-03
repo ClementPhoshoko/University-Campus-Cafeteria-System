@@ -1316,43 +1316,63 @@
 
 .admin-vendors__tabs {
   display: flex;
-  gap: var(--space-2);
-  padding: 4px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-full);
-  background: var(--glass-bg);
-  width: fit-content;
+  align-items: center;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--color-border-subtle);
+  width: 100%;
 }
 
 .admin-vendors__tab {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 38px;
+  height: 42px;
   padding: 0 var(--space-4);
   border: 0;
-  border-radius: var(--radius-full);
   background: transparent;
   font-family: var(--font-primary);
   font-size: 0.82rem;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: color var(--transition-fast);
 }
 
-.admin-vendors__tab:hover {
+.admin-vendors__tab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  transition: background var(--transition-fast);
+}
+
+.admin-vendors__tab:hover:not(.admin-vendors__tab--active) {
   color: var(--color-text-primary);
 }
 
 .admin-vendors__tab--active {
-  background: var(--color-action-primary);
-  color: var(--color-action-primary-text);
-  box-shadow: var(--elevation-sm);
+  color: var(--color-action-primary);
 }
 
-.admin-vendors__tab-count,
-.admin-vendors__tab-badge {
+.admin-vendors__tab--active::after {
+  background: var(--color-action-primary);
+}
+
+.admin-vendors__tab-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.admin-vendors__tab-text {
+  white-space: nowrap;
+}
+
+.admin-vendors__tab-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1360,21 +1380,30 @@
   height: 22px;
   padding: 0 6px;
   border-radius: var(--radius-full);
-  background: rgba(10, 140, 255, 0.12);
-  color: var(--color-action-link);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
   font-size: 0.7rem;
   font-weight: var(--font-weight-bold);
+  transition: all var(--transition-fast);
 }
 
-.admin-vendors__tab--active .admin-vendors__tab-count,
-.admin-vendors__tab--active .admin-vendors__tab-badge {
-  background: rgba(255, 255, 255, 0.22);
-  color: white;
+.admin-vendors__tab--active .admin-vendors__tab-count {
+  background: rgba(10, 140, 255, 0.12);
+  color: var(--color-action-primary);
 }
 
 .admin-vendors__tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--radius-full);
   background: var(--warning-500);
   color: white;
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-bold);
 }
 
 /* ── Filters ── */
@@ -1421,33 +1450,96 @@
 
 .admin-vendors__chips {
   display: flex;
-  gap: 6px;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
 .admin-vendors__chip {
-  height: 32px;
-  padding: 0 var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+  height: 42px;
+  padding: 0 var(--space-4);
   border: 1px solid var(--glass-border);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xs);
   background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
   color: var(--color-text-secondary);
   font-family: var(--font-primary);
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 .admin-vendors__chip:hover {
+  background: var(--color-action-primary);
   border-color: var(--color-action-primary);
-  color: var(--color-action-link);
+  color: var(--color-action-primary-text);
+  box-shadow: var(--elevation-sm);
 }
 
 .admin-vendors__chip--active {
   background: var(--color-action-primary);
   border-color: var(--color-action-primary);
   color: var(--color-action-primary-text);
+}
+
+.admin-vendors__chip:active {
+  transform: scale(0.97);
+}
+
+.admin-vendors__chip:focus-visible {
+  outline: 3px solid rgba(10, 140, 255, 0.22);
+  outline-offset: 2px;
+}
+
+.admin-vendors__chip-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.admin-vendors__chip:not(.admin-vendors__chip--active) .admin-vendors__chip-count {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-tertiary);
+}
+
+.admin-vendors__period {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 42px;
+  padding: 0 var(--space-4);
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-family: var(--font-primary);
+  font-size: 0.78rem;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.admin-vendors__period:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.admin-vendors__period:focus-visible {
+  outline: 3px solid rgba(10, 140, 255, 0.22);
+  outline-offset: 2px;
 }
 
 /* ── Vendor cards grid ── */
@@ -1725,6 +1817,287 @@
 
 .admin-vendors__approval-actions .admin-action {
   gap: 6px;
+}
+
+/* ── Vendor KPI Row ── */
+
+.admin-vendors__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
+  overflow: hidden;
+}
+
+.admin-vendors__kpi {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+}
+
+.admin-vendors__kpi + .admin-vendors__kpi {
+  border-left: 1px solid var(--color-border-subtle);
+}
+
+.admin-vendors__kpi-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--color-action-secondary);
+  color: var(--color-action-secondary-text);
+  flex-shrink: 0;
+}
+
+.admin-vendors__kpi-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-vendors__kpi-label {
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+}
+
+.admin-vendors__kpi-value {
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.admin-vendors__kpi-value span {
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  margin-left: 6px;
+}
+
+/* ── Vendor Table ── */
+
+.admin-vendors__table-wrap {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
+  overflow: hidden;
+}
+
+.admin-vendors__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.admin-vendors__table thead th {
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-secondary);
+  white-space: nowrap;
+}
+
+.admin-vendors__table thead th:first-child {
+  padding-left: var(--space-5);
+}
+
+.admin-vendors__table thead th:last-child {
+  padding-right: var(--space-5);
+  text-align: right;
+}
+
+.admin-vendors__table tbody tr {
+  transition: background var(--transition-fast);
+}
+
+.admin-vendors__table tbody tr:hover {
+  background: var(--color-surface-raised);
+}
+
+.admin-vendors__table tbody td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  vertical-align: middle;
+}
+
+.admin-vendors__table tbody td:first-child {
+  padding-left: var(--space-5);
+}
+
+.admin-vendors__table tbody td:last-child {
+  padding-right: var(--space-5);
+  text-align: right;
+}
+
+.admin-vendors__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Vendor Cell */
+.admin-vendors__vendor-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.admin-vendors__vendor-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-surface-subtle);
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.admin-vendors__vendor-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-vendors__vendor-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-vendors__vendor-name {
+  font-size: 0.88rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-vendors__vendor-desc {
+  font-size: 0.72rem;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+/* Category Pills */
+.admin-vendors__category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.admin-vendors__category-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-action-secondary);
+  color: var(--color-action-secondary-text);
+  font-size: 0.66rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.admin-vendors__category-pill--more {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
+}
+
+/* Revenue Cell */
+.admin-vendors__revenue {
+  font-weight: var(--font-weight-semibold);
+  font-size: 0.88rem;
+  color: var(--color-text-primary);
+}
+
+/* Rating Cell */
+.admin-vendors__rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--color-text-primary);
+}
+
+.admin-vendors__rating-star {
+  color: var(--warning-500);
+}
+
+.admin-vendors__rating-count {
+  font-size: 0.72rem;
+  color: var(--color-text-tertiary);
+}
+
+/* Actions Cell */
+.admin-vendors__row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.admin-vendors__table tbody tr:hover .admin-vendors__row-actions {
+  opacity: 1;
+}
+
+/* Approval Row Table Style */
+.admin-vendors__approval-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.admin-vendors__approval-table thead th {
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-secondary);
+}
+
+.admin-vendors__approval-table tbody tr {
+  transition: background var(--transition-fast);
+}
+
+.admin-vendors__approval-table tbody tr:hover {
+  background: var(--color-surface-raised);
+}
+
+.admin-vendors__approval-table tbody td {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  vertical-align: middle;
+}
+
+.admin-vendors__approval-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 /* ── Modal ── */

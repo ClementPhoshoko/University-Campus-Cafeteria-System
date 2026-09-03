@@ -1,28 +1,24 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   IconSearch,
   IconBuildingStore,
   IconStarFilled,
-  IconReceipt,
   IconAlertTriangle,
   IconChevronRight,
   IconCheck,
   IconX,
   IconShieldCheck,
+  IconPlus,
+  IconCoin,
+  IconTrendingUp,
 } from '@tabler/icons-react';
+import Pagination from '../../components/ui/Pagination.jsx';
 import { ACTIVE_VENDORS, PENDING_VENDOR_APPROVALS, formatCurrency } from './adminMockData.js';
-
-const STATUS_FILTERS = [
-  { id: 'all', label: 'All statuses' },
-  { id: 'open', label: 'Open' },
-  { id: 'busy', label: 'Busy' },
-  { id: 'closed', label: 'Closed' },
-];
 
 function VendorLogo({ src, alt }) {
   return (
-    <div className="admin-vendors__logo">
+    <div className="admin-vendors__vendor-logo">
       <img src={src} alt={alt || ''} />
     </div>
   );
@@ -30,106 +26,6 @@ function VendorLogo({ src, alt }) {
 
 function StatusPill({ status }) {
   return <span className={`admin-status admin-status--${status}`}>{status}</span>;
-}
-
-function ApprovalRow({ vendor, onApprove, onReject }) {
-  return (
-    <li className="admin-vendors__approval-row">
-      <div className="admin-vendors__approval-head">
-        <div className="admin-vendors__approval-id">
-          <VendorLogo src={vendor.logo_url} alt={vendor.name} />
-          <div>
-            <span className="admin-vendors__approval-name">{vendor.name}</span>
-            <span className="admin-vendors__approval-slug">/{vendor.slug}</span>
-          </div>
-        </div>
-        <span className="admin-vendors__approval-pending">
-          <IconAlertTriangle size={13} stroke={2} /> Awaiting review
-        </span>
-      </div>
-
-      <p className="admin-vendors__approval-desc">{vendor.description}</p>
-
-      <div className="admin-vendors__approval-meta">
-        <div className="admin-vendors__meta-item">
-          <span className="admin-vendors__meta-label">Campus</span>
-          <span className="admin-vendors__meta-value">{vendor.campus}</span>
-        </div>
-        <div className="admin-vendors__meta-item">
-          <span className="admin-vendors__meta-label">Building</span>
-          <span className="admin-vendors__meta-value">{vendor.building}</span>
-        </div>
-        <div className="admin-vendors__meta-item">
-          <span className="admin-vendors__meta-label">Categories</span>
-          <span className="admin-vendors__meta-value">{vendor.categories.join(', ')}</span>
-        </div>
-        <div className="admin-vendors__meta-item">
-          <span className="admin-vendors__meta-label">Submitted</span>
-          <span className="admin-vendors__meta-value">{vendor.submittedAt}</span>
-        </div>
-      </div>
-
-      <div className="admin-vendors__approval-foot">
-        <Link to={`/admin/vendors/${vendor.id}`} className="admin-link-cta">
-          Review application <IconChevronRight size={13} stroke={2} />
-        </Link>
-        <div className="admin-vendors__approval-actions">
-          <button type="button" className="admin-action admin-action--reject" onClick={() => onReject(vendor)}>
-            <IconX size={13} stroke={2} /> Reject
-          </button>
-          <button type="button" className="admin-action admin-action--approve" onClick={() => onApprove(vendor)}>
-            <IconCheck size={13} stroke={2} /> Approve
-          </button>
-        </div>
-      </div>
-    </li>
-  );
-}
-
-function VendorCard({ vendor }) {
-  return (
-    <Link to={`/admin/vendors/${vendor.id}`} className="admin-vendors__card">
-      <div className="admin-vendors__card-head">
-        <VendorLogo src={vendor.logo_url} alt={vendor.name} />
-        <div className="admin-vendors__card-id">
-          <span className="admin-vendors__card-name">{vendor.name}</span>
-          <span className="admin-vendors__card-loc">{vendor.campus} · {vendor.building}</span>
-        </div>
-        <StatusPill status={vendor.status} />
-      </div>
-
-      <p className="admin-vendors__card-desc">{vendor.description}</p>
-
-      <div className="admin-vendors__card-tags">
-        {vendor.categories.map((cat) => (
-          <span key={cat} className="admin-tag">{cat}</span>
-        ))}
-      </div>
-
-      <div className="admin-vendors__card-stats">
-        <div className="admin-vendors__stat">
-          <IconReceipt size={14} stroke={2} />
-          <span><strong>{vendor.orders_today}</strong> orders today</span>
-        </div>
-        <div className="admin-vendors__stat">
-          <IconStarFilled size={14} stroke={0} />
-          <span><strong>{vendor.average_rating.toFixed(1)}</strong> ({vendor.rating_count})</span>
-        </div>
-        <div className="admin-vendors__stat">
-          <span><strong>{vendor.menu_item_count}</strong> menu items</span>
-        </div>
-      </div>
-
-      <div className="admin-vendors__card-foot">
-        <span className="admin-vendors__card-revenue">
-          30d revenue <strong>{formatCurrency(vendor.revenue_30d)}</strong>
-        </span>
-        <span className="admin-link-cta">
-          Manage <IconChevronRight size={13} stroke={2} />
-        </span>
-      </div>
-    </Link>
-  );
 }
 
 function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
@@ -140,7 +36,7 @@ function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
       <div className="admin-modal__overlay" onClick={onCancel} />
       <div className="admin-modal__card">
         <header className="admin-modal__head">
-          <div className="admin-modal__icon admin-modal__icon--success">
+          <div className={`admin-modal__icon admin-modal__icon--${isApprove ? 'success' : 'error'}`}>
             {isApprove ? <IconCheck size={20} stroke={2} /> : <IconX size={20} stroke={2} />}
           </div>
           <div>
@@ -148,7 +44,7 @@ function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
               {isApprove ? 'Approve vendor?' : 'Reject application?'}
             </h3>
             <p className="admin-modal__sub">
-              {vendor.name} · {vendor.campus}
+              {vendor.name}
             </p>
           </div>
         </header>
@@ -171,7 +67,7 @@ function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
         )}
 
         <footer className="admin-modal__foot">
-          <button type="button" className="admin-action" onClick={onCancel}>Cancel</button>
+          <button type="button" className="admin-action admin-action--ghost" onClick={onCancel}>Cancel</button>
           <button
             type="button"
             className={`admin-action ${isApprove ? 'admin-action--approve' : 'admin-action--reject'}`}
@@ -192,14 +88,46 @@ export default function AdminVendorList() {
   const [tab, setTab] = useState(initialTab);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [campusFilter, setCampusFilter] = useState('all');
   const [modal, setModal] = useState(null);
   const [approvals, setApprovals] = useState(PENDING_VENDOR_APPROVALS);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
-  const handleTab = (next) => {
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, statusFilter, campusFilter]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleTabChange = (next) => {
     setTab(next);
+    setCurrentPage(1);
     if (next === 'approvals') setSearchParams({ tab: 'approvals' });
     else setSearchParams({});
   };
+
+  const CAMPUS_FILTERS = useMemo(() => {
+    const campuses = [...new Set(ACTIVE_VENDORS.map(v => v.vendor_location_name.split(' - ')[0]))];
+    return [{ id: 'all', label: 'All campuses' }, ...campuses.map(c => ({ id: c, label: c }))];
+  }, []);
+
+  const STATUS_FILTERS = useMemo(() => {
+    const filters = [
+      { id: 'all', label: 'All' },
+      { id: 'open', label: 'Open' },
+      { id: 'busy', label: 'Busy' },
+      { id: 'closed', label: 'Closed' },
+    ];
+    return filters.map(f => ({
+      ...f,
+      count: f.id === 'all'
+        ? ACTIVE_VENDORS.length
+        : ACTIVE_VENDORS.filter(v => v.status === f.id).length,
+    }));
+  }, []);
 
   const handleApprove = (vendor) => setModal({ vendor, mode: 'approve' });
   const handleReject = (vendor) => setModal({ vendor, mode: 'reject' });
@@ -212,14 +140,43 @@ export default function AdminVendorList() {
   const filteredActive = useMemo(() => {
     return ACTIVE_VENDORS.filter((v) => {
       const matchesQuery = !query
-        || `${v.name} ${v.campus} ${v.building}`.toLowerCase().includes(query.toLowerCase());
+        || `${v.name} ${v.vendor_location_name}`.toLowerCase().includes(query.toLowerCase());
       const matchesStatus = statusFilter === 'all' || v.status === statusFilter;
-      return matchesQuery && matchesStatus;
+      const matchesCampus = campusFilter === 'all' || v.vendor_location_name.startsWith(campusFilter);
+      return matchesQuery && matchesStatus && matchesCampus;
     });
-  }, [query, statusFilter]);
+  }, [query, statusFilter, campusFilter]);
 
-  const activeCount = ACTIVE_VENDORS.length;
+  const totalActivePages = Math.ceil(filteredActive.length / itemsPerPage);
+  const paginatedActive = filteredActive.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const totalVendors = ACTIVE_VENDORS.length + PENDING_VENDOR_APPROVALS.length;
+  const activeCount = ACTIVE_VENDORS.filter(v => v.status === 'approved').length;
   const pendingCount = approvals.length;
+  const totalRevenue = ACTIVE_VENDORS.reduce((sum, v) => sum + (v.revenue_30d || 0), 0);
+
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const renderCategories = (categories, maxShow = 2) => {
+    const shown = categories.slice(0, maxShow);
+    const remaining = categories.length - maxShow;
+    return (
+      <>
+        {shown.map((cat) => (
+          <span key={cat} className="admin-vendors__category-pill">{cat}</span>
+        ))}
+        {remaining > 0 && (
+          <span className="admin-vendors__category-pill admin-vendors__category-pill--more">+{remaining}</span>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="admin-vendors">
@@ -232,11 +189,54 @@ export default function AdminVendorList() {
           </p>
         </div>
         <div className="admin-vendors__actions">
-          <span className="admin-vendors__count">
-            <strong>{activeCount}</strong> active · <strong>{pendingCount}</strong> pending
-          </span>
+          <button type="button" className="admin-action admin-action--ghost">
+            <IconPlus size={14} stroke={2} />
+            Add vendor
+          </button>
         </div>
       </header>
+
+      <div className="admin-vendors__kpis">
+        <div className="admin-vendors__kpi">
+          <div className="admin-vendors__kpi-icon">
+            <IconBuildingStore size={18} stroke={1.8} />
+          </div>
+          <div className="admin-vendors__kpi-body">
+            <span className="admin-vendors__kpi-label">Total vendors</span>
+            <span className="admin-vendors__kpi-value">{totalVendors}</span>
+          </div>
+        </div>
+        <div className="admin-vendors__kpi">
+          <div className="admin-vendors__kpi-icon">
+            <IconCheck size={18} stroke={1.8} />
+          </div>
+          <div className="admin-vendors__kpi-body">
+            <span className="admin-vendors__kpi-label">Active vendors</span>
+            <span className="admin-vendors__kpi-value">{activeCount}</span>
+          </div>
+        </div>
+        <div className="admin-vendors__kpi">
+          <div className="admin-vendors__kpi-icon">
+            <IconAlertTriangle size={18} stroke={1.8} />
+          </div>
+          <div className="admin-vendors__kpi-body">
+            <span className="admin-vendors__kpi-label">Pending approvals</span>
+            <span className="admin-vendors__kpi-value">{pendingCount}</span>
+          </div>
+        </div>
+        <div className="admin-vendors__kpi">
+          <div className="admin-vendors__kpi-icon">
+            <IconCoin size={18} stroke={1.8} />
+          </div>
+          <div className="admin-vendors__kpi-body">
+            <span className="admin-vendors__kpi-label">Total revenue (30d)</span>
+            <span className="admin-vendors__kpi-value">
+              {formatCurrency(totalRevenue)}
+              <span style={{ marginLeft: '6px', fontSize: '0.72rem', color: 'var(--color-text-secondary)', fontWeight: 'var(--font-weight-medium)' }}><IconTrendingUp size={12} stroke={2} /></span>
+            </span>
+          </div>
+        </div>
+      </div>
 
       <div className="admin-vendors__tabs" role="tablist">
         <button
@@ -244,10 +244,12 @@ export default function AdminVendorList() {
           role="tab"
           aria-selected={tab === 'active'}
           className={`admin-vendors__tab${tab === 'active' ? ' admin-vendors__tab--active' : ''}`}
-          onClick={() => handleTab('active')}
+          onClick={() => handleTabChange('active')}
         >
-          <IconBuildingStore size={16} stroke={1.8} />
-          Active vendors
+          <span className="admin-vendors__tab-icon">
+            <IconBuildingStore size={16} stroke={1.8} />
+          </span>
+          <span className="admin-vendors__tab-text">Active vendors</span>
           <span className="admin-vendors__tab-count">{activeCount}</span>
         </button>
         <button
@@ -255,10 +257,12 @@ export default function AdminVendorList() {
           role="tab"
           aria-selected={tab === 'approvals'}
           className={`admin-vendors__tab${tab === 'approvals' ? ' admin-vendors__tab--active' : ''}`}
-          onClick={() => handleTab('approvals')}
+          onClick={() => handleTabChange('approvals')}
         >
-          <IconShieldCheck size={16} stroke={1.8} />
-          Pending approvals
+          <span className="admin-vendors__tab-icon">
+            <IconShieldCheck size={16} stroke={1.8} />
+          </span>
+          <span className="admin-vendors__tab-text">Pending approvals</span>
           {pendingCount > 0 && <span className="admin-vendors__tab-badge">{pendingCount}</span>}
         </button>
       </div>
@@ -285,17 +289,85 @@ export default function AdminVendorList() {
                   onClick={() => setStatusFilter(filter.id)}
                 >
                   {filter.label}
+                  <span className="admin-vendors__chip-count">{filter.count}</span>
                 </button>
               ))}
             </div>
           </div>
 
           {filteredActive.length > 0 ? (
-            <div className="admin-vendors__grid">
-              {filteredActive.map((vendor) => (
-                <VendorCard key={vendor.id} vendor={vendor} />
-              ))}
+            <>
+            <div className="admin-vendors__table-wrap">
+              <table className="admin-vendors__table">
+                <thead>
+                  <tr>
+                    <th>Vendor</th>
+                    <th>Status</th>
+                    <th>Categories</th>
+                    <th>Location</th>
+                    <th>Revenue (30d)</th>
+                    <th>Rating</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedActive.map((vendor) => (
+                    <tr key={vendor.id}>
+                      <td>
+                        <div className="admin-vendors__vendor-cell">
+                          <VendorLogo src={vendor.logo_url} alt={vendor.name} />
+                          <div className="admin-vendors__vendor-info">
+                            <span className="admin-vendors__vendor-name">{vendor.name}</span>
+                            <span className="admin-vendors__vendor-desc">{vendor.description}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <StatusPill status={vendor.status} />
+                      </td>
+                      <td>
+                        <div className="admin-vendors__category-pills">
+                          {renderCategories(vendor.categories)}
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
+                          {vendor.vendor_location_name}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="admin-vendors__revenue">{formatCurrency(vendor.revenue_30d)}</span>
+                      </td>
+                      <td>
+                        <div className="admin-vendors__rating">
+                          <IconStarFilled size={14} stroke={0} className="admin-vendors__rating-star" />
+                          <span>{vendor.average_rating.toFixed(1)}</span>
+                          <span className="admin-vendors__rating-count">({vendor.rating_count})</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="admin-vendors__row-actions">
+                          <Link to={`/admin/vendors/${vendor.id}`} className="admin-link-cta">
+                            Manage <IconChevronRight size={13} stroke={2} />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
+            {totalActivePages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalActivePages}
+                totalItems={filteredActive.length}
+                itemsPerPage={itemsPerPage}
+                label="vendors"
+                onPageChange={handlePageChange}
+              />
+            )}
+            </>
           ) : (
             <div className="admin-empty">
               <IconBuildingStore size={32} stroke={1.4} />
@@ -303,7 +375,7 @@ export default function AdminVendorList() {
               <p>Try clearing the search or selecting a different status.</p>
               <button
                 type="button"
-                className="admin-action"
+                className="admin-action admin-action--ghost"
                 onClick={() => { setQuery(''); setStatusFilter('all'); }}
               >
                 Clear filters
@@ -316,16 +388,62 @@ export default function AdminVendorList() {
       {tab === 'approvals' && (
         <>
           {approvals.length > 0 ? (
-            <ul className="admin-vendors__approvals">
-              {approvals.map((vendor) => (
-                <ApprovalRow
-                  key={vendor.id}
-                  vendor={vendor}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
-                />
-              ))}
-            </ul>
+            <div className="admin-vendors__table-wrap">
+              <table className="admin-vendors__table">
+                <thead>
+                  <tr>
+                    <th>Vendor</th>
+                    <th>Categories</th>
+                    <th>Location</th>
+                    <th>Submitted</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {approvals.map((vendor) => (
+                    <tr key={vendor.id}>
+                      <td>
+                        <div className="admin-vendors__vendor-cell">
+                          <VendorLogo src={vendor.logo_url} alt={vendor.name} />
+                          <div className="admin-vendors__vendor-info">
+                            <span className="admin-vendors__vendor-name">{vendor.name}</span>
+                            <span className="admin-vendors__vendor-desc">{vendor.description}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="admin-vendors__category-pills">
+                          {renderCategories(vendor.categories)}
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
+                          {vendor.vendor_location_name}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
+                          {formatDate(vendor.created_at)}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="admin-vendors__row-actions">
+                          <button type="button" className="admin-action admin-action--reject" onClick={() => handleReject(vendor)}>
+                            <IconX size={13} stroke={2} />
+                          </button>
+                          <button type="button" className="admin-action admin-action--approve" onClick={() => handleApprove(vendor)}>
+                            <IconCheck size={13} stroke={2} />
+                          </button>
+                          <Link to={`/admin/vendors/${vendor.id}`} className="admin-link-cta">
+                            Review <IconChevronRight size={13} stroke={2} />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <div className="admin-empty">
               <IconShieldCheck size={32} stroke={1.4} />

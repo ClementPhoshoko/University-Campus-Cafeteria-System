@@ -162,6 +162,25 @@
   transform: scale(0.97);
 }
 
+.cafeteria_filter-chip__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: var(--space-2);
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.cafeteria_filter-chip:not(.cafeteria_filter-chip--active) .cafeteria_filter-chip__count {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-tertiary);
+}
+
 .cafeteria_filter-chip:focus-visible {
   outline: 3px solid rgba(10, 140, 255, 0.22);
   outline-offset: 2px;

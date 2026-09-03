@@ -37,7 +37,7 @@ const MENU_ITEMS = [
   { id: 'menu-item-12', menuItemId: 'fresh-orange-juice', categoryId: 'drinks', name: 'Fresh Orange Juice', description: 'Freshly squeezed orange juice, no added sugar.', image: imgSlusher, basePrice: 'R24.00', prepMinutes: 3, status: 'available', dietaryTags: ['Fresh', 'Healthy'] },
 ];
 
-function CategoryTabs({ activeCategory, onChange }) {
+function CategoryTabs({ activeCategory, onChange, counts }) {
   return (
     <nav className="browse_cafeteria-categories" aria-label="Menu categories">
       {MENU_CATEGORIES.map((category) => (
@@ -49,6 +49,9 @@ function CategoryTabs({ activeCategory, onChange }) {
           aria-current={activeCategory === category ? 'page' : undefined}
         >
           {category}
+          {counts[category.toLowerCase()] !== undefined && (
+            <span className="browse_cafeteria-category__count">{counts[category.toLowerCase()]}</span>
+          )}
         </button>
       ))}
     </nav>
@@ -222,6 +225,15 @@ export default function BrowseCafeteriaPage() {
     return MENU_ITEMS.filter((item) => item.categoryId === activeCategory.toLowerCase());
   }, [activeCategory]);
 
+  const categoryCounts = useMemo(() => ({
+    popular: MENU_ITEMS.filter((item) => item.categoryId === 'popular' || item.categoryId === 'lunch').length,
+    breakfast: MENU_ITEMS.filter((item) => item.categoryId === 'breakfast').length,
+    lunch: MENU_ITEMS.filter((item) => item.categoryId === 'lunch').length,
+    meals: MENU_ITEMS.filter((item) => item.categoryId === 'meals').length,
+    snacks: MENU_ITEMS.filter((item) => item.categoryId === 'snacks').length,
+    drinks: MENU_ITEMS.filter((item) => item.categoryId === 'drinks').length,
+  }), []);
+
   const filteredReviews = useMemo(() => {
     if (!selectedRating) return reviews;
     return reviews.filter((r) => r.stars === selectedRating);
@@ -278,7 +290,7 @@ export default function BrowseCafeteriaPage() {
 
         {!isReviewsView && (
           <div className="browse_cafeteria-controls">
-            <CategoryTabs activeCategory={activeCategory} onChange={setActiveCategory} />
+            <CategoryTabs activeCategory={activeCategory} onChange={setActiveCategory} counts={categoryCounts} />
             <SearchRow />
           </div>
         )}

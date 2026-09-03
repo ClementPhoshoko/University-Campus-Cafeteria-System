@@ -37,7 +37,7 @@ const DIRECTORY_CAFETERIAS = cafeterias.map((cafeteria) => ({
   ...DIRECTORY_DETAILS[cafeteria.id],
 }));
 
-function FilterChip({ active, children, onClick }) {
+function FilterChip({ active, children, count, onClick }) {
   return (
     <button
       type="button"
@@ -46,17 +46,31 @@ function FilterChip({ active, children, onClick }) {
       aria-pressed={active}
     >
       {children}
+      {count !== undefined && (
+        <span className="cafeteria_filter-chip__count">{count}</span>
+      )}
     </button>
   );
 }
 
 function FilterChipGroup({ activeFilter, onChange }) {
+  const counts = useMemo(() => ({
+    open: DIRECTORY_CAFETERIAS.filter(c => c.status === 'open').length,
+    popular: DIRECTORY_CAFETERIAS.filter(c => c.category === 'popular').length,
+    breakfast: DIRECTORY_CAFETERIAS.filter(c => c.category === 'breakfast').length,
+    lunch: DIRECTORY_CAFETERIAS.filter(c => c.category === 'lunch').length,
+    meals: DIRECTORY_CAFETERIAS.filter(c => c.category === 'meals').length,
+    snacks: DIRECTORY_CAFETERIAS.filter(c => c.category === 'snacks').length,
+    drinks: DIRECTORY_CAFETERIAS.filter(c => c.category === 'drinks').length,
+  }), []);
+
   return (
     <div className="cafeteria_filter-scroll" role="group" aria-label="Cafeteria filters">
       {DIRECTORY_FILTERS.map((filter) => (
         <FilterChip
           key={filter.id}
           active={activeFilter === filter.id}
+          count={counts[filter.id]}
           onClick={() => onChange(filter.id)}
         >
           {filter.label}

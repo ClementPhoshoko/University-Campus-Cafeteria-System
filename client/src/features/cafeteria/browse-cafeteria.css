@@ -3,9 +3,8 @@
 }
 
 .browse_cafeteria-page {
-  max-width: 920px;
   margin: 0 auto;
-  padding: var(--space-5) var(--screen-padding) var(--space-12);
+  padding: var(--space-5) var(--space-10) var(--space-12);
 }
 
 .browse_cafeteria-header {
@@ -163,6 +162,25 @@
   color: var(--color-action-primary-text);
 }
 
+.browse_cafeteria-category__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: var(--space-2);
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.browse_cafeteria-category:not(.browse_cafeteria-category--active) .browse_cafeteria-category__count {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-tertiary);
+}
+
 .browse_cafeteria-search-row {
   flex: 0 0 auto;
 }
@@ -190,6 +208,10 @@
 .browse_cafeteria-search-row .search-field svg {
   left: 14px;
   color: var(--color-icon-tertiary);
+}
+
+.browse_cafeteria-menu {
+  padding: 0 var(--space-2);
 }
 
 .browse_cafeteria-menu-heading {
