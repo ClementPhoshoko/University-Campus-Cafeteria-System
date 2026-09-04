@@ -380,7 +380,7 @@ export default function AdminCafeteriaList() {
       <section className="admin-cafeterias__kpis" aria-label="Location metrics">
         <div className="admin-cafeterias__kpi">
           <div className="admin-cafeterias__kpi-icon">
-            <IconMapPin size={20} stroke={1.6} />
+            <IconMapPin size={24} stroke={1.6} />
           </div>
           <div className="admin-cafeterias__kpi-body">
             <span className="admin-cafeterias__kpi-label">Active sites</span>
@@ -389,7 +389,7 @@ export default function AdminCafeteriaList() {
         </div>
         <div className="admin-cafeterias__kpi">
           <div className="admin-cafeterias__kpi-icon">
-            <IconBuilding size={20} stroke={1.6} />
+            <IconBuilding size={24} stroke={1.6} />
           </div>
           <div className="admin-cafeterias__kpi-body">
             <span className="admin-cafeterias__kpi-label">Buildings</span>
@@ -398,7 +398,7 @@ export default function AdminCafeteriaList() {
         </div>
         <div className="admin-cafeterias__kpi">
           <div className="admin-cafeterias__kpi-icon">
-            <IconClipboardCheck size={20} stroke={1.6} />
+            <IconClipboardCheck size={24} stroke={1.6} />
           </div>
           <div className="admin-cafeterias__kpi-body">
             <span className="admin-cafeterias__kpi-label">Collection points</span>
@@ -407,7 +407,7 @@ export default function AdminCafeteriaList() {
         </div>
         <div className="admin-cafeterias__kpi">
           <div className="admin-cafeterias__kpi-icon">
-            <IconClock size={20} stroke={1.6} />
+            <IconClock size={24} stroke={1.6} />
           </div>
           <div className="admin-cafeterias__kpi-body">
             <span className="admin-cafeterias__kpi-label">Inactive</span>

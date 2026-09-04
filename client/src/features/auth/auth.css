@@ -26,8 +26,8 @@
 
 .session-check_avatars {
   position: relative;
-  width: 96px;
-  height: 96px;
+  width: 200px;
+  height: 200px;
 }
 
 .session-check_img {
@@ -45,8 +45,8 @@
 
 .session-check_text {
   color: var(--color-text-secondary);
-  font-size: 0.92rem;
-  font-weight: var(--font-weight-medium);
+  font-size: 1rem;
+  font-weight: var(--font-weight-semibold);
 }
 
 @keyframes session-avatar-swap {
