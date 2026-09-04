@@ -3689,8 +3689,6 @@
   display: grid;
   place-items: center;
   border-radius: var(--radius-full);
-  background: var(--color-action-primary);
-  color: var(--color-action-primary-text);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
   flex-shrink: 0;
