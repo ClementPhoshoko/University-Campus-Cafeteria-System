@@ -1489,6 +1489,540 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  '/vendors':
+    get:
+      tags:
+        - Vendors
+      summary: List approved vendors
+      description: 'Employee-facing list of vendors with status=approved that operate at least one active location. Served from a public, 60-second cache.'
+      operationId: listPublicVendors
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Case-insensitive substring search on vendor name
+        - name: site_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter vendors operating at this site
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Order'
+      responses:
+        '200':
+          description: Vendors retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  vendors:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Vendor'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/vendors/{vendorId}':
+    get:
+      tags:
+        - Vendors
+      summary: Get a vendor
+      description: Returns an approved vendor with its active locations, site and building context, and operating hours.
+      operationId: getPublicVendor
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+      responses:
+        '200':
+          description: Vendor retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  vendor:
+                    $ref: '#/components/schemas/VendorDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  '/vendors/{vendorId}/hours':
+    get:
+      tags:
+        - Vendors
+      summary: Get vendor operating hours
+      description: Returns per-location operating hours for an approved vendor.
+      operationId: getPublicVendorHours
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+      responses:
+        '200':
+          description: Operating hours retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  locations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        site_name:
+                          type: string
+                        building_name:
+                          type: string
+                        collection_point_name:
+                          type:
+                            - 'string'
+                            - 'null'
+                        service_status:
+                          type: string
+                        hours:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/OperatingHoursItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  '/admin/vendors':
+    get:
+      tags:
+        - Administration
+      summary: List vendor applications
+      description: Paginated admin list of vendors with optional status, search and site filters. May exclude vendors with no approved location. Requires admin role.
+      operationId: listVendors
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, suspended, inactive, rejected]
+          description: Filter by vendor status
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Case-insensitive substring search on vendor name
+        - name: site_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter vendors operating at this site
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Order'
+      responses:
+        '200':
+          description: Vendors retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  vendors:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Vendor'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Administration
+      summary: Register a vendor application
+      description: 'Creates a vendor application in status pending (server-controlled) with an optional first location. Idempotent when an onboarding_key is supplied: a repeated call returns the existing vendor. Requires admin role.'
+      operationId: createVendor
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorInput'
+      responses:
+        '201':
+          description: Vendor application created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  vendor:
+                    $ref: '#/components/schemas/Vendor'
+                  location:
+                    $ref: '#/components/schemas/VendorLocation'
+        '200':
+          description: Existing vendor returned for the same onboarding_key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  vendor:
+                    $ref: '#/components/schemas/Vendor'
+                  duplicate:
+                    type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  '/admin/vendors/approvals':
+    get:
+      tags:
+        - Administration
+      summary: List pending approvals
+      description: Paginated list of vendor applications awaiting a decision, each with its first location. Requires admin role.
+      operationId: listApprovals
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Approvals retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  approvals:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Vendor'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  '/admin/vendors/{vendorId}':
+    get:
+      tags:
+        - Administration
+      summary: Get a vendor application
+      description: Full admin detail for a vendor including locations, staff members and audit activity. Requires admin role.
+      operationId: getVendor
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+      responses:
+        '200':
+          description: Vendor retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  vendor:
+                    type: object
+                    allOf:
+                      - $ref: '#/components/schemas/Vendor'
+                      - type: object
+                        properties:
+                          locations:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/VendorLocation'
+                          staff:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/VendorUser'
+                          activity:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/AuditLogEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Administration
+      summary: Update a vendor profile
+      description: Partial update of profile fields. Approved_at/status/onboarding_key can never be set through this endpoint. Requires admin role.
+      operationId: updateVendor
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorInput'
+      responses:
+        '200':
+          description: Vendor updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  vendor:
+                    $ref: '#/components/schemas/Vendor'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  '/admin/vendors/{vendorId}/approval':
+    patch:
+      tags:
+        - Administration
+      summary: Decide a vendor application
+      description: 'Advances the vendor state machine. approve/activate -> approved (requires at least one active location), suspend (approved only), reject (reason required). Requires admin role.'
+      operationId: updateVendorApproval
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorApprovalInput'
+      responses:
+        '200':
+          description: Decision applied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  vendor:
+                    $ref: '#/components/schemas/Vendor'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Transition not allowed or no active location to approve
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  '/admin/vendors/{vendorId}/locations':
+    post:
+      tags:
+        - Administration
+      summary: Add a vendor location
+      description: Adds an operating location (unique per site and building) with optional operating hours. Requires admin role.
+      operationId: createVendorLocation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorLocationInput'
+      responses:
+        '201':
+          description: Vendor location created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  vendorLocation:
+                    $ref: '#/components/schemas/VendorLocation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  '/admin/vendor-locations/{locationId}':
+    patch:
+      tags:
+        - Administration
+      summary: Update a vendor location
+      description: Partial update of a vendor location including service_status and a full replace of operating hours. Requires admin role.
+      operationId: updateVendorLocation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/LocationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorLocationInput'
+      responses:
+        '200':
+          description: Vendor location updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  vendorLocation:
+                    $ref: '#/components/schemas/VendorLocation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  '/admin/vendors/{vendorId}/users':
+    post:
+      tags:
+        - Administration
+      summary: Add a vendor staff member
+      description: Grants a user (by user_id or email) access to a vendor. Upsert by (user_id, vendor_id). Requires admin role.
+      operationId: addVendorUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorUserInput'
+      responses:
+        '201':
+          description: Staff member added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  member:
+                    $ref: '#/components/schemas/VendorUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  '/admin/vendors/{vendorId}/users/{userId}':
+    delete:
+      tags:
+        - Administration
+      summary: Remove a vendor staff member
+      description: Revokes a user access to a vendor. Requires admin role.
+      operationId: removeVendorUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Staff member removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  userId:
+                    type: string
+                    format: uuid
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
   parameters:
     Page:
@@ -1563,6 +2097,27 @@ components:
         format: uuid
     DlId:
       name: dlId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    VendorId:
+      name: vendorId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LocationId:
+      name: locationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    UserId:
+      name: userId
       in: path
       required: true
       schema:
@@ -2013,6 +2568,364 @@ components:
             message:
               type: string
 
+    Vendor:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+          nullable: true
+        logo_url:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, approved, suspended, inactive, rejected]
+        support_email:
+          type: string
+          nullable: true
+        support_phone:
+          type: string
+          nullable: true
+        corporate_catering_enabled:
+          type: boolean
+        average_rating:
+          type: number
+          nullable: true
+        rating_count:
+          type: integer
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        approved_by:
+          type: string
+          format: uuid
+          nullable: true
+        location_count:
+          type: integer
+          description: Number of locations (list responses)
+        location:
+          $ref: '#/components/schemas/VendorLocationSummary'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    VendorLocationSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        service_status:
+          type: string
+        is_active:
+          type: boolean
+        site_name:
+          type: string
+          nullable: true
+        building_name:
+          type: string
+          nullable: true
+        collection_point_name:
+          type: string
+          nullable: true
+
+    VendorDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+          nullable: true
+        logo_url:
+          type: string
+          nullable: true
+        corporate_catering_enabled:
+          type: boolean
+        average_rating:
+          type: number
+          nullable: true
+        rating_count:
+          type: integer
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/VendorLocation'
+
+    VendorInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Vendor name (used to derive the slug)
+        description:
+          type: string
+        logo_url:
+          type: string
+          format: uri
+        support_email:
+          type: string
+          format: email
+        support_phone:
+          type: string
+        corporate_catering_enabled:
+          type: boolean
+        onboarding_key:
+          type: string
+          description: Client-generated idempotency key. Ignored on patch.
+        location:
+          $ref: '#/components/schemas/VendorLocationInput'
+          description: Optional initial location created together with the application
+
+    OperatingHoursItem:
+      type: object
+      required:
+        - day_of_week
+      properties:
+        id:
+          type: string
+          format: uuid
+        day_of_week:
+          type: integer
+          minimum: 0
+          maximum: 6
+        opens_at:
+          type: string
+          format: time
+          nullable: true
+          description: Required when is_closed is false
+        closes_at:
+          type: string
+          format: time
+          nullable: true
+        is_closed:
+          type: boolean
+          default: false
+
+    OperatingHoursInput:
+      type: array
+      items:
+        type: object
+        required:
+          - day_of_week
+        properties:
+          day_of_week:
+            type: integer
+            minimum: 0
+            maximum: 6
+          opens_at:
+            type: string
+            format: time
+            description: Required together with closes_at when the day is open
+          closes_at:
+            type: string
+            format: time
+          is_closed:
+            type: boolean
+            default: false
+      uniqueItems: true
+
+    VendorLocation:
+      type: object
+      required:
+        - id
+        - vendor_id
+        - site_id
+        - building_id
+      properties:
+        id:
+          type: string
+          format: uuid
+        vendor_id:
+          type: string
+          format: uuid
+        site_id:
+          type: string
+          format: uuid
+        building_id:
+          type: string
+          format: uuid
+        collection_point_id:
+          type: string
+          format: uuid
+          nullable: true
+        service_status:
+          type: string
+          enum: [closed, open, busy, temporarily_unavailable]
+        order_cutoff_minutes:
+          type: integer
+          nullable: true
+        estimated_prep_minutes:
+          type: integer
+          nullable: true
+        collection_instructions:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        site_name:
+          type: string
+          nullable: true
+        building_name:
+          type: string
+          nullable: true
+        collection_point_name:
+          type: string
+          nullable: true
+        hours:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperatingHoursItem'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    VendorLocationInput:
+      type: object
+      required:
+        - site_id
+        - building_id
+      properties:
+        site_id:
+          type: string
+          format: uuid
+        building_id:
+          type: string
+          format: uuid
+          description: Must belong to site_id
+        collection_point_id:
+          type: string
+          format: uuid
+          description: Must belong to building_id
+        service_status:
+          type: string
+          enum: [closed, open, busy, temporarily_unavailable]
+          default: closed
+        order_cutoff_minutes:
+          type: integer
+          minimum: 0
+        estimated_prep_minutes:
+          type: integer
+          minimum: 1
+        collection_instructions:
+          type: string
+        is_active:
+          type: boolean
+        hours:
+          $ref: '#/components/schemas/OperatingHoursInput'
+          description: Full replace of operating hours on update
+
+    VendorApprovalInput:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          enum: [approve, reject, suspend, activate]
+        reason:
+          type: string
+          description: Required when decision is reject
+
+    VendorUser:
+      type: object
+      required:
+        - user_id
+        - vendor_id
+        - role
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        vendor_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [staff, manager]
+        is_active:
+          type: boolean
+        granted_by:
+          type: string
+          format: uuid
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        full_name:
+          type: string
+          nullable: true
+        employee_number:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    VendorUserInput:
+      type: object
+      oneOf:
+        - required: [user_id]
+        - required: [email]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: Must not be combined with email
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [staff, manager]
+          default: staff
+
+    AuditLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        action:
+          type: string
+        table_name:
+          type: string
+        record_key:
+          type: string
+        actor_user_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
   responses:
     BadRequest:
       description: Validation error
@@ -2034,6 +2947,12 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
     NotFound:
       description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: A record with these values already exists or the action conflicts with the current state
       content:
         application/json:
           schema:

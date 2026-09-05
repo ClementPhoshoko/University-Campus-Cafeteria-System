@@ -25,7 +25,7 @@ do $$ begin create type public.app_role as enum (
   'admin','finance','support','auditor'
 ); exception when duplicate_object then null; end $$;
 
-do $$ begin create type public.vendor_status as enum ('pending','approved','suspended','inactive'); exception when duplicate_object then null; end $$;
+do $$ begin create type public.vendor_status as enum ('pending','approved','suspended','inactive','rejected'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.vendor_member_role as enum ('staff','manager'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.service_status as enum ('open','closed','busy','temporarily_unavailable'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.menu_status as enum ('draft','published','archived'); exception when duplicate_object then null; end $$;
@@ -177,9 +177,18 @@ create table if not exists public.vendors (
   rating_count integer not null default 0 check (rating_count >= 0),
   approved_at timestamptz,
   approved_by uuid references public.profiles(id) on delete set null,
+  -- Client-generated idempotency key for onboarding (plan §6). Null-safe unique.
+  onboarding_key text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+create unique index if not exists vendors_onboarding_key_key
+  on public.vendors(onboarding_key)
+  where onboarding_key is not null;
+
+create index if not exists idx_vendors_status_created
+  on public.vendors(status, created_at desc);
 
 create table if not exists public.vendor_users (
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -206,6 +215,9 @@ create table if not exists public.vendor_locations (
   updated_at timestamptz not null default now(),
   unique (vendor_id, site_id, building_id)
 );
+
+create index if not exists idx_vendor_locations_active
+  on public.vendor_locations(vendor_id, is_active);
 
 create table if not exists public.operating_hours (
   id uuid primary key default gen_random_uuid(),
@@ -1325,7 +1337,7 @@ DECLARE
   t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY[
-    'user_roles','vendors','vendor_users','menus','menu_items','orders','payments','refunds',
+    'user_roles','vendors','vendor_users','vendor_locations','operating_hours','menus','menu_items','orders','payments','refunds',
     'corporate_orders','corporate_approval_steps','platform_settings','feature_flags',
     'fee_rules','tax_rates','cancellation_rules','maintenance_windows',
     'sites','buildings','floors','collection_points','delivery_locations'

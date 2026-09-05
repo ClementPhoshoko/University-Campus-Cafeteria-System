@@ -1139,10 +1139,17 @@ GET    /buildings/:buildingId/vendors
 
 ## Vendors
 
+Employee-facing reads (implemented, tag `Vendors`): served from a public `max-age=60` cache. Only vendors with `status=approved` and at least one active location are exposed.
+
 ```text
-GET    /vendors
+GET    /vendors                        (search, site_id filter, paginated)
 GET    /vendors/:vendorId
 GET    /vendors/:vendorId/hours
+```
+
+Planned (their own phases):
+
+```text
 GET    /vendors/:vendorId/collection-slots
 GET    /vendors/:vendorId/menu
 ```
@@ -1265,13 +1272,25 @@ POST   /admin/buildings/:buildingId/delivery-locations
 PATCH  /admin/delivery-locations/:dlId
 ```
 
-Planned (users/vendors/reports/configuration):
+Vendor lifecycle (implemented, tag `Administration`): all writes are admin-only, rate-limited, audited, and idempotent via `onboarding_key`. Approval decisions follow a state machine (`approve`/`suspend`/`activate`/`reject`).
+
+```text
+GET    /admin/vendors                      (status, search, site_id filters, paginated)
+POST   /admin/vendors                      (optional first location + hours)
+GET    /admin/vendors/approvals            (pending decisions with first location)
+GET    /admin/vendors/:vendorId            (locations, staff, audit activity)
+PATCH  /admin/vendors/:vendorId
+PATCH  /admin/vendors/:vendorId/approval
+POST   /admin/vendors/:vendorId/locations
+PATCH  /admin/vendor-locations/:locationId (hours are fully replaced)
+POST   /admin/vendors/:vendorId/users
+DELETE /admin/vendors/:vendorId/users/:userId
+```
+
+Planned (users/reports/configuration):
 
 ```text
 GET    /admin/dashboard
-GET    /admin/vendors
-POST   /admin/vendors
-PATCH  /admin/vendors/:vendorId
 GET    /admin/users
 PATCH  /admin/users/:userId/roles
 GET    /admin/audit-logs

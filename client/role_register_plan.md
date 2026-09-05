@@ -133,17 +133,31 @@ The Sites endpoints are reference-data reads plus admin writes, so fetching and 
 ### 4.2 Vendors (new)
 
 ```text
-GET    /admin/vendors?status=&search=&campus=&page=&limit=
-POST   /admin/vendors                        # create onboarding application (status # pending)
-GET    /admin/vendors/approvals              # pending applications (+ category, location, submitted)
+GET    /admin/vendors?status=&search=&site_id=&page=&limit=
+POST   /admin/vendors                        # create onboarding application (status = pending)
+GET    /admin/vendors/approvals              # pending applications (+ first location, submitted)
 GET    /admin/vendors/:vendorId              # detail: profile, locations, staff, hours, activity
 PATCH  /admin/vendors/:vendorId              # profile edit (name, description, contact, logo, catering)
 PATCH  /admin/vendors/:vendorId/approval     # body: { decision: approve|reject|suspend|activate, reason? }
-POST   /admin/vendors/:vendorId/locations    # attach to site+building; body: site/building/cp, service_state, hours
+POST   /admin/vendors/:vendorId/locations    # attach to site+building; body: site/building/cp, service_status, hours
 PATCH  /admin/vendor-locations/:locId        # hours, service_status (open/closed/busy)
 POST   /admin/vendors/:vendorId/users        # add member { user_id | email, role: staff|manager }
 DELETE /admin/vendors/:vendorId/users/:userId
 ```
+
+**Production checklist — same policies as §4.1a (pagination, filters, caching, limits, audit):**
+
+- **Pagination:** every list endpoint accepts `page` (1) / `limit` (20, max 100) and returns `pagination: { page, limit, total, totalPages }` via `buildPagination`.
+- **Filters:** `search` → case-insensitive `ilike` on `name`/`slug`/`description`; `status` (strict enum) sets `status = pending|approved|suspended|inactive|rejected`; `site_id` narrows to vendors with a location at that campus; `sort` ∈ `name|created_at|average_rating`, `order` ∈ `asc|desc` (default `created_at` desc). Admin defaults to all; public hard-filters `status = approved`.
+- **Counts:** `location_count` on list rows via embed `vendor_locations(count)`; site-filtered lists derive counts from the matching `vendor_locations` rows.
+- **Caching:** reads `private, max-age=15, must-revalidate` + weak ETag/304 (public order-facing reads `public, max-age=60`); mutations `no-store`.
+- **Rate limiting:** admin vendor mutations throttled 30/min per user (same in-memory `rateLimit` middleware; Redis before multi-instance).
+- **Audit:** every mutation writes `audit_logs` with `actor_user_id = req.user.id`; approval decisions carry the `reason` into the audit row; rejections are transition+reason-attributed (see `logRejection`).
+- **Idempotency:** `POST /admin/vendors` dedupes on optional client `onboarding_key` (a null-safe unique column added in the vendors migration); slug generation retries on collision (`vendors.slug` NOT NULL unique).
+- **Errors:** `VENDOR_NOT_FOUND`/`VENDOR_LOCATION_NOT_FOUND`/`VENDOR_USER_NOT_FOUND` → 404; `VENDOR_SLUG_EXISTS`/`VENDOR_LOCATION_EXISTS`/`VENDOR_ONBOARDING_KEY_EXISTS` → 409; `VENDOR_NO_LOCATION` (approve/activate with zero active locations) → 409; `REJECTION_REASON_REQUIRED` → 400; enum/lookup errors → 400.
+- **Business rules:** only `pending|inactive|suspended|rejected` → `approved` on approve; reject requires a reason; suspend/activate toggle `approved <-> suspended`; approval writes `approved_at`/`approved_by`. Public facing only `status = approved` AND ≥ 1 `is_active` location.
+
+**Public (employee-facing) reads** (tag `Vendors`): `GET /vendors`, `GET /vendors/:vendorId`, `GET /vendors/:vendorId/hours` — approved vendors only with active locations, minimal field sets, `max-age=60`. `GET /vendors/:vendorId/menu` and `/collection-slots` remain planned for the Menus / Collection Slots phases.
 
 ### 4.3 Elsewhere
 
