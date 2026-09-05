@@ -32,7 +32,18 @@ export function parseOptionalBoolean(value, label = 'is_active') {
 }
 
 export function parseSortParam(query, allowed, defaultColumn) {
-  const column = typeof query.sort === 'string' && allowed.includes(query.sort) ? query.sort : defaultColumn;
+  if (query.sort !== undefined && !allowed.includes(query.sort)) {
+    return {
+      error: `sort must be one of: ${allowed.join(', ')}`,
+    };
+  }
+  if (query.order !== undefined && !['asc', 'desc'].includes(query.order)) {
+    return {
+      error: 'order must be asc or desc',
+    };
+  }
+
+  const column = query.sort || defaultColumn;
   const ascending = query.order === 'asc';
   return { column, ascending };
 }

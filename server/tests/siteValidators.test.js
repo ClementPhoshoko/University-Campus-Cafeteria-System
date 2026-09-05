@@ -40,7 +40,12 @@ test('parseOptionalBoolean parses true/false forms only', () => {
 test('parseSortParam defaults and resolves allowed columns + order', () => {
   assert.deepEqual(parseSortParam({}, ['name', 'created_at'], 'created_at'), { column: 'created_at', ascending: false });
   assert.deepEqual(parseSortParam({ sort: 'name', order: 'asc' }, ['name', 'created_at'], 'created_at'), { column: 'name', ascending: true });
-  assert.deepEqual(parseSortParam({ sort: 'hack', order: 'desc' }, ['name'], 'name'), { column: 'name', ascending: false });
+  assert.deepEqual(parseSortParam({ order: 'desc' }, ['name'], 'name'), { column: 'name', ascending: false });
+});
+
+test('parseSortParam rejects invalid sort and order values', () => {
+  assert.match(parseSortParam({ sort: 'hack' }, ['name'], 'name').error, /sort must be one of/);
+  assert.match(parseSortParam({ order: 'sideways' }, ['name'], 'name').error, /order must be asc or desc/);
 });
 
 test('normalizeSite validates a valid payload', () => {

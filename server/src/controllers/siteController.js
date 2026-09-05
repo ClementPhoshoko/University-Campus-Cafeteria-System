@@ -147,7 +147,8 @@ function normalizeListFilters(req, { sortDefaults, sortAllowed, extraParams = {}
   if (activeError) return { error: activeError };
   filters.is_active = isActive;
 
-  const { column, ascending } = parseSortParam(req.query, sortAllowed, sortDefaults);
+  const { column, ascending, error: sortError } = parseSortParam(req.query, sortAllowed, sortDefaults);
+  if (sortError) return { error: sortError };
   return { search, filters, column, ascending };
 }
 
