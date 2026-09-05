@@ -872,6 +872,11 @@ create table if not exists public.security_events (
 -- INDEXES
 -- -----------------------------------------------------------------------------
 create index if not exists idx_profiles_site on public.profiles(preferred_site_id);
+create index if not exists idx_buildings_site on public.buildings(site_id, is_active);
+create index if not exists idx_floors_building on public.floors(building_id, is_active);
+create index if not exists idx_collection_points_building on public.collection_points(building_id, is_active);
+create index if not exists idx_delivery_locations_building on public.delivery_locations(building_id, is_active);
+create index if not exists idx_sites_active on public.sites(is_active);
 create index if not exists idx_user_roles_user on public.user_roles(user_id);
 create index if not exists idx_vendor_users_vendor on public.vendor_users(vendor_id, is_active);
 create index if not exists idx_vendor_locations_site on public.vendor_locations(site_id, is_active);
@@ -1322,7 +1327,8 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     'user_roles','vendors','vendor_users','menus','menu_items','orders','payments','refunds',
     'corporate_orders','corporate_approval_steps','platform_settings','feature_flags',
-    'fee_rules','tax_rates','cancellation_rules','maintenance_windows'
+    'fee_rules','tax_rates','cancellation_rules','maintenance_windows',
+    'sites','buildings','floors','collection_points','delivery_locations'
   ] LOOP
     EXECUTE format('drop trigger if exists audit_row_change on public.%I', t);
     EXECUTE format('create trigger audit_row_change after insert or update or delete on public.%I for each row execute function private.audit_row_change()', t);

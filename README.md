@@ -1121,10 +1121,19 @@ PATCH  /profile/preferences
 
 ## Locations
 
+Employee-facing reads (active-only, cached `max-age=60`) — implemented (tag `Sites`):
+
 ```text
 GET    /sites
 GET    /sites/:siteId
 GET    /sites/:siteId/buildings
+GET    /buildings/:buildingId/floors
+GET    /buildings/:buildingId/collection-points
+```
+
+Planned:
+
+```text
 GET    /buildings/:buildingId/vendors
 ```
 
@@ -1234,14 +1243,35 @@ GET    /vendor/reports
 
 ## Administration API namespace
 
+Campus hierarchy (implemented, tag `Administration`): all writes are admin-only, rate-limited, audited, and return `409` on duplicate name/code (`23505`).
+
+```text
+GET    /admin/sites
+POST   /admin/sites
+GET    /admin/sites/:siteId
+PATCH  /admin/sites/:siteId
+GET    /admin/sites/:siteId/buildings
+POST   /admin/sites/:siteId/buildings
+GET    /admin/buildings/:buildingId
+PATCH  /admin/buildings/:buildingId
+GET    /admin/buildings/:buildingId/floors
+POST   /admin/buildings/:buildingId/floors
+PATCH  /admin/floors/:floorId
+GET    /admin/buildings/:buildingId/collection-points
+POST   /admin/buildings/:buildingId/collection-points
+PATCH  /admin/collection-points/:cpId
+GET    /admin/buildings/:buildingId/delivery-locations
+POST   /admin/buildings/:buildingId/delivery-locations
+PATCH  /admin/delivery-locations/:dlId
+```
+
+Planned (users/vendors/reports/configuration):
+
 ```text
 GET    /admin/dashboard
 GET    /admin/vendors
 POST   /admin/vendors
 PATCH  /admin/vendors/:vendorId
-GET    /admin/sites
-POST   /admin/sites
-PATCH  /admin/sites/:siteId
 GET    /admin/users
 PATCH  /admin/users/:userId/roles
 GET    /admin/audit-logs

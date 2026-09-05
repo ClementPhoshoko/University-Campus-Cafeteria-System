@@ -613,7 +613,962 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  '/sites':
+    get:
+      tags:
+        - Sites
+      summary: List campuses
+      description: List active campus sites for employees. Paginated, searchable.
+      operationId: listPublicSites
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+      responses:
+        '200':
+          description: Active sites retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  sites:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Site'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/sites/{siteId}':
+    get:
+      tags:
+        - Sites
+      summary: Get campus detail
+      description: Get a single active campus site. Requires a valid session.
+      operationId: getPublicSite
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SiteId'
+      responses:
+        '200':
+          description: Site retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  site:
+                    $ref: '#/components/schemas/Site'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  '/sites/{siteId}/buildings':
+    get:
+      tags:
+        - Sites
+      summary: List campus buildings
+      description: List active buildings for a campus site. Paginated. Requires a valid session.
+      operationId: listPublicBuildings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SiteId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Buildings retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  site_id:
+                    type: string
+                    format: uuid
+                  buildings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Building'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  '/buildings/{buildingId}/floors':
+    get:
+      tags:
+        - Sites
+      summary: List building floors
+      description: List active floors for a building. Requires a valid session.
+      operationId: listPublicFloors
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BuildingId'
+      responses:
+        '200':
+          description: Floors retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  building_id:
+                    type: string
+                    format: uuid
+                  floors:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Floor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  '/buildings/{buildingId}/collection-points':
+    get:
+      tags:
+        - Sites
+      summary: List collection points
+      description: List active collection points for a building. Requires a valid session.
+      operationId: listPublicCollectionPoints
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BuildingId'
+      responses:
+        '200':
+          description: Collection points retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  building_id:
+                    type: string
+                    format: uuid
+                  collectionPoints:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CollectionPoint'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  '/admin/sites':
+    get:
+      tags:
+        - Administration
+      summary: List sites (admin)
+      description: Paginated list of campus sites with building/collection-point/vendor counts. Requires admin role.
+      operationId: listSites
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/IsActive'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Order'
+      responses:
+        '200':
+          description: Sites retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  sites:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SiteWithCounts'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Administration
+      summary: Register a campus site
+      description: Create a new campus site. Requires admin role. Unique name/code rejected with 409.
+      operationId: createSite
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteInput'
+      responses:
+        '201':
+          description: Site created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  site:
+                    $ref: '#/components/schemas/Site'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Duplicate name or code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  '/admin/sites/{siteId}':
+    get:
+      tags:
+        - Administration
+      summary: Get site detail (admin)
+      description: Get one campus site with counts. Requires admin role.
+      operationId: getSite
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SiteId'
+      responses:
+        '200':
+          description: Site retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  site:
+                    $ref: '#/components/schemas/SiteWithCounts'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Administration
+      summary: Update a campus site
+      description: Partial update of a campus site. Toggle is_active to activate/deactivate. Requires admin role.
+      operationId: updateSite
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SiteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteInput'
+      responses:
+        '200':
+          description: Site updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  site:
+                    $ref: '#/components/schemas/Site'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Duplicate name or code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  '/admin/sites/{siteId}/buildings':
+    get:
+      tags:
+        - Administration
+      summary: List buildings for a site
+      description: Paginated list of buildings for a campus site with floor/collection-point counts. Requires admin role.
+      operationId: listBuildings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SiteId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/IsActive'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Order'
+      responses:
+        '200':
+          description: Buildings retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  site_id:
+                    type: string
+                    format: uuid
+                  buildings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BuildingWithCounts'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags:
+        - Administration
+      summary: Register a building
+      description: Create a building under a campus site. Name/code unique per site; duplicates rejected with 409.
+      operationId: createBuilding
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SiteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuildingInput'
+      responses:
+        '201':
+          description: Building created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  building:
+                    $ref: '#/components/schemas/Building'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Duplicate name or code within the site
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  '/admin/buildings/{buildingId}':
+    get:
+      tags:
+        - Administration
+      summary: Get building detail
+      description: Get one building with floor/collection-point counts. Requires admin role.
+      operationId: getBuilding
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BuildingId'
+      responses:
+        '200':
+          description: Building retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  building:
+                    $ref: '#/components/schemas/BuildingWithCounts'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Administration
+      summary: Update a building
+      description: Partial update of a building. Changes cannot move a building to another site. Requires admin role.
+      operationId: updateBuilding
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BuildingId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuildingInput'
+      responses:
+        '200':
+          description: Building updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  building:
+                    $ref: '#/components/schemas/Building'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Duplicate name or code within the site
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  '/admin/buildings/{buildingId}/floors':
+    get:
+      tags:
+        - Administration
+      summary: List floors for a building
+      description: Paginated list of floors for a building. Requires admin role.
+      operationId: listFloors
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BuildingId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/IsActive'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Order'
+      responses:
+        '200':
+          description: Floors retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  building_id:
+                    type: string
+                    format: uuid
+                  floors:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Floor'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags:
+        - Administration
+      summary: Add a floor
+      description: Create a floor under a building. Name unique per building. Requires admin role.
+      operationId: createFloor
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BuildingId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FloorInput'
+      responses:
+        '201':
+          description: Floor created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  floor:
+                    $ref: '#/components/schemas/Floor'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Duplicate floor name within the building
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  '/admin/floors/{floorId}':
+    patch:
+      tags:
+        - Administration
+      summary: Update a floor
+      description: Partial update of a floor. Requires admin role.
+      operationId: updateFloor
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FloorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FloorInput'
+      responses:
+        '200':
+          description: Floor updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  floor:
+                    $ref: '#/components/schemas/Floor'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Duplicate floor name within the building
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  '/admin/buildings/{buildingId}/collection-points':
+    get:
+      tags:
+        - Administration
+      summary: List collection points for a building
+      description: Paginated list of collection points for a building with optional is_express filter. Requires admin role.
+      operationId: listCollectionPoints
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BuildingId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/IsActive'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Order'
+        - name: is_express
+          in: query
+          schema:
+            type: boolean
+          description: Filter by express pickup flag
+      responses:
+        '200':
+          description: Collection points retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  building_id:
+                    type: string
+                    format: uuid
+                  collectionPoints:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CollectionPoint'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags:
+        - Administration
+      summary: Add a collection point
+      description: Create a collection point under a building. Optional floor_id must belong to the building. Requires admin role.
+      operationId: createCollectionPoint
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BuildingId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectionPointInput'
+      responses:
+        '201':
+          description: Collection point created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  collectionPoint:
+                    $ref: '#/components/schemas/CollectionPoint'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Duplicate collection point name within the building
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  '/admin/collection-points/{cpId}':
+    patch:
+      tags:
+        - Administration
+      summary: Update a collection point
+      description: Partial update of a collection point, including is_express and is_active toggles. Requires admin role.
+      operationId: updateCollectionPoint
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CpId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectionPointInput'
+      responses:
+        '200':
+          description: Collection point updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  collectionPoint:
+                    $ref: '#/components/schemas/CollectionPoint'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Duplicate collection point name within the building
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  '/admin/buildings/{buildingId}/delivery-locations':
+    get:
+      tags:
+        - Administration
+      summary: List delivery locations for a building
+      description: Paginated list of corporate delivery locations for a building. Requires admin role.
+      operationId: listDeliveryLocations
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BuildingId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/IsActive'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Order'
+      responses:
+        '200':
+          description: Delivery locations retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  building_id:
+                    type: string
+                    format: uuid
+                  deliveryLocations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeliveryLocation'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags:
+        - Administration
+      summary: Add a delivery location
+      description: Create a corporate delivery location under a building. Optional floor_id must belong to the building. Requires admin role.
+      operationId: createDeliveryLocation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BuildingId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryLocationInput'
+      responses:
+        '201':
+          description: Delivery location created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  deliveryLocation:
+                    $ref: '#/components/schemas/DeliveryLocation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Duplicate delivery location name within the building
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  '/admin/delivery-locations/{dlId}':
+    patch:
+      tags:
+        - Administration
+      summary: Update a delivery location
+      description: Partial update of a delivery location, including is_active. Requires admin role.
+      operationId: updateDeliveryLocation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DlId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryLocationInput'
+      responses:
+        '200':
+          description: Delivery location updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  deliveryLocation:
+                    $ref: '#/components/schemas/DeliveryLocation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Duplicate delivery location name within the building
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number (1-indexed)
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Items per page (max 100)
+    Search:
+      name: search
+      in: query
+      schema:
+        type: string
+      description: Case-insensitive substring search on name/code/address
+    IsActive:
+      name: is_active
+      in: query
+      schema:
+        type: boolean
+      description: Filter by active state (true/false)
+    Sort:
+      name: sort
+      in: query
+      schema:
+        type: string
+      description: Sort column (resource-specific)
+    Order:
+      name: order
+      in: query
+      schema:
+        type: string
+        enum: [asc, desc]
+      description: Sort direction
+    SiteId:
+      name: siteId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    BuildingId:
+      name: buildingId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    FloorId:
+      name: floorId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CpId:
+      name: cpId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DlId:
+      name: dlId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
   securitySchemes:
     bearerAuth:
       type: http
@@ -756,6 +1711,293 @@ components:
           type: integer
         totalPages:
           type: integer
+
+    Site:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        code:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+          format: double
+          nullable: true
+        longitude:
+          type: number
+          format: double
+          nullable: true
+        timezone:
+          type: string
+          example: Africa/Johannesburg
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SiteWithCounts:
+      allOf:
+        - $ref: '#/components/schemas/Site'
+        - type: object
+          properties:
+            building_count:
+              type: integer
+            collection_point_count:
+              type: integer
+            vendor_count:
+              type: integer
+
+    SiteInput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Campus name (unique, required on create)
+        code:
+          type: string
+          description: Short campus code (unique, optional, [A-Z0-9_-])
+        address:
+          type: string
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        timezone:
+          type: string
+          description: Valid IANA timezone
+          example: Africa/Johannesburg
+        is_active:
+          type: boolean
+
+    Building:
+      type: object
+      required:
+        - id
+        - site_id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        site_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        code:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+          format: double
+          nullable: true
+        longitude:
+          type: number
+          format: double
+          nullable: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    BuildingWithCounts:
+      allOf:
+        - $ref: '#/components/schemas/Building'
+        - type: object
+          properties:
+            floor_count:
+              type: integer
+            collection_point_count:
+              type: integer
+
+    BuildingInput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Building name (unique per site, required on create)
+        code:
+          type: string
+          description: Building code (unique per site, optional)
+        address:
+          type: string
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        is_active:
+          type: boolean
+
+    Floor:
+      type: object
+      required:
+        - id
+        - building_id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        building_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        level_number:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+
+    FloorInput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Floor name (unique per building, required on create)
+        level_number:
+          type: integer
+        is_active:
+          type: boolean
+
+    CollectionPoint:
+      type: object
+      required:
+        - id
+        - building_id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        building_id:
+          type: string
+          format: uuid
+        floor_id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+        instructions:
+          type: string
+          nullable: true
+        is_express:
+          type: boolean
+          default: true
+        is_active:
+          type: boolean
+        floor:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+            level_number:
+              type: integer
+
+    CollectionPointInput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Collection point name (unique per building, required on create)
+        floor_id:
+          type: string
+          format: uuid
+          description: Must belong to the same building
+        instructions:
+          type: string
+        is_express:
+          type: boolean
+        is_active:
+          type: boolean
+
+    DeliveryLocation:
+      type: object
+      required:
+        - id
+        - building_id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        building_id:
+          type: string
+          format: uuid
+        floor_id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+        room_or_venue:
+          type: string
+          nullable: true
+        instructions:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        floor:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+            level_number:
+              type: integer
+
+    DeliveryLocationInput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Delivery location name (unique per building, required on create)
+        floor_id:
+          type: string
+          format: uuid
+          description: Must belong to the same building
+        room_or_venue:
+          type: string
+        instructions:
+          type: string
+        is_active:
+          type: boolean
 
     ErrorResponse:
       type: object

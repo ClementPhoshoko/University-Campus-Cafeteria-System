@@ -100,6 +100,36 @@ POST   /admin/buildings/:buildingId/delivery-locations
 PATCH  /admin/delivery-locations/:dlId
 ```
 
+### 4.1a Sites endpoint design — production checklist (implemented)
+
+The Sites endpoints are reference-data reads plus admin writes, so fetching and mutation behaviour must be production-grade:
+
+**Pagination (offset, consistent with `/admin/users`):**
+- Every list endpoint accepts `page` (default 1) and `limit` (default 20, `max 100`).
+- Response carries `pagination: { page, limit, total, totalPages }` via the shared `buildPagination` helper. `total` uses `count: 'exact'`.
+
+**Filters (per endpoint, validated in `validators`):**
+- `search` → case-insensitive `ilike` on `name`/`code`/`address` (text columns only).
+- `is_active` → `true|false` (strict; anything else is a 400). Admin lists default to *all* rows; public lists hard-filter `is_active = true`.
+- Collection points additionally accept `is_express` (`true|false`).
+- `sort` ∈ `name|code|created_at` and `order` ∈ `asc|desc` (default `created_at` desc).
+
+**Counts baked into list payloads** (single grouped-aggregate queries, `Number()`-normalised because PostgREST returns `count(*)` as a JSON string):
+- Sites list: `building_count`, `collection_point_count`, `vendor_count` (distinct vendors with a location at the site).
+- Buildings list: `floor_count`, `collection_point_count`.
+
+**Caching (reference data, not auth-data):**
+- Reads: `Cache-Control: private, max-age=15, must-revalidate` + `ETag` (weak, sha256 of body). Matching `If-None-Match` returns `304`. Public order-facing lists use `max-age=60`.
+- Mutations: `Cache-Control: no-store`. No cache layer holds admin writes, so invalidation is a non-problem.
+
+**Rate limiting (in-memory, per-user sliding window):** admin mutations are throttled (30/min default) via `middleware/rateLimit.js`. NOTE for multi-instance prod: swap for a shared store (Redis) behind the same interface.
+
+**Audit (every mutation, explicit attribution):** each insert/update writes `audit_logs` with `actor_user_id = req.user.id`, `action INSERT/UPDATE`, `table_name public.<t>`, `record_key`, `old_data`/`new_data`, `ip_address`, `user_agent`. DB `audit_row_change` triggers for these tables are added in the migration as a backstop (the trigger alone would record a null actor for service-role writes).
+
+**Error handling:** `${RESOURCE}_NOT_FOUND` → 404; `${RESOURCE}_NAME_EXISTS` / `_CODE_EXISTS` → 409 (mapped from Postgres `23505` via constraint name); `VALIDATION_ERROR` → 400; `RATE_LIMITED` → 429. Envelope stays `{ success, error: { code, message } }`.
+
+**Public (employee-facing) reads** (tag `Sites`): `GET /sites`, `GET /sites/:siteId`, `GET /sites/:siteId/buildings`, `GET /buildings/:buildingId/floors`, `GET /buildings/:buildingId/collection-points` — always active-only, minimal field sets, `max-age=60`.
+
 ### 4.2 Vendors (new)
 
 ```text
