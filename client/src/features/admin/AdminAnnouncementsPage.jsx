@@ -29,6 +29,7 @@ import {
   ANNOUNCEMENT_ACTIVITY,
   formatCurrency,
 } from './adminMockData.js';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 const SEVERITY_TONE = {
   info: 'info',
@@ -259,7 +260,7 @@ export default function AdminAnnouncementsPage() {
             </div>
           ) : (
             <div className="admin-empty">
-              <IconSpeakerphone size={32} stroke={1.4} />
+              <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
               <h3>No announcements in this view</h3>
               <p>Try adjusting the filters or selecting a different status.</p>
             </div>

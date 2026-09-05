@@ -2418,7 +2418,7 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-12) var(--space-6);
+  padding: var(--space-10) var(--space-6);
   text-align: center;
   background: var(--glass-bg);
   border: 1px dashed var(--color-border-default);
@@ -2426,18 +2426,26 @@
   color: var(--color-text-tertiary);
 }
 
+.admin-empty__avatar {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  border-radius: var(--radius-full);
+}
+
 .admin-empty h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.88rem;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
 
 .admin-empty p {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 0.78rem;
   color: var(--color-text-secondary);
-  max-width: 44ch;
+  max-width: 36ch;
+  line-height: 1.4;
 }
 
 .admin-empty svg {
@@ -3047,8 +3055,80 @@
 .admin-orders {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
-  padding-bottom: var(--space-6);
+   gap: var(--space-5);
+   padding-bottom: var(--space-6);
+}
+
+/* ── Orders KPIs (matches cafeteria KPIs design) ── */
+
+.admin-orders__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
+  overflow: hidden;
+}
+
+.admin-orders__kpi {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+}
+
+.admin-orders__kpi + .admin-orders__kpi {
+  border-left: 1px solid var(--color-border-subtle);
+}
+
+.admin-orders__kpi-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-action-primary);
+  flex-shrink: 0;
+}
+
+.admin-orders__kpi-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-orders__kpi-label {
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+}
+
+.admin-orders__kpi-value {
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.admin-orders__kpi-sub {
+  font-size: 0.7rem;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-orders__vendor-select-count {
+  margin-left: auto;
+  font-size: 0.68rem;
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-normal);
 }
 
 .admin-orders__filters {
@@ -3124,7 +3204,9 @@
 }
 
 .admin-orders__vendor-select-option {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: 100%;
   padding: 10px 14px;
   background: transparent;
@@ -3259,22 +3341,18 @@
 
 .admin-flag--warning {
   color: var(--warning-700);
-  background: rgba(217, 154, 0, 0.12);
 }
 
 .admin-flag--success {
   color: var(--success-700);
-  background: rgba(34, 165, 89, 0.12);
 }
 
 .admin-flag--info {
   color: var(--color-action-link);
-  background: var(--color-action-secondary);
 }
 
 .admin-flag--error {
   color: var(--error-500);
-  background: rgba(217, 74, 74, 0.1);
 }
 
 /* ── Order detail ── */
@@ -3525,6 +3603,86 @@
 .admin-timeline__meta {
   font-size: 0.74rem;
   color: var(--color-text-tertiary);
+}
+
+/* ── Order detail timeline (page-specific) ── */
+
+.admin-order-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 var(--space-5) var(--space-4);
+}
+
+.admin-order-timeline__step {
+  display: flex;
+  gap: var(--space-3);
+  position: relative;
+}
+
+.admin-order-timeline__marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 20px;
+}
+
+.admin-order-timeline__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--color-bg-default);
+  box-shadow: 0 0 0 2px var(--color-border-subtle);
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.admin-order-timeline__connector {
+  width: 2px;
+  flex: 1;
+  min-height: 24px;
+  background: var(--color-border-subtle);
+}
+
+.admin-order-timeline__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: var(--space-3);
+  min-width: 0;
+}
+
+.admin-order-timeline__label {
+  font-size: 0.82rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.admin-order-timeline__time {
+  font-size: 0.72rem;
+  color: var(--color-text-tertiary);
+}
+
+.admin-order-timeline__reason {
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.admin-order-timeline__step--info .admin-order-timeline__dot { background: var(--color-action-primary); box-shadow: 0 0 0 2px rgba(10, 140, 255, 0.18); }
+.admin-order-timeline__step--blue .admin-order-timeline__dot { background: var(--color-action-primary); box-shadow: 0 0 0 2px rgba(10, 140, 255, 0.18); }
+.admin-order-timeline__step--success .admin-order-timeline__dot { background: var(--success-500); box-shadow: 0 0 0 2px rgba(34, 165, 89, 0.18); }
+.admin-order-timeline__step--warning .admin-order-timeline__dot { background: var(--warning-500); box-shadow: 0 0 0 2px rgba(217, 154, 0, 0.18); }
+.admin-order-timeline__step--error .admin-order-timeline__dot { background: var(--error-500); box-shadow: 0 0 0 2px rgba(217, 74, 74, 0.18); }
+
+.admin-order-timeline__step--current .admin-order-timeline__dot {
+  width: 14px;
+  height: 14px;
+}
+
+.admin-order-timeline__step--current .admin-order-timeline__label {
+  color: var(--color-action-primary);
 }
 
 .admin-timeline__meta em {
@@ -3880,6 +4038,11 @@
 .admin-user-hero .admin-order-hero__actions {
   align-self: center;
   padding-right: var(--space-5);
+}
+
+.admin-user-hero__avatar--order {
+  background: var(--color-action-primary-bg);
+  color: var(--color-action-primary);
 }
 
 /* ── Role assignment modal ── */
@@ -7810,6 +7973,10 @@
 
 .admin-user-detail-sections .admin-vendor-section + .admin-vendor-section {
   padding-top: 0;
+  border-top: none;
+}
+
+.admin-card--order-detail .admin-vendor-section + .admin-vendor-section {
   border-top: none;
 }
 

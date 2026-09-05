@@ -26,6 +26,7 @@ import {
   ALL_ROLES,
   formatCurrency,
 } from './adminMockData.js';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 const ALL_ROLES_BY_ID = ALL_ROLES.reduce((acc, role) => {
   acc[role.id] = role;
@@ -242,10 +243,10 @@ export default function AdminUserDetail() {
   if (!user) {
     return (
       <div className="admin-empty">
-        <IconUser size={32} stroke={1.4} />
+        <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
         <h3>User not found</h3>
         <p>The user profile may have been archived.</p>
-        <Link to="/admin/users" className="admin-action admin-action--approve">
+        <Link to="/admin/users" className="admin-action--ghost">
           <IconChevronLeft size={13} stroke={2} />
           Back to users
         </Link>

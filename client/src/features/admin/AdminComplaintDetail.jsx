@@ -28,6 +28,7 @@ import {
   COMPLAINT_CATEGORIES,
   formatCurrency,
 } from './adminMockData.js';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 const PRIORITY_TONE = {
   urgent: 'error',
@@ -274,10 +275,10 @@ export default function AdminComplaintDetail() {
   if (!complaint) {
     return (
       <div className="admin-empty">
-        <IconAlertTriangle size={32} stroke={1.4} />
+        <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
         <h3>Complaint not found</h3>
         <p>This complaint may have been removed or archived.</p>
-        <Link to="/admin/complaints" className="admin-action admin-action--approve">
+        <Link to="/admin/complaints" className="admin-action--ghost">
           <IconChevronLeft size={13} stroke={2} />
           Back to complaints
         </Link>

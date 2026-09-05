@@ -27,6 +27,7 @@ import {
   ORDER_STATUS_TONES,
   formatCurrency,
 } from './adminMockData.js';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 const SAMPLE_ITEMS = [
   { name: 'Chicken Wrap & Salad', qty: 1, price: 45.0 },
@@ -155,13 +156,19 @@ function InterventionModal({ option, order, onConfirm, onCancel }) {
 }
 
 function TimelineItem({ entry, isLast }) {
+  const status = entry.new_status;
+  const label = ORDER_STATUS_LABELS[status] || status;
+  const tone = ORDER_STATUS_TONES[status] || 'info';
+  const time = entry.changed_at ? new Date(entry.changed_at).toLocaleString('en-ZA', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+  const actor = entry.changed_by ? entry.changed_by.substring(0, 8) + '...' : 'System';
+
   return (
     <li className="admin-timeline__item">
-      <span className={`admin-timeline__dot admin-timeline__dot--${ORDER_STATUS_TONES[entry.status] || 'info'}`} />
+      <span className={`admin-timeline__dot admin-timeline__dot--${tone}`} />
       <div className="admin-timeline__body">
-        <span className="admin-timeline__title">{ORDER_STATUS_LABELS[entry.status] || entry.status}</span>
+        <span className="admin-timeline__title">{label}</span>
         <span className="admin-timeline__meta">
-          {entry.at} · {entry.actor}
+          {time} · {actor}
           {entry.reason && <> · <em>{entry.reason}</em></>}
         </span>
       </div>
@@ -178,10 +185,10 @@ export default function AdminOrderDetail() {
   if (!order) {
     return (
       <div className="admin-empty">
-        <IconReceipt size={32} stroke={1.4} />
+        <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
         <h3>Order not found</h3>
         <p>This order may have been removed or archived.</p>
-        <Link to="/admin/orders" className="admin-action admin-action--approve">
+        <Link to="/admin/orders" className="admin-action--ghost">
           <IconChevronLeft size={13} stroke={2} />
           Back to orders
         </Link>
@@ -213,30 +220,42 @@ export default function AdminOrderDetail() {
       />
 
       {/* Hero */}
-      <section className={`admin-order-hero${isIssue ? ' admin-order-hero--issue' : ''}`}>
-        <div className="admin-order-hero__head">
-          <div>
-            <span className="admin-vendor-hero__slug">Order</span>
-            <h2 className="admin-order-hero__id">#{order.id}</h2>
-            <div className="admin-order-hero__meta">
-              <StatusPill status={order.status} />
-              {order.flags?.map((flag) => (
-                <span key={flag} className={`admin-flag admin-flag--${flag === 'urgent' ? 'warning' : flag === 'refund' ? 'success' : flag.includes('cancel') || flag.includes('rejected') || flag === 'uncollected' ? 'error' : 'info'}`}>
-                  {flag}
-                </span>
-              ))}
-            </div>
+      <section className={`admin-user-hero${isIssue ? ' admin-user-hero--inactive' : ''}`}>
+        <div className="admin-user-hero__avatar admin-user-hero__avatar--order">
+          <IconReceipt size={32} stroke={1.6} />
+        </div>
+        <div className="admin-user-hero__info">
+          <div className="admin-user-hero__head">
+            <span className="admin-user-hero__slug">Order #{order.id}</span>
+            <StatusPill status={order.status} />
+            {order.flags?.filter((f) => !['refund', 'uncollected', 'cancelled', 'rejected'].includes(f)).map((flag) => (
+              <span key={flag} className={`admin-flag admin-flag--${flag === 'urgent' ? 'warning' : 'info'}`}>
+                {flag}
+              </span>
+            ))}
           </div>
-          <div className="admin-order-hero__actions">
-            <button type="button" className="admin-action">
-              <IconHistory size={14} stroke={2} />
-              View history
-            </button>
-            <button type="button" className="admin-action admin-action--approve">
-              <IconCircleCheck size={14} stroke={2} />
-              Mark resolved
-            </button>
+          <h2 className="admin-user-hero__name">{order.vendor_name}</h2>
+          <span className="admin-user-hero__email">{order.user_full_name} · {order.employee_number}</span>
+          <div className="admin-user-hero__roles">
+            <span className="admin-user-hero__vendor">
+              <IconBuildingStore size={12} stroke={1.8} />
+              {order.item_count} items · {formatCurrency(order.total)}
+            </span>
+            <span className="admin-user-hero__vendor">
+              <IconClock size={12} stroke={1.8} />
+              {order.collection_point_name}
+            </span>
           </div>
+        </div>
+        <div className="admin-order-hero__actions">
+          <button type="button" className="admin-action--ghost">
+            <IconHistory size={14} stroke={2} />
+            View history
+          </button>
+          <button type="button" className="admin-action--ghost">
+            <IconCircleCheck size={14} stroke={2} />
+            Mark resolved
+          </button>
         </div>
       </section>
 
@@ -289,22 +308,35 @@ export default function AdminOrderDetail() {
                 <h3 className="admin-card__title">Order timeline</h3>
               </div>
             </header>
-            <ol className="admin-timeline">
-              {order.timeline.map((entry, idx) => (
-                <TimelineItem
-                  key={`${entry.status}-${idx}`}
-                  entry={entry}
-                  isLast={idx === order.timeline.length - 1}
-                />
-              ))}
-            </ol>
+            <div className="admin-order-timeline">
+              {order.timeline.map((entry, idx) => {
+                const status = entry.new_status;
+                const label = ORDER_STATUS_LABELS[status] || status;
+                const tone = ORDER_STATUS_TONES[status] || 'info';
+                const time = entry.changed_at ? new Date(entry.changed_at).toLocaleString('en-ZA', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+                const isLast = idx === order.timeline.length - 1;
+                return (
+                  <div key={`${status}-${idx}`} className={`admin-order-timeline__step admin-order-timeline__step--${tone}${isLast ? ' admin-order-timeline__step--current' : ''}`}>
+                    <div className="admin-order-timeline__marker">
+                      <span className="admin-order-timeline__dot" />
+                      {!isLast && <span className="admin-order-timeline__connector" />}
+                    </div>
+                    <div className="admin-order-timeline__content">
+                      <span className="admin-order-timeline__label">{label}</span>
+                      <span className="admin-order-timeline__time">{time}</span>
+                      {entry.reason && <span className="admin-order-timeline__reason">{entry.reason}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </section>
         </div>
 
         {/* Right column */}
         <div className="admin-order-grid__side">
           {/* Customer */}
-          <section className="admin-card">
+          <section className="admin-card admin-card--order-detail">
             <header className="admin-card__head">
               <div>
                 <span className="admin-card__eyebrow">Customer</span>

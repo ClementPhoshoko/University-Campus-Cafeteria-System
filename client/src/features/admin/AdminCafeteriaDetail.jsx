@@ -25,6 +25,7 @@ import {
   ACTIVE_VENDORS,
   formatCurrency,
 } from './adminMockData.js';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 function formatLocalTime(timezone = 'Africa/Johannesburg') {
   return new Date().toLocaleTimeString('en-ZA', {
@@ -170,10 +171,10 @@ export default function AdminCafeteriaDetail() {
   if (!entity) {
     return (
       <div className="admin-empty">
-        <IconMapPin size={32} stroke={1.4} />
+        <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
         <h3>Location not found</h3>
         <p>This site or building may have been removed.</p>
-        <Link to="/admin/cafeterias" className="admin-action admin-action--approve">
+        <Link to="/admin/cafeterias" className="admin-action--ghost">
           <IconChevronLeft size={13} stroke={2} />
           Back to locations
         </Link>
@@ -523,10 +524,10 @@ export default function AdminCafeteriaDetail() {
               </ul>
             ) : (
               <div className="admin-empty">
-                <IconClipboardCheck size={32} stroke={1.4} />
+                <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
                 <h3>No pickup points yet</h3>
                 <p>Add a collection point so customers know where to collect their orders.</p>
-                <button type="button" className="admin-action admin-action--approve">
+                <button type="button" className="admin-action--ghost">
                   <IconPlus size={13} stroke={2} /> Add pickup point
                 </button>
               </div>

@@ -27,6 +27,7 @@ import {
   COMPLAINT_METRICS,
   formatCurrency,
 } from './adminMockData.js';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 const PRIORITY_TONE = {
   urgent: 'error',
@@ -297,7 +298,7 @@ export default function AdminComplaintsPage() {
             </div>
           ) : (
             <div className="admin-empty">
-              <IconAlertTriangle size={32} stroke={1.4} />
+              <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
               <h3>No complaints in this view</h3>
               <p>Try adjusting the filters or selecting a different tab.</p>
             </div>

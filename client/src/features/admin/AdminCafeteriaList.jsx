@@ -22,6 +22,7 @@ import {
   ADMIN_COLLECTION_POINTS,
   formatCurrency,
 } from './adminMockData.js';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 const VIEW_TABS = [
   { id: 'sites', label: 'Sites', count: ADMIN_SITES.length },
@@ -561,7 +562,7 @@ export default function AdminCafeteriaList() {
               </ul>
             ) : (
               <div className="admin-empty">
-                <IconClipboardCheck size={32} stroke={1.4} />
+                <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
                 <h3>No pickup points found</h3>
                 <p>Try adjusting the search or site filter.</p>
               </div>

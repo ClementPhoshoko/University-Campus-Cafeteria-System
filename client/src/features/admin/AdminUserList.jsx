@@ -23,6 +23,7 @@ import {
   ROLE_FILTER_MATCH,
 } from './adminMockData.js';
 import Pagination from '../../components/ui/Pagination.jsx';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -319,12 +320,12 @@ export default function AdminUserList() {
         </>
       ) : (
         <div className="admin-empty">
-          <IconUser size={32} stroke={1.4} />
+          <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
           <h3>No users match those filters</h3>
           <p>Try clearing the search or selecting a different status / role.</p>
           <button
             type="button"
-            className="admin-action"
+            className="admin-action--ghost"
             onClick={() => { setQuery(''); setStatusFilter('all'); setRoleFilter('all'); }}
           >
             Clear filters

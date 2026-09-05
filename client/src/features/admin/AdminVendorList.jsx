@@ -15,6 +15,7 @@ import {
 } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
 import { ACTIVE_VENDORS, PENDING_VENDOR_APPROVALS, formatCurrency } from './adminMockData.js';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 function VendorLogo({ src, alt }) {
   return (
@@ -397,12 +398,12 @@ export default function AdminVendorList() {
             </>
           ) : (
             <div className="admin-empty">
-              <IconBuildingStore size={32} stroke={1.4} />
+              <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
               <h3>No vendors match those filters</h3>
               <p>Try clearing the search or selecting a different status.</p>
               <button
                 type="button"
-                className="admin-action admin-action--ghost"
+                className="admin-action--ghost"
                 onClick={() => { setQuery(''); setStatusFilter('all'); }}
               >
                 Clear filters
@@ -503,7 +504,7 @@ export default function AdminVendorList() {
             </>
           ) : (
             <div className="admin-empty">
-              <IconShieldCheck size={32} stroke={1.4} />
+              <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
               <h3>No applications pending</h3>
               <p>Vendor applications will appear here as they come in.</p>
             </div>

@@ -24,6 +24,7 @@ import {
   ANNOUNCEMENT_CATEGORIES,
   ANNOUNCEMENT_CHANNELS,
 } from './adminMockData.js';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 const SEVERITY_TONE = {
   info: 'info',
@@ -99,10 +100,10 @@ export default function AdminAnnouncementDetail() {
   if (!announcement) {
     return (
       <div className="admin-empty">
-        <IconSpeakerphone size={32} stroke={1.4} />
+        <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
         <h3>Announcement not found</h3>
         <p>This announcement may have been removed.</p>
-        <Link to="/admin/announcements" className="admin-action admin-action--approve">
+        <Link to="/admin/announcements" className="admin-action--ghost">
           <IconChevronLeft size={13} stroke={2} />
           Back to announcements
         </Link>

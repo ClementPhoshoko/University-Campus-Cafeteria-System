@@ -21,6 +21,7 @@ import {
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import { ACTIVE_VENDORS, PENDING_VENDOR_APPROVALS, formatCurrency } from './adminMockData.js';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 const TOP_ITEMS = [
   { name: 'Chicken Wrap & Salad', orders: 142, revenue: 6390, image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=80' },
@@ -51,10 +52,10 @@ export default function AdminVendorDetail() {
   if (!vendor) {
     return (
       <div className="admin-empty">
-        <IconBuildingStore size={32} stroke={1.4} />
+        <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
         <h3>Vendor not found</h3>
         <p>The vendor you are looking for may have been removed.</p>
-        <Link to="/admin/vendors" className="admin-action admin-action--approve">
+        <Link to="/admin/vendors" className="admin-action--ghost">
           <IconChevronLeft size={13} stroke={2} />
           Back to all vendors
         </Link>
