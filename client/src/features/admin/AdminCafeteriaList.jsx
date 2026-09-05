@@ -162,7 +162,7 @@ function NewSiteModal({ onClose }) {
           </div>
           <div>
             <h3 className="admin-modal__title">Register new site</h3>
-            <p className="admin-modal__sub">Add a new campus / site to the platform.</p>
+            <p className="admin-modal__sub">Add a new site to the platform.</p>
           </div>
         </header>
 
@@ -363,7 +363,7 @@ export default function AdminCafeteriaList() {
         <div>
           <span className="admin-card__eyebrow">Locations</span>
           <p className="admin-vendors__sub">
-            Register and manage the campus sites where food orders are placed, prepared, and collected.
+            Register and manage the sites where food orders are placed, prepared, and collected.
           </p>
         </div>
         <div className="admin-vendors__actions">

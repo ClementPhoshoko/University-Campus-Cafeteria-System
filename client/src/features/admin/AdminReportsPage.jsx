@@ -205,7 +205,7 @@ function SalesReport() {
           </section>
 
           <section className="admin-card">
-            <SectionHeader eyebrow="Sites" title="Revenue by campus" />
+            <SectionHeader eyebrow="Sites" title="Revenue by site" />
             <ul className="admin-cp-vendor-list">
               {bySite.map((s) => (
                 <li key={s.id} className="admin-cp-vendor">

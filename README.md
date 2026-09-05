@@ -970,7 +970,7 @@ sessions / authentication metadata
 ## Organisation & locations
 
 ```text
-campuses
+sites
 buildings
 floors
 collection_points
@@ -1122,9 +1122,9 @@ PATCH  /profile/preferences
 ## Locations
 
 ```text
-GET    /campuses
-GET    /campuses/:campusId
-GET    /campuses/:campusId/buildings
+GET    /sites
+GET    /sites/:siteId
+GET    /sites/:siteId/buildings
 GET    /buildings/:buildingId/vendors
 ```
 
@@ -1239,9 +1239,9 @@ GET    /admin/dashboard
 GET    /admin/vendors
 POST   /admin/vendors
 PATCH  /admin/vendors/:vendorId
-GET    /admin/campuses
-POST   /admin/campuses
-PATCH  /admin/campuses/:campusId
+GET    /admin/sites
+POST   /admin/sites
+PATCH  /admin/sites/:siteId
 GET    /admin/users
 PATCH  /admin/users/:userId/roles
 GET    /admin/audit-logs
@@ -1278,7 +1278,7 @@ Recommended top-level tags:
 ```text
 Authentication
 Profile
-Campuses
+Sites
 Vendors
 Menus
 Search
@@ -1308,7 +1308,7 @@ Recommended Express service layer:
 ```text
 AuthService
 UserService
-CampusService
+SiteService
 VendorService
 MenuService
 SearchService
@@ -2185,7 +2185,7 @@ Order history
 Basic notifications
 Vendor live queue
 Vendor menu management
-Basic admin vendor/campus configuration
+Basic admin vendor/site configuration
 Core reporting
 Audit logging
 ```
