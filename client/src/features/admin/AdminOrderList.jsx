@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import {
   IconSearch,
   IconReceipt,
@@ -16,15 +16,17 @@ import {
   IconAlertCircle,
 } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
+import { adminRequest } from '../../services/adminApi.js';
+import { useAuth } from '../../hooks/useAuth.js';
+import { useRoles } from '../../hooks/useRoles.js';
+import { formatCurrency } from './adminMockData.js';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 import {
-  ADMIN_ORDERS,
   ORDER_STATUS_LABELS,
   ORDER_STATUS_TONES,
   ORDER_STATUS_FILTERS,
   ORDER_STATUS_FILTER_MATCH,
-  formatCurrency,
 } from './adminMockData.js';
-import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -133,50 +135,66 @@ function StatBlock({ label, value, sub, icon: Icon }) {
   );
 }
 
+function useStatusFilters(orders) {
+  const STATUS_FILTERS = ['all', 'preparing', 'ready_for_collection', 'completed', 'cancelled', 'refund_pending', 'payment_pending', 'rejected', 'collection_not_completed'];
+  const counts = { all: orders.length };
+  STATUS_FILTERS.forEach((f) => {
+    if (f !== 'all') counts[f] = orders.filter((o) => o.status === f).length;
+  });
+  return counts;
+}
+
 export default function AdminOrderList() {
+  const { user, initialized } = useAuth();
+  const { roles, loading: rolesLoading } = useRoles();
+  const [token, setToken] = useState('');
+
+  useEffect(() => {
+    if (initialized && user?.session?.access_token) {
+      setToken(user.session.access_token);
+    }
+  }, [initialized, user]);
+
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [vendorFilter, setVendorFilter] = useState('all');
   const [vendorDropdownOpen, setVendorDropdownOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = useMemo(() => {
-    return ADMIN_ORDERS.filter((order) => {
-      const matchesQuery = !query
-        || `${order.id} ${order.user_full_name} ${order.employee_number} ${order.vendor_name}`.toLowerCase().includes(query.toLowerCase());
-      const matchesStatus = ORDER_STATUS_FILTER_MATCH[statusFilter](order);
-      const matchesVendor = vendorFilter === 'all' || order.vendor_id === vendorFilter;
-      return matchesQuery && matchesStatus && matchesVendor;
-    });
-  }, [query, statusFilter, vendorFilter]);
+  useEffect(() => {
+    let cancelled = false;
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginatedOrders = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+    const fetchOrders = async () => {
+      setLoading(true);
+      try {
+        const params = {
+          search: query || undefined,
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+        };
 
-  const todayCount = ADMIN_ORDERS.filter((o) => o.created_at.startsWith('2026-09-01')).length;
-  const preparingCount = ADMIN_ORDERS.filter((o) => o.status === 'preparing').length;
-  const readyCount = ADMIN_ORDERS.filter((o) => o.status === 'ready_for_collection').length;
-  const issueCount = ADMIN_ORDERS.filter((o) =>
-    ['payment_pending', 'refund_pending', 'cancelled', 'rejected', 'collection_not_completed'].includes(o.status)
-  ).length;
+        const apiPath = '/admin/vendors/approvals';
 
-  const statusCounts = useMemo(() => {
-    const counts = { all: ADMIN_ORDERS.length };
-    ORDER_STATUS_FILTERS.forEach((f) => {
-      if (f.id !== 'all') counts[f.id] = ADMIN_ORDERS.filter((o) => ORDER_STATUS_FILTER_MATCH[f.id](o)).length;
-    });
-    return counts;
-  }, []);
+        const response = await adminRequest(apiPath, {
+          token,
+          query: params,
+        });
+        setOrders(response.data || []);
+      } catch (err) {
+        console.error('Failed to fetch orders:', err);
+      } finally {
+        setLoading(false);
+        if (!cancelled) {
+          setPage(1);
+        }
+      }
+    };
 
-  const vendorCounts = useMemo(() => {
-    const counts = { all: ADMIN_ORDERS.length };
-    VENDOR_FILTERS.forEach((v) => {
-      if (v.id !== 'all') counts[v.id] = ADMIN_ORDERS.filter((o) => o.vendor_id === v.id).length;
-    });
-    return counts;
-  }, []);
-
-  const selectedVendor = VENDOR_FILTERS.find((v) => v.id === vendorFilter);
+    if (initialized && token) {
+      fetchOrders();
+    }
+  }, [initialized, token, query, statusFilter, roles]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -190,7 +208,31 @@ export default function AdminOrderList() {
 
   useEffect(() => {
     setPage(1);
-  }, [query, statusFilter, vendorFilter]);
+  }, [query, statusFilter]);
+
+  // Derive vendor list from orders for the filter dropdown
+  const uniqueVendors = useMemo(() => {
+    const seen = new Set();
+    return [
+      ...orders
+        .filter((o) => o.vendor_name)
+        .map((o) => ({ id: o.vendor_name.replace(/\s+/g, '-').toLowerCase(), label: o.vendor_name })),
+      ...VENDOR_FILTERS,
+    ].filter((v) => !seen.has(v.id) && seen.add(v.id));
+  }, [orders]);
+
+  const statusCounts = useStatusFilters(orders);
+  const totalPages = Math.ceil(orders.length / ITEMS_PER_PAGE);
+  const paginatedOrders = orders.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  const todayCount = orders.filter((o) => o.created_at?.startsWith('2026-09-01')).length;
+  const preparingCount = orders.filter((o) => o.status === 'preparing').length;
+  const readyCount = orders.filter((o) => o.status === 'ready_for_collection').length;
+  const issueCount = orders.filter((o) =>
+    ['payment_pending', 'refund_pending', 'cancelled', 'rejected', 'collection_not_completed'].includes(o.status)
+  ).length;
+
+  const selectedVendor = uniqueVendors.find((v) => v.id === vendorFilter);
 
   return (
     <div className="admin-orders">
@@ -227,15 +269,15 @@ export default function AdminOrderList() {
         </div>
 
         <div className="admin-vendors__chips" role="group" aria-label="Status filter">
-          {ORDER_STATUS_FILTERS.map((filter) => (
+          {Object.keys(statusCounts).map((filter) => (
             <button
-              key={filter.id}
+              key={filter}
               type="button"
-              className={`admin-vendors__chip${statusFilter === filter.id ? ' admin-vendors__chip--active' : ''}`}
-              onClick={() => setStatusFilter(filter.id)}
+              className={`admin-vendors__chip${statusFilter === filter ? ' admin-vendors__chip--active' : ''}`}
+              onClick={() => setStatusFilter(filter)}
             >
-              {filter.label}
-              <span className="admin-vendors__chip-count">{statusCounts[filter.id]}</span>
+              {filter}
+              <span className="admin-vendors__chip-count">{statusCounts[filter]}</span>
             </button>
           ))}
         </div>
@@ -252,7 +294,7 @@ export default function AdminOrderList() {
           </button>
           {vendorDropdownOpen && (
             <div className="admin-orders__vendor-select-dropdown">
-              {VENDOR_FILTERS.map((v) => (
+              {uniqueVendors.map((v) => (
                 <button
                   key={v.id}
                   type="button"
@@ -263,7 +305,7 @@ export default function AdminOrderList() {
                   }}
                 >
                   {v.label}
-                  <span className="admin-orders__vendor-select-count">{vendorCounts[v.id]}</span>
+                  <span className="admin-orders__vendor-select-count">{statusCounts[v.id] || 0}</span>
                 </button>
               ))}
             </div>
@@ -271,7 +313,7 @@ export default function AdminOrderList() {
         </div>
       </div>
 
-      {filtered.length > 0 ? (
+      {paginatedOrders.length > 0 ? (
         <>
           <div className="admin-card admin-card--full">
             <table className="admin-table">
@@ -295,7 +337,7 @@ export default function AdminOrderList() {
           <Pagination
             currentPage={page}
             totalPages={totalPages}
-            totalItems={filtered.length}
+            totalItems={orders.length}
             itemsPerPage={ITEMS_PER_PAGE}
             label="orders"
             onPageChange={setPage}

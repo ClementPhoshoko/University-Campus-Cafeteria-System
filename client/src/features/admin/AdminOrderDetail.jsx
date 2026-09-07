@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   IconChevronLeft,
@@ -20,9 +20,8 @@ import {
   IconNotes,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
+import { adminRequest } from '../../services/adminApi.js';
 import {
-  ADMIN_ORDERS,
-  ORDER_STATUS,
   ORDER_STATUS_LABELS,
   ORDER_STATUS_TONES,
   formatCurrency,
@@ -104,7 +103,7 @@ function InterventionCard({ option, onClick }) {
   );
 }
 
-function InterventionModal({ option, order, onConfirm, onCancel }) {
+function InterventionModal({ option, order, onConfirm, onCancel, api }) {
   if (!option) return null;
   return (
     <div className="admin-modal" role="dialog" aria-modal="true">
@@ -145,7 +144,7 @@ function InterventionModal({ option, order, onConfirm, onCancel }) {
           <button
             type="button"
             className={`admin-action admin-action--${option.tone === 'error' ? 'reject' : option.tone === 'success' ? 'approve' : 'approve'}`}
-            onClick={() => onConfirm(option)}
+            onClick={() => onConfirm(option, api)}
           >
             Confirm action
           </button>
@@ -179,8 +178,26 @@ function TimelineItem({ entry, isLast }) {
 
 export default function AdminOrderDetail() {
   const { orderId } = useParams();
-  const order = useMemo(() => ADMIN_ORDERS.find((o) => o.id === orderId), [orderId]);
+  const [order, setOrder] = useState(null);
   const [intervention, setIntervention] = useState(null);
+  const { user } = useAuth();
+  const token = user?.session?.access_token;
+
+  useEffect(() => {
+    const fetchOrder = async () => {
+      if (!orderId || !token) return;
+      try {
+        const response = await adminRequest(`/admin/vendors/orders/${orderId}`, {
+          token,
+        });
+        setOrder(response.data);
+      } catch (err) {
+        console.error('Failed to fetch order:', err);
+      }
+    };
+
+    fetchOrder();
+  }, [orderId, token]);
 
   if (!order) {
     return (
@@ -207,6 +224,14 @@ export default function AdminOrderDetail() {
     ORDER_STATUS.REJECTED,
     ORDER_STATUS.COLLECTION_NOT_COMPLETED,
   ].includes(order.status);
+
+  const api = {
+    post: (path, body) => {
+      // In a real implementation, this would make an actual API call
+      // For now, we'll just log the action
+      console.log(`API POST ${path}`, body);
+    },
+  };
 
   return (
     <div className="admin-order-detail">
@@ -377,7 +402,7 @@ export default function AdminOrderDetail() {
                 <InterventionCard
                   key={option.id}
                   option={option}
-                  onClick={setIntervention}
+                  onClick={() => setIntervention(option)}
                 />
               ))}
             </div>
@@ -388,7 +413,39 @@ export default function AdminOrderDetail() {
       <InterventionModal
         option={intervention}
         order={order}
-        onConfirm={() => setIntervention(null)}
+        onConfirm={(option) => {
+          // Trigger the intervention via API
+          const { id } = option;
+          const reason = ''; // In a real implementation, get from textarea
+          const notifyCustomer = false;
+
+          if (id === 'refund') {
+            adminRequest(`/admin/vendors/orders/${order.id}/refund`, {
+              method: 'POST',
+              token,
+              body: { reason, notify_customer: notifyCustomer },
+            });
+          } else if (id === 'cancel') {
+            adminRequest(`/admin/vendors/orders/${order.id}/cancel`, {
+              method: 'POST',
+              token,
+              body: { reason, notify_customer: notifyCustomer },
+            });
+          } else if (id === 'escalate') {
+            adminRequest(`/admin/vendors/orders/${order.id}/escalate`, {
+              method: 'POST',
+              token,
+              body: { reason },
+            });
+          } else if (id === 'note') {
+            adminRequest(`/admin/vendors/orders/${order.id}/note`, {
+              method: 'POST',
+              token,
+              body: { reason },
+            });
+          }
+          setIntervention(null);
+        }}
         onCancel={() => setIntervention(null)}
       />
     </div>

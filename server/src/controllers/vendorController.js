@@ -805,3 +805,77 @@ export async function getPublicVendorHours(req, res) {
     return handleControllerError(res, err);
   }
 }
+
+/**
+ * POST /admin/vendors/orders
+ * Admin / vendor manager creates an order for their vendor.
+ * Body: { vendor_id, user_id, collection_point_id, items, total, payment_method, status?: 'pending'|'preparing'|'ready_for_collection'|'completed'|'cancelled'|'refunded'|'rejected' }
+ */
+export async function createVendorOrder(req, res) {
+  try {
+    const { vendor_id, user_id, collection_point_id, items, total, payment_method, status = 'pending' } = req.body || {};
+
+    if (!vendor_id || !user_id || !collection_point_id || !items || total === undefined) {
+      return sendValidation(res, ['vendor_id, user_id, collection_point_id, items and total are required']);
+    }
+
+    // Validate vendor exists
+    const vendor = await mustExist('vendors', vendor_id, 'VENDOR_NOT_FOUND', 'Vendor not found');
+
+    // Validate collection point belongs to vendor
+    const { data: cp, error: cpError } = await db()
+      .from('collection_points')
+      .select('id, building_id')
+      .eq('id', collection_point_id)
+      .maybeSingle();
+    if (cpError) throw cpError;
+    if (!cp) throw new ApiError(404, 'COLLECTION_POINT_NOT_FOUND', 'Collection point not found');
+
+    // Verify collection point belongs to vendor's locations
+    const { data: vendorCp, error: vpError } = await db()
+      .from('vendor_locations')
+      .select('id')
+      .eq('vendor_id', vendor_id)
+      .eq('collection_point_id', collection_point_id)
+      .maybeSingle();
+    if (vpError) throw vpError;
+    if (!vendorCp) throw new ApiError(400, 'INVALID_REFERENCE', 'Collection point does not belong to this vendor');
+
+    // Validate user exists
+    const { data: user, error: userError } = await db().from('profiles').select('id, email, full_name, employee_number').eq('id', user_id).maybeSingle();
+    if (userError) throw userError;
+    if (!user) throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
+
+    // Create the order with audit logging
+    const { data, error } = await db()
+      .from('orders')
+      .insert({
+        vendor_id,
+        user_id,
+        collection_point_id,
+        items: Array.isArray(items) ? items : [items],
+        total,
+        payment_method,
+        status,
+        created_at: new Date(),
+      })
+      .select()
+      .single();
+    if (error) throw error;
+
+    // Write audit log for order creation
+    await writeAudit(req, {
+      action: 'INSERT',
+      table_name: 'public.orders',
+      record_key: data.id,
+      new_data: { vendor_id, user_id, collection_point_id, items, total, payment_method, status },
+    });
+
+    return respond(req, res, {
+      success: true,
+      order: { ...data, vendor_name: vendor.name, collection_point_name: cp.name, user_full_name: user.full_name, user_employee_number: user.employee_number },
+    }, { cacheControl: CACHE.create });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
+}

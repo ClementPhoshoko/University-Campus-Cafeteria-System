@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   IconChevronLeft,
@@ -20,34 +20,83 @@ import {
   IconEye,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
-import { ACTIVE_VENDORS, PENDING_VENDOR_APPROVALS, formatCurrency } from './adminMockData.js';
+import { adminRequest } from '../../services/adminApi.js';
+import { useAuth } from '../../hooks/useAuth.js';
+import { formatCurrency } from './adminMockData.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
-const TOP_ITEMS = [
-  { name: 'Chicken Wrap & Salad', orders: 142, revenue: 6390, image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=80' },
-  { name: 'House Cappuccino', orders: 124, revenue: 3720, image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=80' },
-  { name: 'Grilled Chicken & Rice', orders: 96, revenue: 4704, image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=80' },
-  { name: 'Vegetable Pasta', orders: 88, revenue: 3520, image: 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=80' },
-  { name: 'Berry Scone', orders: 76, revenue: 2128, image: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=80' },
-];
+function StatusPill({ status }) {
+  return <span className={`admin-status admin-status--${status}`}>{status}</span>;
+}
 
-const RECENT_ACTIVITY = [
-  { type: 'order', icon: 'check', message: 'Order #48211 completed', meta: 'R142.50', time: '2 hours ago' },
-  { type: 'order', icon: 'check', message: 'Order #48208 ready for collection', meta: 'R86.00', time: '2 hours ago' },
-  { type: 'order', icon: 'arrow', message: 'Order volume increased', meta: '+18% today', time: 'Yesterday' },
-  { type: 'menu', icon: 'edit', message: 'Menu updated - Chicken Wrap price changed', meta: '', time: '3 days ago' },
-  { type: 'status', icon: 'check', message: 'Vendor approved', meta: 'by Admin', time: '4 days ago' },
-];
+function formatCurrencyLocal(amount) {
+  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
+}
+
+function VendorLogo({ src, alt }) {
+  return (
+    <div className="admin-vendor-detail__logo">
+      <img src={src} alt={alt || ''} />
+    </div>
+  );
+}
+
+function getVendorDetails(vendor) {
+  return {
+    id: vendor.id,
+    name: vendor.name,
+    slug: vendor.slug,
+    description: vendor.description,
+    logo_url: vendor.logo_url,
+    status: vendor.status,
+    isPending: vendor.isPending,
+    vendor_location_name: vendor.vendor_location_name,
+    categories: vendor.categories || [],
+    corporate_catering_enabled: vendor.corporate_catering_enabled || false,
+    manager_name: vendor.manager_name || '—',
+    support_email: vendor.support_email || '—',
+    support_phone: vendor.support_phone || '—',
+    operating_hours: vendor.operating_hours || [],
+    revenue_30d: vendor.revenue_30d || 0,
+    average_rating: vendor.average_rating || 0,
+    rating_count: vendor.rating_count || 0,
+    menu_item_count: vendor.menu_item_count || 0,
+  };
+}
 
 export default function AdminVendorDetail() {
   const { vendorId } = useParams();
-  const vendor = useMemo(() => {
-    const active = ACTIVE_VENDORS.find((v) => v.id === vendorId);
-    if (active) return { ...active, isPending: false };
-    const pending = PENDING_VENDOR_APPROVALS.find((v) => v.id === vendorId);
-    if (pending) return { ...pending, status: 'pending', isPending: true };
-    return null;
-  }, [vendorId]);
+  const { user } = useAuth();
+  const token = user?.session?.access_token;
+  const [vendor, setVendor] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!vendorId || !token) return;
+    const fetchVendor = async () => {
+      try {
+        const response = await adminRequest(`/api/v1/admin/vendors/${vendorId}`, {
+          token,
+        });
+        setVendor(getVendorDetails(response.data));
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to fetch vendor:', err);
+        setLoading(false);
+      }
+    };
+
+    fetchVendor();
+  }, [vendorId, token]);
+
+  if (loading) {
+    return (
+      <div className="admin-vendor-detail__loading">
+        <div className="admin-vendor-detail__loading-spinner" />
+        <p>Loading vendor details...</p>
+      </div>
+    );
+  }
 
   if (!vendor) {
     return (
@@ -125,14 +174,18 @@ export default function AdminVendorDetail() {
         <section className="admin-vendor-performance">
           <div className="admin-vendor-performance__metric">
             <span className="admin-vendor-performance__label">Orders today</span>
-            <span className="admin-vendor-performance__value">{vendor.orders_today}</span>
+            <span className="admin-vendor-performance__value">
+              {vendor.orders_today || 0}
+            </span>
             <span className="admin-vendor-performance__sub">
               <IconTrendingUp size={12} stroke={2} /> +14 today
             </span>
           </div>
           <div className="admin-vendor-performance__metric">
             <span className="admin-vendor-performance__label">30-day revenue</span>
-            <span className="admin-vendor-performance__value">{formatCurrency(vendor.revenue_30d)}</span>
+            <span className="admin-vendor-performance__value">
+              {formatCurrencyLocal(vendor.revenue_30d || 0)}
+            </span>
             <span className="admin-vendor-performance__sub">+8.2% vs prev</span>
           </div>
           <div className="admin-vendor-performance__metric">
@@ -141,11 +194,13 @@ export default function AdminVendorDetail() {
               {vendor.average_rating.toFixed(1)}
               <IconStarFilled size={16} stroke={0} className="admin-vendor-performance__star" />
             </span>
-            <span className="admin-vendor-performance__sub">{vendor.rating_count} reviews</span>
+            <span className="admin-vendor-performance__sub">{vendor.rating_count || 0} reviews</span>
           </div>
           <div className="admin-vendor-performance__metric">
             <span className="admin-vendor-performance__label">Menu items</span>
-            <span className="admin-vendor-performance__value">{vendor.menu_item_count}</span>
+            <span className="admin-vendor-performance__value">
+              {vendor.menu_item_count || 0}
+            </span>
             <span className="admin-vendor-performance__sub">3 sold out today</span>
           </div>
         </section>
@@ -200,11 +255,11 @@ export default function AdminVendorDetail() {
               <h4 className="admin-vendor-info__section-title">Operating hours</h4>
               <div className="admin-vendor-info__row">
                 <IconClock size={14} stroke={1.8} />
-                <span>{vendor.operating_hours}</span>
+                <span>{vendor.operating_hours ? vendor.operating_hours.map((h) => `${h.day_of_week}: ${h.opens_at}-${h.closes_at}`).join(', ') : 'Not set'}</span>
               </div>
               <div className="admin-vendor-info__row admin-vendor-info__row--muted">
                 <span>Est. prep time</span>
-                <span>{vendor.estimated_prep_minutes}</span>
+                <span>{vendor.estimated_prep_minutes || 0} minutes</span>
               </div>
             </div>
 
@@ -234,19 +289,16 @@ export default function AdminVendorDetail() {
               </button>
             </div>
             <ul className="admin-vendor-top-items__list">
-              {TOP_ITEMS.map((item, index) => (
-                <li key={item.name} className="admin-vendor-top-items__item">
-                  <span className="admin-vendor-top-items__rank">{index + 1}</span>
-                  <div className="admin-vendor-top-items__image">
-                    <img src={item.image} alt={item.name} />
-                  </div>
-                  <div className="admin-vendor-top-items__body">
-                    <span className="admin-vendor-top-items__name">{item.name}</span>
-                    <span className="admin-vendor-top-items__meta">{item.orders} orders</span>
-                  </div>
-                  <span className="admin-vendor-top-items__revenue">{formatCurrency(item.revenue)}</span>
-                </li>
-              ))}
+              {/* Top items would come from API - showing placeholder for now */}
+              <li className="admin-vendor-top-items__item" style={{ display: 'none' }}>
+                <span className="admin-vendor-top-items__rank">1</span>
+                <div className="admin-vendor-top-items__image" />
+                <div className="admin-vendor-top-items__body">
+                  <span className="admin-vendor-top-items__name">No data</span>
+                  <span className="admin-vendor-top-items__meta">0 orders</span>
+                </div>
+                <span className="admin-vendor-top-items__revenue">—</span>
+              </li>
             </ul>
           </section>
         </div>
@@ -262,20 +314,12 @@ export default function AdminVendorDetail() {
             </button>
           </div>
           <ul className="admin-vendor-activity__list">
-            {RECENT_ACTIVITY.map((item, index) => (
-              <li key={index} className="admin-vendor-activity__item">
-                <span className={`admin-vendor-activity__icon admin-vendor-activity__icon--${item.icon}`}>
-                  {item.icon === 'check' && <IconCheck size={12} stroke={2.5} />}
-                  {item.icon === 'arrow' && <IconTrendingUp size={12} stroke={2} />}
-                  {item.icon === 'edit' && <IconEdit size={12} stroke={2} />}
-                </span>
-                <div className="admin-vendor-activity__content">
-                  <span className="admin-vendor-activity__message">{item.message}</span>
-                  {item.meta && <span className="admin-vendor-activity__meta">{item.meta}</span>}
-                </div>
-                <span className="admin-vendor-activity__time">{item.time}</span>
-              </li>
-            ))}
+            {/* Recent activity would come from API - showing placeholder */}
+            <li className="admin-vendor-activity__item" style={{ display: 'none' }}>
+              <span className="admin-vendor-activity__icon admin-vendor-activity__icon--check" />
+              <span className="admin-vendor-activity__message">No recent activity</span>
+              <span className="admin-vendor-activity__time">—</span>
+            </li>
           </ul>
         </section>
       )}

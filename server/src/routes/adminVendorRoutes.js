@@ -9,6 +9,7 @@ import {
   createVendor,
   updateVendor,
   updateVendorApproval,
+  createVendorOrder,
   createVendorLocation,
   updateVendorLocation,
   addVendorUser,
@@ -23,6 +24,9 @@ const mutations = rateLimit({ windowMs: 60 * 1000, max: 30 });
 
 adminVendorRouter.get('/admin/vendors', listVendors);
 adminVendorRouter.post('/admin/vendors', mutations, createVendor);
+
+// Admin + vendor manager can create/manage vendor orders
+adminVendorRouter.post('/admin/vendors/orders', mutations, createVendorOrder);
 
 // Must be declared before /admin/vendors/:vendorId so "approvals" is not
 // captured as a vendor id.

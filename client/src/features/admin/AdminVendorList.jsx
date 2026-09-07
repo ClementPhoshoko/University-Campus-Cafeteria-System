@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   IconSearch,
   IconBuildingStore,
@@ -14,7 +14,10 @@ import {
   IconTrendingUp,
 } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
-import { ACTIVE_VENDORS, PENDING_VENDOR_APPROVALS, formatCurrency } from './adminMockData.js';
+import { adminRequest } from '../../services/adminApi.js';
+import { useAuth } from '../../hooks/useAuth.js';
+import { useRoles } from '../../hooks/useRoles.js';
+import { formatCurrency } from './adminMockData.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 function VendorLogo({ src, alt }) {
@@ -84,21 +87,65 @@ function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
 }
 
 export default function AdminVendorList() {
+  const { user, initialized } = useAuth();
+  const { roles, loading: rolesLoading } = useRoles();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') === 'approvals' ? 'approvals' : 'active';
-  const [tab, setTab] = useState(initialTab);
+  const [token, setToken] = useState('');
+  const [activeVendors, setActiveVendors] = useState([]);
+  const [pendingApprovals, setPendingApprovals] = useState([]);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [campusFilter, setCampusFilter] = useState('all');
   const [modal, setModal] = useState(null);
-  const [approvals, setApprovals] = useState(PENDING_VENDOR_APPROVALS);
   const [selectedApprovals, setSelectedApprovals] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [tab, setTab] = useState(() => searchParams.get('tab') === 'approvals' ? 'approvals' : 'active');
   const itemsPerPage = 5;
 
   useEffect(() => {
+    if (initialized && user?.session?.access_token) {
+      setToken(user.session.access_token);
+    }
+  }, [initialized, user]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchData = async () => {
+      if (!token) return;
+      try {
+        // Fetch active vendors
+        const vendorsResponse = await adminRequest('/api/v1/admin/vendors', {
+          token,
+          query: {},
+        });
+        setActiveVendors(vendorsResponse.data || []);
+
+        // Fetch pending approvals
+        const approvalsResponse = await adminRequest('/admin/vendors/approvals', {
+          token,
+          query: {},
+        });
+        setPendingApprovals(approvalsResponse.data || []);
+      } catch (err) {
+        console.error('Failed to fetch vendor data:', err);
+      } finally {
+        if (!cancelled) {
+          setCurrentPage(1);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialized, token]);
+
+  useEffect(() => {
     setCurrentPage(1);
-  }, [query, statusFilter, campusFilter]);
+  }, [query, statusFilter]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -113,9 +160,10 @@ export default function AdminVendorList() {
   };
 
   const CAMPUS_FILTERS = useMemo(() => {
-    const campuses = [...new Set(ACTIVE_VENDORS.map(v => v.vendor_location_name.split(' - ')[0]))];
+    const vendors = activeVendors;
+    const campuses = [...new Set(vendors.map(v => v.vendor_location_name.split(' - ')[0]))];
     return [{ id: 'all', label: 'All campuses' }, ...campuses.map(c => ({ id: c, label: c }))];
-  }, []);
+  }, [activeVendors]);
 
   const STATUS_FILTERS = useMemo(() => {
     const filters = [
@@ -127,16 +175,16 @@ export default function AdminVendorList() {
     return filters.map(f => ({
       ...f,
       count: f.id === 'all'
-        ? ACTIVE_VENDORS.length
-        : ACTIVE_VENDORS.filter(v => v.status === f.id).length,
+        ? activeVendors.length
+        : activeVendors.filter(v => v.status === f.id).length,
     }));
-  }, []);
+  }, [activeVendors]);
 
   const handleApprove = (vendor) => setModal({ vendor, mode: 'approve' });
   const handleReject = (vendor) => setModal({ vendor, mode: 'reject' });
 
   const handleConfirm = (vendor, mode) => {
-    setApprovals((items) => items.filter((i) => i.id !== vendor.id));
+    setPendingApprovals((items) => items.filter((i) => i.id !== vendor.id));
     setSelectedApprovals((prev) => prev.filter((id) => id !== vendor.id));
     setModal(null);
   };
@@ -156,19 +204,19 @@ export default function AdminVendorList() {
   };
 
   const handleApproveSelected = () => {
-    setApprovals((items) => items.filter((i) => !selectedApprovals.includes(i.id)));
+    setPendingApprovals((items) => items.filter((i) => !selectedApprovals.includes(i.id)));
     setSelectedApprovals([]);
   };
 
   const filteredActive = useMemo(() => {
-    return ACTIVE_VENDORS.filter((v) => {
+    return activeVendors.filter((v) => {
       const matchesQuery = !query
         || `${v.name} ${v.vendor_location_name}`.toLowerCase().includes(query.toLowerCase());
       const matchesStatus = statusFilter === 'all' || v.status === statusFilter;
       const matchesCampus = campusFilter === 'all' || v.vendor_location_name.startsWith(campusFilter);
       return matchesQuery && matchesStatus && matchesCampus;
     });
-  }, [query, statusFilter, campusFilter]);
+  }, [activeVendors, query, statusFilter, campusFilter]);
 
   const totalActivePages = Math.ceil(filteredActive.length / itemsPerPage);
   const paginatedActive = filteredActive.slice(
@@ -176,16 +224,15 @@ export default function AdminVendorList() {
     currentPage * itemsPerPage
   );
 
-  const totalApprovalsPages = Math.ceil(approvals.length / itemsPerPage);
-  const paginatedApprovals = approvals.slice(
+  const totalApprovalsPages = Math.ceil(pendingApprovals.length / itemsPerPage);
+  const paginatedApprovals = pendingApprovals.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  const totalVendors = ACTIVE_VENDORS.length + PENDING_VENDOR_APPROVALS.length;
-  const activeCount = ACTIVE_VENDORS.filter(v => v.status === 'approved').length;
-  const pendingCount = approvals.length;
-  const totalRevenue = ACTIVE_VENDORS.reduce((sum, v) => sum + (v.revenue_30d || 0), 0);
+  const activeCount = activeVendors.filter(v => v.status === 'approved').length;
+  const pendingCount = pendingApprovals.length;
+  const totalRevenue = activeVendors.reduce((sum, v) => sum + (v.revenue_30d || 0), 0);
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
@@ -231,7 +278,7 @@ export default function AdminVendorList() {
           </div>
           <div className="admin-vendors__kpi-body">
             <span className="admin-vendors__kpi-label">Total vendors</span>
-            <span className="admin-vendors__kpi-value">{totalVendors}</span>
+            <span className="admin-vendors__kpi-value">{activeVendors.length}</span>
           </div>
         </div>
         <div className="admin-vendors__kpi">
@@ -325,20 +372,20 @@ export default function AdminVendorList() {
 
           {filteredActive.length > 0 ? (
             <>
-            <div className="admin-vendors__table-wrap">
-              <table className="admin-vendors__table">
-                <thead>
-                  <tr>
-                    <th>Vendor</th>
-                    <th>Status</th>
-                    <th>Categories</th>
-                    <th>Location</th>
-                    <th>Revenue (30d)</th>
-                    <th>Rating</th>
-                    <th></th>
-                  </tr>
+              <div className="admin-vendors__table-wrap">
+                <table className="admin-vendors__table">
+                  <thead>
+                    <tr>
+                      <th>Vendor</th>
+                      <th>Status</th>
+                      <th>Categories</th>
+                      <th>Location</th>
+                      <th>Revenue (30d)</th>
+                      <th>Rating</th>
+                      <th></th>
+                    </tr>
                 </thead>
-                <tbody>
+                  <tbody>
                   {paginatedActive.map((vendor) => (
                     <tr key={vendor.id}>
                       <td>
@@ -395,8 +442,9 @@ export default function AdminVendorList() {
                 onPageChange={handlePageChange}
               />
             )}
-            </>
-          ) : (
+          </>
+        ) : (
+          <>
             <div className="admin-empty">
               <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
               <h3>No vendors match those filters</h3>
@@ -409,13 +457,14 @@ export default function AdminVendorList() {
                 Clear filters
               </button>
             </div>
-          )}
+          </>
+        )}
         </>
       )}
 
       {tab === 'approvals' && (
         <>
-          {approvals.length > 0 ? (
+          {pendingApprovals.length > 0 ? (
             <>
               <div className="admin-vendors__table-wrap">
                 <table className="admin-vendors__table">
@@ -495,7 +544,7 @@ export default function AdminVendorList() {
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalApprovalsPages}
-                  totalItems={approvals.length}
+                  totalItems={pendingApprovals.length}
                   itemsPerPage={itemsPerPage}
                   label="applications"
                   onPageChange={handlePageChange}
@@ -503,11 +552,13 @@ export default function AdminVendorList() {
               )}
             </>
           ) : (
-            <div className="admin-empty">
-              <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
-              <h3>No applications pending</h3>
-              <p>Vendor applications will appear here as they come in.</p>
-            </div>
+            <>
+              <div className="admin-empty">
+                <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
+                <h3>No applications pending</h3>
+                <p>Vendor applications will appear here as they come in.</p>
+              </div>
+            </>
           )}
         </>
       )}
@@ -515,7 +566,7 @@ export default function AdminVendorList() {
       <ApprovalModal
         vendor={modal?.vendor}
         mode={modal?.mode}
-        onConfirm={handleConfirm}
+        onConfirm={(vendor, mode) => handleConfirm(vendor, mode)}
         onCancel={() => setModal(null)}
       />
     </div>
