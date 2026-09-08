@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   IconSearch,
   IconBuildingStore,
@@ -10,15 +10,12 @@ import {
   IconX,
   IconShieldCheck,
   IconPlus,
-  IconCoin,
-  IconTrendingUp,
 } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
-import { adminRequest } from '../../services/adminApi.js';
+import { createVendor, listVendorApprovals, listVendors, updateVendorApproval } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
-import { useRoles } from '../../hooks/useRoles.js';
-import { formatCurrency } from './adminMockData.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
+import { AddVendorModal } from './VendorForms.jsx';
 
 function VendorLogo({ src, alt }) {
   return (
@@ -33,6 +30,7 @@ function StatusPill({ status }) {
 }
 
 function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
+  const [reason, setReason] = useState('');
   if (!vendor) return null;
   const isApprove = mode === 'approve';
   return (
@@ -66,6 +64,8 @@ function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
               className="admin-modal__textarea"
               placeholder="Briefly explain why this application was rejected..."
               rows={3}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
             />
           </label>
         )}
@@ -75,7 +75,7 @@ function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
           <button
             type="button"
             className={`admin-action ${isApprove ? 'admin-action--approve' : 'admin-action--reject'}`}
-            onClick={() => onConfirm(vendor, mode)}
+            onClick={() => onConfirm(vendor, mode, isApprove ? undefined : reason)}
           >
             <IconShieldCheck size={13} stroke={2} />
             {isApprove ? 'Confirm approval' : 'Confirm rejection'}
@@ -87,26 +87,29 @@ function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
 }
 
 export default function AdminVendorList() {
-  const { user, initialized } = useAuth();
-  const { roles, loading: rolesLoading } = useRoles();
+  const { session, initialized } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [token, setToken] = useState('');
   const [activeVendors, setActiveVendors] = useState([]);
+  const [activePagination, setActivePagination] = useState(null);
   const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [approvalPagination, setApprovalPagination] = useState(null);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [campusFilter, setCampusFilter] = useState('all');
   const [modal, setModal] = useState(null);
   const [selectedApprovals, setSelectedApprovals] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showAddVendor, setShowAddVendor] = useState(false);
+  const [addVendorLoading, setAddVendorLoading] = useState(false);
   const [tab, setTab] = useState(() => searchParams.get('tab') === 'approvals' ? 'approvals' : 'active');
   const itemsPerPage = 5;
 
   useEffect(() => {
-    if (initialized && user?.session?.access_token) {
-      setToken(user.session.access_token);
+    if (initialized && session?.access_token) {
+      setToken(session.access_token);
     }
-  }, [initialized, user]);
+  }, [initialized, session]);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,18 +118,19 @@ export default function AdminVendorList() {
       if (!token) return;
       try {
         // Fetch active vendors
-        const vendorsResponse = await adminRequest('/api/v1/admin/vendors', {
-          token,
-          query: {},
+        const vendorsResponse = await listVendors(token, {
+          page: currentPage,
+          limit: itemsPerPage,
+          search: query,
+          status: statusFilter === 'all' ? undefined : statusFilter,
         });
-        setActiveVendors(vendorsResponse.data || []);
+        setActiveVendors(vendorsResponse.vendors || []);
+        setActivePagination(vendorsResponse.pagination || null);
 
         // Fetch pending approvals
-        const approvalsResponse = await adminRequest('/admin/vendors/approvals', {
-          token,
-          query: {},
-        });
-        setPendingApprovals(approvalsResponse.data || []);
+        const approvalsResponse = await listVendorApprovals(token, { page: currentPage, limit: itemsPerPage, search: query });
+        setPendingApprovals(approvalsResponse.approvals || []);
+        setApprovalPagination(approvalsResponse.pagination || null);
       } catch (err) {
         console.error('Failed to fetch vendor data:', err);
       } finally {
@@ -141,7 +145,7 @@ export default function AdminVendorList() {
     return () => {
       cancelled = true;
     };
-  }, [initialized, token]);
+  }, [currentPage, initialized, query, statusFilter, token]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -161,16 +165,18 @@ export default function AdminVendorList() {
 
   const CAMPUS_FILTERS = useMemo(() => {
     const vendors = activeVendors;
-    const campuses = [...new Set(vendors.map(v => v.vendor_location_name.split(' - ')[0]))];
+    const campuses = [...new Set(vendors.map((v) => v.location?.site_name).filter(Boolean))];
     return [{ id: 'all', label: 'All campuses' }, ...campuses.map(c => ({ id: c, label: c }))];
   }, [activeVendors]);
 
   const STATUS_FILTERS = useMemo(() => {
     const filters = [
       { id: 'all', label: 'All' },
-      { id: 'open', label: 'Open' },
-      { id: 'busy', label: 'Busy' },
-      { id: 'closed', label: 'Closed' },
+       { id: 'pending', label: 'Pending' },
+       { id: 'approved', label: 'Approved' },
+       { id: 'suspended', label: 'Suspended' },
+       { id: 'inactive', label: 'Inactive' },
+       { id: 'rejected', label: 'Rejected' },
     ];
     return filters.map(f => ({
       ...f,
@@ -183,10 +189,22 @@ export default function AdminVendorList() {
   const handleApprove = (vendor) => setModal({ vendor, mode: 'approve' });
   const handleReject = (vendor) => setModal({ vendor, mode: 'reject' });
 
-  const handleConfirm = (vendor, mode) => {
-    setPendingApprovals((items) => items.filter((i) => i.id !== vendor.id));
-    setSelectedApprovals((prev) => prev.filter((id) => id !== vendor.id));
-    setModal(null);
+  const handleConfirm = async (vendor, mode, reason) => {
+    if (!token) return;
+    try {
+      await updateVendorApproval(token, vendor.id, {
+        decision: mode === 'approve' ? 'approve' : 'reject',
+        ...(reason?.trim() ? { reason: reason.trim() } : {}),
+      });
+      setPendingApprovals((items) => items.filter((i) => i.id !== vendor.id));
+      setActiveVendors((items) => items.map((item) => item.id === vendor.id
+        ? { ...item, status: mode === 'approve' ? 'approved' : 'rejected' }
+        : item));
+      setSelectedApprovals((prev) => prev.filter((id) => id !== vendor.id));
+      setModal(null);
+    } catch (err) {
+      console.error('Failed to update vendor approval:', err);
+    }
   };
 
   const handleSelectAll = () => {
@@ -203,43 +221,54 @@ export default function AdminVendorList() {
     );
   };
 
-  const handleApproveSelected = () => {
-    setPendingApprovals((items) => items.filter((i) => !selectedApprovals.includes(i.id)));
-    setSelectedApprovals([]);
+  const handleApproveSelected = async () => {
+    if (!token) return;
+    try {
+      await Promise.all(selectedApprovals.map((id) => updateVendorApproval(token, id, { decision: 'approve' })));
+      setPendingApprovals((items) => items.filter((i) => !selectedApprovals.includes(i.id)));
+      setSelectedApprovals([]);
+    } catch (err) {
+      console.error('Failed to approve selected vendors:', err);
+    }
+  };
+
+  const handleAddVendor = async (payload) => {
+    if (!token) return;
+    setAddVendorLoading(true);
+    try {
+      const response = await createVendor(token, payload);
+      if (response.vendor) setPendingApprovals((items) => [response.vendor, ...items]);
+    } finally {
+      setAddVendorLoading(false);
+    }
   };
 
   const filteredActive = useMemo(() => {
     return activeVendors.filter((v) => {
       const matchesQuery = !query
-        || `${v.name} ${v.vendor_location_name}`.toLowerCase().includes(query.toLowerCase());
+         || `${v.name} ${v.slug || ''} ${v.location?.site_name || ''} ${v.location?.building_name || ''}`.toLowerCase().includes(query.toLowerCase());
       const matchesStatus = statusFilter === 'all' || v.status === statusFilter;
-      const matchesCampus = campusFilter === 'all' || v.vendor_location_name.startsWith(campusFilter);
+       const matchesCampus = campusFilter === 'all' || v.location?.site_name === campusFilter;
       return matchesQuery && matchesStatus && matchesCampus;
     });
   }, [activeVendors, query, statusFilter, campusFilter]);
 
-  const totalActivePages = Math.ceil(filteredActive.length / itemsPerPage);
-  const paginatedActive = filteredActive.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const totalActivePages = activePagination?.totalPages || Math.max(1, Math.ceil(filteredActive.length / itemsPerPage));
+  const paginatedActive = filteredActive;
 
-  const totalApprovalsPages = Math.ceil(pendingApprovals.length / itemsPerPage);
-  const paginatedApprovals = pendingApprovals.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const totalApprovalsPages = approvalPagination?.totalPages || Math.max(1, Math.ceil(pendingApprovals.length / itemsPerPage));
+  const paginatedApprovals = pendingApprovals;
 
-  const activeCount = activeVendors.filter(v => v.status === 'approved').length;
-  const pendingCount = pendingApprovals.length;
-  const totalRevenue = activeVendors.reduce((sum, v) => sum + (v.revenue_30d || 0), 0);
+  const activeCount = activePagination?.total ?? activeVendors.filter(v => v.status === 'approved').length;
+  const pendingCount = approvalPagination?.total ?? pendingApprovals.length;
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
-  const renderCategories = (categories, maxShow = 2) => {
+  const renderCategories = (categories = [], maxShow = 2) => {
+    if (categories.length === 0) return <span className="admin-vendors__category-pill">—</span>;
     const shown = categories.slice(0, maxShow);
     const remaining = categories.length - maxShow;
     return (
@@ -264,7 +293,7 @@ export default function AdminVendorList() {
           </p>
         </div>
         <div className="admin-vendors__actions">
-          <button type="button" className="admin-action admin-action--ghost">
+          <button type="button" className="admin-action admin-action--ghost" onClick={() => setShowAddVendor(true)}>
             <IconPlus size={14} stroke={2} />
             Add vendor
           </button>
@@ -278,7 +307,7 @@ export default function AdminVendorList() {
           </div>
           <div className="admin-vendors__kpi-body">
             <span className="admin-vendors__kpi-label">Total vendors</span>
-            <span className="admin-vendors__kpi-value">{activeVendors.length}</span>
+             <span className="admin-vendors__kpi-value">{activePagination?.total ?? activeVendors.length}</span>
           </div>
         </div>
         <div className="admin-vendors__kpi">
@@ -297,18 +326,6 @@ export default function AdminVendorList() {
           <div className="admin-vendors__kpi-body">
             <span className="admin-vendors__kpi-label">Pending approvals</span>
             <span className="admin-vendors__kpi-value">{pendingCount}</span>
-          </div>
-        </div>
-        <div className="admin-vendors__kpi">
-          <div className="admin-vendors__kpi-icon">
-            <IconCoin size={24} stroke={1.8} />
-          </div>
-          <div className="admin-vendors__kpi-body">
-            <span className="admin-vendors__kpi-label">Total revenue (30d)</span>
-            <span className="admin-vendors__kpi-value">
-              {formatCurrency(totalRevenue)}
-              <span style={{ marginLeft: '6px', fontSize: '0.72rem', color: 'var(--color-text-secondary)', fontWeight: 'var(--font-weight-medium)' }}><IconTrendingUp size={12} stroke={2} /></span>
-            </span>
           </div>
         </div>
       </div>
@@ -407,16 +424,16 @@ export default function AdminVendorList() {
                       </td>
                       <td>
                         <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
-                          {vendor.vendor_location_name}
+                           {vendor.location?.site_name || `${vendor.location_count || 0} location(s)`}
                         </span>
                       </td>
                       <td>
-                        <span className="admin-vendors__revenue">{formatCurrency(vendor.revenue_30d)}</span>
+                        <span className="admin-vendors__revenue">—</span>
                       </td>
                       <td>
                         <div className="admin-vendors__rating">
                           <IconStarFilled size={14} stroke={0} className="admin-vendors__rating-star" />
-                          <span>{vendor.average_rating.toFixed(1)}</span>
+                           <span>{Number(vendor.average_rating || 0).toFixed(1)}</span>
                           <span className="admin-vendors__rating-count">({vendor.rating_count})</span>
                         </div>
                       </td>
@@ -522,7 +539,7 @@ export default function AdminVendorList() {
                         </td>
                         <td>
                           <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
-                            {vendor.vendor_location_name}
+                             {vendor.location?.site_name || `${vendor.location_count || 0} location(s)`}
                           </span>
                         </td>
                         <td>
@@ -531,9 +548,17 @@ export default function AdminVendorList() {
                           </span>
                         </td>
                         <td>
-                          <Link to={`/admin/vendors/${vendor.id}`} className="admin-link-cta">
-                            Review <IconChevronRight size={13} stroke={2} />
-                          </Link>
+                          <div className="admin-vendors__row-actions">
+                            <Link to={`/admin/vendors/${vendor.id}`} className="admin-link-cta">
+                              Review <IconChevronRight size={13} stroke={2} />
+                            </Link>
+                            <button type="button" className="admin-action admin-action--approve" onClick={() => handleApprove(vendor)}>
+                              Approve
+                            </button>
+                            <button type="button" className="admin-action admin-action--ghost" onClick={() => handleReject(vendor)}>
+                              Reject
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -569,6 +594,7 @@ export default function AdminVendorList() {
         onConfirm={(vendor, mode) => handleConfirm(vendor, mode)}
         onCancel={() => setModal(null)}
       />
+      {showAddVendor && <AddVendorModal onClose={() => setShowAddVendor(false)} onSubmit={handleAddVendor} submitting={addVendorLoading} />}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   IconChevronLeft,
@@ -13,24 +13,16 @@ import {
   IconBan,
   IconEdit,
   IconPower,
-  IconTrendingUp,
-  IconTrendingDown,
-  IconReceipt,
-  IconList,
-  IconEye,
+  IconPlus,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
-import { adminRequest } from '../../services/adminApi.js';
+import { addVendorUser, adminRequest, createVendorLocation, removeVendorUser, updateVendor, updateVendorApproval, updateVendorLocation } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
-import { formatCurrency } from './adminMockData.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
+import { StaffModal, VendorLocationModal, VendorProfileModal } from './VendorForms.jsx';
 
 function StatusPill({ status }) {
   return <span className={`admin-status admin-status--${status}`}>{status}</span>;
-}
-
-function formatCurrencyLocal(amount) {
-  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
 }
 
 function VendorLogo({ src, alt }) {
@@ -42,6 +34,9 @@ function VendorLogo({ src, alt }) {
 }
 
 function getVendorDetails(vendor) {
+  const location = vendor.locations?.[0];
+  const manager = vendor.staff?.find((member) => member.role === 'manager' && member.is_active)
+    || vendor.staff?.find((member) => member.is_active);
   return {
     id: vendor.id,
     name: vendor.name,
@@ -49,36 +44,44 @@ function getVendorDetails(vendor) {
     description: vendor.description,
     logo_url: vendor.logo_url,
     status: vendor.status,
-    isPending: vendor.isPending,
-    vendor_location_name: vendor.vendor_location_name,
+    isPending: vendor.status === 'pending',
+    vendor_location_name: [location?.site_name, location?.building_name, location?.collection_point_name]
+      .filter(Boolean)
+      .join(' · ') || 'No location assigned',
     categories: vendor.categories || [],
     corporate_catering_enabled: vendor.corporate_catering_enabled || false,
-    manager_name: vendor.manager_name || '—',
-    support_email: vendor.support_email || '—',
-    support_phone: vendor.support_phone || '—',
-    operating_hours: vendor.operating_hours || [],
-    revenue_30d: vendor.revenue_30d || 0,
+    manager_name: manager?.full_name || '—',
+    support_email: vendor.support_email || '',
+    support_phone: vendor.support_phone || '',
+    operating_hours: location?.hours || [],
+    estimated_prep_minutes: location?.estimated_prep_minutes || 0,
+    revenue_30d: null,
     average_rating: vendor.average_rating || 0,
     rating_count: vendor.rating_count || 0,
-    menu_item_count: vendor.menu_item_count || 0,
+    menu_item_count: null,
+    orders_today: null,
+    locations: vendor.locations || [],
+    staff: vendor.staff || [],
   };
 }
 
 export default function AdminVendorDetail() {
   const { vendorId } = useParams();
-  const { user } = useAuth();
-  const token = user?.session?.access_token;
+  const { session } = useAuth();
+  const token = session?.access_token;
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [modal, setModal] = useState(null);
 
   useEffect(() => {
     if (!vendorId || !token) return;
     const fetchVendor = async () => {
       try {
-        const response = await adminRequest(`/api/v1/admin/vendors/${vendorId}`, {
+        const response = await adminRequest(`/admin/vendors/${vendorId}`, {
           token,
         });
-        setVendor(getVendorDetails(response.data));
+        setVendor(getVendorDetails(response.vendor));
         setLoading(false);
       } catch (err) {
         console.error('Failed to fetch vendor:', err);
@@ -88,6 +91,75 @@ export default function AdminVendorDetail() {
 
     fetchVendor();
   }, [vendorId, token]);
+
+  const handleApproval = async (decision) => {
+    if (!token || !vendorId || actionLoading) return;
+    const reason = decision === 'reject' ? window.prompt('Reason for rejection:') : undefined;
+    if (decision === 'reject' && !reason?.trim()) return;
+
+    setActionLoading(true);
+    try {
+      const response = await updateVendorApproval(token, vendorId, {
+        decision,
+        ...(reason?.trim() ? { reason: reason.trim() } : {}),
+      });
+      const refreshed = await adminRequest(`/admin/vendors/${vendorId}`, { token });
+      if (refreshed.vendor) setVendor(getVendorDetails(refreshed.vendor));
+    } catch (err) {
+      console.error('Failed to update vendor approval:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleProfileUpdate = async (payload) => {
+    setActionLoading(true);
+    try {
+      await updateVendor(token, vendorId, payload);
+      const refreshed = await adminRequest(`/admin/vendors/${vendorId}`, { token });
+      if (refreshed.vendor) setVendor(getVendorDetails(refreshed.vendor));
+      setModal(null);
+    } finally { setActionLoading(false); }
+  };
+
+  const handleLocationCreate = async (payload) => {
+    setActionLoading(true);
+    try {
+      await createVendorLocation(token, vendorId, payload);
+      const refreshed = await adminRequest(`/admin/vendors/${vendorId}`, { token });
+      if (refreshed.vendor) setVendor(getVendorDetails(refreshed.vendor));
+      setModal(null);
+    } finally { setActionLoading(false); }
+  };
+
+  const handleLocationUpdate = async (locationId, payload) => {
+    setActionLoading(true);
+    try {
+      await updateVendorLocation(token, locationId, payload);
+      const refreshed = await adminRequest(`/admin/vendors/${vendorId}`, { token });
+      if (refreshed.vendor) setVendor(getVendorDetails(refreshed.vendor));
+      setModal(null);
+    } finally { setActionLoading(false); }
+  };
+
+  const handleStaffAdd = async (payload) => {
+    setActionLoading(true);
+    try {
+      await addVendorUser(token, vendorId, payload);
+      const refreshed = await adminRequest(`/admin/vendors/${vendorId}`, { token });
+      if (refreshed.vendor) setVendor(getVendorDetails(refreshed.vendor));
+      setModal(null);
+    } finally { setActionLoading(false); }
+  };
+
+  const handleStaffRemove = async (userId) => {
+    if (!window.confirm('Remove this staff member from the vendor?')) return;
+    setActionLoading(true);
+    try {
+      await removeVendorUser(token, vendorId, userId);
+      setVendor((current) => ({ ...current, staff: current.staff.filter((member) => member.user_id !== userId) }));
+    } finally { setActionLoading(false); }
+  };
 
   if (loading) {
     return (
@@ -149,20 +221,20 @@ export default function AdminVendorDetail() {
         <div className="admin-vendor-header__actions">
           {vendor.isPending ? (
             <>
-              <button type="button" className="admin-action admin-action--ghost">
+                <button type="button" className="admin-action admin-action--ghost" onClick={() => handleApproval('reject')} disabled={actionLoading}>
                 <IconBan size={14} stroke={2} /> Reject
               </button>
-              <button type="button" className="admin-action admin-action--approve">
+              <button type="button" className="admin-action admin-action--approve" onClick={() => handleApproval('approve')} disabled={actionLoading}>
                 <IconCheck size={14} stroke={2} /> Approve
               </button>
             </>
           ) : (
             <>
-              <button type="button" className="admin-action admin-action--ghost">
+              <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('edit')}>
                 <IconEdit size={14} stroke={2} /> Edit profile
               </button>
-              <button type="button" className="admin-action admin-action--ghost admin-action--destructive">
-                <IconPower size={14} stroke={2} /> Deactivate
+              <button type="button" className="admin-action admin-action--ghost admin-action--destructive" onClick={() => handleApproval(vendor.status === 'approved' ? 'suspend' : 'activate')} disabled={actionLoading}>
+                <IconPower size={14} stroke={2} /> {vendor.status === 'approved' ? 'Suspend' : 'Activate'}
               </button>
             </>
           )}
@@ -173,35 +245,19 @@ export default function AdminVendorDetail() {
       {!vendor.isPending && (
         <section className="admin-vendor-performance">
           <div className="admin-vendor-performance__metric">
-            <span className="admin-vendor-performance__label">Orders today</span>
-            <span className="admin-vendor-performance__value">
-              {vendor.orders_today || 0}
-            </span>
-            <span className="admin-vendor-performance__sub">
-              <IconTrendingUp size={12} stroke={2} /> +14 today
-            </span>
-          </div>
-          <div className="admin-vendor-performance__metric">
-            <span className="admin-vendor-performance__label">30-day revenue</span>
-            <span className="admin-vendor-performance__value">
-              {formatCurrencyLocal(vendor.revenue_30d || 0)}
-            </span>
-            <span className="admin-vendor-performance__sub">+8.2% vs prev</span>
-          </div>
-          <div className="admin-vendor-performance__metric">
             <span className="admin-vendor-performance__label">Average rating</span>
             <span className="admin-vendor-performance__value">
-              {vendor.average_rating.toFixed(1)}
+              {Number(vendor.average_rating || 0).toFixed(1)}
               <IconStarFilled size={16} stroke={0} className="admin-vendor-performance__star" />
             </span>
             <span className="admin-vendor-performance__sub">{vendor.rating_count || 0} reviews</span>
           </div>
           <div className="admin-vendor-performance__metric">
-            <span className="admin-vendor-performance__label">Menu items</span>
+            <span className="admin-vendor-performance__label">Operating locations</span>
             <span className="admin-vendor-performance__value">
-              {vendor.menu_item_count || 0}
+              {vendor.locations.length}
             </span>
-            <span className="admin-vendor-performance__sub">3 sold out today</span>
+            <span className="admin-vendor-performance__sub">Configured locations</span>
           </div>
         </section>
       )}
@@ -211,7 +267,7 @@ export default function AdminVendorDetail() {
         <section className="admin-vendor-checklist">
           <div className="admin-vendor-checklist__header">
             <h3 className="admin-vendor-checklist__title">Application review</h3>
-            <span className="admin-vendor-checklist__badge">Review required</span>
+            <div className="admin-vendor-checklist__actions"><span className="admin-vendor-checklist__badge">Review required</span><button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('location')}>Add location</button></div>
           </div>
           <ul className="admin-vendor-checklist__list">
             <li className="admin-vendor-checklist__item admin-vendor-checklist__item--done">
@@ -255,7 +311,7 @@ export default function AdminVendorDetail() {
               <h4 className="admin-vendor-info__section-title">Operating hours</h4>
               <div className="admin-vendor-info__row">
                 <IconClock size={14} stroke={1.8} />
-                <span>{vendor.operating_hours ? vendor.operating_hours.map((h) => `${h.day_of_week}: ${h.opens_at}-${h.closes_at}`).join(', ') : 'Not set'}</span>
+                <span>{vendor.operating_hours.length > 0 ? vendor.operating_hours.map((h) => `${h.day_of_week}: ${h.opens_at}-${h.closes_at}`).join(', ') : 'Not set'}</span>
               </div>
               <div className="admin-vendor-info__row admin-vendor-info__row--muted">
                 <span>Est. prep time</span>
@@ -271,13 +327,23 @@ export default function AdminVendorDetail() {
               </div>
               <div className="admin-vendor-info__row">
                 <IconMail size={14} stroke={1.8} />
-                <a href={`mailto:${vendor.support_email}`}>{vendor.support_email}</a>
+                  {vendor.support_email ? <a href={`mailto:${vendor.support_email}`}>{vendor.support_email}</a> : <span>—</span>}
               </div>
               <div className="admin-vendor-info__row">
                 <IconPhone size={14} stroke={1.8} />
                 <span>{vendor.support_phone || '—'}</span>
               </div>
             </div>
+          </section>
+
+          <section className="admin-vendor-info admin-vendor-management-card">
+            <div className="admin-vendor-top-items__header"><h3 className="admin-vendor-info__heading">Operating locations</h3><button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('location')}><IconPlus size={14} /> Add location</button></div>
+            {vendor.locations.length === 0 ? <p className="admin-vendor-empty-copy">No operating locations have been assigned.</p> : vendor.locations.map((location) => <div className="vendor-managed-row" key={location.id}><div><strong>{[location.site_name, location.building_name, location.collection_point_name].filter(Boolean).join(' · ')}</strong><span>{location.service_status} · {location.estimated_prep_minutes || '—'} min prep</span></div><div className="vendor-managed-row__actions"><StatusPill status={location.service_status} /><button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'location', location })}>Edit</button></div></div>)}
+          </section>
+
+          <section className="admin-vendor-info admin-vendor-management-card">
+            <div className="admin-vendor-top-items__header"><h3 className="admin-vendor-info__heading">Vendor staff</h3><button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('staff')}><IconPlus size={14} /> Add staff</button></div>
+            {vendor.staff.length === 0 ? <p className="admin-vendor-empty-copy">No staff members assigned.</p> : vendor.staff.map((member) => <div className="vendor-managed-row" key={member.user_id}><div><strong>{member.full_name || member.email || member.user_id}</strong><span>{member.role} · {member.is_active ? 'Active' : 'Inactive'}</span></div><button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleStaffRemove(member.user_id)} disabled={actionLoading}>Remove</button></div>)}
           </section>
 
           {/* Right Column - Top Selling Items */}
@@ -323,6 +389,10 @@ export default function AdminVendorDetail() {
           </ul>
         </section>
       )}
+      {modal === 'edit' && <VendorProfileModal vendor={vendor} onClose={() => setModal(null)} onSubmit={handleProfileUpdate} submitting={actionLoading} />}
+      {modal === 'location' && <VendorLocationModal onClose={() => setModal(null)} onSubmit={handleLocationCreate} submitting={actionLoading} />}
+      {modal?.type === 'location' && <VendorLocationModal key={modal.location.id} location={modal.location} onClose={() => setModal(null)} onSubmit={(payload) => handleLocationUpdate(modal.location.id, payload)} submitting={actionLoading} />}
+      {modal === 'staff' && <StaffModal onClose={() => setModal(null)} onSubmit={handleStaffAdd} submitting={actionLoading} />}
     </div>
   );
 }

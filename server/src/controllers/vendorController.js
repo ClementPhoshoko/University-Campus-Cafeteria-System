@@ -688,6 +688,36 @@ export async function removeVendorUser(req, res) {
   }
 }
 
+export async function listBuildingVendors(req, res) {
+  try {
+    const buildingId = requireUuidParam(req, res, 'buildingId');
+    if (!buildingId) return;
+
+    const { data, error } = await db()
+      .from('vendor_locations')
+      .select('id, service_status, is_active, site_id, building_id, collection_point_id, vendors(*)')
+      .eq('building_id', buildingId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+
+    return respond(req, res, {
+      success: true,
+      building_id: buildingId,
+      vendors: (data || []).filter((row) => row.vendors).map((row) => ({
+        ...row.vendors,
+        location_id: row.id,
+        service_status: row.service_status,
+        location_is_active: row.is_active,
+        site_id: row.site_id,
+        building_id: row.building_id,
+        collection_point_id: row.collection_point_id,
+      })),
+    }, { cacheControl: CACHE.adminList });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public (employee-facing) — approved vendors with active locations only
 // ---------------------------------------------------------------------------

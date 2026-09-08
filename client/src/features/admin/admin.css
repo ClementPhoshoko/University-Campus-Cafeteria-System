@@ -4051,6 +4051,141 @@
   width: min(560px, 92vw);
 }
 
+.admin-topbar__chip--healthy {
+  color: var(--success-700);
+}
+
+.admin-topbar__chip--healthy::before,
+.admin-topbar__chip--unhealthy::before,
+.admin-topbar__chip--loading::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.admin-topbar__chip--healthy::before { background: var(--success-500); }
+.admin-topbar__chip--unhealthy { color: var(--error-700, #b91c1c); }
+.admin-topbar__chip--unhealthy::before { background: var(--error-500, #ef4444); }
+.admin-topbar__chip--loading::before { background: var(--color-text-tertiary); }
+
+.vendor-wizard {
+  width: min(900px, 94vw);
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.vendor-modal-close {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.vendor-wizard__steps {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2) 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.vendor-wizard__steps span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  color: var(--color-text-tertiary);
+  font-size: 0.78rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.vendor-wizard__steps b {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-bg-secondary);
+  font-size: 0.72rem;
+}
+
+.vendor-wizard__steps span.is-active,
+.vendor-wizard__steps span.is-complete {
+  color: var(--color-action-primary);
+}
+
+.vendor-wizard__steps span.is-active b,
+.vendor-wizard__steps span.is-complete b {
+  background: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+}
+
+.vendor-form-error {
+  padding: 10px 12px;
+  border: 1px solid var(--danger-200, #fecaca);
+  border-radius: var(--radius-sm);
+  background: var(--danger-50, #fef2f2);
+  color: var(--danger-700, #b91c1c);
+  font-size: 0.82rem;
+}
+
+.vendor-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: end;
+  min-height: 40px;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}
+
+.vendor-hours-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vendor-hours-row {
+  display: grid;
+  grid-template-columns: 110px 75px 1fr 20px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.vendor-hours-row strong { color: var(--color-text-primary); }
+.vendor-hours-row label { display: flex; align-items: center; gap: 5px; }
+.vendor-hours-row .admin-input { height: 34px; }
+.vendor-hours-details { border-top: 1px solid var(--color-border-subtle); padding-top: var(--space-3); }
+.vendor-hours-details summary { cursor: pointer; font-size: 0.82rem; font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); }
+.vendor-hours-details[open] summary { margin-bottom: var(--space-3); }
+
+.admin-vendor-management-card { grid-column: 1 / -1; }
+.admin-vendor-empty-copy { color: var(--color-text-tertiary); font-size: 0.84rem; }
+.vendor-managed-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 12px 0; border-bottom: 1px solid var(--color-border-subtle); }
+.vendor-managed-row:last-child { border-bottom: 0; }
+.vendor-managed-row div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.vendor-managed-row strong { color: var(--color-text-primary); font-size: 0.84rem; }
+.vendor-managed-row span { color: var(--color-text-tertiary); font-size: 0.76rem; }
+.vendor-managed-row__actions { display: flex; align-items: center; gap: 8px; }
+.admin-vendor-checklist__actions { display: flex; align-items: center; gap: 10px; }
+
+@media (max-width: 640px) {
+  .vendor-wizard__steps span { font-size: 0; }
+  .vendor-wizard__steps span b { font-size: 0.72rem; }
+  .vendor-hours-row { grid-template-columns: 1fr 70px 1fr 18px 1fr; }
+}
+
 .admin-role-list {
   display: flex;
   flex-direction: column;

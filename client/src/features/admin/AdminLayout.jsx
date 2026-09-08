@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   IconChartBar,
@@ -15,6 +16,7 @@ import {
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import AdminBackground from '../../components/AdminBackground.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
+import { getHealth } from '../../services/api.js';
 import { ADMIN_NAV_ITEMS } from './adminMockData.js';
 import mainLogo from '../../assets/main_logo.png';
 import './admin.css';
@@ -51,6 +53,28 @@ function NavItem({ item }) {
 export default function AdminLayout() {
   const { profile, user, signOut } = useAuth();
   const location = useLocation();
+  const [healthStatus, setHealthStatus] = useState('loading');
+
+  useEffect(() => {
+    let mounted = true;
+
+    const checkHealth = async () => {
+      try {
+        const response = await getHealth();
+        if (mounted) setHealthStatus(response?.status === 'ok' ? 'healthy' : 'unhealthy');
+      } catch {
+        if (mounted) setHealthStatus('unhealthy');
+      }
+    };
+
+    checkHealth();
+    const interval = window.setInterval(checkHealth, 60000);
+
+    return () => {
+      mounted = false;
+      window.clearInterval(interval);
+    };
+  }, []);
 
   const currentItem = ADMIN_NAV_ITEMS.find((item) =>
     item.to === '/admin'
@@ -117,7 +141,9 @@ export default function AdminLayout() {
           </div>
           <div className="admin-topbar__meta">
             <span className="admin-topbar__chip">Merchant Place · Pilot</span>
-            <span className="admin-topbar__chip admin-topbar__chip--success">System Healthy</span>
+            <span className={`admin-topbar__chip admin-topbar__chip--${healthStatus}`}>
+              {healthStatus === 'loading' ? 'Checking system' : healthStatus === 'healthy' ? 'System Healthy' : 'System Unavailable'}
+            </span>
           </div>
         </header>
 

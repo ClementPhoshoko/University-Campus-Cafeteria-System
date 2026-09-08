@@ -14,6 +14,7 @@ import {
   updateVendorLocation,
   addVendorUser,
   removeVendorUser,
+  listBuildingVendors,
 } from '../controllers/vendorController.js';
 
 const adminVendorRouter = Router();
@@ -41,5 +42,6 @@ adminVendorRouter.patch('/admin/vendor-locations/:locationId', mutations, update
 
 adminVendorRouter.post('/admin/vendors/:vendorId/users', mutations, addVendorUser);
 adminVendorRouter.delete('/admin/vendors/:vendorId/users/:userId', mutations, removeVendorUser);
+adminVendorRouter.get('/admin/buildings/:buildingId/vendors', listBuildingVendors);
 
 export default adminVendorRouter;

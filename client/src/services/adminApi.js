@@ -272,6 +272,10 @@ export function removeVendorUser(token, vendorId, userId, options) {
   });
 }
 
+export function listBuildingVendors(token, buildingId, params, options) {
+  return adminRequest(`/admin/buildings/${buildingId}/vendors`, { token, query: params, ...options });
+}
+
 export const adminLocationsApi = {
   listSites,
   getSite,
@@ -303,4 +307,5 @@ export const adminVendorsApi = {
   updateVendorLocation,
   addVendorUser,
   removeVendorUser,
+  listBuildingVendors,
 };
