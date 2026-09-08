@@ -110,10 +110,10 @@ export default function AdminCafeteriaList() {
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const itemsPerPage = 12;
-  const { sites, allBuildings, allCollectionPoints, fetchBuildings, fetchCollectionPoints, addSite, loading, errors } = useAdminLocations({ siteParams: { page: 1, limit: 100 } });
+  const { sites, allBuildings, allCollectionPoints, buildingsBySite, collectionPointsByBuilding, fetchBuildings, fetchCollectionPoints, addSite, loading, errors } = useAdminLocations();
 
-  useEffect(() => { sites.forEach((site) => { if (!allBuildings.some((building) => building.site_id === site.id)) fetchBuildings(site.id).catch(() => {}); }); }, [sites, allBuildings, fetchBuildings]);
-  useEffect(() => { allBuildings.forEach((building) => { if (!allCollectionPoints.some((point) => point.building_id === building.id)) fetchCollectionPoints(building.id).catch(() => {}); }); }, [allBuildings, allCollectionPoints, fetchCollectionPoints]);
+  useEffect(() => { sites.forEach((site) => { if (buildingsBySite[site.id] === undefined) fetchBuildings(site.id).catch(() => {}); }); }, [sites, buildingsBySite, fetchBuildings]);
+  useEffect(() => { allBuildings.forEach((building) => { if (collectionPointsByBuilding[building.id] === undefined) fetchCollectionPoints(building.id).catch(() => {}); }); }, [allBuildings, collectionPointsByBuilding, fetchCollectionPoints]);
   useEffect(() => { setCurrentPage(1); }, [query, statusFilter, view]);
 
   const buildings = useMemo(() => allBuildings.map((building) => ({ ...building, site_name: sites.find((site) => site.id === building.site_id)?.name || 'Unknown site' })), [allBuildings, sites]);

@@ -276,6 +276,26 @@ export function listBuildingVendors(token, buildingId, params, options) {
   return adminRequest(`/admin/buildings/${buildingId}/vendors`, { token, query: params, ...options });
 }
 
+export function listUsers(token, params, options) {
+  return adminRequest('/admin/users', { token, query: params, ...options });
+}
+
+export function getUserRoles(token, userId, options) {
+  return adminRequest(`/admin/users/${userId}/roles`, { token, ...options });
+}
+
+export function setUserRoles(token, userId, roles, options) {
+  return adminRequest(`/admin/users/${userId}/roles`, { method: 'PUT', token, body: { roles }, ...options });
+}
+
+export function addUserRole(token, userId, role, options) {
+  return adminRequest(`/admin/users/${userId}/roles`, { method: 'POST', token, body: { role }, ...options });
+}
+
+export function removeUserRole(token, userId, role, options) {
+  return adminRequest(`/admin/users/${userId}/roles/${encodeURIComponent(role)}`, { method: 'DELETE', token, ...options });
+}
+
 export const adminLocationsApi = {
   listSites,
   getSite,
@@ -308,4 +328,12 @@ export const adminVendorsApi = {
   addVendorUser,
   removeVendorUser,
   listBuildingVendors,
+};
+
+export const adminUsersApi = {
+  listUsers,
+  getUserRoles,
+  setUserRoles,
+  addUserRole,
+  removeUserRole,
 };
