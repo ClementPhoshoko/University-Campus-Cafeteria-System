@@ -288,6 +288,22 @@ export function deleteVendorCategory(token, categoryId, options) {
   return adminRequest(`/admin/menu-categories/${categoryId}`, { method: 'DELETE', token, ...options });
 }
 
+export function listMenuItems(token, vendorId, params, options) {
+  return adminRequest(`/admin/vendors/${vendorId}/menu-items`, { token, query: params, ...options });
+}
+
+export function createMenuItem(token, vendorId, payload, options) {
+  return adminRequest(`/admin/vendors/${vendorId}/menu-items`, { method: 'POST', token, body: payload, ...options });
+}
+
+export function updateMenuItem(token, itemId, payload, options) {
+  return adminRequest(`/admin/menu-items/${itemId}`, { method: 'PATCH', token, body: payload, ...options });
+}
+
+export function deleteMenuItem(token, itemId, options) {
+  return adminRequest(`/admin/menu-items/${itemId}`, { method: 'DELETE', token, ...options });
+}
+
 export function uploadAdminAsset(token, entityType, entityId, file, options) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -310,6 +326,26 @@ export function uploadAdminAsset(token, entityType, entityId, file, options) {
 
 export function listAuditLogs(token, params, options) {
   return adminRequest('/admin/audit-logs', { token, query: params, ...options });
+}
+
+export function listOrders(token, params, options) {
+  return adminRequest('/admin/vendors/orders', { token, query: params, ...options });
+}
+
+export function getOrder(token, orderId, options) {
+  return adminRequest(`/admin/vendors/orders/${orderId}`, { token, ...options });
+}
+
+export function cancelOrder(token, orderId, payload, options) {
+  return adminRequest(`/admin/vendors/orders/${orderId}/cancel`, { method: 'POST', token, body: payload, ...options });
+}
+
+export function refundOrder(token, orderId, payload, options) {
+  return adminRequest(`/admin/vendors/orders/${orderId}/refund`, { method: 'POST', token, body: payload, ...options });
+}
+
+export function addOrderNote(token, orderId, payload, options) {
+  return adminRequest(`/admin/vendors/orders/${orderId}/note`, { method: 'POST', token, body: payload, ...options });
 }
 
 export function listBuildingVendors(token, buildingId, params, options) {
@@ -372,7 +408,16 @@ export const adminVendorsApi = {
   createVendorCategory,
   updateVendorCategory,
   deleteVendorCategory,
+  listMenuItems,
+  createMenuItem,
+  updateMenuItem,
+  deleteMenuItem,
   uploadAdminAsset,
+  listOrders,
+  getOrder,
+  cancelOrder,
+  refundOrder,
+  addOrderNote,
 };
 
 export const adminUsersApi = {

@@ -19,6 +19,15 @@ import {
   createVendorCategory,
   updateVendorCategory,
   deleteVendorCategory,
+  listMenuItems,
+  createMenuItem,
+  updateMenuItem,
+  deleteMenuItem,
+  listVendorOrders,
+  getVendorOrder,
+  cancelVendorOrder,
+  refundVendorOrder,
+  addOrderNote,
 } from '../controllers/vendorController.js';
 
 const adminVendorRouter = Router();
@@ -31,7 +40,12 @@ adminVendorRouter.get('/admin/vendors', listVendors);
 adminVendorRouter.post('/admin/vendors', mutations, createVendor);
 
 // Admin + vendor manager can create/manage vendor orders
+adminVendorRouter.get('/admin/vendors/orders', listVendorOrders);
 adminVendorRouter.post('/admin/vendors/orders', mutations, createVendorOrder);
+adminVendorRouter.get('/admin/vendors/orders/:orderId', getVendorOrder);
+adminVendorRouter.post('/admin/vendors/orders/:orderId/cancel', mutations, cancelVendorOrder);
+adminVendorRouter.post('/admin/vendors/orders/:orderId/refund', mutations, refundVendorOrder);
+adminVendorRouter.post('/admin/vendors/orders/:orderId/note', mutations, addOrderNote);
 
 // Must be declared before /admin/vendors/:vendorId so "approvals" is not
 // captured as a vendor id.
@@ -51,5 +65,10 @@ adminVendorRouter.get('/admin/vendors/:vendorId/categories', listVendorCategorie
 adminVendorRouter.post('/admin/vendors/:vendorId/categories', mutations, createVendorCategory);
 adminVendorRouter.patch('/admin/menu-categories/:categoryId', mutations, updateVendorCategory);
 adminVendorRouter.delete('/admin/menu-categories/:categoryId', mutations, deleteVendorCategory);
+
+adminVendorRouter.get('/admin/vendors/:vendorId/menu-items', listMenuItems);
+adminVendorRouter.post('/admin/vendors/:vendorId/menu-items', mutations, createMenuItem);
+adminVendorRouter.patch('/admin/menu-items/:itemId', mutations, updateMenuItem);
+adminVendorRouter.delete('/admin/menu-items/:itemId', mutations, deleteMenuItem);
 
 export default adminVendorRouter;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { IconActivity, IconAlertTriangle, IconCheck, IconCircleCheck, IconClock, IconDownload, IconFileText, IconFilter, IconRefresh, IconSearch, IconWorld } from '@tabler/icons-react';
+import { IconActivity, IconAlertTriangle, IconCheck, IconChevronDown, IconCircleCheck, IconClock, IconDownload, IconFileText, IconFilter, IconRefresh, IconSearch, IconWorld } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
 import { listAuditLogs } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -146,6 +146,9 @@ export default function AdminAuditLogPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [resourceDropdownOpen, setResourceDropdownOpen] = useState(false);
+  const [actionDropdownOpen, setActionDropdownOpen] = useState(false);
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -173,6 +176,19 @@ export default function AdminAuditLogPage() {
     return () => { cancelled = true; };
   }, [action, category, dateFrom, dateTo, initialized, page, query, resource, token]);
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (resourceDropdownOpen && !e.target.closest('.admin-orders__resource-select-wrapper')) setResourceDropdownOpen(false);
+      if (actionDropdownOpen && !e.target.closest('.admin-orders__action-select-wrapper')) setActionDropdownOpen(false);
+      if (categoryDropdownOpen && !e.target.closest('.admin-orders__category-select-wrapper')) setCategoryDropdownOpen(false);
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [resourceDropdownOpen, actionDropdownOpen, categoryDropdownOpen]);
+
+  const selectedResource = RESOURCE_OPTIONS.find((o) => o.id === resource);
+  const selectedAction = ACTION_OPTIONS.find((o) => o.id === action);
+  const selectedCategory = CATEGORY_OPTIONS.find((o) => o.id === category);
   const hasActiveFilters = resource || action || category || dateFrom || dateTo;
 
   return (
@@ -196,14 +212,56 @@ export default function AdminAuditLogPage() {
           <IconSearch size={16} />
           <input type="search" placeholder="Search action, table, record or reason..." value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
-        <select className="admin-orders__vendor-select" value={resource} onChange={(e) => setResource(e.target.value)}>{RESOURCE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select>
-        <select className="admin-orders__vendor-select" value={action} onChange={(e) => setAction(e.target.value)}>{ACTION_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select>
+        <div className="admin-orders__resource-select-wrapper">
+          <button type="button" className="admin-orders__vendor-select" onClick={() => setResourceDropdownOpen(!resourceDropdownOpen)} aria-label="Filter by resource">
+            {selectedResource?.label || 'All resources'}
+            <IconChevronDown size={14} stroke={2} />
+          </button>
+          {resourceDropdownOpen && (
+            <div className="admin-orders__vendor-select-dropdown">
+              {RESOURCE_OPTIONS.map((option) => (
+                <button key={option.id} type="button" className={`admin-orders__vendor-select-option${resource === option.id ? ' admin-orders__vendor-select-option--active' : ''}`} onClick={() => { setResource(option.id); setResourceDropdownOpen(false); }}>
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="admin-orders__action-select-wrapper">
+          <button type="button" className="admin-orders__vendor-select" onClick={() => setActionDropdownOpen(!actionDropdownOpen)} aria-label="Filter by action">
+            {selectedAction?.label || 'All actions'}
+            <IconChevronDown size={14} stroke={2} />
+          </button>
+          {actionDropdownOpen && (
+            <div className="admin-orders__vendor-select-dropdown">
+              {ACTION_OPTIONS.map((option) => (
+                <button key={option.id} type="button" className={`admin-orders__vendor-select-option${action === option.id ? ' admin-orders__vendor-select-option--active' : ''}`} onClick={() => { setAction(option.id); setActionDropdownOpen(false); }}>
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button type="button" className={`admin-action ${showFilters ? 'admin-action--active' : ''}`} onClick={() => setShowFilters((prev) => !prev)}><IconFilter size={13} /> Filters {hasActiveFilters ? '(active)' : ''}</button>
       </div>
 
       {showFilters && (
         <div className="admin-orders__filters" style={{ gap: 12, padding: '12px 16px' }}>
-          <select className="admin-orders__vendor-select" value={category} onChange={(e) => setCategory(e.target.value)}>{CATEGORY_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select>
+          <div className="admin-orders__category-select-wrapper">
+            <button type="button" className="admin-orders__vendor-select" onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)} aria-label="Filter by category">
+              {selectedCategory?.label || 'All categories'}
+              <IconChevronDown size={14} stroke={2} />
+            </button>
+            {categoryDropdownOpen && (
+              <div className="admin-orders__vendor-select-dropdown">
+                {CATEGORY_OPTIONS.map((option) => (
+                  <button key={option.id} type="button" className={`admin-orders__vendor-select-option${category === option.id ? ' admin-orders__vendor-select-option--active' : ''}`} onClick={() => { setCategory(option.id); setCategoryDropdownOpen(false); }}>
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>
             From
             <input type="date" className="admin-input" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} style={{ padding: '6px 8px', fontSize: '0.78rem' }} />

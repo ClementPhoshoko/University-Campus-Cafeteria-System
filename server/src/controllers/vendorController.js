@@ -805,6 +805,105 @@ export async function deleteVendorCategory(req, res) {
 }
 
 // ---------------------------------------------------------------------------
+// Menu Items CRUD
+// ---------------------------------------------------------------------------
+
+const MENU_ITEM_SELECT = '*, menu_categories(id, name)';
+
+export async function listMenuItems(req, res) {
+  try {
+    const vendorId = requireUuidParam(req, res, 'vendorId');
+    if (!vendorId) return;
+    await mustExist('vendors', vendorId, 'VENDOR_NOT_FOUND', 'Vendor not found');
+    const { pageNum, limitNum, from, to } = parsePagination(req.query);
+    let query = db().from('menu_items').select(MENU_ITEM_SELECT, { count: 'exact' }).eq('vendor_id', vendorId).order('created_at', { ascending: false }).range(from, to);
+    if (req.query.category_id) query = query.eq('category_id', req.query.category_id);
+    if (req.query.status) query = query.eq('status', req.query.status);
+    if (req.query.is_active !== undefined) query = query.eq('is_active', req.query.is_active === 'true');
+    const search = String(req.query.search || '').trim();
+    if (search) query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    const { data, error, count } = await query;
+    if (error) throw error;
+    const items = await Promise.all((data || []).map(async (item) => ({ ...item, image_url: await resolveAssetUrl(item.image_url) })));
+    return respond(req, res, { success: true, menuItems: items, pagination: buildPagination(count, pageNum, limitNum) }, { cacheControl: CACHE.adminList });
+  } catch (err) { return handleControllerError(res, err); }
+}
+
+export async function createMenuItem(req, res) {
+  try {
+    const vendorId = requireUuidParam(req, res, 'vendorId');
+    if (!vendorId) return;
+    await mustExist('vendors', vendorId, 'VENDOR_NOT_FOUND', 'Vendor not found');
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    if (!name) return sendError(res, 400, 'VALIDATION_ERROR', 'name is required');
+    const basePrice = Number(req.body?.base_price);
+    if (isNaN(basePrice) || basePrice < 0) return sendError(res, 400, 'VALIDATION_ERROR', 'base_price must be a non-negative number');
+    if (req.body?.category_id) {
+      const cat = await db().from('menu_categories').select('id').eq('id', req.body.category_id).eq('vendor_id', vendorId).maybeSingle();
+      if (!cat.data) return sendError(res, 400, 'VALIDATION_ERROR', 'Category not found for this vendor');
+    }
+    const VALID_STATUSES = ['available', 'limited', 'sold_out', 'unavailable'];
+    const status = VALID_STATUSES.includes(req.body?.status) ? req.body.status : 'available';
+    const payload = {
+      vendor_id: vendorId,
+      category_id: req.body?.category_id || null,
+      name,
+      description: req.body?.description || null,
+      image_url: req.body?.image_url || null,
+      ingredients: Array.isArray(req.body?.ingredients) ? req.body.ingredients : [],
+      portion_description: req.body?.portion_description || null,
+      base_price: basePrice,
+      currency: req.body?.currency || 'ZAR',
+      prep_minutes: req.body?.prep_minutes ? Number(req.body.prep_minutes) : null,
+      status,
+      is_active: req.body?.is_active !== false,
+      created_by: req.user?.id || null,
+    };
+    const { data, error } = await db().from('menu_items').insert(payload).select(MENU_ITEM_SELECT).single();
+    if (error) throw error;
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.menu_items', recordKey: data.id, newData: { name, base_price: basePrice, status, vendor_id: vendorId }, reason: 'Menu item created', category: 'config' });
+    return respond(req, res, { success: true, menuItem: data }, { status: 201 });
+  } catch (err) { return handleControllerError(res, err); }
+}
+
+export async function updateMenuItem(req, res) {
+  try {
+    const itemId = requireUuidParam(req, res, 'itemId');
+    if (!itemId) return;
+    const existing = await mustExist('menu_items', itemId, 'MENU_ITEM_NOT_FOUND', 'Menu item not found');
+    const payload = {};
+    if (req.body?.name !== undefined) { const n = String(req.body.name).trim(); if (!n) return sendError(res, 400, 'VALIDATION_ERROR', 'name cannot be empty'); payload.name = n; }
+    if (req.body?.description !== undefined) payload.description = req.body.description || null;
+    if (req.body?.category_id !== undefined) payload.category_id = req.body.category_id || null;
+    if (req.body?.base_price !== undefined) { const p = Number(req.body.base_price); if (isNaN(p) || p < 0) return sendError(res, 400, 'VALIDATION_ERROR', 'base_price must be a non-negative number'); payload.base_price = p; }
+    if (req.body?.image_url !== undefined) payload.image_url = req.body.image_url || null;
+    if (req.body?.ingredients !== undefined) payload.ingredients = Array.isArray(req.body.ingredients) ? req.body.ingredients : [];
+    if (req.body?.portion_description !== undefined) payload.portion_description = req.body.portion_description || null;
+    if (req.body?.prep_minutes !== undefined) payload.prep_minutes = req.body.prep_minutes ? Number(req.body.prep_minutes) : null;
+    if (req.body?.status !== undefined) { const VALID_STATUSES = ['available', 'limited', 'sold_out', 'unavailable']; if (!VALID_STATUSES.includes(req.body.status)) return sendError(res, 400, 'VALIDATION_ERROR', 'Invalid status'); payload.status = req.body.status; }
+    if (req.body?.is_active !== undefined) payload.is_active = Boolean(req.body.is_active);
+    if (!Object.keys(payload).length) return sendError(res, 400, 'VALIDATION_ERROR', 'No valid fields provided');
+    payload.updated_at = new Date().toISOString();
+    const { data, error } = await db().from('menu_items').update(payload).eq('id', itemId).select(MENU_ITEM_SELECT).single();
+    if (error) throw error;
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.menu_items', recordKey: itemId, oldData: { name: existing.name, base_price: existing.base_price, status: existing.status }, newData: { name: data.name, base_price: data.base_price, status: data.status }, reason: 'Menu item updated', category: 'config' });
+    return respond(req, res, { success: true, menuItem: data });
+  } catch (err) { return handleControllerError(res, err); }
+}
+
+export async function deleteMenuItem(req, res) {
+  try {
+    const itemId = requireUuidParam(req, res, 'itemId');
+    if (!itemId) return;
+    const existing = await mustExist('menu_items', itemId, 'MENU_ITEM_NOT_FOUND', 'Menu item not found');
+    const { error } = await db().from('menu_items').delete().eq('id', itemId);
+    if (error) throw error;
+    await writeAudit(req, { action: 'DELETE', tableName: 'public.menu_items', recordKey: itemId, oldData: { name: existing.name, base_price: existing.base_price, vendor_id: existing.vendor_id }, reason: 'Menu item deleted', category: 'config' });
+    return respond(req, res, { success: true, itemId });
+  } catch (err) { return handleControllerError(res, err); }
+}
+
+// ---------------------------------------------------------------------------
 // Public (employee-facing) — approved vendors with active locations only
 // ---------------------------------------------------------------------------
 
@@ -996,4 +1095,148 @@ export async function createVendorOrder(req, res) {
   } catch (err) {
     return handleControllerError(res, err);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Orders — list, detail, status mutations, notes
+// ---------------------------------------------------------------------------
+
+const ORDER_SELECT = '*, vendors(name, slug), profiles!orders_user_id_fkey(full_name, email, employee_number), collection_points(name), vendor_locations(site_id, building_id, collection_point_id)';
+
+function mapOrder(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    order_number: row.order_number,
+    status: row.status,
+    payment_status: row.payment_status,
+    payment_method: row.payment_method,
+    currency: row.currency,
+    subtotal: Number(row.subtotal || 0),
+    service_fee: Number(row.service_fee || 0),
+    tax: Number(row.tax || 0),
+    delivery_fee: Number(row.delivery_fee || 0),
+    discount: Number(row.discount || 0),
+    total: Number(row.total || 0),
+    order_type: row.order_type,
+    cancellation_reason: row.cancellation_reason,
+    rejection_reason: row.rejection_reason,
+    submitted_at: row.submitted_at,
+    accepted_at: row.accepted_at,
+    ready_at: row.ready_at,
+    collected_at: row.collected_at,
+    completed_at: row.completed_at,
+    cancelled_at: row.cancelled_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    vendor_id: row.vendor_id,
+    vendor_name: row.vendors?.name || '—',
+    vendor_slug: row.vendors?.slug || '',
+    user_id: row.user_id,
+    user_full_name: row.profiles?.full_name || '—',
+    user_email: row.profiles?.email || '',
+    employee_number: row.profiles?.employee_number || '',
+    collection_point_id: row.collection_point_id,
+    collection_point_name: row.collection_points?.name || '—',
+    site_id: row.vendor_locations?.site_id || row.site_id,
+    building_id: row.vendor_locations?.building_id || row.building_id,
+  };
+}
+
+export async function listVendorOrders(req, res) {
+  try {
+    const { pageNum, limitNum, from, to } = parsePagination(req.query);
+    let query = db().from('orders').select(ORDER_SELECT, { count: 'exact' }).order('created_at', { ascending: false }).range(from, to);
+    if (req.query.vendor_id) query = query.eq('vendor_id', req.query.vendor_id);
+    if (req.query.status) query = query.eq('status', req.query.status);
+    if (req.query.user_id) query = query.eq('user_id', req.query.user_id);
+    const search = String(req.query.search || '').trim();
+    if (search) {
+      const { data: matchingUsers } = await db().from('profiles').select('id').or(`full_name.ilike.%${search}%,email.ilike.%${search}%,employee_number.ilike.%${search}%`);
+      const userIds = (matchingUsers || []).map((u) => u.id);
+      const { data: matchingVendors } = await db().from('vendors').select('id').ilike('name', `%${search}%`);
+      const vendorIds = (matchingVendors || []).map((v) => v.id);
+      const orParts = [`order_number::text.ilike.%${search}%`];
+      if (userIds.length) orParts.push(`user_id.in.(${userIds.join(',')})`);
+      if (vendorIds.length) orParts.push(`vendor_id.in.(${vendorIds.join(',')})`);
+      query = query.or(orParts.join(','));
+    }
+    if (req.query.from) query = query.gte('created_at', req.query.from);
+    if (req.query.to) query = query.lte('created_at', req.query.to);
+    const { data, error, count } = await query;
+    if (error) throw error;
+    const orders = (data || []).map(mapOrder);
+    return respond(req, res, { success: true, orders, pagination: buildPagination(count, pageNum, limitNum) }, { cacheControl: CACHE.adminList });
+  } catch (err) { return handleControllerError(res, err); }
+}
+
+export async function getVendorOrder(req, res) {
+  try {
+    const orderId = requireUuidParam(req, res, 'orderId');
+    if (!orderId) return;
+    const { data: order, error } = await db().from('orders').select(ORDER_SELECT).eq('id', orderId).single();
+    if (error) throw error;
+    if (!order) throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+    const { data: items } = await db().from('order_items').select('*').eq('order_id', orderId).order('created_at');
+    const { data: timeline } = await db().from('order_status_history').select('*, profiles!order_status_history_changed_by_fkey(full_name)').eq('order_id', orderId).order('changed_at', { ascending: true });
+    return respond(req, res, {
+      success: true,
+      order: {
+        ...mapOrder(order),
+        items: items || [],
+        timeline: (timeline || []).map((t) => ({ id: t.id, previous_status: t.previous_status, new_status: t.new_status, changed_by: t.changed_by, changed_by_name: t.profiles?.full_name || 'System', changed_at: t.changed_at, reason: t.reason })),
+      },
+    });
+  } catch (err) { return handleControllerError(res, err); }
+}
+
+const CANCELLABLE_STATUSES = ['payment_pending', 'submitted', 'payment_confirmed', 'received_by_vendor', 'accepted', 'preparing', 'ready_for_collection'];
+const REFUNDABLE_STATUSES = ['payment_confirmed', 'preparing', 'completed', 'rejected'];
+
+export async function cancelVendorOrder(req, res) {
+  try {
+    const orderId = requireUuidParam(req, res, 'orderId');
+    if (!orderId) return;
+    const { data: order, error: fetchErr } = await db().from('orders').select('*').eq('id', orderId).single();
+    if (fetchErr) throw fetchErr;
+    if (!order) throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+    if (!CANCELLABLE_STATUSES.includes(order.status)) throw new ApiError(400, 'INVALID_TRANSITION', `Cannot cancel order in status '${order.status}'`);
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+    const { data: updated, error: updateErr } = await db().from('orders').update({ status: 'cancelled', cancellation_reason: reason || null, cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', orderId).select().single();
+    if (updateErr) throw updateErr;
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.orders', recordKey: orderId, oldData: { status: order.status }, newData: { status: 'cancelled' }, reason: reason || 'Order cancelled', category: 'lifecycle' });
+    return respond(req, res, { success: true, order: mapOrder(updated) });
+  } catch (err) { return handleControllerError(res, err); }
+}
+
+export async function refundVendorOrder(req, res) {
+  try {
+    const orderId = requireUuidParam(req, res, 'orderId');
+    if (!orderId) return;
+    const { data: order, error: fetchErr } = await db().from('orders').select('*').eq('id', orderId).single();
+    if (fetchErr) throw fetchErr;
+    if (!order) throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+    if (!REFUNDABLE_STATUSES.includes(order.status)) throw new ApiError(400, 'INVALID_TRANSITION', `Cannot request refund for order in status '${order.status}'`);
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+    const { data: updated, error: updateErr } = await db().from('orders').update({ status: 'refund_pending', updated_at: new Date().toISOString() }).eq('id', orderId).select().single();
+    if (updateErr) throw updateErr;
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.orders', recordKey: orderId, oldData: { status: order.status }, newData: { status: 'refund_pending' }, reason: reason || 'Refund requested', category: 'lifecycle' });
+    return respond(req, res, { success: true, order: mapOrder(updated) });
+  } catch (err) { return handleControllerError(res, err); }
+}
+
+export async function addOrderNote(req, res) {
+  try {
+    const orderId = requireUuidParam(req, res, 'orderId');
+    if (!orderId) return;
+    const { data: order, error: fetchErr } = await db().from('orders').select('id').eq('id', orderId).single();
+    if (fetchErr) throw fetchErr;
+    if (!order) throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+    const note = typeof req.body?.note === 'string' ? req.body.note.trim() : '';
+    if (!note) return sendError(res, 400, 'VALIDATION_ERROR', 'note is required');
+    const { error: insertErr } = await db().from('order_status_history').insert({ order_id: orderId, previous_status: null, new_status: null, changed_by: req.user?.id || null, reason: note });
+    if (insertErr) throw insertErr;
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.order_status_history', recordKey: orderId, newData: { note }, reason: 'Admin note added', category: 'data' });
+    return respond(req, res, { success: true });
+  } catch (err) { return handleControllerError(res, err); }
 }

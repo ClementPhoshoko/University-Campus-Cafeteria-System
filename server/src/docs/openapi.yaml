@@ -2158,6 +2158,97 @@ paths:
       responses:
         '200': { description: Category deleted }
 
+  '/admin/vendors/{vendorId}/menu-items':
+    get:
+      tags: [Admin Menu Items]
+      summary: List menu items for a vendor
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: category_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: status
+          in: query
+          schema: { type: string, enum: [available, limited, sold_out, unavailable] }
+        - name: is_active
+          in: query
+          schema: { type: string, enum: ['true', 'false'] }
+      responses:
+        '200': { description: Paginated menu items }
+    post:
+      tags: [Admin Menu Items]
+      summary: Create a menu item
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, base_price]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                category_id: { type: string, format: uuid }
+                base_price: { type: number }
+                currency: { type: string, default: ZAR }
+                prep_minutes: { type: integer }
+                status: { type: string, enum: [available, limited, sold_out, unavailable] }
+                portion_description: { type: string }
+                ingredients: { type: array, items: { type: string } }
+                image_url: { type: string }
+      responses:
+        '201': { description: Menu item created }
+
+  '/admin/menu-items/{itemId}':
+    patch:
+      tags: [Admin Menu Items]
+      summary: Update a menu item
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                category_id: { type: string, format: uuid }
+                base_price: { type: number }
+                status: { type: string, enum: [available, limited, sold_out, unavailable] }
+                prep_minutes: { type: integer }
+                portion_description: { type: string }
+                ingredients: { type: array, items: { type: string } }
+                image_url: { type: string }
+                is_active: { type: boolean }
+      responses:
+        '200': { description: Menu item updated }
+    delete:
+      tags: [Admin Menu Items]
+      summary: Delete a menu item
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Menu item deleted }
+
 components:
   parameters:
     Page:

@@ -140,3 +140,68 @@ export function VendorLocationModal({ location, onClose, onSubmit, submitting = 
 }
 
 export { HoursFields };
+
+export function MenuItemModal({ item, categories, onClose, onSubmit, submitting = false }) {
+  const [form, setForm] = useState({
+    name: item?.name || '',
+    description: item?.description || '',
+    category_id: item?.category_id || '',
+    base_price: String(item?.base_price ?? ''),
+    prep_minutes: String(item?.prep_minutes ?? ''),
+    status: item?.status || 'available',
+    portion_description: item?.portion_description || '',
+    ingredients: Array.isArray(item?.ingredients) ? item.ingredients.join(', ') : '',
+  });
+  const editing = !!item;
+
+  const submit = () => {
+    const payload = {
+      name: form.name.trim(),
+      description: form.description.trim() || null,
+      category_id: form.category_id || null,
+      base_price: Number(form.base_price),
+      prep_minutes: form.prep_minutes ? Number(form.prep_minutes) : null,
+      status: form.status,
+      portion_description: form.portion_description.trim() || null,
+      ingredients: form.ingredients.split(',').map((s) => s.trim()).filter(Boolean),
+    };
+    onSubmit(payload);
+  };
+
+  return (
+    <div className="admin-modal" role="dialog" aria-modal="true">
+      <div className="admin-modal__overlay" onClick={onClose} />
+      <div className="admin-modal__card admin-modal__card--lg" onClick={(e) => e.stopPropagation()}>
+        <header className="admin-modal__head">
+          <div><h3 className="admin-modal__title">{editing ? 'Edit menu item' : 'Add menu item'}</h3><p className="admin-modal__sub">{editing ? 'Update the item details and availability.' : 'Add a new item to this vendor\'s menu.'}</p></div>
+        </header>
+        <div className="admin-form-grid">
+          <Field label="Item name" full><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Classic Chicken Wrap" /></Field>
+          <Field label="Category">
+            <select className="admin-input" value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
+              <option value="">No category</option>
+              {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Base price (ZAR)"><input className="admin-input" type="number" min="0" step="0.01" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} /></Field>
+          <Field label="Prep time (min)"><input className="admin-input" type="number" min="1" value={form.prep_minutes} onChange={(e) => setForm({ ...form, prep_minutes: e.target.value })} /></Field>
+          <Field label="Status">
+            <select className="admin-input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+              <option value="available">Available</option>
+              <option value="limited">Limited</option>
+              <option value="sold_out">Sold out</option>
+              <option value="unavailable">Unavailable</option>
+            </select>
+          </Field>
+          <Field label="Portion description" full><input className="admin-input" value={form.portion_description} onChange={(e) => setForm({ ...form, portion_description: e.target.value })} placeholder="e.g. 300g serving" /></Field>
+          <Field label="Ingredients" full><input className="admin-input" value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} placeholder="Comma-separated, e.g. chicken, lettuce, tomato" /></Field>
+          <Field label="Description" full><textarea className="admin-modal__textarea" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+        </div>
+        <footer className="admin-modal__foot">
+          <button type="button" className="admin-action" onClick={onClose}>Cancel</button>
+          <button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.name.trim() || !form.base_price} onClick={submit}>{submitting ? 'Saving…' : editing ? 'Save item' : 'Add item'}</button>
+        </footer>
+      </div>
+    </div>
+  );
+}

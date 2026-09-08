@@ -14,12 +14,13 @@ import {
   IconEdit,
   IconPower,
   IconPlus,
+  IconTrash,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
-import { addVendorUser, adminRequest, createVendorLocation, removeVendorUser, updateVendor, updateVendorApproval, updateVendorLocation, uploadAdminAsset } from '../../services/adminApi.js';
+import { addVendorUser, adminRequest, createVendorLocation, listMenuItems, listVendorCategories, createMenuItem, updateMenuItem, deleteMenuItem, removeVendorUser, updateVendor, updateVendorApproval, updateVendorLocation, uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
-import { StaffModal, VendorLocationModal, VendorProfileModal } from './VendorForms.jsx';
+import { StaffModal, VendorLocationModal, VendorProfileModal, MenuItemModal } from './VendorForms.jsx';
 
 function StatusPill({ status }) {
   return <span className={`admin-status admin-status--${status}`}>{status}</span>;
@@ -73,6 +74,9 @@ export default function AdminVendorDetail() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [modal, setModal] = useState(null);
+  const [menuItems, setMenuItems] = useState([]);
+  const [menuCategories, setMenuCategories] = useState([]);
+  const [menuItemsLoading, setMenuItemsLoading] = useState(true);
 
   useEffect(() => {
     if (!vendorId || !token) return;
@@ -91,6 +95,37 @@ export default function AdminVendorDetail() {
 
     fetchVendor();
   }, [vendorId, token]);
+
+  useEffect(() => {
+    if (!vendorId || !token || !vendor || vendor.isPending) return;
+    let cancelled = false;
+    const fetchMenuData = async () => {
+      try {
+        const [itemsRes, catsRes] = await Promise.all([
+          listMenuItems(token, vendorId, { limit: 100 }),
+          listVendorCategories(token, vendorId),
+        ]);
+        if (!cancelled) {
+          setMenuItems(itemsRes.menuItems || []);
+          setMenuCategories(catsRes.categories || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch menu data:', err);
+      } finally {
+        if (!cancelled) setMenuItemsLoading(false);
+      }
+    };
+    fetchMenuData();
+    return () => { cancelled = true; };
+  }, [vendorId, token, vendor?.isPending]);
+
+  const refreshMenuItems = async () => {
+    if (!token || !vendorId) return;
+    try {
+      const itemsRes = await listMenuItems(token, vendorId, { limit: 100 });
+      setMenuItems(itemsRes.menuItems || []);
+    } catch (err) { console.error('Failed to refresh menu items:', err); }
+  };
 
   const handleApproval = async (decision) => {
     if (!token || !vendorId || actionLoading) return;
@@ -160,6 +195,33 @@ export default function AdminVendorDetail() {
     try {
       await removeVendorUser(token, vendorId, userId);
       setVendor((current) => ({ ...current, staff: current.staff.filter((member) => member.user_id !== userId) }));
+    } finally { setActionLoading(false); }
+  };
+
+  const handleMenuItemCreate = async (payload) => {
+    setActionLoading(true);
+    try {
+      await createMenuItem(token, vendorId, payload);
+      await refreshMenuItems();
+      setModal(null);
+    } finally { setActionLoading(false); }
+  };
+
+  const handleMenuItemUpdate = async (itemId, payload) => {
+    setActionLoading(true);
+    try {
+      await updateMenuItem(token, itemId, payload);
+      await refreshMenuItems();
+      setModal(null);
+    } finally { setActionLoading(false); }
+  };
+
+  const handleMenuItemDelete = async (itemId) => {
+    if (!window.confirm('Delete this menu item? This cannot be undone.')) return;
+    setActionLoading(true);
+    try {
+      await deleteMenuItem(token, itemId);
+      setMenuItems((prev) => prev.filter((item) => item.id !== itemId));
     } finally { setActionLoading(false); }
   };
 
@@ -348,6 +410,27 @@ export default function AdminVendorDetail() {
             {vendor.staff.length === 0 ? <p className="admin-vendor-empty-copy">No staff members assigned.</p> : vendor.staff.map((member) => <div className="vendor-managed-row" key={member.user_id}><div><strong>{member.full_name || member.email || member.user_id}</strong><span>{member.role} · {member.is_active ? 'Active' : 'Inactive'}</span></div><button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleStaffRemove(member.user_id)} disabled={actionLoading}>Remove</button></div>)}
           </section>
 
+          <section className="admin-vendor-info admin-vendor-management-card">
+            <div className="admin-vendor-top-items__header"><h3 className="admin-vendor-info__heading">Menu items</h3><button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('menuItem')}><IconPlus size={14} /> Add item</button></div>
+            {menuItemsLoading ? <p className="admin-vendor-empty-copy">Loading menu items...</p> : menuItems.length === 0 ? <p className="admin-vendor-empty-copy">No menu items have been added.</p> : (
+              <div className="admin-menu-items-table">
+                <div className="admin-menu-items-table__head"><span>Name</span><span>Category</span><span>Price</span><span>Status</span><span /></div>
+                {menuItems.map((item) => (
+                  <div className="admin-menu-items-table__row" key={item.id}>
+                    <div className="admin-menu-items-table__name"><strong>{item.name}</strong>{item.description && <span>{item.description.slice(0, 60)}{item.description.length > 60 ? '...' : ''}</span>}</div>
+                    <span>{item.menu_categories?.name || '—'}</span>
+                    <span>R {Number(item.base_price).toFixed(2)}</span>
+                    <span className={`admin-status admin-status--${item.status === 'available' ? 'approved' : item.status === 'sold_out' ? 'rejected' : 'pending'}`}>{item.status}</span>
+                    <div className="vendor-managed-row__actions">
+                      <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'menuItem', item })}>Edit</button>
+                      <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleMenuItemDelete(item.id)} disabled={actionLoading}><IconTrash size={13} /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
           {/* Right Column - Top Selling Items */}
           <section className="admin-vendor-top-items">
             <div className="admin-vendor-top-items__header">
@@ -395,6 +478,8 @@ export default function AdminVendorDetail() {
       {modal === 'location' && <VendorLocationModal onClose={() => setModal(null)} onSubmit={handleLocationCreate} submitting={actionLoading} />}
       {modal?.type === 'location' && <VendorLocationModal key={modal.location.id} location={modal.location} onClose={() => setModal(null)} onSubmit={(payload) => handleLocationUpdate(modal.location.id, payload)} submitting={actionLoading} />}
       {modal === 'staff' && <StaffModal onClose={() => setModal(null)} onSubmit={handleStaffAdd} submitting={actionLoading} />}
+      {modal === 'menuItem' && <MenuItemModal categories={menuCategories} onClose={() => setModal(null)} onSubmit={handleMenuItemCreate} submitting={actionLoading} />}
+      {modal?.type === 'menuItem' && <MenuItemModal key={modal.item.id} item={modal.item} categories={menuCategories} onClose={() => setModal(null)} onSubmit={(payload) => handleMenuItemUpdate(modal.item.id, payload)} submitting={actionLoading} />}
     </div>
   );
 }

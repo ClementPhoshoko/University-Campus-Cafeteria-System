@@ -16,7 +16,7 @@ import {
   IconAlertCircle,
 } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
-import { adminRequest } from '../../services/adminApi.js';
+import { listOrders } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useRoles } from '../../hooks/useRoles.js';
 import { formatCurrency } from './adminMockData.js';
@@ -135,28 +135,40 @@ function StatBlock({ label, value, sub, icon: Icon }) {
   );
 }
 
+const STATUS_OPTIONS = [
+  { id: 'all', label: 'All statuses' },
+  { id: 'preparing', label: 'Preparing' },
+  { id: 'ready_for_collection', label: 'Ready for collection' },
+  { id: 'completed', label: 'Completed' },
+  { id: 'payment_pending', label: 'Payment pending' },
+  { id: 'refund_pending', label: 'Refund pending' },
+  { id: 'cancelled', label: 'Cancelled' },
+  { id: 'rejected', label: 'Rejected' },
+  { id: 'collection_not_completed', label: 'Not collected' },
+];
+
 function useStatusFilters(orders) {
-  const STATUS_FILTERS = ['all', 'preparing', 'ready_for_collection', 'completed', 'cancelled', 'refund_pending', 'payment_pending', 'rejected', 'collection_not_completed'];
   const counts = { all: orders.length };
-  STATUS_FILTERS.forEach((f) => {
-    if (f !== 'all') counts[f] = orders.filter((o) => o.status === f).length;
+  STATUS_OPTIONS.forEach((s) => {
+    if (s.id !== 'all') counts[s.id] = orders.filter((o) => o.status === s.id).length;
   });
   return counts;
 }
 
 export default function AdminOrderList() {
-  const { user, initialized } = useAuth();
+  const { session, initialized } = useAuth();
   const { roles, loading: rolesLoading } = useRoles();
   const [token, setToken] = useState('');
 
   useEffect(() => {
-    if (initialized && user?.session?.access_token) {
-      setToken(user.session.access_token);
+    if (initialized && session?.access_token) {
+      setToken(session.access_token);
     }
-  }, [initialized, user]);
+  }, [initialized, session]);
 
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [vendorFilter, setVendorFilter] = useState('all');
   const [vendorDropdownOpen, setVendorDropdownOpen] = useState(false);
   const [page, setPage] = useState(1);
@@ -172,15 +184,11 @@ export default function AdminOrderList() {
         const params = {
           search: query || undefined,
           status: statusFilter !== 'all' ? statusFilter : undefined,
+          vendor_id: vendorFilter !== 'all' ? vendorFilter : undefined,
         };
 
-        const apiPath = '/admin/vendors/approvals';
-
-        const response = await adminRequest(apiPath, {
-          token,
-          query: params,
-        });
-        setOrders(response.data || []);
+        const response = await listOrders(token, params);
+        setOrders(response.orders || []);
       } catch (err) {
         console.error('Failed to fetch orders:', err);
       } finally {
@@ -201,10 +209,13 @@ export default function AdminOrderList() {
       if (vendorDropdownOpen && !e.target.closest('.admin-orders__vendor-select-wrapper')) {
         setVendorDropdownOpen(false);
       }
+      if (statusDropdownOpen && !e.target.closest('.admin-orders__status-select-wrapper')) {
+        setStatusDropdownOpen(false);
+      }
     };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-  }, [vendorDropdownOpen]);
+  }, [vendorDropdownOpen, statusDropdownOpen]);
 
   useEffect(() => {
     setPage(1);
@@ -213,19 +224,17 @@ export default function AdminOrderList() {
   // Derive vendor list from orders for the filter dropdown
   const uniqueVendors = useMemo(() => {
     const seen = new Set();
-    return [
-      ...orders
-        .filter((o) => o.vendor_name)
-        .map((o) => ({ id: o.vendor_name.replace(/\s+/g, '-').toLowerCase(), label: o.vendor_name })),
-      ...VENDOR_FILTERS,
-    ].filter((v) => !seen.has(v.id) && seen.add(v.id));
+    return orders
+      .filter((o) => o.vendor_id && o.vendor_name && !seen.has(o.vendor_id) && seen.add(o.vendor_id))
+      .map((o) => ({ id: o.vendor_id, label: o.vendor_name }));
   }, [orders]);
 
   const statusCounts = useStatusFilters(orders);
   const totalPages = Math.ceil(orders.length / ITEMS_PER_PAGE);
   const paginatedOrders = orders.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  const todayCount = orders.filter((o) => o.created_at?.startsWith('2026-09-01')).length;
+  const today = new Date().toISOString().slice(0, 10);
+  const todayCount = orders.filter((o) => o.created_at?.startsWith(today)).length;
   const preparingCount = orders.filter((o) => o.status === 'preparing').length;
   const readyCount = orders.filter((o) => o.status === 'ready_for_collection').length;
   const issueCount = orders.filter((o) =>
@@ -233,6 +242,7 @@ export default function AdminOrderList() {
   ).length;
 
   const selectedVendor = uniqueVendors.find((v) => v.id === vendorFilter);
+  const selectedStatus = STATUS_OPTIONS.find((s) => s.id === statusFilter);
 
   return (
     <div className="admin-orders">
@@ -268,18 +278,34 @@ export default function AdminOrderList() {
           />
         </div>
 
-        <div className="admin-vendors__chips" role="group" aria-label="Status filter">
-          {Object.keys(statusCounts).map((filter) => (
-            <button
-              key={filter}
-              type="button"
-              className={`admin-vendors__chip${statusFilter === filter ? ' admin-vendors__chip--active' : ''}`}
-              onClick={() => setStatusFilter(filter)}
-            >
-              {filter}
-              <span className="admin-vendors__chip-count">{statusCounts[filter]}</span>
-            </button>
-          ))}
+        <div className="admin-orders__status-select-wrapper">
+          <button
+            type="button"
+            className="admin-orders__vendor-select"
+            onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+            aria-label="Filter by status"
+          >
+            {selectedStatus?.label || 'All statuses'}
+            <IconChevronDown size={14} stroke={2} />
+          </button>
+          {statusDropdownOpen && (
+            <div className="admin-orders__vendor-select-dropdown">
+              {STATUS_OPTIONS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`admin-orders__vendor-select-option${statusFilter === s.id ? ' admin-orders__vendor-select-option--active' : ''}`}
+                  onClick={() => {
+                    setStatusFilter(s.id);
+                    setStatusDropdownOpen(false);
+                  }}
+                >
+                  {s.label}
+                  <span className="admin-orders__vendor-select-count">{statusCounts[s.id] || 0}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="admin-orders__vendor-select-wrapper">
@@ -294,6 +320,7 @@ export default function AdminOrderList() {
           </button>
           {vendorDropdownOpen && (
             <div className="admin-orders__vendor-select-dropdown">
+              <button type="button" className={`admin-orders__vendor-select-option${vendorFilter === 'all' ? ' admin-orders__vendor-select-option--active' : ''}`} onClick={() => { setVendorFilter('all'); setVendorDropdownOpen(false); }}>All vendors</button>
               {uniqueVendors.map((v) => (
                 <button
                   key={v.id}

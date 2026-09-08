@@ -20,22 +20,14 @@ import {
   IconNotes,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
-import { adminRequest } from '../../services/adminApi.js';
+import { getOrder, cancelOrder, refundOrder, addOrderNote } from '../../services/adminApi.js';
+import { useAuth } from '../../hooks/useAuth.js';
 import {
   ORDER_STATUS_LABELS,
   ORDER_STATUS_TONES,
   formatCurrency,
 } from './adminMockData.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
-
-const SAMPLE_ITEMS = [
-  { name: 'Chicken Wrap & Salad', qty: 1, price: 45.0 },
-  { name: 'House Cappuccino', qty: 1, price: 32.0 },
-  { name: 'Berry Scone', qty: 2, price: 28.0 },
-  { name: 'Iced Vanilla Latte', qty: 1, price: 32.0 },
-  { name: 'Vegetable Pasta', qty: 1, price: 40.0 },
-  { name: 'Premium Lager 330ml', qty: 1, price: 35.0 },
-];
 
 const INTERVENTION_OPTIONS = [
   {
@@ -180,17 +172,15 @@ export default function AdminOrderDetail() {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
   const [intervention, setIntervention] = useState(null);
-  const { user } = useAuth();
-  const token = user?.session?.access_token;
+  const { session } = useAuth();
+  const token = session?.access_token;
 
   useEffect(() => {
     const fetchOrder = async () => {
       if (!orderId || !token) return;
       try {
-        const response = await adminRequest(`/admin/vendors/orders/${orderId}`, {
-          token,
-        });
-        setOrder(response.data);
+        const response = await getOrder(token, orderId);
+        setOrder(response.order);
       } catch (err) {
         console.error('Failed to fetch order:', err);
       }
@@ -213,17 +203,12 @@ export default function AdminOrderDetail() {
     );
   }
 
-  const subtotal = SAMPLE_ITEMS.reduce((sum, item) => sum + item.price * item.qty, 0);
-  const serviceFee = subtotal * 0.05;
-  const tax = (subtotal - serviceFee) * 0.0;
+  const subtotal = order.subtotal || 0;
+  const serviceFee = order.service_fee || 0;
+  const tax = order.tax || 0;
 
-  const isIssue = [
-    ORDER_STATUS.PAYMENT_PENDING,
-    ORDER_STATUS.REFUND_PENDING,
-    ORDER_STATUS.CANCELLED,
-    ORDER_STATUS.REJECTED,
-    ORDER_STATUS.COLLECTION_NOT_COMPLETED,
-  ].includes(order.status);
+  const ISSUE_STATUSES = ['payment_pending', 'refund_pending', 'cancelled', 'rejected', 'collection_not_completed'];
+  const isIssue = ISSUE_STATUSES.includes(order.status);
 
   const api = {
     post: (path, body) => {
@@ -292,21 +277,22 @@ export default function AdminOrderDetail() {
           <section className="admin-card">
             <header className="admin-card__head">
               <div>
-                <span className="admin-card__eyebrow">{order.item_count} item{order.item_count !== 1 ? 's' : ''}</span>
+                <span className="admin-card__eyebrow">{order.items?.length || 0} item{(order.items?.length || 0) !== 1 ? 's' : ''}</span>
                 <h3 className="admin-card__title">Order contents</h3>
               </div>
               <span className="admin-card__chip">Total · {formatCurrency(order.total)}</span>
             </header>
             <ul className="admin-order-items">
-              {SAMPLE_ITEMS.slice(0, order.item_count).map((item, idx) => (
-                <li key={idx} className="admin-order-item">
-                  <span className="admin-order-item__qty">{item.qty}×</span>
+              {(order.items || []).map((item) => (
+                <li key={item.id} className="admin-order-item">
+                  <span className="admin-order-item__qty">{item.quantity}×</span>
                   <div className="admin-order-item__body">
-                    <span className="admin-order-item__name">{item.name}</span>
-                    <span className="admin-order-item__price">{formatCurrency(item.price * item.qty)}</span>
+                    <span className="admin-order-item__name">{item.item_name_snapshot}</span>
+                    <span className="admin-order-item__price">{formatCurrency(item.line_total)}</span>
                   </div>
                 </li>
               ))}
+              {(!order.items || order.items.length === 0) && <li className="admin-order-item"><span className="admin-order-item__name" style={{ color: 'var(--color-text-tertiary)' }}>No item details available</span></li>}
             </ul>
 
             <div className="admin-order-totals">
@@ -413,36 +399,21 @@ export default function AdminOrderDetail() {
       <InterventionModal
         option={intervention}
         order={order}
-        onConfirm={(option) => {
-          // Trigger the intervention via API
+        onConfirm={async (option) => {
           const { id } = option;
-          const reason = ''; // In a real implementation, get from textarea
-          const notifyCustomer = false;
-
-          if (id === 'refund') {
-            adminRequest(`/admin/vendors/orders/${order.id}/refund`, {
-              method: 'POST',
-              token,
-              body: { reason, notify_customer: notifyCustomer },
-            });
-          } else if (id === 'cancel') {
-            adminRequest(`/admin/vendors/orders/${order.id}/cancel`, {
-              method: 'POST',
-              token,
-              body: { reason, notify_customer: notifyCustomer },
-            });
-          } else if (id === 'escalate') {
-            adminRequest(`/admin/vendors/orders/${order.id}/escalate`, {
-              method: 'POST',
-              token,
-              body: { reason },
-            });
-          } else if (id === 'note') {
-            adminRequest(`/admin/vendors/orders/${order.id}/note`, {
-              method: 'POST',
-              token,
-              body: { reason },
-            });
+          const reason = '';
+          try {
+            if (id === 'refund') {
+              await refundOrder(token, order.id, { reason });
+            } else if (id === 'cancel') {
+              await cancelOrder(token, order.id, { reason });
+            } else if (id === 'note') {
+              await addOrderNote(token, order.id, { note: reason || 'Admin note' });
+            }
+            const refreshed = await getOrder(token, order.id);
+            setOrder(refreshed.order);
+          } catch (err) {
+            console.error('Intervention failed:', err);
           }
           setIntervention(null);
         }}
