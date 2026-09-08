@@ -20,6 +20,12 @@ import {
 
 const db = () => supabaseAdmin;
 
+async function resolveAssetUrl(path) {
+  if (!path || /^https?:\/\//i.test(path)) return path;
+  const { data } = await db().storage.from('vendor-assets').createSignedUrl(path, 3600);
+  return data?.signedUrl || path;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -175,12 +181,13 @@ export async function listSites(req, res) {
 
     const sites = data || [];
     const counts = await getSiteCounts(sites.map((site) => site.id));
-    const items = sites.map((site) => ({
+    const items = await Promise.all(sites.map(async (site) => ({
       ...site,
+      cover_image_url: await resolveAssetUrl(site.cover_image_url),
       building_count: counts.buildings.get(site.id) || 0,
       collection_point_count: counts.collectionPoints.get(site.id) || 0,
       vendor_count: counts.vendors.get(site.id)?.size || 0,
-    }));
+    })));
 
     return respond(req, res, {
       success: true,
@@ -204,6 +211,7 @@ export async function getSite(req, res) {
       success: true,
       site: {
         ...site,
+        cover_image_url: await resolveAssetUrl(site.cover_image_url),
         building_count: counts.buildings.get(siteId) || 0,
         collection_point_count: counts.collectionPoints.get(siteId) || 0,
         vendor_count: counts.vendors.get(siteId)?.size || 0,
@@ -280,11 +288,12 @@ export async function listBuildings(req, res) {
     const floorCounts = await floorCountsByBuilding(ids);
     const cpCounts = await collectionPointsPerBuilding(ids);
 
-    const items = buildings.map((b) => ({
+    const items = await Promise.all(buildings.map(async (b) => ({
       ...b,
+      cover_image_url: await resolveAssetUrl(b.cover_image_url),
       floor_count: floorCounts.get(b.id) || 0,
       collection_point_count: cpCounts.get(b.id) || 0,
-    }));
+    })));
 
     return respond(req, res, {
       success: true,
@@ -310,6 +319,7 @@ export async function getBuilding(req, res) {
       success: true,
       building: {
         ...building,
+        cover_image_url: await resolveAssetUrl(building.cover_image_url),
         floor_count: floorCounts.get(buildingId) || 0,
         collection_point_count: cpCounts.get(buildingId) || 0,
       },

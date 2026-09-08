@@ -12,6 +12,8 @@ import {
 } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
 import { useAdminLocations } from '../../hooks/useAdminLocations.js';
+import { uploadAdminAsset } from '../../services/adminApi.js';
+import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 const VIEW_TABS = [
@@ -73,7 +75,7 @@ function CollectionPointRow({ point }) {
 }
 
 function NewSiteModal({ onClose, onSubmit, submitting }) {
-  const [form, setForm] = useState({ name: '', code: '', address: '', latitude: '', longitude: '', timezone: 'Africa/Johannesburg', is_active: true });
+  const [form, setForm] = useState({ name: '', code: '', address: '', latitude: '', longitude: '', timezone: 'Africa/Johannesburg', is_active: true, cover_file: null });
   const [error, setError] = useState('');
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
   const submit = async () => {
@@ -93,7 +95,7 @@ function NewSiteModal({ onClose, onSubmit, submitting }) {
         <label className="admin-modal__field admin-modal__field--full"><span>Address</span><input className="admin-input" value={form.address} onChange={(e) => update('address', e.target.value)} /></label>
         <label className="admin-modal__field"><span>Latitude</span><input className="admin-input" type="number" step="any" value={form.latitude} onChange={(e) => update('latitude', e.target.value)} /></label>
         <label className="admin-modal__field"><span>Longitude</span><input className="admin-input" type="number" step="any" value={form.longitude} onChange={(e) => update('longitude', e.target.value)} /></label>
-        <label className="admin-modal__field"><span>Timezone</span><input className="admin-input" value={form.timezone} onChange={(e) => update('timezone', e.target.value)} /></label>
+        <label className="admin-modal__field"><span>Timezone</span><input className="admin-input" value={form.timezone} onChange={(e) => update('timezone', e.target.value)} /></label><label className="admin-modal__field"><span>Cover image</span><input className="admin-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => update('cover_file', e.target.files?.[0] || null)} /></label>
         <label className="vendor-checkbox"><input type="checkbox" checked={form.is_active} onChange={(e) => update('is_active', e.target.checked)} /> Active site</label>
       </div>
       <footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Registering…' : 'Register site'}</button></footer>
@@ -110,6 +112,7 @@ export default function AdminCafeteriaList() {
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const itemsPerPage = 12;
+  const { session } = useAuth();
   const { sites, allBuildings, allCollectionPoints, buildingsBySite, collectionPointsByBuilding, fetchBuildings, fetchCollectionPoints, addSite, loading, errors } = useAdminLocations();
 
   useEffect(() => { sites.forEach((site) => { if (buildingsBySite[site.id] === undefined) fetchBuildings(site.id).catch(() => {}); }); }, [sites, buildingsBySite, fetchBuildings]);
@@ -128,7 +131,7 @@ export default function AdminCafeteriaList() {
   const activeBuildings = buildings.filter((building) => building.is_active).length;
   const activePoints = collectionPoints.filter((point) => point.is_active).length;
   const handleView = (next) => { setView(next); setStatusFilter('all'); setSearchParams({ view: next }); };
-  const handleCreate = async (payload) => { setSubmitting(true); try { await addSite(payload); } finally { setSubmitting(false); } };
+  const handleCreate = async (payload) => { setSubmitting(true); try { const { cover_file: coverFile, ...sitePayload } = payload; const response = await addSite(sitePayload); if (coverFile && response.site?.id) await uploadAdminAsset(session?.access_token, 'site', response.site.id, coverFile); } finally { setSubmitting(false); } };
 
   return <div className="admin-orders">
     <header className="admin-vendors__header"><div><span className="admin-card__eyebrow">Locations</span><p className="admin-vendors__sub">Register and manage the sites where food orders are placed, prepared, and collected.</p></div><div className="admin-vendors__actions"><button type="button" className="admin-action--ghost" onClick={() => setShowNew(true)}><IconPlus size={13} /> New site</button></div></header>

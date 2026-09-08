@@ -15,6 +15,10 @@ import {
   addVendorUser,
   removeVendorUser,
   listBuildingVendors,
+  listVendorCategories,
+  createVendorCategory,
+  updateVendorCategory,
+  deleteVendorCategory,
 } from '../controllers/vendorController.js';
 
 const adminVendorRouter = Router();
@@ -43,5 +47,9 @@ adminVendorRouter.patch('/admin/vendor-locations/:locationId', mutations, update
 adminVendorRouter.post('/admin/vendors/:vendorId/users', mutations, addVendorUser);
 adminVendorRouter.delete('/admin/vendors/:vendorId/users/:userId', mutations, removeVendorUser);
 adminVendorRouter.get('/admin/buildings/:buildingId/vendors', listBuildingVendors);
+adminVendorRouter.get('/admin/vendors/:vendorId/categories', listVendorCategories);
+adminVendorRouter.post('/admin/vendors/:vendorId/categories', mutations, createVendorCategory);
+adminVendorRouter.patch('/admin/menu-categories/:categoryId', mutations, updateVendorCategory);
+adminVendorRouter.delete('/admin/menu-categories/:categoryId', mutations, deleteVendorCategory);
 
 export default adminVendorRouter;

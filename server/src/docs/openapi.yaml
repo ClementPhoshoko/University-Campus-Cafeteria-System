@@ -2023,6 +2023,75 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  '/admin/assets':
+    post:
+      tags: [Admin Assets]
+      summary: Upload a site, building, or vendor image
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [entityType, entityId, contentType, data]
+              properties:
+                entityType: { type: string, enum: [vendor, site, building] }
+                entityId: { type: string, format: uuid }
+                contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+                data: { type: string, description: Base64 encoded image, format: byte }
+      responses:
+        '200': { description: Asset uploaded }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  '/admin/buildings/{buildingId}/vendors':
+    get:
+      tags: [Admin Vendors]
+      summary: List vendors operating at a building
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/BuildingId'
+      responses:
+        '200': { description: Building vendor assignments }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  '/admin/vendors/{vendorId}/categories':
+    get:
+      tags: [Admin Vendors]
+      summary: List vendor menu categories
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+      responses:
+        '200': { description: Vendor categories }
+    post:
+      tags: [Admin Vendors]
+      summary: Create a vendor menu category
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+      responses:
+        '201': { description: Category created }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  '/admin/menu-categories/{categoryId}':
+    patch:
+      tags: [Admin Vendors]
+      summary: Update a vendor menu category
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/CategoryId'
+      responses:
+        '200': { description: Category updated }
+    delete:
+      tags: [Admin Vendors]
+      summary: Delete a vendor menu category
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/CategoryId'
+      responses:
+        '200': { description: Category deleted }
+
 components:
   parameters:
     Page:
@@ -2104,6 +2173,13 @@ components:
         format: uuid
     VendorId:
       name: vendorId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CategoryId:
+      name: categoryId
       in: path
       required: true
       schema:

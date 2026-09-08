@@ -12,7 +12,7 @@ import {
   IconPlus,
 } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
-import { createVendor, listVendorApprovals, listVendors, updateVendorApproval } from '../../services/adminApi.js';
+import { createVendor, listVendorApprovals, listVendors, updateVendorApproval, uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 import { AddVendorModal } from './VendorForms.jsx';
@@ -236,7 +236,9 @@ export default function AdminVendorList() {
     if (!token) return;
     setAddVendorLoading(true);
     try {
-      const response = await createVendor(token, payload);
+      const { logoFile, ...vendorPayload } = payload;
+      const response = await createVendor(token, vendorPayload);
+      if (logoFile && response.vendor?.id) await uploadAdminAsset(token, 'vendor', response.vendor.id, logoFile);
       if (response.vendor) setPendingApprovals((items) => [response.vendor, ...items]);
     } finally {
       setAddVendorLoading(false);

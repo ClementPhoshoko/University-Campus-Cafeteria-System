@@ -3,6 +3,8 @@ import { parsePagination, buildPagination } from '../utils/pagination.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { writeAudit } from '../utils/audit.js';
 import { respond, CACHE } from '../utils/http.js';
+import { sendEmail } from '../services/email/sendEmail.js';
+import vendorDecisionEmail from '../services/email/templates/vendorDecision.js';
 import {
   isUuid,
   slugify,
@@ -17,6 +19,12 @@ import {
 } from '../validators/vendorValidators.js';
 
 const db = () => supabaseAdmin;
+
+async function resolveAssetUrl(path) {
+  if (!path || /^https?:\/\//i.test(path)) return path;
+  const { data } = await supabaseAdmin.storage.from('vendor-assets').createSignedUrl(path, 3600);
+  return data?.signedUrl || path;
+}
 
 const LOCATION_SELECT = '*, sites(id, name), buildings(id, name), collection_points(id, name), operating_hours(*)';
 
@@ -286,11 +294,12 @@ export async function listVendors(req, res) {
     const { data, error, count } = await query;
     if (error) throw error;
 
-    const items = (data || []).map((vendor) => ({
+    const items = await Promise.all((data || []).map(async (vendor) => ({
       ...vendor,
+      logo_url: await resolveAssetUrl(vendor.logo_url),
       location_count: countMap ? (countMap.get(vendor.id) || 0) : embedCount(vendor, 'vendor_locations'),
       vendor_locations: undefined,
-    }));
+    })));
 
     return respond(req, res, {
       success: true,
@@ -318,7 +327,7 @@ export async function listApprovals(req, res) {
     const { data, error, count } = await query;
     if (error) throw error;
 
-    const items = (data || []).map((vendor) => {
+    const items = await Promise.all((data || []).map(async (vendor) => {
       const locations = (vendor.vendor_locations || []).map((l) => ({
         id: l.id,
         service_status: l.service_status,
@@ -329,11 +338,12 @@ export async function listApprovals(req, res) {
       }));
       return {
         ...vendor,
+        logo_url: await resolveAssetUrl(vendor.logo_url),
         location_count: locations.length,
         location: locations[0] || null,
         vendor_locations: undefined,
       };
-    });
+    }));
 
     return respond(req, res, {
       success: true,
@@ -363,6 +373,7 @@ export async function getVendor(req, res) {
       success: true,
       vendor: {
         ...vendor,
+        logo_url: await resolveAssetUrl(vendor.logo_url),
         locations: (locationsData.data || []).map(transformLocation),
         staff,
         activity,
@@ -516,6 +527,23 @@ export async function updateVendorApproval(req, res) {
       oldData: existing,
       newData: auditData,
     });
+
+    if (existing.support_email && ['approved', 'rejected', 'suspended'].includes(applied.status)) {
+      try {
+        await sendEmail({
+          to: existing.support_email,
+          subject: `Vendor application ${applied.status} - Merchant Munchies`,
+          html: vendorDecisionEmail({
+            vendorName: existing.name,
+            decision: applied.status,
+            reason,
+            appUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+          }),
+        });
+      } catch (emailError) {
+        console.error('[Vendor] Decision email failed:', emailError.message);
+      }
+    }
 
     return respond(req, res, { success: true, vendor: applied });
   } catch (err) {
@@ -716,6 +744,62 @@ export async function listBuildingVendors(req, res) {
   } catch (err) {
     return handleControllerError(res, err);
   }
+}
+
+export async function listVendorCategories(req, res) {
+  try {
+    const vendorId = requireUuidParam(req, res, 'vendorId');
+    if (!vendorId) return;
+    await mustExist('vendors', vendorId, 'VENDOR_NOT_FOUND', 'Vendor not found');
+    const { data, error } = await db().from('menu_categories').select('*').eq('vendor_id', vendorId).order('sort_order').order('name');
+    if (error) throw error;
+    return respond(req, res, { success: true, categories: data || [] }, { cacheControl: CACHE.adminList });
+  } catch (err) { return handleControllerError(res, err); }
+}
+
+export async function createVendorCategory(req, res) {
+  try {
+    const vendorId = requireUuidParam(req, res, 'vendorId');
+    if (!vendorId) return;
+    await mustExist('vendors', vendorId, 'VENDOR_NOT_FOUND', 'Vendor not found');
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    if (!name) return sendError(res, 400, 'VALIDATION_ERROR', 'name is required');
+    const payload = { vendor_id: vendorId, name, description: req.body.description || null, sort_order: Number(req.body.sort_order || 0), is_active: req.body.is_active !== false };
+    const { data, error } = await db().from('menu_categories').insert(payload).select().single();
+    if (error) throw error;
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.menu_categories', recordKey: data.id, newData: data });
+    return respond(req, res, { success: true, category: data }, { status: 201 });
+  } catch (err) { return handleControllerError(res, err); }
+}
+
+export async function updateVendorCategory(req, res) {
+  try {
+    const categoryId = requireUuidParam(req, res, 'categoryId');
+    if (!categoryId) return;
+    const existing = await mustExist('menu_categories', categoryId, 'CATEGORY_NOT_FOUND', 'Category not found');
+    const payload = {};
+    if (req.body?.name !== undefined) payload.name = String(req.body.name).trim();
+    if (req.body?.description !== undefined) payload.description = req.body.description || null;
+    if (req.body?.sort_order !== undefined) payload.sort_order = Number(req.body.sort_order);
+    if (req.body?.is_active !== undefined) payload.is_active = Boolean(req.body.is_active);
+    if (!Object.keys(payload).length) return sendError(res, 400, 'VALIDATION_ERROR', 'No valid fields provided');
+    const { data, error } = await db().from('menu_categories').update(payload).eq('id', categoryId).select().single();
+    if (error) throw error;
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.menu_categories', recordKey: categoryId, oldData: existing, newData: data });
+    return respond(req, res, { success: true, category: data });
+  } catch (err) { return handleControllerError(res, err); }
+}
+
+export async function deleteVendorCategory(req, res) {
+  try {
+    const categoryId = requireUuidParam(req, res, 'categoryId');
+    if (!categoryId) return;
+    const existing = await mustExist('menu_categories', categoryId, 'CATEGORY_NOT_FOUND', 'Category not found');
+    const { error } = await db().from('menu_categories').delete().eq('id', categoryId);
+    if (error) throw error;
+    await writeAudit(req, { action: 'DELETE', tableName: 'public.menu_categories', recordKey: categoryId, oldData: existing });
+    return respond(req, res, { success: true, categoryId });
+  } catch (err) { return handleControllerError(res, err); }
 }
 
 // ---------------------------------------------------------------------------

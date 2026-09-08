@@ -272,6 +272,42 @@ export function removeVendorUser(token, vendorId, userId, options) {
   });
 }
 
+export function listVendorCategories(token, vendorId, options) {
+  return adminRequest(`/admin/vendors/${vendorId}/categories`, { token, ...options });
+}
+
+export function createVendorCategory(token, vendorId, payload, options) {
+  return adminRequest(`/admin/vendors/${vendorId}/categories`, { method: 'POST', token, body: payload, ...options });
+}
+
+export function updateVendorCategory(token, categoryId, payload, options) {
+  return adminRequest(`/admin/menu-categories/${categoryId}`, { method: 'PATCH', token, body: payload, ...options });
+}
+
+export function deleteVendorCategory(token, categoryId, options) {
+  return adminRequest(`/admin/menu-categories/${categoryId}`, { method: 'DELETE', token, ...options });
+}
+
+export function uploadAdminAsset(token, entityType, entityId, file, options) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const dataUrl = String(reader.result || '');
+        const [, data] = dataUrl.split(',');
+        resolve(await adminRequest('/admin/assets', {
+          method: 'POST',
+          token,
+          body: { entityType, entityId, contentType: file.type, data },
+          ...options,
+        }));
+      } catch (error) { reject(error); }
+    };
+    reader.onerror = () => reject(new Error('Could not read image file'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function listBuildingVendors(token, buildingId, params, options) {
   return adminRequest(`/admin/buildings/${buildingId}/vendors`, { token, query: params, ...options });
 }
@@ -328,6 +364,11 @@ export const adminVendorsApi = {
   addVendorUser,
   removeVendorUser,
   listBuildingVendors,
+  listVendorCategories,
+  createVendorCategory,
+  updateVendorCategory,
+  deleteVendorCategory,
+  uploadAdminAsset,
 };
 
 export const adminUsersApi = {

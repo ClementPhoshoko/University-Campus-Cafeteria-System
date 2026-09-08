@@ -16,7 +16,7 @@ import {
   IconPlus,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
-import { addVendorUser, adminRequest, createVendorLocation, removeVendorUser, updateVendor, updateVendorApproval, updateVendorLocation } from '../../services/adminApi.js';
+import { addVendorUser, adminRequest, createVendorLocation, removeVendorUser, updateVendor, updateVendorApproval, updateVendorLocation, uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 import { StaffModal, VendorLocationModal, VendorProfileModal } from './VendorForms.jsx';
@@ -115,7 +115,9 @@ export default function AdminVendorDetail() {
   const handleProfileUpdate = async (payload) => {
     setActionLoading(true);
     try {
-      await updateVendor(token, vendorId, payload);
+      const { logo_file: logoFile, ...vendorPayload } = payload;
+      await updateVendor(token, vendorId, vendorPayload);
+      if (logoFile) await uploadAdminAsset(token, 'vendor', vendorId, logoFile);
       const refreshed = await adminRequest(`/admin/vendors/${vendorId}`, { token });
       if (refreshed.vendor) setVendor(getVendorDetails(refreshed.vendor));
       setModal(null);
