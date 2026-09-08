@@ -231,7 +231,7 @@ export async function createSite(req, res) {
     const { data, error } = await db().from('sites').insert(result.value).select().single();
     if (error) throw error;
 
-    await writeAudit(req, { action: 'INSERT', tableName: 'public.sites', recordKey: data.id, newData: data });
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.sites', recordKey: data.id, newData: data, reason: 'Site created', category: 'data' });
     return respond(req, res, { success: true, site: data }, { status: 201 });
   } catch (err) {
     return handleControllerError(res, err);
@@ -251,7 +251,7 @@ export async function updateSite(req, res) {
     const { data, error } = await db().from('sites').update(result.value).eq('id', siteId).select().single();
     if (error) throw error;
 
-    await writeAudit(req, { action: 'UPDATE', tableName: 'public.sites', recordKey: siteId, oldData: existing, newData: data });
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.sites', recordKey: siteId, oldData: existing, newData: data, reason: 'Site updated', category: 'data' });
     return respond(req, res, { success: true, site: data });
   } catch (err) {
     return handleControllerError(res, err);
@@ -342,7 +342,7 @@ export async function createBuilding(req, res) {
     const { data, error } = await db().from('buildings').insert({ ...result.value, site_id: siteId }).select().single();
     if (error) throw error;
 
-    await writeAudit(req, { action: 'INSERT', tableName: 'public.buildings', recordKey: data.id, newData: data });
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.buildings', recordKey: data.id, newData: data, reason: 'Building created', category: 'data' });
     return respond(req, res, { success: true, building: data }, { status: 201 });
   } catch (err) {
     return handleControllerError(res, err);
@@ -362,7 +362,7 @@ export async function updateBuilding(req, res) {
     const { data, error } = await db().from('buildings').update(result.value).eq('id', buildingId).select().single();
     if (error) throw error;
 
-    await writeAudit(req, { action: 'UPDATE', tableName: 'public.buildings', recordKey: buildingId, oldData: existing, newData: data });
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.buildings', recordKey: buildingId, oldData: existing, newData: data, reason: 'Building updated', category: 'data' });
     return respond(req, res, { success: true, building: data });
   } catch (err) {
     return handleControllerError(res, err);
@@ -418,7 +418,7 @@ export async function createFloor(req, res) {
     const { data, error } = await db().from('floors').insert({ ...result.value, building_id: buildingId }).select().single();
     if (error) throw error;
 
-    await writeAudit(req, { action: 'INSERT', tableName: 'public.floors', recordKey: data.id, newData: data });
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.floors', recordKey: data.id, newData: data, reason: 'Floor created', category: 'data' });
     return respond(req, res, { success: true, floor: data }, { status: 201 });
   } catch (err) {
     return handleControllerError(res, err);
@@ -438,7 +438,7 @@ export async function updateFloor(req, res) {
     const { data, error } = await db().from('floors').update(result.value).eq('id', floorId).select().single();
     if (error) throw error;
 
-    await writeAudit(req, { action: 'UPDATE', tableName: 'public.floors', recordKey: floorId, oldData: existing, newData: data });
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.floors', recordKey: floorId, oldData: existing, newData: data, reason: 'Floor updated', category: 'data' });
     return respond(req, res, { success: true, floor: data });
   } catch (err) {
     return handleControllerError(res, err);
@@ -524,7 +524,7 @@ export async function createCollectionPoint(req, res) {
     if (error) throw error;
 
     const item = await fetchPointWithFloor('collection_points', data.id);
-    await writeAudit(req, { action: 'INSERT', tableName: 'public.collection_points', recordKey: data.id, newData: data });
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.collection_points', recordKey: data.id, newData: data, reason: 'Collection point created', category: 'data' });
     return respond(req, res, { success: true, collectionPoint: item }, { status: 201 });
   } catch (err) {
     return handleControllerError(res, err);
@@ -552,7 +552,7 @@ export async function updateCollectionPoint(req, res) {
     if (error) throw error;
 
     const item = await fetchPointWithFloor('collection_points', data.id);
-    await writeAudit(req, { action: 'UPDATE', tableName: 'public.collection_points', recordKey: cpId, oldData: existing, newData: data });
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.collection_points', recordKey: cpId, oldData: existing, newData: data, reason: 'Collection point updated', category: 'data' });
     return respond(req, res, { success: true, collectionPoint: item });
   } catch (err) {
     return handleControllerError(res, err);
@@ -621,7 +621,7 @@ export async function createDeliveryLocation(req, res) {
     if (error) throw error;
 
     const item = await fetchDeliveryWithFloor(data.id);
-    await writeAudit(req, { action: 'INSERT', tableName: 'public.delivery_locations', recordKey: data.id, newData: data });
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.delivery_locations', recordKey: data.id, newData: data, reason: 'Delivery location created', category: 'data' });
     return respond(req, res, { success: true, deliveryLocation: item }, { status: 201 });
   } catch (err) {
     return handleControllerError(res, err);
@@ -649,7 +649,7 @@ export async function updateDeliveryLocation(req, res) {
     if (error) throw error;
 
     const item = await fetchDeliveryWithFloor(data.id);
-    await writeAudit(req, { action: 'UPDATE', tableName: 'public.delivery_locations', recordKey: dlId, oldData: existing, newData: data });
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.delivery_locations', recordKey: dlId, oldData: existing, newData: data, reason: 'Delivery location updated', category: 'data' });
     return respond(req, res, { success: true, deliveryLocation: item });
   } catch (err) {
     return handleControllerError(res, err);

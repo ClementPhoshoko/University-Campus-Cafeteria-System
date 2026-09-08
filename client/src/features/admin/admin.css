@@ -6147,17 +6147,18 @@
 
 .admin-audit-row__delta {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 6px 12px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-xs);
   background: var(--color-bg-secondary);
   font-size: 0.78rem;
   font-family: var(--font-mono);
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
   overflow-x: auto;
+  margin-top: 6px;
 }
 
 .admin-audit-row__delta-label {
@@ -6184,6 +6185,13 @@
   border-radius: var(--radius-xs);
   background: rgba(34, 165, 89, 0.12);
   color: var(--success-700);
+}
+
+.admin-audit-row__delta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* ── Security feed ── */

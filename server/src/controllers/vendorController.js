@@ -430,13 +430,13 @@ export async function createVendor(req, res) {
     }
     if (error) throw error;
 
-    await writeAudit(req, { action: 'INSERT', tableName: 'public.vendors', recordKey: data.id, newData: data });
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.vendors', recordKey: data.id, newData: data, reason: 'Vendor created', category: 'lifecycle' });
 
     let location = null;
     if (locationPayload) {
       const { location: loc } = await insertVendorLocation(data.id, locationPayload.value, locationPayload.hours);
       location = loc;
-      await writeAudit(req, { action: 'INSERT', tableName: 'public.vendor_locations', recordKey: loc.id, newData: loc });
+      await writeAudit(req, { action: 'INSERT', tableName: 'public.vendor_locations', recordKey: loc.id, newData: loc, reason: 'Location created', category: 'data' });
     }
 
     return respond(req, res, { success: true, vendor: data, location }, { status: 201 });
@@ -458,7 +458,7 @@ export async function updateVendor(req, res) {
     const { data, error } = await db().from('vendors').update(result.value).eq('id', vendorId).select().single();
     if (error) throw error;
 
-    await writeAudit(req, { action: 'UPDATE', tableName: 'public.vendors', recordKey: vendorId, oldData: existing, newData: data });
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.vendors', recordKey: vendorId, oldData: existing, newData: data, reason: 'Vendor profile updated', category: 'config' });
     return respond(req, res, { success: true, vendor: data });
   } catch (err) {
     return handleControllerError(res, err);
@@ -526,6 +526,8 @@ export async function updateVendorApproval(req, res) {
       recordKey: vendorId,
       oldData: existing,
       newData: auditData,
+      reason: reason || `Vendor ${decision}`,
+      category: 'lifecycle',
     });
 
     if (existing.support_email && ['approved', 'rejected', 'suspended'].includes(applied.status)) {
@@ -569,7 +571,7 @@ export async function createVendorLocation(req, res) {
     if (hoursResult.errors?.length) return sendValidation(res, hoursResult.errors);
 
     const { location, storedHours } = await insertVendorLocation(vendorId, result.value, hoursResult.value);
-    await writeAudit(req, { action: 'INSERT', tableName: 'public.vendor_locations', recordKey: location.id, newData: location });
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.vendor_locations', recordKey: location.id, newData: location, reason: 'Location created', category: 'data' });
 
     return respond(req, res, { success: true, vendorLocation: location, hours: storedHours }, { status: 201 });
   } catch (err) {
@@ -627,7 +629,7 @@ export async function updateVendorLocation(req, res) {
     const full = await fetchVendorLocation(locationId);
     const fullWithHours = storedHours && storedHours.length ? { ...full, hours: storedHours } : full;
 
-    await writeAudit(req, { action: 'UPDATE', tableName: 'public.vendor_locations', recordKey: locationId, oldData: existing, newData: fullWithHours });
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.vendor_locations', recordKey: locationId, oldData: existing, newData: fullWithHours, reason: 'Location updated', category: 'data' });
     return respond(req, res, { success: true, vendorLocation: fullWithHours, hours: fullWithHours.hours || [] });
   } catch (err) {
     return handleControllerError(res, err);
@@ -683,7 +685,7 @@ export async function addVendorUser(req, res) {
       email: member.profiles?.email ?? null,
       full_name: member.profiles?.full_name ?? null,
     };
-    await writeAudit(req, { action: 'INSERT', tableName: 'public.vendor_users', recordKey: `${vendorId}:${userId}`, newData: payload });
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.vendor_users', recordKey: `${vendorId}:${userId}`, newData: payload, reason: 'Staff member added', category: 'access' });
 
     return respond(req, res, { success: true, member: payload }, { status: 201 });
   } catch (err) {
@@ -709,7 +711,7 @@ export async function removeVendorUser(req, res) {
     const { error } = await db().from('vendor_users').delete().eq('vendor_id', vendorId).eq('user_id', userId);
     if (error) throw error;
 
-    await writeAudit(req, { action: 'DELETE', tableName: 'public.vendor_users', recordKey: `${vendorId}:${userId}`, newData: member });
+    await writeAudit(req, { action: 'DELETE', tableName: 'public.vendor_users', recordKey: `${vendorId}:${userId}`, oldData: member, reason: 'Staff member removed', category: 'access' });
     return respond(req, res, { success: true, vendorId, userId });
   } catch (err) {
     return handleControllerError(res, err);
@@ -767,7 +769,7 @@ export async function createVendorCategory(req, res) {
     const payload = { vendor_id: vendorId, name, description: req.body.description || null, sort_order: Number(req.body.sort_order || 0), is_active: req.body.is_active !== false };
     const { data, error } = await db().from('menu_categories').insert(payload).select().single();
     if (error) throw error;
-    await writeAudit(req, { action: 'INSERT', tableName: 'public.menu_categories', recordKey: data.id, newData: data });
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.menu_categories', recordKey: data.id, newData: data, reason: 'Category created', category: 'config' });
     return respond(req, res, { success: true, category: data }, { status: 201 });
   } catch (err) { return handleControllerError(res, err); }
 }
@@ -785,7 +787,7 @@ export async function updateVendorCategory(req, res) {
     if (!Object.keys(payload).length) return sendError(res, 400, 'VALIDATION_ERROR', 'No valid fields provided');
     const { data, error } = await db().from('menu_categories').update(payload).eq('id', categoryId).select().single();
     if (error) throw error;
-    await writeAudit(req, { action: 'UPDATE', tableName: 'public.menu_categories', recordKey: categoryId, oldData: existing, newData: data });
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.menu_categories', recordKey: categoryId, oldData: existing, newData: data, reason: 'Category updated', category: 'config' });
     return respond(req, res, { success: true, category: data });
   } catch (err) { return handleControllerError(res, err); }
 }
@@ -797,7 +799,7 @@ export async function deleteVendorCategory(req, res) {
     const existing = await mustExist('menu_categories', categoryId, 'CATEGORY_NOT_FOUND', 'Category not found');
     const { error } = await db().from('menu_categories').delete().eq('id', categoryId);
     if (error) throw error;
-    await writeAudit(req, { action: 'DELETE', tableName: 'public.menu_categories', recordKey: categoryId, oldData: existing });
+    await writeAudit(req, { action: 'DELETE', tableName: 'public.menu_categories', recordKey: categoryId, oldData: existing, reason: 'Category deleted', category: 'config' });
     return respond(req, res, { success: true, categoryId });
   } catch (err) { return handleControllerError(res, err); }
 }
@@ -980,9 +982,11 @@ export async function createVendorOrder(req, res) {
     // Write audit log for order creation
     await writeAudit(req, {
       action: 'INSERT',
-      table_name: 'public.orders',
-      record_key: data.id,
-      new_data: { vendor_id, user_id, collection_point_id, items, total, payment_method, status },
+      tableName: 'public.orders',
+      recordKey: data.id,
+      newData: { vendor_id, user_id, collection_point_id, items, total, payment_method, status },
+      reason: 'Order placed',
+      category: 'lifecycle',
     });
 
     return respond(req, res, {

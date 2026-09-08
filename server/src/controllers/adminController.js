@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../config/supabase.js';
+import { writeAudit } from '../utils/audit.js';
 
 const VALID_ROLES = [
   'employee', 'executive', 'executive_assistant', 'meeting_organiser',
@@ -187,6 +188,11 @@ export async function setUserRoles(req, res) {
       });
     }
 
+    const { data: previousRoles } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId);
+
     // Delete existing roles
     await supabaseAdmin
       .from('user_roles')
@@ -212,6 +218,8 @@ export async function setUserRoles(req, res) {
         });
       }
     }
+
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.user_roles', recordKey: userId, oldData: { roles: (previousRoles || []).map((item) => item.role) }, newData: { roles }, reason: 'Roles replaced', category: 'access' });
 
     res.json({
       success: true,
@@ -271,6 +279,8 @@ export async function addRole(req, res) {
       });
     }
 
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.user_roles', recordKey: `${userId}:${role}`, newData: { user_id: userId, role }, reason: 'Role added', category: 'access' });
+
     // Fetch updated roles
     const { data: updatedRoles } = await supabaseAdmin
       .from('user_roles')
@@ -328,6 +338,8 @@ export async function removeRole(req, res) {
         error: { code: 'DELETE_ERROR', message: error.message },
       });
     }
+
+    await writeAudit(req, { action: 'DELETE', tableName: 'public.user_roles', recordKey: `${userId}:${role}`, oldData: { user_id: userId, role }, reason: 'Role removed', category: 'access' });
 
     // Fetch updated roles
     const { data: updatedRoles } = await supabaseAdmin

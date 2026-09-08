@@ -308,6 +308,10 @@ export function uploadAdminAsset(token, entityType, entityId, file, options) {
   });
 }
 
+export function listAuditLogs(token, params, options) {
+  return adminRequest('/admin/audit-logs', { token, query: params, ...options });
+}
+
 export function listBuildingVendors(token, buildingId, params, options) {
   return adminRequest(`/admin/buildings/${buildingId}/vendors`, { token, query: params, ...options });
 }

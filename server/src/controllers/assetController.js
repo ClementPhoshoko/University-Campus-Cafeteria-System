@@ -26,7 +26,7 @@ export async function uploadAdminAsset(req, res) {
     const buffer = Buffer.from(data, 'base64');
     if (!buffer.length || buffer.length > MAX_BYTES) return sendError(res, 413, 'ASSET_TOO_LARGE', 'Images must be smaller than 8MB');
 
-    const { data: entity, error: entityError } = await supabaseAdmin.from(table).select('id').eq('id', entityId).maybeSingle();
+    const { data: entity, error: entityError } = await supabaseAdmin.from(table).select('id, logo_url, cover_image_url').eq('id', entityId).maybeSingle();
     if (entityError) throw entityError;
     if (!entity) return sendError(res, 404, `${entityType.toUpperCase()}_NOT_FOUND`, `${entityType} not found`);
 
@@ -38,7 +38,7 @@ export async function uploadAdminAsset(req, res) {
     if (updateError) throw updateError;
 
     const { data: signed } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(path, 3600);
-    await writeAudit(req, { action: 'UPDATE', tableName: `public.${table}`, recordKey: entityId, newData: { [field]: path } });
+    await writeAudit(req, { action: 'UPDATE', tableName: `public.${table}`, recordKey: entityId, oldData: { [field]: entity?.[field] || null }, newData: { [field]: path }, reason: 'Image upload', category: 'config' });
     return respond(req, res, { success: true, asset: { path, signed_url: signed?.signedUrl || null }, [entityType]: updated });
   } catch (err) {
     return sendInternalError(res, err);

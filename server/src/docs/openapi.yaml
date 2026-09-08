@@ -2045,6 +2045,72 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+  '/admin/audit-logs':
+    get:
+      tags: [Admin Audit]
+      summary: List admin audit log entries
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: action
+          in: query
+          schema: { type: string, enum: [INSERT, UPDATE, DELETE] }
+        - name: table_name
+          in: query
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string, enum: [data, access, config, lifecycle] }
+        - name: actor_user_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Paginated audit log entries with server-side action counts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  logs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        actor_user_id: { type: string, format: uuid }
+                        actor_name: { type: string }
+                        action: { type: string }
+                        table_name: { type: string }
+                        tableName: { type: string }
+                        record_key: { type: string }
+                        resource_name: { type: string }
+                        old_data: { type: object }
+                        new_data: { type: object }
+                        reason: { type: string, nullable: true }
+                        category: { type: string, nullable: true, enum: [data, access, config, lifecycle] }
+                        created_at: { type: string, format: date-time }
+                        ip_address: { type: string }
+                  action_counts:
+                    type: object
+                    properties:
+                      INSERT: { type: integer }
+                      UPDATE: { type: integer }
+                      DELETE: { type: integer }
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   '/admin/buildings/{buildingId}/vendors':
     get:
       tags: [Admin Vendors]

@@ -1,467 +1,222 @@
-import { useMemo, useState } from 'react';
-import {
-  IconSearch,
-  IconShieldCheck,
-  IconLock,
-  IconAlertTriangle,
-  IconCheck,
-  IconDownload,
-  IconRefresh,
-  IconCircleCheck,
-  IconUser,
-  IconBuildingStore,
-  IconReceipt,
-  IconBuilding,
-  IconSettings,
-  IconFileText,
-  IconWorld,
-  IconClock,
-  IconActivity,
-} from '@tabler/icons-react';
-import {
-  AUDIT_LOGS,
-  SECURITY_EVENTS,
-  AUDIT_TABS,
-  AUDIT_RESOURCE_TYPES,
-  AUDIT_ACTION_TYPES,
-  AUDIT_SUMMARY,
-} from './adminMockData.js';
+import { useEffect, useState } from 'react';
+import { IconActivity, IconAlertTriangle, IconCheck, IconCircleCheck, IconClock, IconDownload, IconFileText, IconFilter, IconRefresh, IconSearch, IconWorld } from '@tabler/icons-react';
+import Pagination from '../../components/ui/Pagination.jsx';
+import { listAuditLogs } from '../../services/adminApi.js';
+import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
-const ROLE_TONE = {
-  admin: 'error',
-  finance: 'warning',
-  support: 'warning',
-  vendor_manager: 'success',
-  vendor_staff: 'success',
-  employee: 'info',
-  system: 'info',
-};
+const RESOURCE_OPTIONS = [
+  { id: '', label: 'All resources' },
+  { id: 'public.sites', label: 'Sites' },
+  { id: 'public.buildings', label: 'Buildings' },
+  { id: 'public.floors', label: 'Floors' },
+  { id: 'public.collection_points', label: 'Collection points' },
+  { id: 'public.delivery_locations', label: 'Delivery locations' },
+  { id: 'public.vendors', label: 'Vendors' },
+  { id: 'public.vendor_locations', label: 'Vendor locations' },
+  { id: 'public.vendor_users', label: 'Staff members' },
+  { id: 'public.menu_categories', label: 'Menu categories' },
+  { id: 'public.user_roles', label: 'Roles' },
+  { id: 'public.orders', label: 'Orders' },
+];
 
-const ROLE_LABEL = {
-  admin: 'Admin',
-  finance: 'Finance',
-  support: 'Support',
-  vendor_manager: 'Vendor manager',
-  vendor_staff: 'Vendor staff',
-  employee: 'Employee',
-  system: 'System',
-};
+const ACTION_OPTIONS = [
+  { id: '', label: 'All actions' },
+  { id: 'INSERT', label: 'Created' },
+  { id: 'UPDATE', label: 'Updated' },
+  { id: 'DELETE', label: 'Deleted' },
+];
 
-const ACTION_TONE = {
-  create: 'success',
-  update: 'info',
-  delete: 'error',
-  approve: 'success',
-  reject: 'error',
-  refund: 'warning',
-  login: 'info',
-  role: 'warning',
-};
+const CATEGORY_OPTIONS = [
+  { id: '', label: 'All categories' },
+  { id: 'data', label: 'Data' },
+  { id: 'access', label: 'Access' },
+  { id: 'config', label: 'Configuration' },
+  { id: 'lifecycle', label: 'Lifecycle' },
+];
 
-const SEVERITY_TONE = {
-  info: 'info',
-  warning: 'warning',
-  high: 'error',
-  critical: 'error',
-};
+const ACTION_TONE = { INSERT: 'success', UPDATE: 'info', DELETE: 'error' };
+const CATEGORY_TONE = { data: 'info', access: 'warning', config: 'default', lifecycle: 'success' };
 
-const RESOURCE_ICON = {
-  Vendor: IconBuildingStore,
-  'Menu item': IconFileText,
-  Order: IconReceipt,
-  User: IconUser,
-  Building: IconBuilding,
-  Settings: IconSettings,
-  Profile: IconUser,
-  Settlement: IconReceipt,
-  Report: IconFileText,
-  Cart: IconReceipt,
-};
-
-function StatTile({ label, value, sub, tone, icon: Icon }) {
+function StatTile({ label, value, icon: Icon }) {
   return (
-    <div className={`admin-kpi admin-kpi--${tone || 'blue'}`}>
-      <span className="admin-kpi__label">
-        {Icon && <Icon size={14} stroke={1.8} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />}
-        {label}
-      </span>
-      <span className="admin-kpi__value">{value}</span>
-      {sub && <span className="admin-kpi__sub">{sub}</span>}
+    <div className="admin-kpi">
+      <span className="admin-kpi__icon-wrap"><Icon size={20} /></span>
+      <div className="admin-kpi__body">
+        <span className="admin-kpi__label">{label}</span>
+        <span className="admin-kpi__value">{value}</span>
+      </div>
     </div>
   );
 }
 
-function Avatar({ name, role, size = 32 }) {
-  const initials = name
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || '??';
-  return (
-    <span
-      className={`admin-user-avatar admin-audit-avatar--${role}`}
-      style={{ width: size, height: size, fontSize: size * 0.38 }}
-    >
-      {initials}
-    </span>
-  );
+function Avatar({ name }) {
+  const initials = (name || 'System').split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase();
+  return <span className="admin-user-avatar admin-audit-avatar--admin" style={{ width: 32, height: 32, fontSize: 12 }}>{initials}</span>;
 }
 
-function ResourceIcon({ resource }) {
-  const Icon = RESOURCE_ICON[resource] || IconFileText;
-  return (
-    <span className="admin-audit-resource-icon">
-      <Icon size={14} stroke={1.8} />
-    </span>
-  );
+function DiffBlock({ entry }) {
+  if (entry.action === 'UPDATE' && entry.old_data && entry.new_data) {
+    const keys = [...new Set([...Object.keys(entry.old_data), ...Object.keys(entry.new_data)])];
+    const changed = keys.filter((k) => JSON.stringify(entry.old_data[k]) !== JSON.stringify(entry.new_data[k]));
+    if (!changed.length) return null;
+    return (
+      <div className="admin-audit-row__delta">
+        {changed.slice(0, 8).map((key) => (
+          <div key={key} className="admin-audit-row__delta-row">
+            <span className="admin-audit-row__delta-label">{key}</span>
+            <span className="admin-audit-row__delta-from">{String(entry.old_data[key] ?? '—')}</span>
+            <span className="admin-audit-row__delta-arrow">→</span>
+            <span className="admin-audit-row__delta-to">{String(entry.new_data[key] ?? '—')}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (entry.action === 'INSERT' && entry.new_data) {
+    const keys = Object.keys(entry.new_data).filter((k) => entry.new_data[k] != null);
+    if (!keys.length) return null;
+    return (
+      <div className="admin-audit-row__delta">
+        {keys.slice(0, 8).map((key) => (
+          <div key={key} className="admin-audit-row__delta-row">
+            <span className="admin-audit-row__delta-label">{key}</span>
+            <span className="admin-audit-row__delta-to">{String(entry.new_data[key])}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (entry.action === 'DELETE' && entry.old_data) {
+    const keys = Object.keys(entry.old_data).filter((k) => entry.old_data[k] != null);
+    if (!keys.length) return null;
+    return (
+      <div className="admin-audit-row__delta">
+        {keys.slice(0, 8).map((key) => (
+          <div key={key} className="admin-audit-row__delta-row">
+            <span className="admin-audit-row__delta-label">{key}</span>
+            <span className="admin-audit-row__delta-from">{String(entry.old_data[key])}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
 }
 
 function AuditEntry({ entry, isLast }) {
-  const actionTone = ACTION_TONE[entry.actionType] || 'info';
-  const hasDiff = entry.oldData || entry.newData;
-
+  const tone = ACTION_TONE[entry.action] || 'info';
   return (
-    <li className={`admin-audit-row admin-audit-row--${actionTone}`}>
+    <li className={`admin-audit-row admin-audit-row--${tone}`}>
       <div className="admin-audit-row__rail">
-        <ResourceIcon resource={entry.tableName} />
-        {!isLast && <span className="admin-audit-row__line" aria-hidden="true" />}
+        <span className="admin-audit-resource-icon"><IconFileText size={14} /></span>
+        {!isLast && <span className="admin-audit-row__line" />}
       </div>
-
       <div className="admin-audit-row__body">
         <header className="admin-audit-row__head">
           <div className="admin-audit-row__lead">
-            <Avatar name={entry.actor_name} role={entry.actor_role} />
-            <span className="admin-audit-row__actor">
-              {entry.actor_name}
-              <span className={`admin-tag admin-tag--${ROLE_TONE[entry.actor_role] || 'info'}`}>
-                {ROLE_LABEL[entry.actor_role] || entry.actor_role}
-              </span>
-            </span>
+            <Avatar name={entry.actor_name} />
+            <span className="admin-audit-row__actor">{entry.actor_name}<span className="admin-tag admin-tag--error">Admin</span></span>
           </div>
-          <span className={`admin-audit-row__action admin-status admin-status--${actionTone}`}>
-            {entry.action}
-          </span>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            {entry.category && <span className={`admin-tag admin-tag--${CATEGORY_TONE[entry.category] || 'default'}`}>{entry.category}</span>}
+            <span className={`admin-audit-row__action admin-status admin-status--${tone}`}>{entry.action}</span>
+          </div>
         </header>
-
         <div className="admin-audit-row__detail">
-          <span className="admin-audit-row__resource">
-            <strong>{entry.tableName}:</strong>{' '}
-            {entry.recordKey && (
-              <span className="admin-audit-row__resource-name">{entry.resourceName}</span>
-            )}
-          </span>
-          <span className="admin-audit-row__meta">
-            <IconClock size={11} stroke={1.8} /> {entry.createdAt}
-            {entry.ipAddress && entry.ipAddress !== '—' && (
-              <>
-                <span>·</span>
-                <IconWorld size={11} stroke={1.8} /> {entry.ipAddress}
-              </>
-            )}
-            {entry.userAgent && entry.userAgent !== 'System' && entry.userAgent !== 'Cron' && (
-              <>
-                <span>·</span>
-                <span>{entry.userAgent}</span>
-              </>
-            )}
-          </span>
+          <span className="admin-audit-row__resource"><strong>{entry.tableName}:</strong> {entry.resource_name}</span>
+          <span className="admin-audit-row__meta"><IconClock size={11} /> {new Date(entry.created_at).toLocaleString('en-ZA')} <span>·</span><IconWorld size={11} /> {entry.ipAddress}</span>
         </div>
-
-        <p className="admin-audit-row__copy">{entry.detail}</p>
-
-        {hasDiff && (
-          <div className="admin-audit-row__delta">
-            {Object.entries(entry.newData || entry.oldData || {}).map(([key, newVal]) => {
-              const oldVal = entry.oldData?.[key];
-              return (
-                <div key={key} className="admin-audit-row__delta-row">
-                  <span className="admin-audit-row__delta-label">{key}</span>
-                  <span className="admin-audit-row__delta-from">{oldVal ?? '—'}</span>
-                  <span className="admin-audit-row__delta-arrow">→</span>
-                  <span className="admin-audit-row__delta-to">{newVal ?? '—'}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </li>
-  );
-}
-
-function SecurityEntry({ entry }) {
-  const sevTone = SEVERITY_TONE[entry.metadata?.severity] || 'info';
-  return (
-    <li className={`admin-security-row admin-security-row--${sevTone}`}>
-      <div className="admin-security-row__icon">
-        {entry.success ? (
-          <IconCheck size={18} stroke={2} />
-        ) : (
-          <IconAlertTriangle size={18} stroke={2} />
-        )}
-      </div>
-
-      <div className="admin-security-row__body">
-        <header className="admin-security-row__head">
-          <div>
-            <span className="admin-security-row__event">{entry.eventType}</span>
-            <span className="admin-security-row__user">
-              {entry.user}
-            </span>
-          </div>
-          <span className={`admin-status admin-status--${sevTone}`}>
-            {entry.metadata?.severity}
-          </span>
-        </header>
-
-        <span className="admin-audit-row__meta">
-          <IconClock size={11} stroke={1.8} /> {entry.createdAt}
-          {entry.ipAddress && (
-            <>
-              <span>·</span>
-              <IconWorld size={11} stroke={1.8} /> {entry.ipAddress}
-            </>
-          )}
-          {entry.metadata?.location && (
-            <>
-              <span>·</span>
-              {entry.metadata.location}
-            </>
-          )}
-          {entry.userAgent && (
-            <>
-              <span>·</span>
-              <span>{entry.userAgent}</span>
-            </>
-          )}
-        </span>
-
-        <p className="admin-audit-row__copy">{entry.metadata?.detail}</p>
-
-        {entry.metadata?.actionTaken && (
-          <div className="admin-security-row__action">
-            <span className="admin-security-row__action-label">Action taken:</span>
-            <span>{entry.metadata.actionTaken}</span>
-          </div>
-        )}
+        {entry.reason && <div className="admin-audit-row__reason" style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', marginTop: 4, fontStyle: 'italic' }}>&ldquo;{entry.reason}&rdquo;</div>}
+        <DiffBlock entry={entry} />
       </div>
     </li>
   );
 }
 
 export default function AdminAuditLogPage() {
-  const [tab, setTab] = useState('audit');
+  const { session, initialized } = useAuth();
+  const [logs, setLogs] = useState([]);
+  const [actionCounts, setActionCounts] = useState({ INSERT: 0, UPDATE: 0, DELETE: 0 });
+  const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, totalPages: 0 });
   const [query, setQuery] = useState('');
-  const [resourceFilter, setResourceFilter] = useState('all');
-  const [actionFilter, setActionFilter] = useState('all');
+  const [resource, setResource] = useState('');
+  const [action, setAction] = useState('');
+  const [category, setCategory] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const token = session?.access_token;
 
-  const filteredLogs = useMemo(() => {
-    return AUDIT_LOGS.filter((entry) => {
-      const matchesQuery = !query
-        || `${entry.actor_name} ${entry.resource_name} ${entry.action} ${entry.metadata?.detail}`.toLowerCase().includes(query.toLowerCase());
-      const matchesResource = resourceFilter === 'all'
-        || entry.table_name.toLowerCase().startsWith(resourceFilter.slice(0, -1));
-      const matchesAction = actionFilter === 'all' || entry.action_type === actionFilter;
-      return matchesQuery && matchesResource && matchesAction;
-    });
-  }, [query, resourceFilter, actionFilter]);
+  useEffect(() => { setPage(1); }, [query, resource, action, category, dateFrom, dateTo]);
+  useEffect(() => {
+    if (!initialized || !token) return undefined;
+    let cancelled = false;
+    setLoading(true);
+    setError('');
+    const params = { page, limit: 25, search: query, table_name: resource, action, category };
+    if (dateFrom) params.from = dateFrom;
+    if (dateTo) params.to = dateTo;
+    listAuditLogs(token, params)
+      .then((response) => {
+        if (!cancelled) {
+          setLogs(response.logs || []);
+          setActionCounts(response.action_counts || { INSERT: 0, UPDATE: 0, DELETE: 0 });
+          setPagination(response.pagination || {});
+        }
+      })
+      .catch((err) => { if (!cancelled) setError(err.message || 'Could not load audit logs.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [action, category, dateFrom, dateTo, initialized, page, query, resource, token]);
+
+  const hasActiveFilters = resource || action || category || dateFrom || dateTo;
 
   return (
     <div className="admin-orders">
       <header className="admin-vendors__header">
-        <div>
-          <span className="admin-card__eyebrow">Compliance &amp; security</span>
-          <p className="admin-vendors__sub">
-            Searchable, tamper-evident record of admin and system actions. Retained for {AUDIT_SUMMARY.retention_days} days per POPIA.
-          </p>
-        </div>
-        <div className="admin-vendors__actions">
-          <button type="button" className="admin-action">
-            <IconRefresh size={13} stroke={2} />
-            Refresh
-          </button>
-          <button type="button" className="admin-action admin-action--approve">
-            <IconDownload size={13} stroke={2} />
-            Export CSV
-          </button>
-        </div>
+        <div><span className="admin-card__eyebrow">Compliance &amp; security</span><p className="admin-vendors__sub">Searchable record of admin changes and system mutations.</p></div>
+        <div className="admin-vendors__actions"><button type="button" className="admin-action" onClick={() => setPage(1)}><IconRefresh size={13} /> Refresh</button><button type="button" className="admin-action admin-action--approve" disabled><IconDownload size={13} /> Export CSV</button></div>
       </header>
 
       <section className="admin-kpis" aria-label="Audit summary">
-        <StatTile label="Total events" value={AUDIT_SUMMARY.total_events.toLocaleString()} sub="lifetime" tone="blue" icon={IconActivity} />
-        <StatTile label="Events today" value={AUDIT_SUMMARY.today} sub="across all actors" tone="green" icon={IconClock} />
-        <StatTile label="Critical alerts" value={AUDIT_SUMMARY.critical_alerts} sub="last 24 hours" tone="amber" icon={IconAlertTriangle} />
-        <StatTile label="Unique actors" value={AUDIT_SUMMARY.unique_actors} sub="employees + vendors + admins" tone="blue" icon={IconUser} />
+        <div className="admin-kpis__row">
+          <StatTile label="Total events" value={pagination.total || 0} icon={IconFileText} />
+          <StatTile label="Creates" value={actionCounts.INSERT || 0} icon={IconCheck} />
+          <StatTile label="Updates" value={actionCounts.UPDATE || 0} icon={IconActivity} />
+          <StatTile label="Deletes" value={actionCounts.DELETE || 0} icon={IconAlertTriangle} />
+        </div>
       </section>
 
-      <div className="admin-vendors__tabs" role="tablist">
-        {AUDIT_TABS.map((t) => {
-          const Icon = t.icon === 'IconLock' ? IconLock : IconShieldCheck;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === t.id}
-              className={`admin-vendors__tab${tab === t.id ? ' admin-vendors__tab--active' : ''}`}
-              onClick={() => setTab(t.id)}
-            >
-              <Icon size={16} stroke={1.8} />
-              {t.label}
-              <span className="admin-vendors__tab-count">
-                {t.id === 'audit' ? AUDIT_LOGS.length : SECURITY_EVENTS.length}
-              </span>
-            </button>
-          );
-        })}
+      <div className="admin-orders__filters">
+        <div className="admin-vendors__search admin-orders__search">
+          <IconSearch size={16} />
+          <input type="search" placeholder="Search action, table, record or reason..." value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <select className="admin-orders__vendor-select" value={resource} onChange={(e) => setResource(e.target.value)}>{RESOURCE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select>
+        <select className="admin-orders__vendor-select" value={action} onChange={(e) => setAction(e.target.value)}>{ACTION_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select>
+        <button type="button" className={`admin-action ${showFilters ? 'admin-action--active' : ''}`} onClick={() => setShowFilters((prev) => !prev)}><IconFilter size={13} /> Filters {hasActiveFilters ? '(active)' : ''}</button>
       </div>
 
-      {tab === 'audit' && (
-        <>
-          <div className="admin-audit__summary">
-            <div className="admin-audit__summary-item">
-              <IconFileText size={16} stroke={1.8} />
-              <div>
-                <span className="admin-audit__summary-value">{AUDIT_SUMMARY.resourceChanges}</span>
-                <span className="admin-audit__summary-label">Resource changes · 30d</span>
-              </div>
-            </div>
-            <div className="admin-audit__summary-item">
-              <IconAlertTriangle size={16} stroke={1.8} />
-              <div>
-                <span className="admin-audit__summary-value">{AUDIT_SUMMARY.failedSignIns}</span>
-                <span className="admin-audit__summary-label">Failed sign-ins · 24h</span>
-              </div>
-            </div>
-            <div className="admin-audit__summary-item">
-              <IconCircleCheck size={16} stroke={1.8} />
-              <div>
-                <span className="admin-audit__summary-value">Tamper-evident</span>
-                <span className="admin-audit__summary-label">Hashed chain · last verified 5 min ago</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="admin-orders__filters">
-            <div className="admin-vendors__search admin-orders__search">
-              <IconSearch size={16} stroke={1.8} />
-              <input
-                type="search"
-                placeholder="Search actor, resource, action or detail..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                aria-label="Search audit log"
-              />
-            </div>
-            <select
-              className="admin-orders__vendor-select"
-              value={resourceFilter}
-              onChange={(e) => setResourceFilter(e.target.value)}
-              aria-label="Resource filter"
-            >
-              {AUDIT_RESOURCE_TYPES.map((r) => (
-                <option key={r.id} value={r.id}>{r.label}</option>
-              ))}
-            </select>
-            <select
-              className="admin-orders__vendor-select"
-              value={actionFilter}
-              onChange={(e) => setActionFilter(e.target.value)}
-              aria-label="Action filter"
-            >
-              {AUDIT_ACTION_TYPES.map((a) => (
-                <option key={a.id} value={a.id}>{a.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <section className="admin-card admin-card--full">
-            <header className="admin-card__head">
-              <div>
-                <span className="admin-card__eyebrow">Activity stream</span>
-                <h3 className="admin-card__title">Audit trail · all actors</h3>
-              </div>
-              <span className="admin-card__chip admin-card__chip--success">
-                <IconCircleCheck size={13} stroke={2} />
-                Chain integrity verified
-              </span>
-            </header>
-
-            {filteredLogs.length > 0 ? (
-              <ul className="admin-audit-list">
-                {filteredLogs.map((entry, idx) => (
-                  <AuditEntry
-                    key={entry.id}
-                    entry={entry}
-                    isLast={idx === filteredLogs.length - 1}
-                  />
-                ))}
-              </ul>
-            ) : (
-              <div className="admin-empty">
-                <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
-                <h3>No matching audit entries</h3>
-                <p>Try clearing the search or selecting a different resource.</p>
-              </div>
-            )}
-          </section>
-        </>
+      {showFilters && (
+        <div className="admin-orders__filters" style={{ gap: 12, padding: '12px 16px' }}>
+          <select className="admin-orders__vendor-select" value={category} onChange={(e) => setCategory(e.target.value)}>{CATEGORY_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>
+            From
+            <input type="date" className="admin-input" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} style={{ padding: '6px 8px', fontSize: '0.78rem' }} />
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>
+            To
+            <input type="date" className="admin-input" value={dateTo} onChange={(e) => setDateTo(e.target.value)} style={{ padding: '6px 8px', fontSize: '0.78rem' }} />
+          </label>
+          {hasActiveFilters && <button type="button" className="admin-action--ghost" onClick={() => { setQuery(''); setResource(''); setAction(''); setCategory(''); setDateFrom(''); setDateTo(''); }}>Clear all</button>}
+        </div>
       )}
 
-      {tab === 'security' && (
-        <>
-          <div className="admin-audit__summary">
-            <div className="admin-audit__summary-item">
-              <IconCheck size={16} stroke={1.8} />
-              <div>
-                <span className="admin-audit__summary-value">
-                  {SECURITY_EVENTS.filter((e) => e.success).length}
-                </span>
-                <span className="admin-audit__summary-label">Successful events</span>
-              </div>
-            </div>
-            <div className="admin-audit__summary-item">
-              <IconAlertTriangle size={16} stroke={1.8} />
-              <div>
-                <span className="admin-audit__summary-value">
-                  {SECURITY_EVENTS.filter((e) => !e.success).length}
-                </span>
-                <span className="admin-audit__summary-label">Failed/blocked events</span>
-              </div>
-            </div>
-            <div className="admin-audit__summary-item">
-              <IconLock size={16} stroke={1.8} />
-              <div>
-                <span className="admin-audit__summary-value">
-                  {SECURITY_EVENTS.filter((e) => e.severity === 'critical').length}
-                </span>
-                <span className="admin-audit__summary-label">Critical alerts (SLA 1h)</span>
-              </div>
-            </div>
-          </div>
-
-          <section className="admin-card admin-card--full">
-            <header className="admin-card__head">
-              <div>
-                <span className="admin-card__eyebrow">Security feed</span>
-                <h3 className="admin-card__title">Authentication &amp; security events</h3>
-              </div>
-              <span className="admin-card__chip">
-                <IconLock size={13} stroke={2} /> WORM retention enforced
-              </span>
-            </header>
-
-            <ul className="admin-security-list">
-              {SECURITY_EVENTS.map((entry) => (
-                <SecurityEntry key={entry.id} entry={entry} />
-              ))}
-            </ul>
-          </section>
-        </>
-      )}
+      {loading ? <div className="admin-vendor-detail__loading"><div className="admin-vendor-detail__loading-spinner" /><p>Loading audit logs...</p></div> : error ? <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>Could not load audit logs</h3><p>{error}</p><button type="button" className="admin-action--ghost" onClick={() => setPage(1)}>Try again</button></div> : logs.length ? <><section className="admin-card admin-card--full"><header className="admin-card__head"><div><span className="admin-card__eyebrow">Activity stream</span><h3 className="admin-card__title">Audit trail</h3></div><span className="admin-card__chip"><IconCircleCheck size={13} /> Database records</span></header><ul className="admin-audit-list">{logs.map((entry, index) => <AuditEntry key={entry.id} entry={entry} isLast={index === logs.length - 1} />)}</ul></section><Pagination currentPage={page} totalPages={pagination.totalPages || 1} totalItems={pagination.total || logs.length} itemsPerPage={pagination.limit || 25} label="events" onPageChange={setPage} /></> : <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>No audit entries found</h3><p>There are no events matching the selected filters.</p><button type="button" className="admin-action--ghost" onClick={() => { setQuery(''); setResource(''); setAction(''); setCategory(''); setDateFrom(''); setDateTo(''); }}>Clear filters</button></div>}
     </div>
   );
 }
