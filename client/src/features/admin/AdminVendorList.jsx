@@ -99,7 +99,25 @@ export default function AdminVendorList() {
   const [campusFilter, setCampusFilter] = useState('all');
   const [modal, setModal] = useState(null);
   const [selectedApprovals, setSelectedApprovals] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(() => parseInt(searchParams.get('page')) || 1);
+
+  useEffect(() => {
+    const urlPage = parseInt(searchParams.get('page')) || 1;
+    if (urlPage !== currentPage) setCurrentPage(urlPage);
+  }, [searchParams]);
+
+  const setPage = (value) => {
+    setCurrentPage(value);
+    setSearchParams((prev) => {
+      if (value === 1 || value === undefined) {
+        prev.delete('page');
+      } else {
+        prev.set('page', String(value));
+      }
+      return prev;
+    });
+  };
+
   const [showAddVendor, setShowAddVendor] = useState(false);
   const [addVendorLoading, setAddVendorLoading] = useState(false);
   const [tab, setTab] = useState(() => searchParams.get('tab') === 'approvals' ? 'approvals' : 'active');
@@ -135,7 +153,7 @@ export default function AdminVendorList() {
         console.error('Failed to fetch vendor data:', err);
       } finally {
         if (!cancelled) {
-          setCurrentPage(1);
+          // page stays as-is (already in sync with URL)
         }
       }
     };
@@ -148,19 +166,23 @@ export default function AdminVendorList() {
   }, [currentPage, initialized, query, statusFilter, token]);
 
   useEffect(() => {
-    setCurrentPage(1);
+    setPage(1);
   }, [query, statusFilter]);
 
   const handlePageChange = (page) => {
-    setCurrentPage(page);
+    setPage(page);
   };
 
   const handleTabChange = (next) => {
     setTab(next);
-    setCurrentPage(1);
     setSelectedApprovals([]);
-    if (next === 'approvals') setSearchParams({ tab: 'approvals' });
-    else setSearchParams({});
+    setSearchParams((prev) => {
+      prev.delete('page');
+      if (next === 'approvals') prev.set('tab', 'approvals');
+      else prev.delete('tab');
+      return prev;
+    });
+    setCurrentPage(1);
   };
 
   const CAMPUS_FILTERS = useMemo(() => {

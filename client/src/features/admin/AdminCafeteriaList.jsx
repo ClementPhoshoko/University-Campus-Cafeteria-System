@@ -108,16 +108,30 @@ export default function AdminCafeteriaList() {
   const [view, setView] = useState(searchParams.get('view') || 'sites');
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPageState] = useState(() => parseInt(searchParams.get('page')) || 1);
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const itemsPerPage = 12;
   const { session } = useAuth();
   const { sites, allBuildings, allCollectionPoints, buildingsBySite, collectionPointsByBuilding, fetchBuildings, fetchCollectionPoints, addSite, loading, errors } = useAdminLocations();
 
+  useEffect(() => {
+    const urlPage = parseInt(searchParams.get('page')) || 1;
+    if (urlPage !== currentPage) setCurrentPageState(urlPage);
+  }, [searchParams]);
+
+  const setPage = (value) => {
+    setCurrentPageState(value);
+    setSearchParams((prev) => {
+      if (value === 1 || value === undefined) prev.delete('page');
+      else prev.set('page', String(value));
+      return prev;
+    });
+  };
+
   useEffect(() => { sites.forEach((site) => { if (buildingsBySite[site.id] === undefined) fetchBuildings(site.id).catch(() => {}); }); }, [sites, buildingsBySite, fetchBuildings]);
   useEffect(() => { allBuildings.forEach((building) => { if (collectionPointsByBuilding[building.id] === undefined) fetchCollectionPoints(building.id).catch(() => {}); }); }, [allBuildings, collectionPointsByBuilding, fetchCollectionPoints]);
-  useEffect(() => { setCurrentPage(1); }, [query, statusFilter, view]);
+  useEffect(() => { setPage(1); }, [query, statusFilter, view]);
 
   const buildings = useMemo(() => allBuildings.map((building) => ({ ...building, site_name: sites.find((site) => site.id === building.site_id)?.name || 'Unknown site' })), [allBuildings, sites]);
   const collectionPoints = useMemo(() => allCollectionPoints.map((point) => { const building = buildings.find((item) => item.id === point.building_id); return { ...point, building_name: building?.name, site_name: building?.site_name }; }), [allCollectionPoints, buildings]);
@@ -130,7 +144,7 @@ export default function AdminCafeteriaList() {
   const activeSites = sites.filter((site) => site.is_active).length;
   const activeBuildings = buildings.filter((building) => building.is_active).length;
   const activePoints = collectionPoints.filter((point) => point.is_active).length;
-  const handleView = (next) => { setView(next); setStatusFilter('all'); setSearchParams({ view: next }); };
+  const handleView = (next) => { setView(next); setStatusFilter('all'); setSearchParams((prev) => { prev.set('view', next); prev.delete('page'); return prev; }); };
   const handleCreate = async (payload) => { setSubmitting(true); try { const { cover_file: coverFile, ...sitePayload } = payload; const response = await addSite(sitePayload); if (coverFile && response.site?.id) await uploadAdminAsset(session?.access_token, 'site', response.site.id, coverFile); } finally { setSubmitting(false); } };
 
   return <div className="admin-orders">
@@ -139,7 +153,7 @@ export default function AdminCafeteriaList() {
     <div className="admin-vendors__tabs" role="tablist">{VIEW_TABS.map((tab) => <button key={tab.id} type="button" role="tab" aria-selected={view === tab.id} className={`admin-vendors__tab${view === tab.id ? ' admin-vendors__tab--active' : ''}`} onClick={() => handleView(tab.id)}>{tab.id === 'sites' ? <IconMapPin size={16} /> : tab.id === 'buildings' ? <IconBuilding size={16} /> : <IconClipboardCheck size={16} />}{tab.label}<span className="admin-vendors__tab-count">{counts[tab.id]}</span></button>)}</div>
     <div className="admin-orders__filters"><div className="admin-vendors__search admin-orders__search"><IconSearch size={16} /><input type="search" placeholder={`Search ${view}`} value={query} onChange={(e) => setQuery(e.target.value)} /></div>{view !== 'collection-points' && <div className="admin-vendors__chips"><button type="button" className={`admin-vendors__chip${statusFilter === 'all' ? ' admin-vendors__chip--active' : ''}`} onClick={() => setStatusFilter('all')}>All</button><button type="button" className={`admin-vendors__chip${statusFilter === 'active' ? ' admin-vendors__chip--active' : ''}`} onClick={() => setStatusFilter('active')}>Active</button><button type="button" className={`admin-vendors__chip${statusFilter === 'inactive' ? ' admin-vendors__chip--active' : ''}`} onClick={() => setStatusFilter('inactive')}>Inactive</button></div>}</div>
     {loading.sites && sites.length === 0 ? <div className="admin-vendor-detail__loading"><div className="admin-vendor-detail__loading-spinner" /><p>Loading locations...</p></div> : errors.sites ? <div className="admin-empty"><h3>Could not load locations</h3><p>{errors.sites}</p></div> : paginatedItems.length === 0 ? <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>No locations found</h3><p>Try changing your search or filters.</p></div> : view === 'sites' ? <div className="admin-site-grid">{paginatedItems.map((site) => <SiteCard key={site.id} site={site} />)}</div> : view === 'buildings' ? <div className="admin-building-grid">{paginatedItems.map((building) => <BuildingCard key={building.id} building={building} />)}</div> : <div className="admin-cp-list"><ul className="admin-cp-rows">{paginatedItems.map((point) => <CollectionPointRow key={point.id} point={point} />)}</ul></div>}
-    {currentItems.length > itemsPerPage && <Pagination currentPage={currentPage} totalPages={Math.ceil(currentItems.length / itemsPerPage)} totalItems={currentItems.length} itemsPerPage={itemsPerPage} label={view} onPageChange={setCurrentPage} />}
+    {currentItems.length > itemsPerPage && <Pagination currentPage={currentPage} totalPages={Math.ceil(currentItems.length / itemsPerPage)} totalItems={currentItems.length} itemsPerPage={itemsPerPage} label={view} onPageChange={setPage} />}
     {showNew && <NewSiteModal onClose={() => setShowNew(false)} onSubmit={handleCreate} submitting={submitting} />}
   </div>;
 }

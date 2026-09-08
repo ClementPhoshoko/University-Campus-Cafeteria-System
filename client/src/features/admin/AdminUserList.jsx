@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { IconCheck, IconChevronDown, IconChevronRight, IconClock, IconSearch, IconUserCircle, IconUsers } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
 import { listUsers } from '../../services/adminApi.js';
@@ -19,17 +19,32 @@ function StatBlock({ label, value, icon: Icon }) { return <div className="admin-
 
 export default function AdminUserList() {
   const { session, initialized } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: ITEMS_PER_PAGE, total: 0, totalPages: 0 });
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPageState] = useState(() => parseInt(searchParams.get('page')) || 1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const roleDropdownRef = useRef(null);
   const token = session?.access_token;
+
+  useEffect(() => {
+    const urlPage = parseInt(searchParams.get('page')) || 1;
+    if (urlPage !== page) setPageState(urlPage);
+  }, [searchParams]);
+
+  const setPage = (value) => {
+    setPageState(value);
+    setSearchParams((prev) => {
+      if (value === 1 || value === undefined) prev.delete('page');
+      else prev.set('page', String(value));
+      return prev;
+    });
+  };
 
   useEffect(() => { const close = (event) => { if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target)) setRoleDropdownOpen(false); }; document.addEventListener('mousedown', close); return () => document.removeEventListener('mousedown', close); }, []);
   useEffect(() => { setPage(1); }, [query, statusFilter, roleFilter]);

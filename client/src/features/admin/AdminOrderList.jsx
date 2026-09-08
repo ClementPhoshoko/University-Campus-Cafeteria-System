@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   IconSearch,
   IconReceipt,
@@ -158,6 +158,7 @@ function useStatusFilters(orders) {
 export default function AdminOrderList() {
   const { session, initialized } = useAuth();
   const { roles, loading: rolesLoading } = useRoles();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [token, setToken] = useState('');
 
   useEffect(() => {
@@ -171,9 +172,23 @@ export default function AdminOrderList() {
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [vendorFilter, setVendorFilter] = useState('all');
   const [vendorDropdownOpen, setVendorDropdownOpen] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPageState] = useState(() => parseInt(searchParams.get('page')) || 1);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const urlPage = parseInt(searchParams.get('page')) || 1;
+    if (urlPage !== page) setPageState(urlPage);
+  }, [searchParams]);
+
+  const setPage = (value) => {
+    setPageState(value);
+    setSearchParams((prev) => {
+      if (value === 1 || value === undefined) prev.delete('page');
+      else prev.set('page', String(value));
+      return prev;
+    });
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -193,9 +208,6 @@ export default function AdminOrderList() {
         console.error('Failed to fetch orders:', err);
       } finally {
         setLoading(false);
-        if (!cancelled) {
-          setPage(1);
-        }
       }
     };
 
