@@ -8,6 +8,8 @@ import {
   createSite,
   updateSite,
   listBuildings,
+  listAllBuildings,
+  listAllCollectionPoints,
   getBuilding,
   createBuilding,
   updateBuilding,
@@ -28,6 +30,10 @@ adminSiteRouter.use(authenticate, requireRole('admin'));
 
 // Admin mutations are throttled per-user; reads are not.
 const mutations = rateLimit({ windowMs: 60 * 1000, max: 30 });
+
+// Batch endpoints (must come before parameterized routes)
+adminSiteRouter.get('/admin/all-buildings', listAllBuildings);
+adminSiteRouter.get('/admin/all-collection-points', listAllCollectionPoints);
 
 adminSiteRouter.get('/admin/sites', listSites);
 adminSiteRouter.post('/admin/sites', mutations, createSite);

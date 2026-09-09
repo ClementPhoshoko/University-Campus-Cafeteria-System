@@ -210,7 +210,9 @@ export default function AdminVendorDetail() {
   const handleMenuItemCreate = async (payload) => {
     setActionLoading(true);
     try {
-      await createMenuItem(token, vendorId, payload);
+      const { image_file: imageFile, ...itemPayload } = payload;
+      const response = await createMenuItem(token, vendorId, itemPayload);
+      if (imageFile && response?.menu_item?.id) await uploadAdminAsset(token, 'menu_item', response.menu_item.id, imageFile);
       await refreshMenuItems();
       setModal(null);
     } finally { setActionLoading(false); }
@@ -219,7 +221,9 @@ export default function AdminVendorDetail() {
   const handleMenuItemUpdate = async (itemId, payload) => {
     setActionLoading(true);
     try {
-      await updateMenuItem(token, itemId, payload);
+      const { image_file: imageFile, ...itemPayload } = payload;
+      await updateMenuItem(token, itemId, itemPayload);
+      if (imageFile) await uploadAdminAsset(token, 'menu_item', itemId, imageFile);
       await refreshMenuItems();
       setModal(null);
     } finally { setActionLoading(false); }

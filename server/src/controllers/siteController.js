@@ -306,6 +306,90 @@ export async function listBuildings(req, res) {
   }
 }
 
+/**
+ * Batch endpoint: all buildings across all sites (for cafeteria list views).
+ * Avoids N+1 per-site fetches from the frontend.
+ */
+export async function listAllBuildings(req, res) {
+  try {
+    const { pageNum, limitNum, from, to } = parsePagination(req.query);
+    const { search, filters, column, ascending, error } = normalizeListFilters(req, {
+      sortDefaults: 'created_at',
+      sortAllowed: BUILDING_SORTS,
+    });
+    if (error) return sendError(res, 400, 'VALIDATION_ERROR', error);
+
+    let query = db().from('buildings').select('*, sites(name)', { count: 'exact' });
+    if (search) query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%,address.ilike.%${search}%`);
+    if (filters.is_active !== undefined) query = query.eq('is_active', filters.is_active);
+    query = query.order(column, { ascending }).range(from, to);
+
+    const { data, error: dbError, count } = await query;
+    if (dbError) throw dbError;
+
+    const buildings = data || [];
+    const ids = buildings.map((b) => b.id);
+    const [floorCounts, cpCounts] = await Promise.all([
+      floorCountsByBuilding(ids),
+      collectionPointsPerBuilding(ids),
+    ]);
+
+    const items = await Promise.all(buildings.map(async (b) => ({
+      ...b,
+      site_name: b.sites?.name || null,
+      sites: undefined,
+      cover_image_url: await resolveAssetUrl(b.cover_image_url),
+      floor_count: floorCounts.get(b.id) || 0,
+      collection_point_count: cpCounts.get(b.id) || 0,
+    })));
+
+    return respond(req, res, {
+      success: true,
+      buildings: items,
+      pagination: buildPagination(count, pageNum, limitNum),
+    }, { cacheControl: CACHE.adminList });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
+}
+
+/**
+ * Batch endpoint: all collection points across all buildings (for cafeteria list views).
+ */
+export async function listAllCollectionPoints(req, res) {
+  try {
+    const { pageNum, limitNum, from, to } = parsePagination(req.query);
+    const { search, column, ascending, error } = normalizeListFilters(req, {
+      sortDefaults: 'name',
+      sortAllowed: POINT_SORTS,
+    });
+    if (error) return sendError(res, 400, 'VALIDATION_ERROR', error);
+
+    let query = db().from('collection_points').select('*, buildings(name, site_id, sites(name))', { count: 'exact' });
+    if (search) query = query.or(`name.ilike.%${search}%`);
+    query = query.order(column, { ascending }).range(from, to);
+
+    const { data, error: dbError, count } = await query;
+    if (dbError) throw dbError;
+
+    const items = (data || []).map((cp) => ({
+      ...cp,
+      building_name: cp.buildings?.name || null,
+      site_name: cp.buildings?.sites?.name || null,
+      site_id: cp.buildings?.site_id || null,
+      buildings: undefined,
+    }));
+
+    return respond(req, res, {
+      success: true,
+      collectionPoints: withFloor(items),
+      pagination: buildPagination(count, pageNum, limitNum),
+    }, { cacheControl: CACHE.adminList });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
+}
+
 export async function getBuilding(req, res) {
   try {
     const buildingId = requireUuidParam(req, res, 'buildingId');
@@ -667,7 +751,7 @@ export async function listPublicSites(req, res) {
 
     let query = db()
       .from('sites')
-      .select('id, name, code, address, latitude, longitude, timezone', { count: 'exact' })
+      .select('id, name, code, address, latitude, longitude, timezone, cover_image_url', { count: 'exact' })
       .eq('is_active', true);
     if (search) query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%`);
     query = query.order('name', { ascending: true }).range(from, to);
@@ -675,9 +759,14 @@ export async function listPublicSites(req, res) {
     const { data, error, count } = await query;
     if (error) throw error;
 
+    const sites = await Promise.all((data || []).map(async (site) => ({
+      ...site,
+      cover_image_url: await resolveAssetUrl(site.cover_image_url),
+    })));
+
     return respond(req, res, {
       success: true,
-      sites: data || [],
+      sites,
       pagination: buildPagination(count, pageNum, limitNum),
     }, { cacheControl: CACHE.publicList });
   } catch (err) {
@@ -722,7 +811,7 @@ export async function listPublicBuildings(req, res) {
     const { pageNum, limitNum, from, to } = parsePagination(req.query);
     let query = db()
       .from('buildings')
-      .select('id, name, code, address, latitude, longitude', { count: 'exact' })
+      .select('id, name, code, address, latitude, longitude, cover_image_url', { count: 'exact' })
       .eq('site_id', siteId)
       .eq('is_active', true);
     query = query.order('name', { ascending: true }).range(from, to);
@@ -730,10 +819,15 @@ export async function listPublicBuildings(req, res) {
     const { data, error, count } = await query;
     if (error) throw error;
 
+    const buildings = await Promise.all((data || []).map(async (b) => ({
+      ...b,
+      cover_image_url: await resolveAssetUrl(b.cover_image_url),
+    })));
+
     return respond(req, res, {
       success: true,
       site_id: siteId,
-      buildings: data || [],
+      buildings,
       pagination: buildPagination(count, pageNum, limitNum),
     }, { cacheControl: CACHE.publicList });
   } catch (err) {

@@ -47,7 +47,9 @@ const app = express();
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
 // Keep raw body for webhook signature verification (Supabase Send Email Hook)
+// 10 MB limit for base64 image uploads; asset controller enforces its own 8 MB cap
 app.use(express.json({
+  limit: '10mb',
   verify: (req, res, buf) => { req.rawBody = buf; },
 }));
 app.use(morgan('dev'));

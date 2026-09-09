@@ -31,7 +31,7 @@ function SiteCard({ site }) {
   return (
     <Link to={`/admin/cafeterias/${site.id}`} className="admin-site-card">
       <div className="admin-site-card__cover admin-site-card__cover--plain">
-        <IconMapPin size={34} stroke={1.4} />
+        {site.cover_image_url ? <img src={site.cover_image_url} alt={site.name} /> : <IconMapPin size={34} stroke={1.4} />}
         <span className="admin-site-card__code">{site.code || 'SITE'}</span>
       </div>
       <div className="admin-site-card__body">
@@ -51,7 +51,7 @@ function SiteCard({ site }) {
 function BuildingCard({ building }) {
   return (
     <Link to={`/admin/cafeterias/${building.id}`} className="admin-building-card">
-      <div className="admin-building-card__media"><div className="admin-building-card__placeholder"><IconBuilding size={22} stroke={1.4} /></div></div>
+      <div className="admin-building-card__media">{building.cover_image_url ? <img src={building.cover_image_url} alt={building.name} /> : <div className="admin-building-card__placeholder"><IconBuilding size={22} stroke={1.4} /></div>}</div>
       <div className="admin-building-card__body">
         <div className="admin-building-card__head"><span className="admin-building-card__code">{building.code || 'BUILDING'}</span><StatusPill active={building.is_active} /></div>
         <h4 className="admin-building-card__name">{building.name}</h4>
@@ -114,7 +114,7 @@ export default function AdminCafeteriaList() {
   const [submitting, setSubmitting] = useState(false);
   const itemsPerPage = 12;
   const { session } = useAuth();
-  const { sites, allBuildings, allCollectionPoints, buildingsBySite, collectionPointsByBuilding, fetchBuildings, fetchCollectionPoints, addSite, loading, errors } = useAdminLocations();
+  const { sites, allBuildings, allCollectionPoints, buildingsBySite, collectionPointsByBuilding, fetchAllBuildings, fetchAllCollectionPoints, addSite, loading, errors } = useAdminLocations();
   const [loaded, setLoaded] = useState(false);
   const fetchStartedRef = useRef(false);
 
@@ -137,9 +137,24 @@ export default function AdminCafeteriaList() {
     });
   };
 
-  useEffect(() => { sites.forEach((site) => { if (buildingsBySite[site.id] === undefined) fetchBuildings(site.id).catch(() => {}); }); }, [sites, buildingsBySite, fetchBuildings]);
-  useEffect(() => { allBuildings.forEach((building) => { if (collectionPointsByBuilding[building.id] === undefined) fetchCollectionPoints(building.id).catch(() => {}); }); }, [allBuildings, collectionPointsByBuilding, fetchCollectionPoints]);
   useEffect(() => { setPage(1); }, [query, statusFilter, view]);
+
+  const buildingsFetchedRef = useRef(false);
+  const collectionPointsFetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (view === 'buildings' && !buildingsFetchedRef.current && sites.length > 0) {
+      buildingsFetchedRef.current = true;
+      fetchAllBuildings({ page: 1, limit: 1000 }).catch(() => {});
+    }
+  }, [view, sites.length, fetchAllBuildings]);
+
+  useEffect(() => {
+    if (view === 'collection-points' && !collectionPointsFetchedRef.current && sites.length > 0) {
+      collectionPointsFetchedRef.current = true;
+      fetchAllCollectionPoints({ page: 1, limit: 1000 }).catch(() => {});
+    }
+  }, [view, sites.length, fetchAllCollectionPoints]);
 
   const buildings = useMemo(() => allBuildings.map((building) => ({ ...building, site_name: sites.find((site) => site.id === building.site_id)?.name || 'Unknown site' })), [allBuildings, sites]);
   const collectionPoints = useMemo(() => allCollectionPoints.map((point) => { const building = buildings.find((item) => item.id === point.building_id); return { ...point, building_name: building?.name, site_name: building?.site_name }; }), [allCollectionPoints, buildings]);
@@ -160,7 +175,7 @@ export default function AdminCafeteriaList() {
     <section className="admin-cafeterias__kpis"><div className="admin-cafeterias__kpi"><div className="admin-cafeterias__kpi-icon"><IconMapPin size={24} /></div><div className="admin-cafeterias__kpi-body"><span className="admin-cafeterias__kpi-label">Active sites</span><span className="admin-cafeterias__kpi-value">{!loaded ? <span className="skeleton skeleton--kpi-value" /> : <>{activeSites} / {sites.length}</>}</span></div></div><div className="admin-cafeterias__kpi"><div className="admin-cafeterias__kpi-icon"><IconBuilding size={24} /></div><div className="admin-cafeterias__kpi-body"><span className="admin-cafeterias__kpi-label">Active buildings</span><span className="admin-cafeterias__kpi-value">{!loaded ? <span className="skeleton skeleton--kpi-value" /> : activeBuildings}</span></div></div><div className="admin-cafeterias__kpi"><div className="admin-cafeterias__kpi-icon"><IconClipboardCheck size={24} /></div><div className="admin-cafeterias__kpi-body"><span className="admin-cafeterias__kpi-label">Active collection points</span><span className="admin-cafeterias__kpi-value">{!loaded ? <span className="skeleton skeleton--kpi-value" /> : activePoints}</span></div></div><div className="admin-cafeterias__kpi"><div className="admin-cafeterias__kpi-icon"><IconClock size={24} /></div><div className="admin-cafeterias__kpi-body"><span className="admin-cafeterias__kpi-label">Loaded records</span><span className="admin-cafeterias__kpi-value">{!loaded ? <span className="skeleton skeleton--kpi-value" /> : sites.length + buildings.length + collectionPoints.length}</span></div></div></section>
     <div className="admin-vendors__tabs" role="tablist">{VIEW_TABS.map((tab) => <button key={tab.id} type="button" role="tab" aria-selected={view === tab.id} className={`admin-vendors__tab${view === tab.id ? ' admin-vendors__tab--active' : ''}`} onClick={() => handleView(tab.id)}>{tab.id === 'sites' ? <IconMapPin size={16} /> : tab.id === 'buildings' ? <IconBuilding size={16} /> : <IconClipboardCheck size={16} />}{tab.label}<span className="admin-vendors__tab-count">{counts[tab.id]}</span></button>)}</div>
     <div className="admin-orders__filters"><div className="admin-vendors__search admin-orders__search"><IconSearch size={16} /><input type="search" placeholder={`Search ${view}`} value={query} onChange={(e) => setQuery(e.target.value)} /></div>{view !== 'collection-points' && <div className="admin-vendors__chips"><button type="button" className={`admin-vendors__chip${statusFilter === 'all' ? ' admin-vendors__chip--active' : ''}`} onClick={() => setStatusFilter('all')}>All</button><button type="button" className={`admin-vendors__chip${statusFilter === 'active' ? ' admin-vendors__chip--active' : ''}`} onClick={() => setStatusFilter('active')}>Active</button><button type="button" className={`admin-vendors__chip${statusFilter === 'inactive' ? ' admin-vendors__chip--active' : ''}`} onClick={() => setStatusFilter('inactive')}>Inactive</button></div>}</div>
-    {!loaded && sites.length === 0 ? <div className="admin-site-grid">{Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} lines={2} badges={1} />)}</div> : errors.sites ? <div className="admin-empty"><h3>Could not load locations</h3><p>{errors.sites}</p></div> : paginatedItems.length === 0 ? <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>No locations found</h3><p>Try changing your search or filters.</p></div> : view === 'sites' ? <div className="admin-site-grid">{paginatedItems.map((site) => <SiteCard key={site.id} site={site} />)}</div> : view === 'buildings' ? <div className="admin-building-grid">{paginatedItems.map((building) => <BuildingCard key={building.id} building={building} />)}</div> : <div className="admin-cp-list"><ul className="admin-cp-rows">{paginatedItems.map((point) => <CollectionPointRow key={point.id} point={point} />)}</ul></div>}
+    {!loaded && sites.length === 0 ? view === 'sites' ? <div className="admin-site-grid">{Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} lines={2} badges={1} />)}</div> : view === 'buildings' ? <div className="admin-building-grid">{Array.from({ length: 6 }, (_, i) => <div key={i} className="admin-building-card" style={{ pointerEvents: 'none' }}><div className="admin-building-card__media"><div className="admin-building-card__placeholder"><span className="skeleton" style={{ width: 22, height: 22, borderRadius: 'var(--radius-sm)' }} /></div></div><div className="admin-building-card__body"><div className="admin-building-card__head"><span className="skeleton skeleton--badge" style={{ width: 60 }} /></div><div className="skeleton skeleton--title" style={{ width: '70%', marginTop: 6 }} /><div className="skeleton skeleton--text" style={{ width: '50%', marginTop: 4 }} /></div></div>)}</div> : <ul className="admin-cp-rows">{Array.from({ length: 5 }, (_, i) => <li key={i} className="admin-cp-row" style={{ pointerEvents: 'none' }}><div className="admin-cp-row__icon"><span className="skeleton" style={{ width: 18, height: 18, borderRadius: 'var(--radius-sm)' }} /></div><div className="admin-cp-row__body"><div className="admin-cp-row__head"><span className="skeleton skeleton--badge" style={{ width: 100 }} /><span className="skeleton skeleton--badge" style={{ width: 50 }} /></div><div className="skeleton skeleton--text" style={{ width: '60%', marginTop: 4 }} /></div></li>)}</ul> : errors.sites ? <div className="admin-empty"><h3>Could not load locations</h3><p>{errors.sites}</p></div> : paginatedItems.length === 0 ? <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>No locations found</h3><p>Try changing your search or filters.</p></div> : view === 'sites' ? <div className="admin-site-grid">{paginatedItems.map((site) => <SiteCard key={site.id} site={site} />)}</div> : view === 'buildings' ? <div className="admin-building-grid">{paginatedItems.map((building) => <BuildingCard key={building.id} building={building} />)}</div> : <div className="admin-cp-list"><ul className="admin-cp-rows">{paginatedItems.map((point) => <CollectionPointRow key={point.id} point={point} />)}</ul></div>}
     {currentItems.length > itemsPerPage && <Pagination currentPage={currentPage} totalPages={Math.ceil(currentItems.length / itemsPerPage)} totalItems={currentItems.length} itemsPerPage={itemsPerPage} label={view} onPageChange={setPage} />}
     {showNew && <NewSiteModal onClose={() => setShowNew(false)} onSubmit={handleCreate} submitting={submitting} />}
   </div>;

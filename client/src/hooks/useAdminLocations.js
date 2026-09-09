@@ -6,6 +6,8 @@ import {
   createDeliveryLocation,
   createFloor,
   createSite,
+  listAllBuildings,
+  listAllCollectionPoints,
   listBuildings,
   listCollectionPoints,
   listDeliveryLocations,
@@ -188,6 +190,52 @@ export function useAdminLocations({
       throw error;
     } finally {
       setLoadingKey('deliveryLocations', false);
+    }
+  }, [requireToken, setErrorKey, setLoadingKey]);
+
+  const fetchAllBuildings = useCallback(async (params = DEFAULT_LIST_PARAMS, options = {}) => {
+    setLoadingKey('buildings', true);
+    setErrorKey('buildings', null);
+    try {
+      const payload = await listAllBuildings(requireToken(), params, options);
+      if (!mountedRef.current) return payload;
+      const buildings = payload?.buildings || [];
+      const grouped = {};
+      for (const b of buildings) {
+        const sid = b.site_id;
+        if (!grouped[sid]) grouped[sid] = [];
+        grouped[sid].push(b);
+      }
+      setBuildingsBySite((prev) => ({ ...prev, ...grouped }));
+      return payload;
+    } catch (error) {
+      setErrorKey('buildings', getMessage(error));
+      throw error;
+    } finally {
+      setLoadingKey('buildings', false);
+    }
+  }, [requireToken, setErrorKey, setLoadingKey]);
+
+  const fetchAllCollectionPoints = useCallback(async (params = DEFAULT_LIST_PARAMS, options = {}) => {
+    setLoadingKey('collectionPoints', true);
+    setErrorKey('collectionPoints', null);
+    try {
+      const payload = await listAllCollectionPoints(requireToken(), params, options);
+      if (!mountedRef.current) return payload;
+      const points = payload?.collectionPoints || [];
+      const grouped = {};
+      for (const cp of points) {
+        const bid = cp.building_id;
+        if (!grouped[bid]) grouped[bid] = [];
+        grouped[bid].push(cp);
+      }
+      setCollectionPointsByBuilding((prev) => ({ ...prev, ...grouped }));
+      return payload;
+    } catch (error) {
+      setErrorKey('collectionPoints', getMessage(error));
+      throw error;
+    } finally {
+      setLoadingKey('collectionPoints', false);
     }
   }, [requireToken, setErrorKey, setLoadingKey]);
 
@@ -378,6 +426,8 @@ export function useAdminLocations({
     clearError,
     fetchSites,
     fetchBuildings,
+    fetchAllBuildings,
+    fetchAllCollectionPoints,
     fetchFloors,
     fetchCollectionPoints,
     fetchDeliveryLocations,

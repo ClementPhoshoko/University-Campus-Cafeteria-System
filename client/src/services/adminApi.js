@@ -352,6 +352,14 @@ export function addOrderNote(token, orderId, payload, options) {
   return adminRequest(`/admin/vendors/orders/${orderId}/note`, { method: 'POST', token, body: payload, ...options });
 }
 
+export function listAllBuildings(token, params, options) {
+  return adminRequest('/admin/all-buildings', { token, query: params, ...options });
+}
+
+export function listAllCollectionPoints(token, params, options) {
+  return adminRequest('/admin/all-collection-points', { token, query: params, ...options });
+}
+
 export function listBuildingVendors(token, buildingId, params, options) {
   return adminRequest(`/admin/buildings/${buildingId}/vendors`, { token, query: params, ...options });
 }

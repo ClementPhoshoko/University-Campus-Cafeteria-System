@@ -7,8 +7,8 @@ import { respond } from '../utils/http.js';
 const BUCKET = 'vendor-assets';
 const MAX_BYTES = 8 * 1024 * 1024;
 const TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const ENTITY_TABLES = { vendor: 'vendors', site: 'sites', building: 'buildings' };
-const ENTITY_FIELDS = { vendor: 'logo_url', site: 'cover_image_url', building: 'cover_image_url' };
+const ENTITY_TABLES = { vendor: 'vendors', site: 'sites', building: 'buildings', menu_item: 'menu_items' };
+const ENTITY_FIELDS = { vendor: 'logo_url', site: 'cover_image_url', building: 'cover_image_url', menu_item: 'image_url' };
 
 function extension(contentType) {
   return contentType === 'image/png' ? 'png' : contentType === 'image/webp' ? 'webp' : 'jpg';
@@ -26,7 +26,7 @@ export async function uploadAdminAsset(req, res) {
     const buffer = Buffer.from(data, 'base64');
     if (!buffer.length || buffer.length > MAX_BYTES) return sendError(res, 413, 'ASSET_TOO_LARGE', 'Images must be smaller than 8MB');
 
-    const { data: entity, error: entityError } = await supabaseAdmin.from(table).select('id, logo_url, cover_image_url').eq('id', entityId).maybeSingle();
+    const { data: entity, error: entityError } = await supabaseAdmin.from(table).select(`id, ${field}`).eq('id', entityId).maybeSingle();
     if (entityError) throw entityError;
     if (!entity) return sendError(res, 404, `${entityType.toUpperCase()}_NOT_FOUND`, `${entityType} not found`);
 

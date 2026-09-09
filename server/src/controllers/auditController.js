@@ -30,18 +30,27 @@ export async function listAuditLogs(req, res) {
     const { data, error, count } = await query;
     if (error) throw error;
 
-    // Server-side action counts (unfiltered by action, but respects other filters)
-    let countsQuery = supabaseAdmin.from('audit_logs').select('action', { count: 'exact', head: false });
-    if (search) countsQuery = countsQuery.or(`action.ilike.%${search}%,table_name.ilike.%${search}%,record_key.ilike.%${search}%,reason.ilike.%${search}%`);
-    if (req.query.table_name) countsQuery = countsQuery.eq('table_name', req.query.table_name);
-    if (req.query.category) countsQuery = countsQuery.eq('category', req.query.category);
-    if (req.query.actor_user_id) countsQuery = countsQuery.eq('actor_user_id', req.query.actor_user_id);
-    if (req.query.from) countsQuery = countsQuery.gte('created_at', req.query.from);
-    if (req.query.to) countsQuery = countsQuery.lte('created_at', req.query.to);
+    // Server-side action counts (lightweight head-only queries per action)
+    const baseFilters = (q) => {
+      if (search) q = q.or(`action.ilike.%${search}%,table_name.ilike.%${search}%,record_key.ilike.%${search}%,reason.ilike.%${search}%`);
+      if (req.query.table_name) q = q.eq('table_name', req.query.table_name);
+      if (req.query.category) q = q.eq('category', req.query.category);
+      if (req.query.actor_user_id) q = q.eq('actor_user_id', req.query.actor_user_id);
+      if (req.query.from) q = q.gte('created_at', req.query.from);
+      if (req.query.to) q = q.lte('created_at', req.query.to);
+      return q;
+    };
 
-    const { data: countData } = await countsQuery;
-    const action_counts = { INSERT: 0, UPDATE: 0, DELETE: 0 };
-    (countData || []).forEach((row) => { if (action_counts[row.action] !== undefined) action_counts[row.action]++; });
+    const [insertCount, updateCount, deleteCount] = await Promise.all([
+      baseFilters(supabaseAdmin.from('audit_logs').select('*', { count: 'exact', head: true }).eq('action', 'INSERT')),
+      baseFilters(supabaseAdmin.from('audit_logs').select('*', { count: 'exact', head: true }).eq('action', 'UPDATE')),
+      baseFilters(supabaseAdmin.from('audit_logs').select('*', { count: 'exact', head: true }).eq('action', 'DELETE')),
+    ]);
+    const action_counts = {
+      INSERT: insertCount.count || 0,
+      UPDATE: updateCount.count || 0,
+      DELETE: deleteCount.count || 0,
+    };
 
     const actorIds = [...new Set((data || []).map((row) => row.actor_user_id).filter(Boolean))];
     const actors = new Map();

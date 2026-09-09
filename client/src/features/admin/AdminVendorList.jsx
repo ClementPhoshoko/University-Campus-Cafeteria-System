@@ -137,18 +137,17 @@ export default function AdminVendorList() {
     const fetchData = async () => {
       if (!token) return;
       try {
-        // Fetch active vendors
-        const vendorsResponse = await listVendors(token, {
-          page: currentPage,
-          limit: itemsPerPage,
-          search: query,
-          status: statusFilter === 'all' ? undefined : statusFilter,
-        });
+        const [vendorsResponse, approvalsResponse] = await Promise.all([
+          listVendors(token, {
+            page: currentPage,
+            limit: itemsPerPage,
+            search: query,
+            status: statusFilter === 'all' ? undefined : statusFilter,
+          }),
+          listVendorApprovals(token, { page: currentPage, limit: itemsPerPage, search: query }),
+        ]);
         setActiveVendors(vendorsResponse.vendors || []);
         setActivePagination(vendorsResponse.pagination || null);
-
-        // Fetch pending approvals
-        const approvalsResponse = await listVendorApprovals(token, { page: currentPage, limit: itemsPerPage, search: query });
         setPendingApprovals(approvalsResponse.approvals || []);
         setApprovalPagination(approvalsResponse.pagination || null);
       } catch (err) {

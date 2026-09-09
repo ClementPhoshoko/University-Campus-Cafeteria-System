@@ -151,6 +151,7 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
     status: item?.status || 'available',
     portion_description: item?.portion_description || '',
     ingredients: Array.isArray(item?.ingredients) ? item.ingredients.join(', ') : '',
+    image_file: null,
   });
   const editing = !!item;
 
@@ -164,6 +165,7 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
       status: form.status,
       portion_description: form.portion_description.trim() || null,
       ingredients: form.ingredients.split(',').map((s) => s.trim()).filter(Boolean),
+      image_file: form.image_file || null,
     };
     onSubmit(payload);
   };
@@ -195,6 +197,7 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
           </Field>
           <Field label="Portion description" full><input className="admin-input" value={form.portion_description} onChange={(e) => setForm({ ...form, portion_description: e.target.value })} placeholder="e.g. 300g serving" /></Field>
           <Field label="Ingredients" full><input className="admin-input" value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} placeholder="Comma-separated, e.g. chicken, lettuce, tomato" /></Field>
+          <Field label="Item image" full><input className="admin-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setForm({ ...form, image_file: e.target.files?.[0] || null })} />{editing && item?.image_url && !form.image_file && <span style={{ fontSize: '0.72rem', color: 'var(--color-text-tertiary)', marginTop: 4, display: 'block' }}>Current image uploaded. Select a file to replace it.</span>}</Field>
           <Field label="Description" full><textarea className="admin-modal__textarea" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
         </div>
         <footer className="admin-modal__foot">
