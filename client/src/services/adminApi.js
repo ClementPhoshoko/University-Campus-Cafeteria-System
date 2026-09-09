@@ -332,6 +332,10 @@ export function listOrders(token, params, options) {
   return adminRequest('/admin/vendors/orders', { token, query: params, ...options });
 }
 
+export function createOrder(token, payload, options) {
+  return adminRequest('/admin/vendors/orders', { method: 'POST', token, body: payload, ...options });
+}
+
 export function getOrder(token, orderId, options) {
   return adminRequest(`/admin/vendors/orders/${orderId}`, { token, ...options });
 }
@@ -414,6 +418,7 @@ export const adminVendorsApi = {
   deleteMenuItem,
   uploadAdminAsset,
   listOrders,
+  createOrder,
   getOrder,
   cancelOrder,
   refundOrder,

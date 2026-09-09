@@ -205,3 +205,34 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
     </div>
   );
 }
+
+export function CategoryModal({ category, onClose, onSubmit, submitting = false }) {
+  const [form, setForm] = useState({
+    name: category?.name || '',
+    sort_order: String(category?.sort_order ?? 0),
+  });
+  const editing = !!category;
+
+  const submit = () => {
+    onSubmit({ name: form.name.trim(), sort_order: Number(form.sort_order) || 0 });
+  };
+
+  return (
+    <div className="admin-modal" role="dialog" aria-modal="true">
+      <div className="admin-modal__overlay" onClick={onClose} />
+      <div className="admin-modal__card" onClick={(e) => e.stopPropagation()}>
+        <header className="admin-modal__head">
+          <div><h3 className="admin-modal__title">{editing ? 'Edit category' : 'Add category'}</h3><p className="admin-modal__sub">{editing ? 'Update the category name and sort order.' : 'Create a new menu category for this vendor.'}</p></div>
+        </header>
+        <div className="admin-form-grid">
+          <Field label="Category name" full><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Mains, Drinks, Desserts" /></Field>
+          <Field label="Sort order"><input className="admin-input" type="number" min="0" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: e.target.value })} /></Field>
+        </div>
+        <footer className="admin-modal__foot">
+          <button type="button" className="admin-action" onClick={onClose}>Cancel</button>
+          <button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.name.trim()} onClick={submit}>{submitting ? 'Saving…' : editing ? 'Save category' : 'Add category'}</button>
+        </footer>
+      </div>
+    </div>
+  );
+}

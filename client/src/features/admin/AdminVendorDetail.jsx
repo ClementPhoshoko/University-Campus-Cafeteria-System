@@ -17,10 +17,10 @@ import {
   IconTrash,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
-import { addVendorUser, adminRequest, createVendorLocation, listMenuItems, listVendorCategories, createMenuItem, updateMenuItem, deleteMenuItem, removeVendorUser, updateVendor, updateVendorApproval, updateVendorLocation, uploadAdminAsset } from '../../services/adminApi.js';
+import { addVendorUser, adminRequest, createVendorLocation, listMenuItems, listVendorCategories, createMenuItem, updateMenuItem, deleteMenuItem, createVendorCategory, updateVendorCategory, deleteVendorCategory, removeVendorUser, updateVendor, updateVendorApproval, updateVendorLocation, uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
-import { StaffModal, VendorLocationModal, VendorProfileModal, MenuItemModal } from './VendorForms.jsx';
+import { StaffModal, VendorLocationModal, VendorProfileModal, MenuItemModal, CategoryModal } from './VendorForms.jsx';
 
 function StatusPill({ status }) {
   return <span className={`admin-status admin-status--${status}`}>{status}</span>;
@@ -127,6 +127,14 @@ export default function AdminVendorDetail() {
     } catch (err) { console.error('Failed to refresh menu items:', err); }
   };
 
+  const refreshMenuCategories = async () => {
+    if (!token || !vendorId) return;
+    try {
+      const catsRes = await listVendorCategories(token, vendorId);
+      setMenuCategories(catsRes.categories || []);
+    } catch (err) { console.error('Failed to refresh menu categories:', err); }
+  };
+
   const handleApproval = async (decision) => {
     if (!token || !vendorId || actionLoading) return;
     const reason = decision === 'reject' ? window.prompt('Reason for rejection:') : undefined;
@@ -222,6 +230,33 @@ export default function AdminVendorDetail() {
     try {
       await deleteMenuItem(token, itemId);
       setMenuItems((prev) => prev.filter((item) => item.id !== itemId));
+    } finally { setActionLoading(false); }
+  };
+
+  const handleCategoryCreate = async (payload) => {
+    setActionLoading(true);
+    try {
+      await createVendorCategory(token, vendorId, payload);
+      await refreshMenuCategories();
+      setModal(null);
+    } finally { setActionLoading(false); }
+  };
+
+  const handleCategoryUpdate = async (categoryId, payload) => {
+    setActionLoading(true);
+    try {
+      await updateVendorCategory(token, categoryId, payload);
+      await refreshMenuCategories();
+      setModal(null);
+    } finally { setActionLoading(false); }
+  };
+
+  const handleCategoryDelete = async (categoryId) => {
+    if (!window.confirm('Delete this category? Items in it will become uncategorized.')) return;
+    setActionLoading(true);
+    try {
+      await deleteVendorCategory(token, categoryId);
+      setMenuCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
     } finally { setActionLoading(false); }
   };
 
@@ -411,6 +446,27 @@ export default function AdminVendorDetail() {
           </section>
 
           <section className="admin-vendor-info admin-vendor-management-card">
+            <div className="admin-vendor-top-items__header"><h3 className="admin-vendor-info__heading">Menu categories</h3><button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('category')}><IconPlus size={14} /> Add category</button></div>
+            {menuItemsLoading ? <p className="admin-vendor-empty-copy">Loading categories...</p> : menuCategories.length === 0 ? <p className="admin-vendor-empty-copy">No categories defined.</p> : (
+              <div className="admin-menu-items-table">
+                <div className="admin-menu-items-table__head"><span>Name</span><span>Sort order</span><span>Items</span><span /><span /></div>
+                {menuCategories.map((cat) => (
+                  <div className="admin-menu-items-table__row" key={cat.id}>
+                    <div className="admin-menu-items-table__name"><strong>{cat.name}</strong></div>
+                    <span>{cat.sort_order ?? 0}</span>
+                    <span>{menuItems.filter((item) => item.category_id === cat.id).length}</span>
+                    <span />
+                    <div className="vendor-managed-row__actions">
+                      <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'category', category: cat })}>Edit</button>
+                      <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleCategoryDelete(cat.id)} disabled={actionLoading}><IconTrash size={13} /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="admin-vendor-info admin-vendor-management-card">
             <div className="admin-vendor-top-items__header"><h3 className="admin-vendor-info__heading">Menu items</h3><button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('menuItem')}><IconPlus size={14} /> Add item</button></div>
             {menuItemsLoading ? <p className="admin-vendor-empty-copy">Loading menu items...</p> : menuItems.length === 0 ? <p className="admin-vendor-empty-copy">No menu items have been added.</p> : (
               <div className="admin-menu-items-table">
@@ -480,6 +536,8 @@ export default function AdminVendorDetail() {
       {modal === 'staff' && <StaffModal onClose={() => setModal(null)} onSubmit={handleStaffAdd} submitting={actionLoading} />}
       {modal === 'menuItem' && <MenuItemModal categories={menuCategories} onClose={() => setModal(null)} onSubmit={handleMenuItemCreate} submitting={actionLoading} />}
       {modal?.type === 'menuItem' && <MenuItemModal key={modal.item.id} item={modal.item} categories={menuCategories} onClose={() => setModal(null)} onSubmit={(payload) => handleMenuItemUpdate(modal.item.id, payload)} submitting={actionLoading} />}
+      {modal === 'category' && <CategoryModal onClose={() => setModal(null)} onSubmit={handleCategoryCreate} submitting={actionLoading} />}
+      {modal?.type === 'category' && <CategoryModal key={modal.category.id} category={modal.category} onClose={() => setModal(null)} onSubmit={(payload) => handleCategoryUpdate(modal.category.id, payload)} submitting={actionLoading} />}
     </div>
   );
 }
