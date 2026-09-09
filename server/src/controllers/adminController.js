@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/supabase.js';
 import { writeAudit } from '../utils/audit.js';
+import { respond, CACHE } from '../utils/http.js';
 
 const VALID_ROLES = [
   'employee', 'executive', 'executive_assistant', 'meeting_organiser',
@@ -61,7 +62,7 @@ export async function listUsers(req, res) {
       filtered = filtered.filter((u) => u.roles.includes(role));
     }
 
-    res.json({
+    return respond(req, res, {
       success: true,
       users: filtered,
       pagination: {
@@ -70,10 +71,10 @@ export async function listUsers(req, res) {
         total: count || 0,
         totalPages: Math.ceil((count || 0) / limitNum),
       },
-    });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     console.error('listUsers error:', err);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: { code: 'INTERNAL_ERROR', message: 'Failed to list users' },
     });
@@ -114,12 +115,12 @@ export async function getUserRoles(req, res) {
       });
     }
 
-    res.json({
+    return respond(req, res, {
       success: true,
       user: profile,
       roles: (roles || []).map((r) => r.role),
       roleDetails: roles || [],
-    });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     console.error('getUserRoles error:', err);
     res.status(500).json({

@@ -94,7 +94,7 @@ export async function listVendorMenu(req, res) {
         success: true,
         vendor: { id: vendor.id, name: vendor.name },
         categories: [],
-      }, { cacheControl: CACHE.publicList });
+      }, { cacheControl: CACHE.publicMenu });
     }
 
     const itemIds = menuItems.map((i) => i.id);
@@ -148,7 +148,7 @@ export async function listVendorMenu(req, res) {
       success: true,
       vendor: { id: vendor.id, name: vendor.name },
       categories: allCategories,
-    }, { cacheControl: CACHE.publicList });
+    }, { cacheControl: CACHE.publicMenu });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -238,7 +238,7 @@ export async function getMenuItem(req, res) {
         allergens,
         option_groups,
       },
-    }, { cacheControl: CACHE.publicList });
+    }, { cacheControl: CACHE.publicMenu });
   } catch (err) {
     return handleControllerError(res, err);
   }

@@ -193,7 +193,7 @@ export async function listSites(req, res) {
       success: true,
       sites: items,
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.adminList });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -216,7 +216,7 @@ export async function getSite(req, res) {
         collection_point_count: counts.collectionPoints.get(siteId) || 0,
         vendor_count: counts.vendors.get(siteId)?.size || 0,
       },
-    }, { cacheControl: CACHE.adminList });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -300,7 +300,7 @@ export async function listBuildings(req, res) {
       site_id: siteId,
       buildings: items,
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.adminList });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -347,7 +347,7 @@ export async function listAllBuildings(req, res) {
       success: true,
       buildings: items,
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.adminList });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -384,7 +384,7 @@ export async function listAllCollectionPoints(req, res) {
       success: true,
       collectionPoints: withFloor(items),
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.adminList });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -407,7 +407,7 @@ export async function getBuilding(req, res) {
         floor_count: floorCounts.get(buildingId) || 0,
         collection_point_count: cpCounts.get(buildingId) || 0,
       },
-    }, { cacheControl: CACHE.adminList });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -483,7 +483,7 @@ export async function listFloors(req, res) {
       building_id: buildingId,
       floors: data || [],
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.adminList });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -582,7 +582,7 @@ export async function listCollectionPoints(req, res) {
       building_id: buildingId,
       collectionPoints: withFloor(data),
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.adminList });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -679,7 +679,7 @@ export async function listDeliveryLocations(req, res) {
       building_id: buildingId,
       deliveryLocations: withFloor(data),
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.adminList });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -768,7 +768,7 @@ export async function listPublicSites(req, res) {
       success: true,
       sites,
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.publicList });
+    }, { cacheControl: CACHE.publicRef });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -788,7 +788,7 @@ export async function getPublicSite(req, res) {
     if (error) throw error;
     if (!site) throw new ApiError(404, 'SITE_NOT_FOUND', 'Site not found');
 
-    return respond(req, res, { success: true, site }, { cacheControl: CACHE.publicList });
+    return respond(req, res, { success: true, site }, { cacheControl: CACHE.publicRef });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -829,7 +829,7 @@ export async function listPublicBuildings(req, res) {
       site_id: siteId,
       buildings,
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.publicList });
+    }, { cacheControl: CACHE.publicRef });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -863,7 +863,7 @@ export async function listPublicFloors(req, res) {
       success: true,
       building_id: buildingId,
       floors: data || [],
-    }, { cacheControl: CACHE.publicList });
+    }, { cacheControl: CACHE.publicRef });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -896,7 +896,7 @@ export async function listPublicCollectionPoints(req, res) {
       success: true,
       building_id: buildingId,
       collectionPoints: withFloor(data),
-    }, { cacheControl: CACHE.publicList });
+    }, { cacheControl: CACHE.publicRef });
   } catch (err) {
     return handleControllerError(res, err);
   }

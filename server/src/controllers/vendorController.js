@@ -280,7 +280,7 @@ export async function listVendors(req, res) {
       for (const l of locations || []) countMap.set(l.vendor_id, (countMap.get(l.vendor_id) || 0) + 1);
 
       if (!vendorIds.length) {
-        return respond(req, res, { success: true, vendors: [], pagination: buildPagination(0, pageNum, limitNum) }, { cacheControl: CACHE.adminList });
+        return respond(req, res, { success: true, vendors: [], pagination: buildPagination(0, pageNum, limitNum) }, { cacheControl: CACHE.adminConfig });
       }
       query = db().from('vendors').select('*', { count: 'exact' }).in('id', vendorIds);
     } else {
@@ -305,7 +305,7 @@ export async function listVendors(req, res) {
       success: true,
       vendors: items,
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.adminList });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -349,7 +349,7 @@ export async function listApprovals(req, res) {
       success: true,
       approvals: items,
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.adminList });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -378,7 +378,7 @@ export async function getVendor(req, res) {
         staff,
         activity,
       },
-    }, { cacheControl: CACHE.adminList });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -742,7 +742,7 @@ export async function listBuildingVendors(req, res) {
         building_id: row.building_id,
         collection_point_id: row.collection_point_id,
       })),
-    }, { cacheControl: CACHE.adminList });
+    }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -755,7 +755,7 @@ export async function listVendorCategories(req, res) {
     await mustExist('vendors', vendorId, 'VENDOR_NOT_FOUND', 'Vendor not found');
     const { data, error } = await db().from('menu_categories').select('*').eq('vendor_id', vendorId).order('sort_order').order('name');
     if (error) throw error;
-    return respond(req, res, { success: true, categories: data || [] }, { cacheControl: CACHE.adminList });
+    return respond(req, res, { success: true, categories: data || [] }, { cacheControl: CACHE.adminConfig });
   } catch (err) { return handleControllerError(res, err); }
 }
 
@@ -825,7 +825,7 @@ export async function listMenuItems(req, res) {
     const { data, error, count } = await query;
     if (error) throw error;
     const items = await Promise.all((data || []).map(async (item) => ({ ...item, image_url: await resolveAssetUrl(item.image_url) })));
-    return respond(req, res, { success: true, menuItems: items, pagination: buildPagination(count, pageNum, limitNum) }, { cacheControl: CACHE.adminList });
+    return respond(req, res, { success: true, menuItems: items, pagination: buildPagination(count, pageNum, limitNum) }, { cacheControl: CACHE.adminConfig });
   } catch (err) { return handleControllerError(res, err); }
 }
 
@@ -937,7 +937,7 @@ export async function listPublicVendors(req, res) {
       success: true,
       vendors: items,
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.publicList });
+    }, { cacheControl: CACHE.publicRef });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -971,7 +971,7 @@ export async function getPublicVendor(req, res) {
     return respond(req, res, {
       success: true,
       vendor: { ...vendor, locations: activeLocations },
-    }, { cacheControl: CACHE.publicList });
+    }, { cacheControl: CACHE.publicRef });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -1015,7 +1015,7 @@ export async function getPublicVendorHours(req, res) {
       success: true,
       vendor_id: vendorId,
       locations: activeLocations,
-    }, { cacheControl: CACHE.publicList });
+    }, { cacheControl: CACHE.publicRef });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -1091,7 +1091,7 @@ export async function createVendorOrder(req, res) {
     return respond(req, res, {
       success: true,
       order: { ...data, vendor_name: vendor.name, collection_point_name: cp.name, user_full_name: user.full_name, user_employee_number: user.employee_number },
-    }, { cacheControl: CACHE.create });
+    }, { cacheControl: null });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -1166,7 +1166,7 @@ export async function listVendorOrders(req, res) {
     const { data, error, count } = await query;
     if (error) throw error;
     const orders = (data || []).map(mapOrder);
-    return respond(req, res, { success: true, orders, pagination: buildPagination(count, pageNum, limitNum) }, { cacheControl: CACHE.adminList });
+    return respond(req, res, { success: true, orders, pagination: buildPagination(count, pageNum, limitNum) }, { cacheControl: CACHE.adminOps });
   } catch (err) { return handleControllerError(res, err); }
 }
 
@@ -1186,7 +1186,7 @@ export async function getVendorOrder(req, res) {
         items: items || [],
         timeline: (timeline || []).map((t) => ({ id: t.id, previous_status: t.previous_status, new_status: t.new_status, changed_by: t.changed_by, changed_by_name: t.profiles?.full_name || 'System', changed_at: t.changed_at, reason: t.reason })),
       },
-    });
+    }, { cacheControl: CACHE.adminOps });
   } catch (err) { return handleControllerError(res, err); }
 }
 

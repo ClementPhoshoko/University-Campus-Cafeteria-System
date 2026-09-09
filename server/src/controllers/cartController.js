@@ -125,7 +125,7 @@ export async function listCollectionSlots(req, res) {
         reserved_count: s.reserved_count,
         available: s.reserved_count < s.capacity,
       })),
-    }, { cacheControl: CACHE.publicList });
+    }, { cacheControl: null });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -172,7 +172,7 @@ export async function getCart(req, res) {
         total,
         itemCount,
       },
-    });
+    }, { cacheControl: CACHE.employeeRead });
   } catch (err) {
     return handleControllerError(res, err);
   }

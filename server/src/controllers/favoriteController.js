@@ -41,7 +41,7 @@ export async function listFavoriteVendors(req, res) {
       favoritedAt: f.created_at,
     })).filter((f) => f.vendor);
 
-    return respond(req, res, { success: true, favorites }, { cacheControl: CACHE.publicList });
+    return respond(req, res, { success: true, favorites }, { cacheControl: CACHE.employeeRead });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -125,7 +125,7 @@ export async function listFavoriteMenuItems(req, res) {
       favoritedAt: f.created_at,
     })).filter((f) => f.menuItem);
 
-    return respond(req, res, { success: true, favorites }, { cacheControl: CACHE.publicList });
+    return respond(req, res, { success: true, favorites }, { cacheControl: CACHE.employeeRead });
   } catch (err) {
     return handleControllerError(res, err);
   }

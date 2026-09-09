@@ -245,7 +245,7 @@ export async function listMyOrders(req, res) {
       success: true,
       orders,
       pagination: buildPagination(count, pageNum, limitNum),
-    });
+    }, { cacheControl: CACHE.employeeRead });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -295,7 +295,7 @@ export async function getMyOrder(req, res) {
         }),
         statusHistory: history || [],
       },
-    });
+    }, { cacheControl: CACHE.employeeRead });
   } catch (err) {
     return handleControllerError(res, err);
   }

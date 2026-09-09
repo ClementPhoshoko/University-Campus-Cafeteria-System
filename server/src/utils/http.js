@@ -34,6 +34,17 @@ export function respond(req, res, payload, { status = 200, cacheControl = null }
 }
 
 export const CACHE = {
-  adminList: 'private, max-age=15, must-revalidate',
-  publicList: 'public, max-age=60, must-revalidate',
+  // Admin — private, short-lived; admin is sole user so 30s is safe for config
+  adminConfig: 'private, max-age=30, must-revalidate',
+  // Admin — operational data (orders, audit) changes faster
+  adminOps: 'private, max-age=5, must-revalidate',
+  // Public — CDN-shareable; infrequently changing reference data
+  publicRef: 'public, max-age=300, must-revalidate',
+  // Public — menus change a few times per day
+  publicMenu: 'public, max-age=120, must-revalidate',
+  // Employee — user-specific reads (cart, favorites, orders)
+  employeeRead: 'private, max-age=10, must-revalidate',
+  // Legacy aliases kept for minimal diff during migration
+  adminList: 'private, max-age=30, must-revalidate',
+  publicList: 'public, max-age=120, must-revalidate',
 };

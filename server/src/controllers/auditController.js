@@ -86,7 +86,7 @@ export async function listAuditLogs(req, res) {
       };
     });
 
-    return respond(req, res, { success: true, logs, action_counts, pagination: buildPagination(count, pageNum, limitNum) }, { cacheControl: CACHE.adminList });
+    return respond(req, res, { success: true, logs, action_counts, pagination: buildPagination(count, pageNum, limitNum) }, { cacheControl: CACHE.adminOps });
   } catch (err) {
     return sendInternalError(res, err);
   }
