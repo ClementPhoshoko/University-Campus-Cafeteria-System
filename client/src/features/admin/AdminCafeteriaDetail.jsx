@@ -14,6 +14,7 @@ function StatusPill({ active }) { return <span className={`admin-status admin-st
 
 function normalizePayload(payload) {
   const next = { ...payload };
+  delete next.cover_image_url;
   ['is_active', 'is_express'].forEach((key) => { if (typeof next[key] === 'string') next[key] = next[key] === 'true'; });
   ['latitude', 'longitude', 'level_number'].forEach((key) => { if (next[key] !== '' && next[key] !== undefined) next[key] = Number(next[key]); });
   if (next.floor_id === '') next.floor_id = null;

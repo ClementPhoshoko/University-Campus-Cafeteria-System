@@ -2528,6 +2528,11 @@ components:
         timezone:
           type: string
           example: Africa/Johannesburg
+        cover_image_url:
+          type: string
+          nullable: true
+          readOnly: true
+          description: "Managed via POST /admin/assets (entityType='site'). Returns a signed URL."
         is_active:
           type: boolean
         created_at:
@@ -2606,6 +2611,11 @@ components:
           type: number
           format: double
           nullable: true
+        cover_image_url:
+          type: string
+          nullable: true
+          readOnly: true
+          description: "Managed via POST /admin/assets (entityType='building'). Returns a signed URL."
         is_active:
           type: boolean
         created_at:
@@ -2822,6 +2832,8 @@ components:
         logo_url:
           type: string
           nullable: true
+          readOnly: true
+          description: "Managed via POST /admin/assets (entityType='vendor'). Returns a signed URL."
         status:
           type: string
           enum: [pending, approved, suspended, inactive, rejected]
@@ -2894,6 +2906,8 @@ components:
         logo_url:
           type: string
           nullable: true
+          readOnly: true
+          description: "Managed via POST /admin/assets (entityType='vendor'). Returns a signed URL."
         corporate_catering_enabled:
           type: boolean
         average_rating:
@@ -2916,9 +2930,6 @@ components:
           description: Vendor name (used to derive the slug)
         description:
           type: string
-        logo_url:
-          type: string
-          format: uri
         support_email:
           type: string
           format: email

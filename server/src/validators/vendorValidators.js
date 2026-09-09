@@ -120,9 +120,6 @@ export function normalizeVendor(input, { partial = false } = {}) {
   const description = text(input, 'description', { max: 2000, allowEmptyToNull: true });
   if (description.error) errors.push(description.error); else if (description.value !== undefined && !description.skip) value.description = description.value;
 
-  const logo = text(input, 'logo_url', { max: 500, allowEmptyToNull: true });
-  if (logo.error) errors.push(logo.error); else if (logo.value !== undefined && !logo.skip) value.logo_url = logo.value;
-
   const supportEmail = email(input, 'support_email');
   if (supportEmail.error) errors.push(supportEmail.error); else if (supportEmail.value !== undefined && !supportEmail.skip) value.support_email = supportEmail.value;
 

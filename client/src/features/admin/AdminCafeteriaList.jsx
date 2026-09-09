@@ -78,7 +78,7 @@ function CollectionPointRow({ point }) {
 function NewSiteModal({ onClose, onSubmit, submitting }) {
   const [form, setForm] = useState({ name: '', code: '', address: '', latitude: '', longitude: '', timezone: 'Africa/Johannesburg', is_active: true, cover_file: null });
   const [error, setError] = useState('');
-  const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+  const update = (key, value) => setForm((prev) => ({ ...prev, [key]: key === 'code' ? value.toUpperCase().replace(/[^A-Z0-9_-]/g, '') : value }));
   const submit = async () => {
     if (!form.name.trim()) return setError('Site name is required.');
     try {
@@ -92,7 +92,7 @@ function NewSiteModal({ onClose, onSubmit, submitting }) {
       {error && <div className="vendor-form-error">{error}</div>}
       <div className="admin-form-grid">
         <label className="admin-modal__field"><span>Site name</span><input autoFocus className="admin-input" value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Merchant Place Riverside" /></label>
-        <label className="admin-modal__field"><span>Site code</span><input className="admin-input" value={form.code} onChange={(e) => update('code', e.target.value)} placeholder="MP-RIVERSIDE" /></label>
+        <label className="admin-modal__field"><span>Site code</span><input className="admin-input" value={form.code} onChange={(e) => update('code', e.target.value)} placeholder="MP-RIVERSIDE" maxLength={50} /><span className="admin-modal__hint">Uppercase, digits, hyphens, or underscores only</span></label>
         <label className="admin-modal__field admin-modal__field--full"><span>Address</span><input className="admin-input" value={form.address} onChange={(e) => update('address', e.target.value)} /></label>
         <label className="admin-modal__field"><span>Latitude</span><input className="admin-input" type="number" step="any" value={form.latitude} onChange={(e) => update('latitude', e.target.value)} /></label>
         <label className="admin-modal__field"><span>Longitude</span><input className="admin-input" type="number" step="any" value={form.longitude} onChange={(e) => update('longitude', e.target.value)} /></label>

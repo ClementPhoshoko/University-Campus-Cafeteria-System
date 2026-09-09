@@ -129,9 +129,6 @@ export function normalizeSite(input, { partial = false } = {}) {
   const address = text(input, 'address', { max: 500 });
   if (address.error) errors.push(address.error); else if (address.value !== undefined && !address.skip) value.address = address.value || null;
 
-  const coverImage = text(input, 'cover_image_url', { max: 500, allowEmptyToNull: true });
-  if (coverImage.error) errors.push(coverImage.error); else if (coverImage.value !== undefined && !coverImage.skip) value.cover_image_url = coverImage.value || null;
-
   const latitude = numberRange(input, 'latitude', { min: -90, max: 90 });
   if (latitude.error) errors.push(latitude.error); else if (latitude.value !== undefined && !latitude.skip) value.latitude = latitude.value;
 
@@ -161,9 +158,6 @@ export function normalizeBuilding(input, { partial = false } = {}) {
 
   const address = text(input, 'address', { max: 500 });
   if (address.error) errors.push(address.error); else if (address.value !== undefined && !address.skip) value.address = address.value || null;
-
-  const coverImage = text(input, 'cover_image_url', { max: 500, allowEmptyToNull: true });
-  if (coverImage.error) errors.push(coverImage.error); else if (coverImage.value !== undefined && !coverImage.skip) value.cover_image_url = coverImage.value || null;
 
   const latitude = numberRange(input, 'latitude', { min: -90, max: 90 });
   if (latitude.error) errors.push(latitude.error); else if (latitude.value !== undefined && !latitude.skip) value.latitude = latitude.value;

@@ -101,6 +101,7 @@ create table if not exists public.sites (
   latitude numeric(9,6),
   longitude numeric(9,6),
   timezone text not null default 'Africa/Johannesburg',
+  cover_image_url text,  -- managed via POST /admin/assets (entityType='site')
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -114,6 +115,7 @@ create table if not exists public.buildings (
   address text,
   latitude numeric(9,6),
   longitude numeric(9,6),
+  cover_image_url text,  -- managed via POST /admin/assets (entityType='building')
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -168,7 +170,7 @@ create table if not exists public.vendors (
   name text not null,
   slug text not null unique,
   description text,
-  logo_url text,
+  logo_url text,  -- managed via POST /admin/assets (entityType='vendor')
   status public.vendor_status not null default 'pending',
   support_email text,
   support_phone text,
@@ -261,7 +263,7 @@ create table if not exists public.menu_items (
   category_id uuid references public.menu_categories(id) on delete set null,
   name text not null,
   description text,
-  image_url text,
+  image_url text,  -- managed via POST /admin/assets (entityType='menu_item')
   ingredients text[] not null default '{}',
   portion_description text,
   base_price numeric(12,2) not null check (base_price >= 0),
