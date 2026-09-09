@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { IconClock, IconMapPin, IconStar, IconStarFilled, IconX, IconCheck } from '@tabler/icons-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
@@ -8,39 +8,24 @@ import ReviewStats from '../../components/reviews/ReviewStats.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import BrowseCafeteriaBackground from '../../components/BrowseCafeteriaBackground.jsx';
-import { cafeterias, popularMeals, reviews } from '../home/homeData.js';
-import imgSlusher from '../../assets/drinks/Refreshing_Slusher_with_Ice.png';
-import imgWater from '../../assets/drinks/Merchant_Munchies_H2O_Refreshment.png';
-import imgChocolateMilk from '../../assets/drinks/Indulgent_Chocolate_Milk_Splash.png';
-import imgCoke from '../../assets/drinks/Condensation-Kissed_Coca-Cola_Can.png';
-import imgLager from '../../assets/drinks/Merchant_Munchies_Premium_Lager.png';
+import { useAuth } from '../../hooks/useAuth.js';
+import { listVendorMenu, getVendor, addToCart } from '../../services/employeeApi.js';
+import { reviews } from '../home/homeData.js';
 import './browse-cafeteria.css';
-
-const MENU_CATEGORIES = ['Popular', 'Breakfast', 'Lunch', 'Meals', 'Snacks', 'Drinks'];
 
 const REVIEWS_PER_PAGE = 5;
 
 const RATING_BREAKDOWN = { 5: 142, 4: 58, 3: 22, 2: 6, 1: 2 };
 
-const MENU_ITEMS = [
-  { id: 'menu-item-1', menuItemId: 'chicken-wrap', categoryId: 'popular', name: 'Chicken Wrap', description: 'Grilled chicken, lettuce, tomato, cucumber and mayo.', image: popularMeals[0].image, basePrice: 'R42.00', prepMinutes: 12, status: 'available', dietaryTags: ['Popular'] },
-  { id: 'menu-item-2', menuItemId: 'grilled-chicken-rice', categoryId: 'lunch', name: 'Grilled Chicken & Rice', description: 'Juicy grilled chicken with seasoned rice and vegetables.', image: popularMeals[1].image, basePrice: 'R49.00', prepMinutes: 15, status: 'available', dietaryTags: ['High protein'] },
-  { id: 'menu-item-3', menuItemId: 'beef-burger', categoryId: 'meals', name: 'Beef Burger', description: 'Beef patty, cheese, fresh lettuce, tomato, onion and burger sauce.', image: popularMeals[3].image, basePrice: 'R45.00', prepMinutes: 14, status: 'available', dietaryTags: [] },
-  { id: 'menu-item-4', menuItemId: 'vegetable-pasta', categoryId: 'meals', name: 'Vegetable Pasta', description: 'Penne pasta with mixed vegetables in a creamy herb sauce.', image: popularMeals[8].image, basePrice: 'R40.00', prepMinutes: 12, status: 'available', dietaryTags: ['Vegetarian'] },
-  { id: 'menu-item-5', menuItemId: 'fresh-fruit-cup', categoryId: 'snacks', name: 'Fresh Fruit Cup', description: 'A refreshing mix of seasonal fresh fruits.', image: popularMeals[2].image, basePrice: 'R22.00', prepMinutes: 5, status: 'available', dietaryTags: ['Fresh', 'Healthy'] },
-  { id: 'menu-item-6', menuItemId: 'tea-scones', categoryId: 'breakfast', name: 'Tea & Berry Scones', description: 'Berry scones served with a fresh brewed tea.', image: popularMeals[2].image, basePrice: 'R28.00', prepMinutes: 8, status: 'available', dietaryTags: ['Breakfast'] },
-  { id: 'menu-item-7', menuItemId: 'iced-vanilla-latte', categoryId: 'drinks', name: 'Iced Vanilla Latte', description: 'Smooth espresso blended with cold milk and vanilla syrup.', image: imgSlusher, basePrice: 'R32.00', prepMinutes: 3, status: 'available', dietaryTags: ['Cold'] },
-  { id: 'menu-item-8', menuItemId: 'still-water', categoryId: 'drinks', name: 'Still Water 500ml', description: 'Pure, crisp still water to keep you hydrated throughout the day.', image: imgWater, basePrice: 'R15.00', prepMinutes: 1, status: 'available', dietaryTags: ['Cold', 'Healthy'] },
-  { id: 'menu-item-9', menuItemId: 'chocolate-milkshake', categoryId: 'drinks', name: 'Chocolate Milkshake', description: 'Rich, creamy chocolate milkshake made with real cocoa.', image: imgChocolateMilk, basePrice: 'R28.00', prepMinutes: 4, status: 'available', dietaryTags: ['Cold'] },
-  { id: 'menu-item-10', menuItemId: 'coca-cola', categoryId: 'drinks', name: 'Coca-Cola 330ml', description: 'Classic ice-cold Coca-Cola, perfectly carbonated.', image: imgCoke, basePrice: 'R18.00', prepMinutes: 1, status: 'available', dietaryTags: ['Cold'] },
-  { id: 'menu-item-11', menuItemId: 'premium-lager', categoryId: 'drinks', name: 'Premium Lager 330ml', description: 'Crisp, refreshing craft lager brewed locally.', image: imgLager, basePrice: 'R35.00', prepMinutes: 2, status: 'available', dietaryTags: ['Cold'] },
-  { id: 'menu-item-12', menuItemId: 'fresh-orange-juice', categoryId: 'drinks', name: 'Fresh Orange Juice', description: 'Freshly squeezed orange juice, no added sugar.', image: imgSlusher, basePrice: 'R24.00', prepMinutes: 3, status: 'available', dietaryTags: ['Fresh', 'Healthy'] },
-];
+function formatPrice(price) {
+  const num = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.]/g, '')) : price;
+  return `R${Number(num || 0).toFixed(2)}`;
+}
 
-function CategoryTabs({ activeCategory, onChange, counts }) {
+function CategoryTabs({ activeCategory, onChange, counts, categoryNames }) {
   return (
     <nav className="browse_cafeteria-categories" aria-label="Menu categories">
-      {MENU_CATEGORIES.map((category) => (
+      {categoryNames.map((category) => (
         <button
           key={category}
           type="button"
@@ -209,38 +194,82 @@ export default function BrowseCafeteriaPage() {
   const navigate = useNavigate();
   const { cafeteriaId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeCategory, setActiveCategory] = useState('Popular');
+  const { session } = useAuth();
+  const token = session?.access_token;
+
+  const [vendor, setVendor] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeCategory, setActiveCategory] = useState('All');
   const [addedItems, setAddedItems] = useState([]);
   const [selectedRating, setSelectedRating] = useState(null);
   const [showAddReview, setShowAddReview] = useState(false);
-  const cafeteria = cafeterias.find((item) => item.id === cafeteriaId) || cafeterias[0];
 
   const isReviewsView = searchParams.get('view') === 'reviews';
   const rating = 4.6;
   const totalReviews = 230;
   const hasOrdered = true;
 
-  const visibleItems = useMemo(() => {
-    if (activeCategory === 'Popular') return MENU_ITEMS.filter((item) => item.categoryId === 'popular' || item.categoryId === 'lunch');
-    return MENU_ITEMS.filter((item) => item.categoryId === activeCategory.toLowerCase());
-  }, [activeCategory]);
+  useEffect(() => {
+    if (!token || !cafeteriaId) return;
+    let cancelled = false;
+    setLoading(true);
 
-  const categoryCounts = useMemo(() => ({
-    popular: MENU_ITEMS.filter((item) => item.categoryId === 'popular' || item.categoryId === 'lunch').length,
-    breakfast: MENU_ITEMS.filter((item) => item.categoryId === 'breakfast').length,
-    lunch: MENU_ITEMS.filter((item) => item.categoryId === 'lunch').length,
-    meals: MENU_ITEMS.filter((item) => item.categoryId === 'meals').length,
-    snacks: MENU_ITEMS.filter((item) => item.categoryId === 'snacks').length,
-    drinks: MENU_ITEMS.filter((item) => item.categoryId === 'drinks').length,
-  }), []);
+    Promise.all([
+      getVendor(cafeteriaId, { token }),
+      listVendorMenu(cafeteriaId, { token }),
+    ]).then(([vendorRes, menuRes]) => {
+      if (cancelled) return;
+      setVendor(vendorRes?.vendor || null);
+      const cats = menuRes?.categories || [];
+      setCategories(cats);
+      if (cats.length) setActiveCategory('All');
+      setError(null);
+    }).catch((err) => {
+      if (cancelled) return;
+      setError(err?.message || 'Failed to load menu');
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [cafeteriaId, token]);
+
+  const allItems = useMemo(() => {
+    return categories.flatMap((cat) => cat.items || []);
+  }, [categories]);
+
+  const categoryNames = useMemo(() => {
+    return ['All', ...categories.map((c) => c.name)];
+  }, [categories]);
+
+  const categoryCounts = useMemo(() => {
+    const counts = { all: allItems.length };
+    categories.forEach((cat) => { counts[cat.name.toLowerCase()] = (cat.items || []).length; });
+    return counts;
+  }, [categories, allItems]);
+
+  const visibleItems = useMemo(() => {
+    if (activeCategory === 'All') return allItems;
+    const cat = categories.find((c) => c.name === activeCategory);
+    return cat?.items || [];
+  }, [activeCategory, categories, allItems]);
 
   const filteredReviews = useMemo(() => {
     if (!selectedRating) return reviews;
     return reviews.filter((r) => r.stars === selectedRating);
   }, [selectedRating]);
 
-  const addItem = (itemId) => {
-    setAddedItems((current) => (current.includes(itemId) ? current : [...current, itemId]));
+  const addItem = async (itemId) => {
+    if (!token) return;
+    try {
+      await addToCart({ menuItemId: itemId, quantity: 1, options: [] }, { token });
+      setAddedItems((current) => (current.includes(itemId) ? current : [...current, itemId]));
+      setTimeout(() => setAddedItems((current) => current.filter((id) => id !== itemId)), 2000);
+    } catch (err) {
+      console.error('Failed to add to cart:', err);
+    }
   };
 
   const showReviews = () => {
@@ -253,6 +282,8 @@ export default function BrowseCafeteriaPage() {
     console.log('Submitting review:', reviewData);
     await new Promise((resolve) => setTimeout(resolve, 1000));
   };
+
+  const cafeteria = vendor ? { id: vendor.id, name: vendor.name, description: vendor.description, image: vendor.logo_url, status: 'open' } : { id: cafeteriaId, name: 'Loading...', description: '', image: null, status: 'open' };
 
   return (
     <PageContainer className="browse_cafeteria-page-container">
@@ -290,7 +321,7 @@ export default function BrowseCafeteriaPage() {
 
         {!isReviewsView && (
           <div className="browse_cafeteria-controls">
-            <CategoryTabs activeCategory={activeCategory} onChange={setActiveCategory} counts={categoryCounts} />
+            <CategoryTabs activeCategory={activeCategory} onChange={setActiveCategory} counts={categoryCounts} categoryNames={categoryNames} />
             <SearchRow />
           </div>
         )}
@@ -318,13 +349,28 @@ export default function BrowseCafeteriaPage() {
               </div>
               <span className="browse_cafeteria-item-count">{visibleItems.length} items</span>
             </div>
-            {visibleItems.length > 0 ? (
+            {loading ? (
+              <div className="browse_cafeteria-empty">
+                <p>Loading menu...</p>
+              </div>
+            ) : error ? (
+              <div className="browse_cafeteria-empty">
+                <h2>Unable to load menu</h2>
+                <p>{error}</p>
+              </div>
+            ) : visibleItems.length > 0 ? (
               <div className="browse_cafeteria-item-list">
                 {visibleItems.map((item) => (
                   <FoodCard
                     key={item.id}
-                    {...item}
-                    price={item.basePrice}
+                    id={item.id}
+                    name={item.name}
+                    price={formatPrice(item.base_price)}
+                    image={item.image_url}
+                    description={item.description}
+                    status={item.status}
+                    prepMinutes={item.prep_minutes}
+                    dietaryTags={item.dietary_tags || []}
                     variant="browse"
                     added={addedItems.includes(item.id)}
                     onAdd={() => addItem(item.id)}

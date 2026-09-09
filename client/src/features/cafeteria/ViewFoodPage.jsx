@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { IconClock, IconCheck, IconPlus, IconFlame, IconLeaf, IconInfoCircle } from '@tabler/icons-react';
 import { useParams } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
@@ -7,94 +7,125 @@ import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import ViewFoodBackground from '../../components/ViewFoodBackground.jsx';
-import { cafeterias, popularMeals } from '../home/homeData.js';
+import { useAuth } from '../../hooks/useAuth.js';
+import { getMenuItem, getVendor, addToCart } from '../../services/employeeApi.js';
 import './ViewFoodPage.css';
 
-const SAMPLE_MENU_ITEM = {
-  id: 'chicken-wrap',
-  name: 'Chicken Wrap & Salad',
-  description: 'Grilled chicken, lettuce, tomato, cucumber and mayo wrapped in a soft tortilla with a side of fresh garden salad.',
-  image: popularMeals[0].image,
-  basePrice: 'R45.00',
-  prepMinutes: 12,
-  status: 'available',
-  dietaryTags: ['Halal', 'High Protein'],
-  allergens: ['Gluten', 'Dairy'],
-  optionGroups: [
-    {
-      id: 'size',
-      name: 'Size',
-      selectionType: 'single',
-      isRequired: true,
-      options: [
-        { id: 'regular', name: 'Regular', priceDelta: 'R0.00' },
-        { id: 'large', name: 'Large', priceDelta: 'R12.00' },
-      ],
-    },
-    {
-      id: 'extras',
-      name: 'Extras',
-      selectionType: 'multiple',
-      isRequired: false,
-      options: [
-        { id: 'cheese', name: 'Extra Cheese', priceDelta: 'R5.00' },
-        { id: 'bacon', name: 'Crispy Bacon', priceDelta: 'R8.00' },
-        { id: 'avocado', name: 'Avocado', priceDelta: 'R10.00' },
-      ],
-    },
-    {
-      id: 'sauce',
-      name: 'Sauce',
-      selectionType: 'single',
-      isRequired: true,
-      options: [
-        { id: 'mayo', name: 'Mayo', priceDelta: 'R0.00' },
-        { id: 'bbq', name: 'BBQ Sauce', priceDelta: 'R0.00' },
-        { id: 'sweet-chilli', name: 'Sweet Chilli', priceDelta: 'R0.00' },
-        { id: 'peri-peri', name: 'Peri-Peri', priceDelta: 'R0.00' },
-      ],
-    },
-  ],
-};
-
-const SUGGESTED_ITEMS = popularMeals.slice(0, 6);
+function formatPrice(price) {
+  const num = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.]/g, '')) : price;
+  return `R${Number(num || 0).toFixed(2)}`;
+}
 
 export default function ViewFoodPage() {
   const { cafeteriaId, menuItemId } = useParams();
+  const { session } = useAuth();
+  const token = session?.access_token;
+
+  const [menuItem, setMenuItem] = useState(null);
+  const [vendor, setVendor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState({});
   const [addedToCart, setAddedToCart] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
   const specialInstructionsRef = useRef(null);
-  const cafeteria = cafeterias.find((c) => c.id === cafeteriaId) || cafeterias[0];
-  const menuItem = SAMPLE_MENU_ITEM;
+
+  useEffect(() => {
+    if (!token || !cafeteriaId || !menuItemId) return;
+    let cancelled = false;
+    setLoading(true);
+
+    Promise.all([
+      getVendor(cafeteriaId, { token }),
+      getMenuItem(cafeteriaId, menuItemId, { token }),
+    ]).then(([vendorRes, itemRes]) => {
+      if (cancelled) return;
+      setVendor(vendorRes?.vendor || null);
+      setMenuItem(itemRes?.menuItem || null);
+      setError(null);
+    }).catch((err) => {
+      if (cancelled) return;
+      setError(err?.message || 'Failed to load item');
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [cafeteriaId, menuItemId, token]);
 
   const calculateTotal = () => {
-    let total = parseFloat(menuItem.basePrice.replace('R', ''));
+    if (!menuItem) return 'R0.00';
+    let total = menuItem.base_price || 0;
     Object.values(selectedOptions).forEach((option) => {
       if (option) {
         if (Array.isArray(option)) {
-          option.forEach((opt) => {
-            total += parseFloat(opt.priceDelta.replace('R', ''));
-          });
+          option.forEach((opt) => { total += opt.price_delta || 0; });
         } else {
-          total += parseFloat(option.priceDelta.replace('R', ''));
+          total += option.price_delta || 0;
         }
       }
     });
-    return `R${total.toFixed(2)}`;
+    return formatPrice(total);
   };
 
   const handleOptionChange = (groupId, value) => {
-    setSelectedOptions((prev) => ({
-      ...prev,
-      [groupId]: value,
-    }));
+    setSelectedOptions((prev) => ({ ...prev, [groupId]: value }));
   };
 
-  const handleAddToCart = () => {
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
+  const handleAddToCart = async () => {
+    if (!token || addingToCart || !menuItem) return;
+    setAddingToCart(true);
+    try {
+      const options = [];
+      Object.entries(selectedOptions).forEach(([groupId, value]) => {
+        const group = menuItem.option_groups?.find((g) => g.id === groupId);
+        if (!group || !value) return;
+        if (Array.isArray(value)) {
+          value.forEach((opt) => { options.push({ optionId: opt.id, priceDelta: opt.price_delta || 0 }); });
+        } else {
+          options.push({ optionId: value.id, priceDelta: value.price_delta || 0 });
+        }
+      });
+      await addToCart({
+        menuItemId: menuItem.id,
+        quantity,
+        options,
+        specialInstructions: specialInstructionsRef.current?.value || null,
+      }, { token });
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 2000);
+    } catch (err) {
+      console.error('Failed to add to cart:', err);
+    } finally {
+      setAddingToCart(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <PageContainer className="view-food-page-container">
+        <ViewFoodBackground />
+        <main className="view-food-page">
+          <div className="view-food__empty"><p>Loading...</p></div>
+        </main>
+      </PageContainer>
+    );
+  }
+
+  if (error || !menuItem) {
+    return (
+      <PageContainer className="view-food-page-container">
+        <ViewFoodBackground />
+        <main className="view-food-page">
+          <div className="view-food__empty"><h2>Item not found</h2><p>{error || 'This menu item could not be loaded.'}</p></div>
+        </main>
+      </PageContainer>
+    );
+  }
+
+  const cafeteriaName = vendor?.name || 'Cafeteria';
+  const suggestedItems = [];
 
   return (
     <PageContainer className="view-food-page-container">
@@ -103,7 +134,7 @@ export default function ViewFoodPage() {
         <Breadcrumb
           items={[
             { label: 'Cafeterias', to: '/cafeterias' },
-            { label: cafeteria.name, to: `/cafeterias/${cafeteriaId}` },
+            { label: cafeteriaName, to: `/cafeterias/${cafeteriaId}` },
             { label: menuItem.name }
           ]}
         />
@@ -111,7 +142,7 @@ export default function ViewFoodPage() {
         <div className="view-food__content">
           <div className="view-food__main">
             <div className="view-food__image-wrap">
-              <img src={menuItem.image} alt={menuItem.name} className="view-food__image" />
+              <img src={menuItem.image_url} alt={menuItem.name} className="view-food__image" />
               {menuItem.status !== 'available' && (
                 <div className="view-food__status-badge">
                   {menuItem.status === 'sold_out' ? 'Sold Out' : 'Unavailable'}
@@ -126,19 +157,19 @@ export default function ViewFoodPage() {
               </div>
 
               <div className="view-food__section view-food__section--row">
-                <span className="view-food__price">{menuItem.basePrice}</span>
+                <span className="view-food__price">{formatPrice(menuItem.base_price)}</span>
                 <span className="view-food__divider" />
                 <span className="view-food__prep">
                   <IconClock size={14} stroke={1.8} />
-                  {menuItem.prepMinutes} min
+                  {menuItem.prep_minutes} min
                 </span>
               </div>
 
-              {menuItem.dietaryTags.length > 0 && (
+              {menuItem.dietary_tags?.length > 0 && (
                 <div className="view-food__section">
                   <span className="view-food__section-label">Dietary</span>
                   <div className="view-food__tags">
-                    {menuItem.dietaryTags.map((tag) => (
+                    {menuItem.dietary_tags.map((tag) => (
                       <span key={tag} className="view-food__tag">
                         {tag === 'Halal' && <IconCheck size={14} stroke={2} />}
                         {tag === 'High Protein' && <IconFlame size={14} stroke={2} />}
@@ -150,13 +181,13 @@ export default function ViewFoodPage() {
                 </div>
               )}
 
-              {menuItem.allergens.length > 0 && (
+              {menuItem.allergens?.length > 0 && (
                 <div className="view-food__section">
                   <span className="view-food__section-label">
                     <IconInfoCircle size={14} stroke={1.8} />
                     Contains
                   </span>
-                  <span className="view-food__allergen-list">{menuItem.allergens.join(', ')}</span>
+                  <span className="view-food__allergen-list">{menuItem.allergens.map((a) => a.name || a).join(', ')}</span>
                 </div>
               )}
             </div>
@@ -167,15 +198,15 @@ export default function ViewFoodPage() {
               <h2 className="view-food__section-title">Customize</h2>
 
               <div className="view-food__options">
-                {menuItem.optionGroups.map((group) => (
+                {(menuItem.option_groups || []).map((group) => (
                   <div key={group.id} className="view-food__option-group">
                     <div className="view-food__option-header">
                       <span className="view-food__option-name">
                         {group.name}
-                        {group.isRequired && <span className="view-food__required">*</span>}
+                        {group.is_required && <span className="view-food__required">*</span>}
                       </span>
                       <span className="view-food__option-hint">
-                        {group.selectionType === 'single' ? 'Select one' : 'Select multiple'}
+                        {group.selection_type === 'single' ? 'Select one' : 'Select multiple'}
                       </span>
                     </div>
                     <CustomDropdown
@@ -184,7 +215,7 @@ export default function ViewFoodPage() {
                       options={group.options}
                       value={selectedOptions[group.id]}
                       onChange={(value) => handleOptionChange(group.id, value)}
-                      multiple={group.selectionType === 'multiple'}
+                      multiple={group.selection_type === 'multiple'}
                     />
                   </div>
                 ))}
@@ -219,7 +250,7 @@ export default function ViewFoodPage() {
                 type="button"
                 className={`view-food__add-btn${addedToCart ? ' view-food__add-btn--added' : ''}`}
                 onClick={handleAddToCart}
-                disabled={menuItem.status !== 'available'}
+                disabled={menuItem.status !== 'available' || addingToCart}
               >
                 {addedToCart ? (
                   <>
@@ -229,7 +260,7 @@ export default function ViewFoodPage() {
                 ) : (
                   <>
                     <IconPlus size={18} stroke={2.5} />
-                    <span>Add to Cart · {calculateTotal()}</span>
+                    <span>{addingToCart ? 'Adding...' : `Add to Cart · ${calculateTotal()}`}</span>
                   </>
                 )}
               </button>
@@ -237,21 +268,25 @@ export default function ViewFoodPage() {
           </div>
         </div>
 
-        <section className="view-food__suggestions">
-          <div className="view-food__suggestions-header">
-            <h2 className="view-food__suggestions-title">We think you might like these</h2>
-          </div>
-          <div className="view-food__suggestions-scroll">
-            {SUGGESTED_ITEMS.map((item) => (
-              <FoodCard
-                key={item.id}
-                {...item}
-                price={item.price}
-                to={`/cafeterias/${item.cafeteriaId}/menu/${item.id}`}
-              />
-            ))}
-          </div>
-        </section>
+        {suggestedItems.length > 0 && (
+          <section className="view-food__suggestions">
+            <div className="view-food__suggestions-header">
+              <h2 className="view-food__suggestions-title">We think you might like these</h2>
+            </div>
+            <div className="view-food__suggestions-scroll">
+              {suggestedItems.map((item) => (
+                <FoodCard
+                  key={item.id}
+                  id={item.id}
+                  name={item.name}
+                  price={formatPrice(item.base_price)}
+                  image={item.image_url}
+                  to={`/cafeterias/${cafeteriaId}/menu/${item.id}`}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </PageContainer>
   );

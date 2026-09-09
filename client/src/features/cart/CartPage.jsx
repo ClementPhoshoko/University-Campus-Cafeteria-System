@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { IconClock, IconMapPin } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
@@ -9,83 +9,61 @@ import CartBackground from '../../components/CartBackground.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import OrderConfirmation from '../../components/orders/OrderConfirmation.jsx';
 import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.png';
-import { cafeterias, popularMeals } from '../home/homeData.js';
+import { useAuth } from '../../hooks/useAuth.js';
+import { getCart, updateCartItem, removeCartItem, createOrder } from '../../services/employeeApi.js';
 import './CartPage.css';
-
-const SAMPLE_CART = {
-  id: 'cart-1',
-  vendor: {
-    ...cafeterias[0],
-    location: 'Building A, Ground Floor',
-    estimatedPrepMinutes: 15,
-  },
-  expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
-  items: [
-    {
-      id: 'item-1',
-      menuItem: popularMeals[0],
-      quantity: 2,
-      unitPriceSnapshot: 45.00,
-      selectedOptions: [
-        { id: 'opt-1', name: 'Large', priceDelta: 12.00 },
-        { id: 'opt-2', name: 'Extra Cheese', priceDelta: 5.00 },
-      ],
-      specialInstructions: 'No mayo please',
-    },
-    {
-      id: 'item-2',
-      menuItem: popularMeals[1],
-      quantity: 1,
-      unitPriceSnapshot: 52.00,
-      selectedOptions: [
-        { id: 'opt-3', name: 'Brown Rice', priceDelta: 0.00 },
-      ],
-      specialInstructions: '',
-    },
-  ],
-  collectionSlots: [
-    { id: 'slot-1', starts_at: '2024-01-01T12:00:00Z', ends_at: '2024-01-01T12:15:00Z', capacity: 10, reserved_count: 3, paused: false },
-    { id: 'slot-2', starts_at: '2024-01-01T12:15:00Z', ends_at: '2024-01-01T12:30:00Z', capacity: 10, reserved_count: 8, paused: false },
-    { id: 'slot-3', starts_at: '2024-01-01T12:30:00Z', ends_at: '2024-01-01T12:45:00Z', capacity: 10, reserved_count: 10, paused: false },
-    { id: 'slot-4', starts_at: '2024-01-01T12:45:00Z', ends_at: '2024-01-01T13:00:00Z', capacity: 10, reserved_count: 0, paused: false },
-    { id: 'slot-5', starts_at: '2024-01-01T13:00:00Z', ends_at: '2024-01-01T13:15:00Z', capacity: 10, reserved_count: 5, paused: false },
-    { id: 'slot-6', starts_at: '2024-01-01T13:15:00Z', ends_at: '2024-01-01T13:30:00Z', capacity: 10, reserved_count: 0, paused: true },
-  ],
-};
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const [cart, setCart] = useState(SAMPLE_CART);
+  const { session } = useAuth();
+  const token = session?.access_token;
+
+  const [cart, setCart] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [orderStatus, setOrderStatus] = useState(null);
+  const [createdOrderId, setCreatedOrderId] = useState(null);
 
-  const subtotal = cart.items.reduce((sum, item) => {
-    const optionsTotal = item.selectedOptions.reduce((optSum, opt) => optSum + opt.priceDelta, 0);
-    return sum + (item.unitPriceSnapshot + optionsTotal) * item.quantity;
-  }, 0);
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    setLoading(true);
+    getCart({ token })
+      .then((res) => {
+        if (!cancelled) setCart(res?.cart || null);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [token]);
 
-  const serviceFee = subtotal * 0.05;
-  const total = subtotal + serviceFee;
+  const subtotal = cart?.subtotal || 0;
+  const serviceFee = cart?.serviceFee || 0;
+  const total = cart?.total || 0;
 
-  const handleUpdateQuantity = (itemId, newQuantity) => {
+  const handleUpdateQuantity = async (itemId, newQuantity) => {
+    if (!token) return;
     if (newQuantity < 1) {
       handleRemoveItem(itemId);
       return;
     }
-    setCart((prev) => ({
-      ...prev,
-      items: prev.items.map((item) =>
-        item.id === itemId ? { ...item, quantity: newQuantity } : item
-      ),
-    }));
+    try {
+      const res = await updateCartItem(itemId, { quantity: newQuantity }, { token });
+      if (res?.cart) setCart((prev) => prev ? { ...prev, ...res.cart } : prev);
+    } catch (err) {
+      console.error('Failed to update cart item:', err);
+    }
   };
 
-  const handleRemoveItem = (itemId) => {
-    setCart((prev) => ({
-      ...prev,
-      items: prev.items.filter((item) => item.id !== itemId),
-    }));
+  const handleRemoveItem = async (itemId) => {
+    if (!token) return;
+    try {
+      const res = await removeCartItem(itemId, { token });
+      if (res?.cart) setCart((prev) => prev ? { ...prev, ...res.cart } : prev);
+    } catch (err) {
+      console.error('Failed to remove cart item:', err);
+    }
   };
 
   const handleSelectSlot = (slotId) => {
@@ -93,59 +71,64 @@ export default function CartPage() {
   };
 
   const handlePlaceOrder = async () => {
+    if (!token || !selectedSlot || !cart) return;
     setOrderStatus('loading');
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setOrderStatus('success');
+    try {
+      const res = await createOrder({
+        vendorId: cart.vendor?.id,
+        vendorLocationId: cart.vendorLocationId,
+        collectionSlotId: selectedSlot,
+        items: [],
+        notes: specialInstructions || null,
+      }, { token });
+      setCreatedOrderId(res?.order?.id || null);
+      setOrderStatus('success');
+    } catch (err) {
+      console.error('Failed to place order:', err);
+      setOrderStatus(null);
+    }
   };
 
   const handleCloseOrderStatus = () => {
     setOrderStatus(null);
     if (orderStatus === 'success') {
-      setCart(prev => ({ ...prev, items: [] }));
+      setCart(null);
+      navigate('/orders');
     }
   };
 
   if (orderStatus === 'success') {
     return (
       <OrderConfirmation
-        orderId="ord-preparing-001"
-        onContinue={() => {
-          setOrderStatus(null);
-          setCart(prev => ({ ...prev, items: [] }));
-        }}
+        orderId={createdOrderId}
+        onContinue={handleCloseOrderStatus}
       />
     );
   }
 
-  const formatExpiry = () => {
-    const now = new Date();
-    const diff = cart.expiresAt - now;
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}h ${minutes}m`;
-  };
-
-  if (cart.items.length === 0) {
+  if (loading) {
     return (
       <PageContainer className="cart-page-container">
         <CartBackground />
         <div className="cart-page">
-          <Breadcrumb
-            items={[
-              { label: 'Your Cart' }
-            ]}
-          />
+          <p style={{ color: 'var(--color-text-secondary)' }}>Loading cart...</p>
+        </div>
+      </PageContainer>
+    );
+  }
 
+  if (!cart || !cart.items || cart.items.length === 0) {
+    return (
+      <PageContainer className="cart-page-container">
+        <CartBackground />
+        <div className="cart-page">
+          <Breadcrumb items={[{ label: 'Your Cart' }]} />
           <div className="cart-empty">
             <img src={avoidQueuesImg} alt="" className="cart-empty__image" />
             <div className="cart-empty__content">
               <h2 className="cart-empty__title">Your cart is empty</h2>
               <p className="cart-empty__text">Start your order and fill it with delicious items from our campus cafeterias</p>
-              <button
-                type="button"
-                className="cart-empty__btn"
-                onClick={() => navigate('/cafeterias')}
-              >
+              <button type="button" className="cart-empty__btn" onClick={() => navigate('/cafeterias')}>
                 Order Now
               </button>
             </div>
@@ -155,41 +138,43 @@ export default function CartPage() {
     );
   }
 
+  const vendorName = cart.vendor?.name || 'Vendor';
+  const vendorImage = cart.vendor?.logo_url;
+
+  const formatExpiry = () => {
+    if (!cart.expiresAt) return '';
+    const now = new Date();
+    const diff = new Date(cart.expiresAt) - now;
+    if (diff <= 0) return 'Expired';
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m`;
+  };
+
   return (
     <PageContainer className="cart-page-container">
       <CartBackground />
       <div className="cart-page">
-        <Breadcrumb
-          items={[
-            { label: 'Cafeterias', to: '/cafeterias' },
-            { label: 'Your Cart' }
-          ]}
-        />
+        <Breadcrumb items={[{ label: 'Cafeterias', to: '/cafeterias' }, { label: 'Your Cart' }]} />
 
         <div className="cart__content">
           <div className="cart__main">
             <div className="cart__header">
               <div className="cart__vendor">
-                <div className="cart__vendor-image">
-                  <img src={cart.vendor.image} alt={cart.vendor.name} />
-                </div>
-                <div className="cart__vendor-details">
-                  <h1 className="cart__vendor-name">{cart.vendor.name}</h1>
-                  <div className="cart__vendor-meta">
-                    <span className="cart__vendor-location">
-                      <IconMapPin size={13} stroke={1.5} />
-                      {cart.vendor.location}
-                    </span>
-                    <span className="cart__vendor-prep">
-                      <IconClock size={13} stroke={1.5} />
-                      {cart.vendor.estimatedPrepMinutes} min
-                    </span>
+                {vendorImage && (
+                  <div className="cart__vendor-image">
+                    <img src={vendorImage} alt={vendorName} />
                   </div>
+                )}
+                <div className="cart__vendor-details">
+                  <h1 className="cart__vendor-name">{vendorName}</h1>
                 </div>
-                <div className="cart__expiry">
-                  <span className="cart__expiry-label">Cart expires in</span>
-                  <span className="cart__expiry-time">{formatExpiry()}</span>
-                </div>
+                {cart.expiresAt && (
+                  <div className="cart__expiry">
+                    <span className="cart__expiry-label">Cart expires in</span>
+                    <span className="cart__expiry-time">{formatExpiry()}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -200,7 +185,7 @@ export default function CartPage() {
                   <CartItem
                     key={item.id}
                     item={item}
-                    to={`/cafeterias/${item.menuItem.cafeteriaId}/menu/${item.menuItem.id}`}
+                    to={item.menuItem ? `/cafeterias/${cart.vendor?.id}/menu/${item.menuItem.id}` : '#'}
                     onUpdateQuantity={handleUpdateQuantity}
                     onRemove={handleRemoveItem}
                   />
@@ -224,8 +209,7 @@ export default function CartPage() {
                 }}
               />
             </div>
-
-            </div>
+          </div>
 
           <div className="cart__sidebar">
             <CartSummary
@@ -234,33 +218,10 @@ export default function CartPage() {
               total={total}
               selectedSlot={selectedSlot}
               onSelectSlot={handleSelectSlot}
-              slots={cart.collectionSlots}
-              itemCount={cart.items.reduce((sum, item) => sum + item.quantity, 0)}
+              slots={cart.collectionSlots || []}
+              itemCount={cart.itemCount || 0}
               onPlaceOrder={handlePlaceOrder}
             />
-          </div>
-        </div>
-
-        <div className="cart__suggestions">
-          <div className="cart__suggestions-header">
-            <h2 className="cart__suggestions-title">More at {cart.vendor.name}</h2>
-          </div>
-          <div className="cart__suggestions-scroll">
-            {popularMeals
-              .filter(meal => meal.cafeteriaId === cart.vendor.id)
-              .map(meal => (
-                <FoodCard
-                  key={meal.id}
-                  id={meal.id}
-                  name={meal.name}
-                  price={meal.price}
-                  vendor={meal.vendor}
-                  image={meal.image}
-                  bestSeller={meal.bestSeller}
-                  description={meal.description}
-                  to={`/cafeteria/${cart.vendor.id}/item/${meal.id}`}
-                />
-              ))}
           </div>
         </div>
       </div>

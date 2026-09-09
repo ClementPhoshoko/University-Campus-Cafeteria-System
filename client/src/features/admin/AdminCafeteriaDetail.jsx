@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { IconBuilding, IconBuildingStore, IconCheck, IconChevronLeft, IconClipboardCheck, IconEdit, IconMapPin, IconPlus, IconPower } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
+import SkeletonPageHeader from '../../components/ui/SkeletonPageHeader.jsx';
+import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import {
   createBuilding, createCollectionPoint, createDeliveryLocation, createFloor, getBuilding, getSite, listBuildings, listBuildingVendors, listCollectionPoints, listDeliveryLocations, listFloors, updateBuilding, updateCollectionPoint, updateDeliveryLocation, updateFloor, updateSite, uploadAdminAsset,
@@ -70,7 +72,7 @@ export default function AdminCafeteriaDetail() {
 
   const mutate = async (operation) => { setMutating(true); try { await operation(); setModal(null); await load(); } finally { setMutating(false); } };
   const title = entity?.name || 'Location';
-  if (loading) return <div className="admin-vendor-detail__loading"><div className="admin-vendor-detail__loading-spinner" /><p>Loading location...</p></div>;
+  if (loading) return <div className="admin-vendor-detail"><SkeletonPageHeader stats={0} /><SkeletonTable rows={4} columns={3} /></div>;
   if (!entity || error) return <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>Location not found</h3><p>{error || 'This site or building may have been removed.'}</p><Link to="/admin/cafeterias" className="admin-action--ghost"><IconChevronLeft size={13} /> Back to locations</Link></div>;
 
   const isSite = kind === 'site';

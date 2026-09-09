@@ -6,8 +6,8 @@ import PageHeader from '../../components/layout/PageHeader.jsx';
 import OrdersBackground from '../../components/OrdersBackground.jsx';
 import OrderList from '../../components/orders/OrderList.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
-import { fetchOrders } from '../../services/orders.js';
-import { ORDER_STATUSES } from './orderMockData.js';
+import { useAuth } from '../../hooks/useAuth.js';
+import { listMyOrders } from '../../services/employeeApi.js';
 import './orders.css';
 
 const FILTERS = [
@@ -17,46 +17,53 @@ const FILTERS = [
   { id: 'cancelled', label: 'Cancelled' },
 ];
 
-const ACTIVE_STATUSES = [
-  ORDER_STATUSES.PAYMENT_PENDING,
-  ORDER_STATUSES.SUBMITTED,
-  ORDER_STATUSES.PAYMENT_CONFIRMED,
-  ORDER_STATUSES.RECEIVED_BY_VENDOR,
-  ORDER_STATUSES.ACCEPTED,
-  ORDER_STATUSES.PREPARING,
-  ORDER_STATUSES.READY_FOR_COLLECTION,
-];
-
 const PER_PAGE = 5;
 
 export default function OrdersPage() {
+  const { session } = useAuth();
+  const token = session?.access_token;
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [counts, setCounts] = useState({ all: 0, active: 0, completed: 0, cancelled: 0 });
 
   useEffect(() => {
+    if (!token) return;
     let cancelled = false;
-    fetchOrders()
-      .then((data) => {
+
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        const [allRes, activeRes, completedRes, cancelledRes] = await Promise.all([
+          listMyOrders({ page: 1, limit: 100, token }),
+          listMyOrders({ page: 1, limit: 100, status: 'active', token }),
+          listMyOrders({ page: 1, limit: 100, status: 'completed', token }),
+          listMyOrders({ page: 1, limit: 100, status: 'cancelled', token }),
+        ]);
         if (!cancelled) {
-          setOrders(data);
-          setLoading(false);
+          setOrders(allRes?.orders || []);
+          setCounts({
+            all: allRes?.pagination?.total || (allRes?.orders || []).length,
+            active: activeRes?.pagination?.total || (activeRes?.orders || []).length,
+            completed: completedRes?.pagination?.total || (completedRes?.orders || []).length,
+            cancelled: cancelledRes?.pagination?.total || (cancelledRes?.orders || []).length,
+          });
         }
-      })
-      .catch(() => {
+      } catch (err) {
+        console.error('Failed to fetch orders:', err);
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    };
+
+    fetchAll();
     return () => { cancelled = true; };
-  }, []);
+  }, [token]);
 
   const filteredOrders = useMemo(() => {
-    if (activeFilter === 'all') return orders;
-    if (activeFilter === 'active') return orders.filter((o) => ACTIVE_STATUSES.includes(o.status));
-    if (activeFilter === 'completed') return orders.filter((o) => o.status === ORDER_STATUSES.COMPLETED || o.status === ORDER_STATUSES.COLLECTED);
-    if (activeFilter === 'cancelled') return orders.filter((o) => o.status === ORDER_STATUSES.CANCELLED || o.status === ORDER_STATUSES.REJECTED || o.status === ORDER_STATUSES.REFUNDED);
     return orders;
-  }, [orders, activeFilter]);
+  }, [orders]);
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PER_PAGE));
 
@@ -80,28 +87,18 @@ export default function OrdersPage() {
         />
 
         <div className="orders-filters" role="group" aria-label="Order filters">
-          {FILTERS.map((filter) => {
-            const count = filter.id === 'all'
-              ? orders.length
-              : filter.id === 'active'
-                ? orders.filter((o) => ACTIVE_STATUSES.includes(o.status)).length
-                : filter.id === 'completed'
-                  ? orders.filter((o) => o.status === ORDER_STATUSES.COMPLETED || o.status === ORDER_STATUSES.COLLECTED).length
-                  : orders.filter((o) => o.status === ORDER_STATUSES.CANCELLED || o.status === ORDER_STATUSES.REJECTED || o.status === ORDER_STATUSES.REFUNDED).length;
-
-            return (
-              <button
-                key={filter.id}
-                type="button"
-                className={`orders-filter-chip${activeFilter === filter.id ? ' orders-filter-chip--active' : ''}`}
-                onClick={() => handleFilterChange(filter.id)}
-                aria-pressed={activeFilter === filter.id}
-              >
-                {filter.label}
-                <span className="orders-filter-chip__count">{count}</span>
-              </button>
-            );
-          })}
+          {FILTERS.map((filter) => (
+            <button
+              key={filter.id}
+              type="button"
+              className={`orders-filter-chip${activeFilter === filter.id ? ' orders-filter-chip--active' : ''}`}
+              onClick={() => handleFilterChange(filter.id)}
+              aria-pressed={activeFilter === filter.id}
+            >
+              {filter.label}
+              <span className="orders-filter-chip__count">{counts[filter.id] || 0}</span>
+            </button>
+          ))}
         </div>
 
         {loading ? (

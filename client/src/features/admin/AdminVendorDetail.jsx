@@ -17,6 +17,8 @@ import {
   IconTrash,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
+import SkeletonPageHeader from '../../components/ui/SkeletonPageHeader.jsx';
+import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { addVendorUser, adminRequest, createVendorLocation, listMenuItems, listVendorCategories, createMenuItem, updateMenuItem, deleteMenuItem, createVendorCategory, updateVendorCategory, deleteVendorCategory, removeVendorUser, updateVendor, updateVendorApproval, updateVendorLocation, uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
@@ -262,9 +264,9 @@ export default function AdminVendorDetail() {
 
   if (loading) {
     return (
-      <div className="admin-vendor-detail__loading">
-        <div className="admin-vendor-detail__loading-spinner" />
-        <p>Loading vendor details...</p>
+      <div className="admin-vendor-detail">
+        <SkeletonPageHeader stats={0} />
+        <SkeletonTable rows={4} columns={3} />
       </div>
     );
   }

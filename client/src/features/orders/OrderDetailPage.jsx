@@ -8,54 +8,61 @@ import OrderItemList from '../../components/orders/OrderItemList.jsx';
 import OrderSummary from '../../components/orders/OrderSummary.jsx';
 import CollectionCode from '../../components/orders/CollectionCode.jsx';
 import OrderActions from '../../components/orders/OrderActions.jsx';
-
-import { fetchOrderById, cancelOrder, reorderOrder, rateOrder } from '../../services/orders.js';
-import {
-  getVendorById,
-  getCollectionPointName,
-  formatCollectionSlot,
-  formatOrderDate,
-  formatOrderTime,
-  ORDER_STATUSES,
-} from './orderMockData.js';
+import { useAuth } from '../../hooks/useAuth.js';
+import { getMyOrder, cancelMyOrder, reorderOrder, rateOrder } from '../../services/employeeApi.js';
 import './orders.css';
+
+function formatOrderDate(isoString) {
+  if (!isoString) return '';
+  return new Date(isoString).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function formatOrderTime(isoString) {
+  if (!isoString) return '';
+  return new Date(isoString).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
 
 export default function OrderDetailPage() {
   const { orderId } = useParams();
   const navigate = useNavigate();
+  const { session } = useAuth();
+  const token = session?.access_token;
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchOrder = async () => {
+    if (!token || !orderId) return;
+    try {
+      const res = await getMyOrder(orderId, { token });
+      setOrder(res?.order || null);
+    } catch (err) {
+      console.error('Failed to fetch order:', err);
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
-    fetchOrderById(orderId)
-      .then((data) => {
-        if (!cancelled) {
-          setOrder(data);
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setLoading(false);
-      });
+    setLoading(true);
+    fetchOrder().finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [orderId]);
+  }, [orderId, token]);
 
   const handleCancel = async (id, reason) => {
-    await cancelOrder(id, reason);
-    const updated = await fetchOrderById(id);
-    setOrder(updated);
+    if (!token) return;
+    await cancelMyOrder(id, { reason }, { token });
+    await fetchOrder();
   };
 
   const handleReorder = async (id) => {
-    await reorderOrder(id);
+    if (!token) return;
+    await reorderOrder(id, { token });
     navigate('/cart');
   };
 
   const handleRate = async (id) => {
-    await rateOrder(id, 5, 'Great food!');
-    const updated = await fetchOrderById(id);
-    setOrder(updated);
+    if (!token) return;
+    await rateOrder(id, { ratings: { overall: 5 }, comments: 'Great food!' }, { token });
+    await fetchOrder();
   };
 
   if (loading) {
@@ -75,13 +82,8 @@ export default function OrderDetailPage() {
     );
   }
 
-  const vendor = getVendorById(order.vendor_id);
-  const showCode = [
-    ORDER_STATUSES.PREPARING,
-    ORDER_STATUSES.READY_FOR_COLLECTION,
-    ORDER_STATUSES.COLLECTED,
-    ORDER_STATUSES.COMPLETED,
-  ].includes(order.status);
+  const vendor = order.vendor;
+  const showCode = ['preparing', 'ready_for_collection', 'collected', 'completed'].includes(order.status);
 
   return (
     <PageContainer className="order-detail-container">
@@ -96,10 +98,10 @@ export default function OrderDetailPage() {
             <div>
               <h1 className="order-detail__title">Order #{order.order_number}</h1>
               <p className="order-detail__subtitle">
-                {vendor?.name} · {formatOrderDate(order.created_at)} at {formatOrderTime(order.created_at)}
+                {vendor?.name || 'Vendor'} · {formatOrderDate(order.created_at)} at {formatOrderTime(order.created_at)}
               </p>
             </div>
-            <span className="order-detail__total">R {order.total.toFixed(2)}</span>
+            <span className="order-detail__total">R {Number(order.total || 0).toFixed(2)}</span>
           </div>
         </div>
 
@@ -120,21 +122,21 @@ export default function OrderDetailPage() {
                     <IconMapPin size={18} stroke={1.8} />
                     <div className="order-detail__detail-row-content">
                       <span className="order-detail__detail-row-label">Pickup point</span>
-                      <span className="order-detail__detail-row-value">{getCollectionPointName(order)}</span>
+                      <span className="order-detail__detail-row-value">{order.collection_point_id ? 'Collection Point' : 'N/A'}</span>
                     </div>
                   </div>
                   <div className="order-detail__detail-row">
                     <IconClock size={18} stroke={1.8} />
                     <div className="order-detail__detail-row-content">
                       <span className="order-detail__detail-row-label">Ready around</span>
-                      <span className="order-detail__detail-row-value">{formatCollectionSlot(order)}</span>
+                      <span className="order-detail__detail-row-value">{order.ready_at ? formatOrderTime(order.ready_at) : 'Pending'}</span>
                     </div>
                   </div>
                   <div className="order-detail__detail-row">
                     <IconCreditCard size={18} stroke={1.8} />
                     <div className="order-detail__detail-row-content">
                       <span className="order-detail__detail-row-label">Payment</span>
-                      <span className="order-detail__detail-row-value">{order.payment_method?.replace(/_/g, ' ')}</span>
+                      <span className="order-detail__detail-row-value">{order.payment_method?.replace(/_/g, ' ') || 'Pending'}</span>
                     </div>
                   </div>
                 </div>

@@ -16,6 +16,7 @@ import {
   IconAlertCircle,
 } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
+import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { listOrders } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useRoles } from '../../hooks/useRoles.js';
@@ -120,7 +121,7 @@ function OrderRow({ order }) {
   );
 }
 
-function StatBlock({ label, value, sub, icon: Icon }) {
+function StatBlock({ label, value, sub, icon: Icon, loading }) {
   return (
     <div className="admin-orders__kpi">
       <div className="admin-orders__kpi-icon">
@@ -128,7 +129,7 @@ function StatBlock({ label, value, sub, icon: Icon }) {
       </div>
       <div className="admin-orders__kpi-body">
         <span className="admin-orders__kpi-label">{label}</span>
-        <span className="admin-orders__kpi-value">{value}</span>
+        <span className="admin-orders__kpi-value">{loading ? <span className="skeleton skeleton--kpi-value" /> : value}</span>
         {sub && <span className="admin-orders__kpi-sub">{sub}</span>}
       </div>
     </div>
@@ -272,10 +273,10 @@ export default function AdminOrderList() {
       </header>
 
       <section className="admin-orders__kpis" aria-label="Order metrics">
-        <StatBlock label="Orders today" value={todayCount} sub="across all vendors" icon={IconShoppingCart} />
-        <StatBlock label="Preparing" value={preparingCount} sub="kitchen in progress" icon={IconTool} />
-        <StatBlock label="Ready for collection" value={readyCount} sub="awaiting customer" icon={IconClipboardCheck} />
-        <StatBlock label="Needs attention" value={issueCount} sub="urgent / refunds / failed" icon={IconAlertCircle} />
+        <StatBlock label="Orders today" value={todayCount} sub="across all vendors" icon={IconShoppingCart} loading={loading} />
+        <StatBlock label="Preparing" value={preparingCount} sub="kitchen in progress" icon={IconTool} loading={loading} />
+        <StatBlock label="Ready for collection" value={readyCount} sub="awaiting customer" icon={IconClipboardCheck} loading={loading} />
+        <StatBlock label="Needs attention" value={issueCount} sub="urgent / refunds / failed" icon={IconAlertCircle} loading={loading} />
       </section>
 
       <div className="admin-orders__filters">
@@ -352,7 +353,7 @@ export default function AdminOrderList() {
         </div>
       </div>
 
-      {paginatedOrders.length > 0 ? (
+      {loading ? <div className="admin-vendor-detail"><SkeletonTable rows={5} columns={5} /></div> : paginatedOrders.length > 0 ? (
         <>
           <div className="admin-card admin-card--full">
             <table className="admin-table">

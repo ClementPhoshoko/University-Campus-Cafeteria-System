@@ -20,6 +20,8 @@ import {
   IconNotes,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
+import SkeletonPageHeader from '../../components/ui/SkeletonPageHeader.jsx';
+import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { getOrder, cancelOrder, refundOrder, addOrderNote } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import {
@@ -171,6 +173,7 @@ function TimelineItem({ entry, isLast }) {
 export default function AdminOrderDetail() {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [intervention, setIntervention] = useState(null);
   const { session } = useAuth();
   const token = session?.access_token;
@@ -183,12 +186,15 @@ export default function AdminOrderDetail() {
         setOrder(response.order);
       } catch (err) {
         console.error('Failed to fetch order:', err);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchOrder();
   }, [orderId, token]);
 
+  if (loading) return <div className="admin-vendor-detail"><SkeletonPageHeader stats={0} /><SkeletonTable rows={4} columns={3} /></div>;
   if (!order) {
     return (
       <div className="admin-empty">

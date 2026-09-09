@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { IconActivity, IconAlertTriangle, IconCheck, IconChevronDown, IconCircleCheck, IconClock, IconDownload, IconFileText, IconFilter, IconRefresh, IconSearch, IconWorld } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
+import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { listAuditLogs } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
@@ -39,13 +40,13 @@ const CATEGORY_OPTIONS = [
 const ACTION_TONE = { INSERT: 'success', UPDATE: 'info', DELETE: 'error' };
 const CATEGORY_TONE = { data: 'info', access: 'warning', config: 'default', lifecycle: 'success' };
 
-function StatTile({ label, value, icon: Icon }) {
+function StatTile({ label, value, icon: Icon, loading }) {
   return (
     <div className="admin-kpi">
       <span className="admin-kpi__icon-wrap"><Icon size={20} /></span>
       <div className="admin-kpi__body">
         <span className="admin-kpi__label">{label}</span>
-        <span className="admin-kpi__value">{value}</span>
+        <span className="admin-kpi__value">{loading ? <span className="skeleton skeleton--kpi-value" /> : value}</span>
       </div>
     </div>
   );
@@ -216,10 +217,10 @@ export default function AdminAuditLogPage() {
 
       <section className="admin-kpis" aria-label="Audit summary">
         <div className="admin-kpis__row">
-          <StatTile label="Total events" value={pagination.total || 0} icon={IconFileText} />
-          <StatTile label="Creates" value={actionCounts.INSERT || 0} icon={IconCheck} />
-          <StatTile label="Updates" value={actionCounts.UPDATE || 0} icon={IconActivity} />
-          <StatTile label="Deletes" value={actionCounts.DELETE || 0} icon={IconAlertTriangle} />
+          <StatTile label="Total events" value={pagination.total || 0} icon={IconFileText} loading={loading} />
+          <StatTile label="Creates" value={actionCounts.INSERT || 0} icon={IconCheck} loading={loading} />
+          <StatTile label="Updates" value={actionCounts.UPDATE || 0} icon={IconActivity} loading={loading} />
+          <StatTile label="Deletes" value={actionCounts.DELETE || 0} icon={IconAlertTriangle} loading={loading} />
         </div>
       </section>
 
@@ -290,7 +291,7 @@ export default function AdminAuditLogPage() {
         </div>
       )}
 
-      {loading ? <div className="admin-vendor-detail__loading"><div className="admin-vendor-detail__loading-spinner" /><p>Loading audit logs...</p></div> : error ? <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>Could not load audit logs</h3><p>{error}</p><button type="button" className="admin-action--ghost" onClick={() => setPage(1)}>Try again</button></div> : logs.length ? <><section className="admin-card admin-card--full"><header className="admin-card__head"><div><span className="admin-card__eyebrow">Activity stream</span><h3 className="admin-card__title">Audit trail</h3></div><span className="admin-card__chip"><IconCircleCheck size={13} /> Database records</span></header><ul className="admin-audit-list">{logs.map((entry, index) => <AuditEntry key={entry.id} entry={entry} isLast={index === logs.length - 1} />)}</ul></section><Pagination currentPage={page} totalPages={pagination.totalPages || 1} totalItems={pagination.total || logs.length} itemsPerPage={pagination.limit || 25} label="events" onPageChange={setPage} /></> : <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>No audit entries found</h3><p>There are no events matching the selected filters.</p><button type="button" className="admin-action--ghost" onClick={() => { setQuery(''); setResource(''); setAction(''); setCategory(''); setDateFrom(''); setDateTo(''); }}>Clear filters</button></div>}
+      {loading ? <div className="admin-vendor-detail"><SkeletonTable rows={8} columns={5} /></div> : error ? <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>Could not load audit logs</h3><p>{error}</p><button type="button" className="admin-action--ghost" onClick={() => setPage(1)}>Try again</button></div> : logs.length ? <><section className="admin-card admin-card--full"><header className="admin-card__head"><div><span className="admin-card__eyebrow">Activity stream</span><h3 className="admin-card__title">Audit trail</h3></div><span className="admin-card__chip"><IconCircleCheck size={13} /> Database records</span></header><ul className="admin-audit-list">{logs.map((entry, index) => <AuditEntry key={entry.id} entry={entry} isLast={index === logs.length - 1} />)}</ul></section><Pagination currentPage={page} totalPages={pagination.totalPages || 1} totalItems={pagination.total || logs.length} itemsPerPage={pagination.limit || 25} label="events" onPageChange={setPage} /></> : <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>No audit entries found</h3><p>There are no events matching the selected filters.</p><button type="button" className="admin-action--ghost" onClick={() => { setQuery(''); setResource(''); setAction(''); setCategory(''); setDateFrom(''); setDateTo(''); }}>Clear filters</button></div>}
     </div>
   );
 }
