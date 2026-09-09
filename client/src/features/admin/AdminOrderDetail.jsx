@@ -20,7 +20,6 @@ import {
   IconNotes,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
-import SkeletonPageHeader from '../../components/ui/SkeletonPageHeader.jsx';
 import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { getOrder, cancelOrder, refundOrder, addOrderNote } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -194,7 +193,7 @@ export default function AdminOrderDetail() {
     fetchOrder();
   }, [orderId, token]);
 
-  if (loading) return <div className="admin-vendor-detail"><SkeletonPageHeader stats={0} /><SkeletonTable rows={4} columns={3} /></div>;
+  if (loading) return <div className="admin-order-detail"><Breadcrumb homeLabel="Dashboard" homeTo="/admin" items={[{ label: 'Orders', to: '/admin/orders' }, { label: 'Loading...' }]} /><section className="admin-user-hero"><div className="admin-user-hero__avatar admin-user-hero__avatar--order"><span className="skeleton" style={{ width: 56, height: 56, borderRadius: 'var(--radius-full)' }} /></div><div className="admin-user-hero__info"><div className="admin-user-hero__head"><span className="skeleton skeleton--kpi-value" style={{ width: 100 }} /></div><div className="skeleton skeleton--title" style={{ width: '30%', marginTop: 8 }} /><div className="skeleton skeleton--text" style={{ width: '40%', marginTop: 8 }} /></div></section><SkeletonTable rows={4} columns={3} /></div>;
   if (!order) {
     return (
       <div className="admin-empty">

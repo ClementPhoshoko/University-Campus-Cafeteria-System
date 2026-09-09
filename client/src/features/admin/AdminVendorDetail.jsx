@@ -17,7 +17,6 @@ import {
   IconTrash,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
-import SkeletonPageHeader from '../../components/ui/SkeletonPageHeader.jsx';
 import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { addVendorUser, adminRequest, createVendorLocation, listMenuItems, listVendorCategories, createMenuItem, updateMenuItem, deleteMenuItem, createVendorCategory, updateVendorCategory, deleteVendorCategory, removeVendorUser, updateVendor, updateVendorApproval, updateVendorLocation, uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -265,7 +264,19 @@ export default function AdminVendorDetail() {
   if (loading) {
     return (
       <div className="admin-vendor-detail">
-        <SkeletonPageHeader stats={0} />
+        <Breadcrumb homeLabel="Dashboard" homeTo="/admin" items={[{ label: 'Vendors', to: '/admin/vendors' }, { label: 'Loading...' }]} />
+        <header className="admin-vendor-header">
+          <div className="admin-vendor-header__logo"><span className="skeleton" style={{ width: 64, height: 64, borderRadius: 'var(--radius-lg)' }} /></div>
+          <div className="admin-vendor-header__content">
+            <div className="admin-vendor-header__top"><span className="skeleton skeleton--kpi-value" style={{ width: 80 }} /></div>
+            <div className="skeleton skeleton--title" style={{ width: '40%', marginTop: 8 }} />
+            <div className="skeleton skeleton--text" style={{ width: '60%', marginTop: 8 }} />
+          </div>
+        </header>
+        <section className="admin-vendor-performance">
+          <div className="admin-vendor-performance__metric"><span className="admin-vendor-performance__label">Average rating</span><span className="admin-vendor-performance__value"><span className="skeleton skeleton--kpi-value" /></span></div>
+          <div className="admin-vendor-performance__metric"><span className="admin-vendor-performance__label">Operating locations</span><span className="admin-vendor-performance__value"><span className="skeleton skeleton--kpi-value" /></span></div>
+        </section>
         <SkeletonTable rows={4} columns={3} />
       </div>
     );

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { IconBuilding, IconBuildingStore, IconCheck, IconChevronLeft, IconClipboardCheck, IconEdit, IconMapPin, IconPlus, IconPower } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
-import SkeletonPageHeader from '../../components/ui/SkeletonPageHeader.jsx';
 import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import {
@@ -72,7 +71,7 @@ export default function AdminCafeteriaDetail() {
 
   const mutate = async (operation) => { setMutating(true); try { await operation(); setModal(null); await load(); } finally { setMutating(false); } };
   const title = entity?.name || 'Location';
-  if (loading) return <div className="admin-vendor-detail"><SkeletonPageHeader stats={0} /><SkeletonTable rows={4} columns={3} /></div>;
+  if (loading) return <div className="admin-vendor-detail"><Breadcrumb homeLabel="Dashboard" homeTo="/admin" items={[{ label: 'Locations', to: '/admin/cafeterias' }, { label: 'Loading...' }]} /><section className="admin-site-hero"><div className="admin-site-hero__cover admin-site-card__cover--plain"><span className="skeleton" style={{ width: 48, height: 48, borderRadius: 'var(--radius-md)' }} /></div><div className="admin-site-hero__info"><div className="admin-site-hero__head"><span className="skeleton skeleton--kpi-value" style={{ width: 80 }} /></div><div className="skeleton skeleton--title" style={{ width: '35%', marginTop: 8 }} /><div className="skeleton skeleton--text" style={{ width: '50%', marginTop: 8 }} /></div></section><section className="admin-vendor-stats"><div className="admin-vendor-stat"><div className="admin-vendor-stat__body"><span className="admin-vendor-stat__label">Buildings</span><span className="admin-vendor-stat__value"><span className="skeleton skeleton--kpi-value" /></span></div></div><div className="admin-vendor-stat"><div className="admin-vendor-stat__body"><span className="admin-vendor-stat__label">Collection points</span><span className="admin-vendor-stat__value"><span className="skeleton skeleton--kpi-value" /></span></div></div><div className="admin-vendor-stat"><div className="admin-vendor-stat__body"><span className="admin-vendor-stat__label">Delivery locations</span><span className="admin-vendor-stat__value"><span className="skeleton skeleton--kpi-value" /></span></div></div><div className="admin-vendor-stat"><div className="admin-vendor-stat__body"><span className="admin-vendor-stat__label">Vendors</span><span className="admin-vendor-stat__value"><span className="skeleton skeleton--kpi-value" /></span></div></div></section><SkeletonTable rows={4} columns={3} /></div>;
   if (!entity || error) return <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>Location not found</h3><p>{error || 'This site or building may have been removed.'}</p><Link to="/admin/cafeterias" className="admin-action--ghost"><IconChevronLeft size={13} /> Back to locations</Link></div>;
 
   const isSite = kind === 'site';
