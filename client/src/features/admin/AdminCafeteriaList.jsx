@@ -9,6 +9,7 @@ import {
   IconMapPin,
   IconPlus,
   IconSearch,
+  IconUsers,
 } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
 import { useAdminLocations } from '../../hooks/useAdminLocations.js';
@@ -30,19 +31,57 @@ function StatusPill({ active }) {
 function SiteCard({ site }) {
   return (
     <Link to={`/admin/cafeterias/${site.id}`} className="admin-site-card">
-      <div className="admin-site-card__cover admin-site-card__cover--plain">
-        {site.cover_image_url ? <img src={site.cover_image_url} alt={site.name} /> : <IconMapPin size={34} stroke={1.4} />}
-        <span className="admin-site-card__code">{site.code || 'SITE'}</span>
+      <div className="admin-site-card__hero">
+        {site.cover_image_url ? (
+          <img src={site.cover_image_url} alt={site.name} className="admin-site-card__image" />
+        ) : (
+          <div className="admin-site-card__placeholder">
+            <IconBuildingStore size={40} stroke={1.2} />
+          </div>
+        )}
       </div>
       <div className="admin-site-card__body">
-        <div className="admin-site-card__head"><h3 className="admin-site-card__name">{site.name}</h3><StatusPill active={site.is_active} /></div>
-        <p className="admin-site-card__address"><IconMapPin size={12} stroke={1.8} />{site.address || 'No address recorded'}</p>
-        <div className="admin-site-card__stats">
-          <div className="admin-site-card__stat"><span className="admin-site-card__stat-value">{site.building_count || 0}</span><span className="admin-site-card__stat-label">Buildings</span></div>
-          <div className="admin-site-card__stat"><span className="admin-site-card__stat-value">{site.vendor_count || 0}</span><span className="admin-site-card__stat-label">Vendors</span></div>
-          <div className="admin-site-card__stat"><span className="admin-site-card__stat-value">{site.collection_point_count || 0}</span><span className="admin-site-card__stat-label">Pickup points</span></div>
+        <div className="admin-site-card__header">
+          <h3 className="admin-site-card__name">{site.name}</h3>
+          <span className={`admin-site-card__status${site.is_active ? ' admin-site-card__status--active' : ' admin-site-card__status--inactive'}`}>
+            <span className="admin-site-card__status-dot" />
+            {site.is_active ? 'Active' : 'Inactive'}
+          </span>
         </div>
-        <div className="admin-site-card__foot"><span className="admin-site-card__revenue">Timezone</span><strong className="admin-site-card__price">{site.timezone || '—'}</strong></div>
+        <p className="admin-site-card__address">
+          <IconMapPin size={14} stroke={1.6} />
+          {site.address || 'No address recorded'}
+        </p>
+        <div className="admin-site-card__stats">
+          <div className="admin-site-card__stat">
+            <div className="admin-site-card__stat-icon"><IconBuilding size={16} stroke={1.6} /></div>
+            <div className="admin-site-card__stat-info">
+              <span className="admin-site-card__stat-value">{site.building_count || 0}</span>
+              <span className="admin-site-card__stat-label">Buildings</span>
+            </div>
+          </div>
+          <div className="admin-site-card__stat">
+            <div className="admin-site-card__stat-icon"><IconUsers size={16} stroke={1.6} /></div>
+            <div className="admin-site-card__stat-info">
+              <span className="admin-site-card__stat-value">{site.vendor_count || 0}</span>
+              <span className="admin-site-card__stat-label">Vendors</span>
+            </div>
+          </div>
+          <div className="admin-site-card__stat">
+            <div className="admin-site-card__stat-icon"><IconClipboardCheck size={16} stroke={1.6} /></div>
+            <div className="admin-site-card__stat-info">
+              <span className="admin-site-card__stat-value">{site.collection_point_count || 0}</span>
+              <span className="admin-site-card__stat-label">Pickup points</span>
+            </div>
+          </div>
+        </div>
+        <div className="admin-site-card__footer">
+          <span className="admin-site-card__footer-label">
+            <IconClock size={14} stroke={1.6} />
+            Timezone
+          </span>
+          <span className="admin-site-card__footer-value">{site.timezone || '—'}</span>
+        </div>
       </div>
     </Link>
   );
