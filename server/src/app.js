@@ -21,6 +21,7 @@ import favoriteRoutes from './routes/favoriteRoutes.js';
 import adminVendorRoutes from './routes/adminVendorRoutes.js';
 import adminAssetRoutes from './routes/adminAssetRoutes.js';
 import adminAuditRoutes from './routes/adminAuditRoutes.js';
+import geocodeRoutes from './routes/geocodeRoutes.js';
 import { bootstrapSuperAdmin } from './services/bootstrapSuperAdmin.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -78,6 +79,7 @@ app.use('/api/v1', adminSiteRoutes);
 app.use('/api/v1', adminVendorRoutes);
 app.use('/api/v1', adminAssetRoutes);
 app.use('/api/v1', adminAuditRoutes);
+app.use('/api/v1', geocodeRoutes);
 
 app.use((error, req, res, next) => {
   console.error(error);

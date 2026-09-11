@@ -144,6 +144,25 @@ export function normalizeSite(input, { partial = false } = {}) {
   const active = boolean(input, 'is_active');
   if (active.error) errors.push(active.error); else if (active.value !== undefined && !active.skip) value.is_active = active.value;
 
+  // Structured address fields
+  const streetAddress = text(input, 'street_address', { max: 500 });
+  if (streetAddress.error) errors.push(streetAddress.error); else if (streetAddress.value !== undefined && !streetAddress.skip) value.street_address = streetAddress.value || null;
+
+  const city = text(input, 'city', { max: 100 });
+  if (city.error) errors.push(city.error); else if (city.value !== undefined && !city.skip) value.city = city.value || null;
+
+  const province = text(input, 'province', { max: 100 });
+  if (province.error) errors.push(province.error); else if (province.value !== undefined && !province.skip) value.province = province.value || null;
+
+  const postalCode = text(input, 'postal_code', { max: 20 });
+  if (postalCode.error) errors.push(postalCode.error); else if (postalCode.value !== undefined && !postalCode.skip) value.postal_code = postalCode.value || null;
+
+  const country = text(input, 'country', { max: 10 });
+  if (country.error) errors.push(country.error); else if (country.value !== undefined && !country.skip) value.country = country.value || null;
+
+  const placeId = text(input, 'place_id', { max: 500 });
+  if (placeId.error) errors.push(placeId.error); else if (placeId.value !== undefined && !placeId.skip) value.place_id = placeId.value || null;
+
   if (errors.length) return { errors };
   if (Object.keys(value).length === 0) return { value, empty: true };
   return { value };
@@ -173,6 +192,25 @@ export function normalizeBuilding(input, { partial = false } = {}) {
 
   const active = boolean(input, 'is_active');
   if (active.error) errors.push(active.error); else if (active.value !== undefined && !active.skip) value.is_active = active.value;
+
+  // Structured address fields
+  const streetAddress = text(input, 'street_address', { max: 500 });
+  if (streetAddress.error) errors.push(streetAddress.error); else if (streetAddress.value !== undefined && !streetAddress.skip) value.street_address = streetAddress.value || null;
+
+  const city = text(input, 'city', { max: 100 });
+  if (city.error) errors.push(city.error); else if (city.value !== undefined && !city.skip) value.city = city.value || null;
+
+  const province = text(input, 'province', { max: 100 });
+  if (province.error) errors.push(province.error); else if (province.value !== undefined && !province.skip) value.province = province.value || null;
+
+  const postalCode = text(input, 'postal_code', { max: 20 });
+  if (postalCode.error) errors.push(postalCode.error); else if (postalCode.value !== undefined && !postalCode.skip) value.postal_code = postalCode.value || null;
+
+  const country = text(input, 'country', { max: 10 });
+  if (country.error) errors.push(country.error); else if (country.value !== undefined && !country.skip) value.country = country.value || null;
+
+  const placeId = text(input, 'place_id', { max: 500 });
+  if (placeId.error) errors.push(placeId.error); else if (placeId.value !== undefined && !placeId.skip) value.place_id = placeId.value || null;
 
   if (errors.length) return { errors };
   if (Object.keys(value).length === 0) return { value, empty: true };

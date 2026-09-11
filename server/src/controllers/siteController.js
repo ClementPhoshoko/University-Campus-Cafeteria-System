@@ -751,7 +751,7 @@ export async function listPublicSites(req, res) {
 
     let query = db()
       .from('sites')
-      .select('id, name, code, address, latitude, longitude, timezone, cover_image_url', { count: 'exact' })
+      .select('id, name, code, address, street_address, city, province, postal_code, country, place_id, latitude, longitude, timezone, cover_image_url', { count: 'exact' })
       .eq('is_active', true);
     if (search) query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%`);
     query = query.order('name', { ascending: true }).range(from, to);
@@ -781,7 +781,7 @@ export async function getPublicSite(req, res) {
 
     const { data: site, error } = await db()
       .from('sites')
-      .select('id, name, code, address, latitude, longitude, timezone')
+      .select('id, name, code, address, street_address, city, province, postal_code, country, place_id, latitude, longitude, timezone')
       .eq('id', siteId)
       .eq('is_active', true)
       .maybeSingle();
@@ -811,7 +811,7 @@ export async function listPublicBuildings(req, res) {
     const { pageNum, limitNum, from, to } = parsePagination(req.query);
     let query = db()
       .from('buildings')
-      .select('id, name, code, address, latitude, longitude, cover_image_url', { count: 'exact' })
+      .select('id, name, code, address, street_address, city, province, postal_code, country, place_id, latitude, longitude, cover_image_url', { count: 'exact' })
       .eq('site_id', siteId)
       .eq('is_active', true);
     query = query.order('name', { ascending: true }).range(from, to);

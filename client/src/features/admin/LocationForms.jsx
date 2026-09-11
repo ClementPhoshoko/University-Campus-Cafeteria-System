@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useAuth } from '../../hooks/useAuth.js';
+import AddressAutocomplete from '../../components/ui/AddressAutocomplete.jsx';
 
 function Field({ label, children, full = false }) {
   return <label className={`admin-modal__field${full ? ' admin-modal__field--full' : ''}`}><span>{label}</span>{children}</label>;
@@ -7,21 +9,59 @@ function Field({ label, children, full = false }) {
 export function LocationModal({ title, initial = {}, fields, onClose, onSubmit, submitting }) {
   const [form, setForm] = useState(initial);
   const [error, setError] = useState('');
+  const { session } = useAuth();
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleAddressSelect = (locationData) => {
+    setForm((prev) => ({
+      ...prev,
+      address: locationData.formatted_address || prev.address,
+      street_address: locationData.street_address || prev.street_address,
+      city: locationData.city || prev.city,
+      province: locationData.province || prev.province,
+      postal_code: locationData.postal_code || prev.postal_code,
+      country: locationData.country_code || prev.country,
+      place_id: locationData.place_id || prev.place_id,
+      latitude: locationData.latitude ?? prev.latitude,
+      longitude: locationData.longitude ?? prev.longitude,
+      timezone: locationData.timezone || prev.timezone,
+    }));
+  };
+
   const submit = async () => { try { await onSubmit(form); onClose(); } catch (err) { setError(err.message || 'Could not save changes.'); } };
-  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card admin-modal__card--lg"><header className="admin-modal__head"><div><h3 className="admin-modal__title">{title}</h3><p className="admin-modal__sub">Update the location data stored by the platform.</p></div></header>{error && <div className="vendor-form-error">{error}</div>}<div className="admin-form-grid">{fields.map((field) => <Field key={field.key} label={field.label} full={field.full}>{field.type === 'file' ? <input className="admin-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => update(field.key, e.target.files?.[0] || null)} /> : field.type === 'textarea' ? <textarea className="admin-modal__textarea" rows={3} value={form[field.key] || ''} onChange={(e) => update(field.key, e.target.value)} /> : field.type === 'select' ? <select className="admin-input" value={String(form[field.key] ?? '')} onChange={(e) => update(field.key, e.target.value)}>{field.options.map((option) => <option key={String(option.value)} value={String(option.value)}>{option.label}</option>)}</select> : <input className="admin-input" type={field.type || 'text'} step={field.type === 'number' ? 'any' : undefined} value={form[field.key] ?? ''} onChange={(e) => update(field.key, e.target.value)} />}</Field>)}</div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Saving…' : 'Save changes'}</button></footer></div></div>;
+
+  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card admin-modal__card--lg"><header className="admin-modal__head"><div><h3 className="admin-modal__title">{title}</h3><p className="admin-modal__sub">Update the location data stored by the platform.</p></div></header>{error && <div className="vendor-form-error">{error}</div>}<div className="admin-form-grid">{fields.map((field) => <Field key={field.key} label={field.label} full={field.full}>{field.type === 'address' ? <AddressAutocomplete value={form[field.key] || ''} onChange={(val) => update(field.key, val)} onSelect={handleAddressSelect} token={session?.access_token} placeholder="Search for an address..." /> : field.type === 'file' ? <input className="admin-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => update(field.key, e.target.files?.[0] || null)} /> : field.type === 'textarea' ? <textarea className="admin-modal__textarea" rows={3} value={form[field.key] || ''} onChange={(e) => update(field.key, e.target.value)} /> : field.type === 'select' ? <select className="admin-input" value={String(form[field.key] ?? '')} onChange={(e) => update(field.key, e.target.value)}>{field.options.map((option) => <option key={String(option.value)} value={String(option.value)}>{option.label}</option>)}</select> : <input className="admin-input" type={field.type || 'text'} step={field.type === 'number' ? 'any' : undefined} value={form[field.key] ?? ''} onChange={(e) => update(field.key, e.target.value)} />}</Field>)}</div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Saving…' : 'Save changes'}</button></footer></div></div>;
 }
 
 export const siteFields = [
-  { key: 'name', label: 'Site name' }, { key: 'code', label: 'Site code' }, { key: 'address', label: 'Address', full: true },
-  { key: 'latitude', label: 'Latitude', type: 'number' }, { key: 'longitude', label: 'Longitude', type: 'number' }, { key: 'timezone', label: 'Timezone' },
-  { key: 'is_active', label: 'Status', type: 'select', options: [{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }] }, { key: 'cover_file', label: 'Cover image', type: 'file' },
+  { key: 'name', label: 'Site name' },
+  { key: 'code', label: 'Site code' },
+  { key: 'address', label: 'Search address', type: 'address', full: true },
+  { key: 'street_address', label: 'Street address' },
+  { key: 'city', label: 'City' },
+  { key: 'province', label: 'Province' },
+  { key: 'postal_code', label: 'Postal code' },
+  { key: 'country', label: 'Country' },
+  { key: 'latitude', label: 'Latitude', type: 'number' },
+  { key: 'longitude', label: 'Longitude', type: 'number' },
+  { key: 'timezone', label: 'Timezone' },
+  { key: 'is_active', label: 'Status', type: 'select', options: [{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }] },
+  { key: 'cover_file', label: 'Cover image', type: 'file' },
 ];
 
 export const buildingFields = [
-  { key: 'name', label: 'Building name' }, { key: 'code', label: 'Building code' }, { key: 'address', label: 'Address', full: true },
-  { key: 'latitude', label: 'Latitude', type: 'number' }, { key: 'longitude', label: 'Longitude', type: 'number' },
-  { key: 'is_active', label: 'Status', type: 'select', options: [{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }] }, { key: 'cover_file', label: 'Cover image', type: 'file' },
+  { key: 'name', label: 'Building name' },
+  { key: 'code', label: 'Building code' },
+  { key: 'address', label: 'Search address', type: 'address', full: true },
+  { key: 'street_address', label: 'Street address' },
+  { key: 'city', label: 'City' },
+  { key: 'province', label: 'Province' },
+  { key: 'postal_code', label: 'Postal code' },
+  { key: 'country', label: 'Country' },
+  { key: 'latitude', label: 'Latitude', type: 'number' },
+  { key: 'longitude', label: 'Longitude', type: 'number' },
+  { key: 'is_active', label: 'Status', type: 'select', options: [{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }] },
+  { key: 'cover_file', label: 'Cover image', type: 'file' },
 ];
 
 export const floorFields = [

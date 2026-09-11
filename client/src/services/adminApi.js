@@ -384,6 +384,27 @@ export function removeUserRole(token, userId, role, options) {
   return adminRequest(`/admin/users/${userId}/roles/${encodeURIComponent(role)}`, { method: 'DELETE', token, ...options });
 }
 
+// ---------------------------------------------------------------------------
+// Geocoding
+// ---------------------------------------------------------------------------
+
+export function geocodeAutocomplete(token, query, sessionToken, options) {
+  return adminRequest('/admin/geocode/autocomplete', {
+    token,
+    query: { q: query, session_token: sessionToken },
+    ...options,
+  });
+}
+
+export function geocodeResolve(token, payload, options) {
+  return adminRequest('/admin/geocode/resolve', {
+    method: 'POST',
+    token,
+    body: payload,
+    ...options,
+  });
+}
+
 export const adminLocationsApi = {
   listSites,
   getSite,
@@ -402,6 +423,8 @@ export const adminLocationsApi = {
   listDeliveryLocations,
   createDeliveryLocation,
   updateDeliveryLocation,
+  geocodeAutocomplete,
+  geocodeResolve,
 };
 
 export const adminVendorsApi = {

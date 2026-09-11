@@ -12,6 +12,7 @@ import {
   IconUsers,
 } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
+import AddressAutocomplete from '../../components/ui/AddressAutocomplete.jsx';
 import { useAdminLocations } from '../../hooks/useAdminLocations.js';
 import { uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -29,6 +30,10 @@ function StatusPill({ active }) {
 }
 
 function SiteCard({ site }) {
+  const displayAddress = site.street_address
+    ? [site.street_address, site.city, site.province].filter(Boolean).join(', ')
+    : site.address || 'No address recorded';
+
   return (
     <Link to={`/admin/cafeterias/${site.id}`} className="admin-site-card">
       <div className="admin-site-card__hero">
@@ -50,8 +55,11 @@ function SiteCard({ site }) {
         </div>
         <p className="admin-site-card__address">
           <IconMapPin size={14} stroke={1.6} />
-          {site.address || 'No address recorded'}
+          {displayAddress}
         </p>
+        {site.postal_code && (
+          <span className="admin-site-card__postal">{site.postal_code}</span>
+        )}
         <div className="admin-site-card__stats">
           <div className="admin-site-card__stat">
             <div className="admin-site-card__stat-icon"><IconBuilding size={16} stroke={1.6} /></div>
@@ -149,20 +157,70 @@ function FileInput({ value, onChange, accept = 'image/jpeg,image/png,image/webp'
 }
 
 function NewSiteModal({ onClose, onSubmit, submitting }) {
-  const [form, setForm] = useState({ name: '', code: '', address: '', latitude: '', longitude: '', timezone: 'Africa/Johannesburg', is_active: true, cover_file: null });
+  const [form, setForm] = useState({
+    name: '',
+    code: '',
+    address: '',
+    street_address: '',
+    city: '',
+    province: '',
+    postal_code: '',
+    country: 'ZA',
+    place_id: '',
+    latitude: '',
+    longitude: '',
+    timezone: 'Africa/Johannesburg',
+    is_active: true,
+    cover_file: null,
+  });
   const [error, setError] = useState('');
+  const { session } = useAuth();
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleAddressSelect = (locationData) => {
+    setForm((prev) => ({
+      ...prev,
+      address: locationData.formatted_address || prev.address,
+      street_address: locationData.street_address || prev.street_address,
+      city: locationData.city || prev.city,
+      province: locationData.province || prev.province,
+      postal_code: locationData.postal_code || prev.postal_code,
+      country: locationData.country_code || prev.country,
+      place_id: locationData.place_id || prev.place_id,
+      latitude: locationData.latitude ?? prev.latitude,
+      longitude: locationData.longitude ?? prev.longitude,
+      timezone: locationData.timezone || prev.timezone,
+    }));
+  };
+
   const submit = async () => {
     if (!form.name.trim()) return setError('Site name is required.');
     try {
-      await onSubmit({ ...form, name: form.name.trim(), code: form.code.trim() || null, address: form.address.trim() || null, latitude: form.latitude === '' ? undefined : Number(form.latitude), longitude: form.longitude === '' ? undefined : Number(form.longitude) });
+      await onSubmit({
+        ...form,
+        name: form.name.trim(),
+        code: form.code.trim() || null,
+        address: form.address.trim() || null,
+        street_address: form.street_address.trim() || null,
+        city: form.city.trim() || null,
+        province: form.province.trim() || null,
+        postal_code: form.postal_code.trim() || null,
+        country: form.country.trim() || null,
+        place_id: form.place_id.trim() || null,
+        latitude: form.latitude === '' ? undefined : Number(form.latitude),
+        longitude: form.longitude === '' ? undefined : Number(form.longitude),
+      });
       onClose();
-    } catch (err) { setError(err.message || 'Could not create site.'); }
+    } catch (err) {
+      setError(err.message || 'Could not create site.');
+    }
   };
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, []);
 
   return (
@@ -170,7 +228,9 @@ function NewSiteModal({ onClose, onSubmit, submitting }) {
       <div className="admin-modal__overlay" onClick={onClose} />
       <div className="admin-modal__card admin-modal__card--lg">
         <header className="admin-modal__head">
-          <div className="admin-modal__icon admin-modal__icon--info"><IconPlus size={20} /></div>
+          <div className="admin-modal__icon admin-modal__icon--info">
+            <IconPlus size={20} />
+          </div>
           <div>
             <h3 className="admin-modal__title">Register new site</h3>
             <p className="admin-modal__sub">Add a top-level campus location.</p>
@@ -179,34 +239,114 @@ function NewSiteModal({ onClose, onSubmit, submitting }) {
         {error && <div className="vendor-form-error">{error}</div>}
         <div className="admin-form-grid">
           <Field label="Site name">
-            <input autoFocus className="admin-input" value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Merchant Place Riverside" />
+            <input
+              autoFocus
+              className="admin-input"
+              value={form.name}
+              onChange={(e) => update('name', e.target.value)}
+              placeholder="Merchant Place Riverside"
+            />
           </Field>
           <Field label="Site code">
-            <input className="admin-input" value={form.code} onChange={(e) => update('code', e.target.value)} placeholder="MP-RIVERSIDE" />
+            <input
+              className="admin-input"
+              value={form.code}
+              onChange={(e) => update('code', e.target.value)}
+              placeholder="MP-RIVERSIDE"
+            />
           </Field>
-          <Field label="Address" full>
-            <input className="admin-input" value={form.address} onChange={(e) => update('address', e.target.value)} />
+          <Field label="Search address" full>
+            <AddressAutocomplete
+              value={form.address}
+              onChange={(val) => update('address', val)}
+              onSelect={handleAddressSelect}
+              token={session?.access_token}
+              placeholder="Start typing to search..."
+            />
           </Field>
-          <Field label="Latitude">
-            <input className="admin-input" type="number" step="any" value={form.latitude} onChange={(e) => update('latitude', e.target.value)} />
+          <Field label="Street address">
+            <input
+              className="admin-input"
+              value={form.street_address}
+              onChange={(e) => update('street_address', e.target.value)}
+              placeholder="Auto-filled from search"
+            />
           </Field>
-          <Field label="Longitude">
-            <input className="admin-input" type="number" step="any" value={form.longitude} onChange={(e) => update('longitude', e.target.value)} />
+          <Field label="City">
+            <input
+              className="admin-input"
+              value={form.city}
+              onChange={(e) => update('city', e.target.value)}
+              placeholder="Auto-filled from search"
+            />
+          </Field>
+          <Field label="Province">
+            <input
+              className="admin-input"
+              value={form.province}
+              onChange={(e) => update('province', e.target.value)}
+              placeholder="Auto-filled from search"
+            />
+          </Field>
+          <Field label="Postal code">
+            <input
+              className="admin-input"
+              value={form.postal_code}
+              onChange={(e) => update('postal_code', e.target.value)}
+              placeholder="Auto-filled from search"
+            />
           </Field>
           <Field label="Timezone">
-            <input className="admin-input" value={form.timezone} onChange={(e) => update('timezone', e.target.value)} />
+            <input
+              className="admin-input"
+              value={form.timezone}
+              onChange={(e) => update('timezone', e.target.value)}
+              placeholder="Africa/Johannesburg"
+            />
+          </Field>
+          <Field label="Latitude">
+            <input
+              className="admin-input"
+              type="number"
+              step="any"
+              value={form.latitude}
+              onChange={(e) => update('latitude', e.target.value)}
+            />
+          </Field>
+          <Field label="Longitude">
+            <input
+              className="admin-input"
+              type="number"
+              step="any"
+              value={form.longitude}
+              onChange={(e) => update('longitude', e.target.value)}
+            />
           </Field>
           <Field label="Cover image" full>
-            <FileInput value={form.cover_file} onChange={(file) => update('cover_file', file)} />
+            <FileInput
+              value={form.cover_file}
+              onChange={(file) => update('cover_file', file)}
+            />
           </Field>
           <label className="vendor-checkbox">
-            <input type="checkbox" checked={form.is_active} onChange={(e) => update('is_active', e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={form.is_active}
+              onChange={(e) => update('is_active', e.target.checked)}
+            />
             Active site
           </label>
         </div>
         <footer className="admin-modal__foot">
-          <button type="button" className="admin-action" onClick={onClose}>Cancel</button>
-          <button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>
+          <button type="button" className="admin-action" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="admin-action admin-action--approve"
+            onClick={submit}
+            disabled={submitting}
+          >
             {submitting ? 'Registering…' : 'Register site'}
           </button>
         </footer>
@@ -269,7 +409,7 @@ export default function AdminCafeteriaList() {
 
   const buildings = useMemo(() => allBuildings.map((building) => ({ ...building, site_name: sites.find((site) => site.id === building.site_id)?.name || 'Unknown site' })), [allBuildings, sites]);
   const collectionPoints = useMemo(() => allCollectionPoints.map((point) => { const building = buildings.find((item) => item.id === point.building_id); return { ...point, building_name: building?.name, site_name: building?.site_name }; }), [allCollectionPoints, buildings]);
-  const filteredSites = useMemo(() => sites.filter((site) => (statusFilter === 'all' || (statusFilter === 'active' ? site.is_active : !site.is_active)) && (!query || `${site.name} ${site.code || ''} ${site.address || ''}`.toLowerCase().includes(query.toLowerCase()))), [query, sites, statusFilter]);
+  const filteredSites = useMemo(() => sites.filter((site) => (statusFilter === 'all' || (statusFilter === 'active' ? site.is_active : !site.is_active)) && (!query || `${site.name} ${site.code || ''} ${site.address || ''} ${site.city || ''} ${site.province || ''}`.toLowerCase().includes(query.toLowerCase()))), [query, sites, statusFilter]);
   const filteredBuildings = useMemo(() => buildings.filter((building) => (statusFilter === 'all' || (statusFilter === 'active' ? building.is_active : !building.is_active)) && (!query || `${building.name} ${building.code || ''} ${building.site_name}`.toLowerCase().includes(query.toLowerCase()))), [buildings, query, statusFilter]);
   const filteredPoints = useMemo(() => collectionPoints.filter((point) => (!query || `${point.name} ${point.building_name || ''} ${point.site_name || ''}`.toLowerCase().includes(query.toLowerCase()))), [collectionPoints, query]);
   const currentItems = view === 'sites' ? filteredSites : view === 'buildings' ? filteredBuildings : filteredPoints;

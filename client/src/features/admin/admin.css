@@ -4657,6 +4657,18 @@
   white-space: nowrap;
 }
 
+.admin-site-card__postal {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  align-self: flex-start;
+}
+
 .admin-site-card__stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

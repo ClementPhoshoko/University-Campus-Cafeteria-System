@@ -1,0 +1,134 @@
+.address-autocomplete {
+  position: relative;
+  width: 100%;
+}
+
+.address-autocomplete__input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.address-autocomplete__icon {
+  position: absolute;
+  left: 12px;
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+.address-autocomplete__input {
+  width: 100%;
+  height: 40px;
+  padding: 0 36px 0 36px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-default);
+  font-family: var(--font-primary);
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.address-autocomplete__input:hover {
+  border-color: var(--color-border-default);
+}
+
+.address-autocomplete__input:focus {
+  border-color: var(--color-action-primary);
+  box-shadow: 0 0 0 3px rgba(10, 140, 255, 0.12);
+}
+
+.address-autocomplete__input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.address-autocomplete__input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.address-autocomplete__spinner {
+  position: absolute;
+  right: 12px;
+  color: var(--color-text-tertiary);
+  animation: address-autocomplete-spin 1s linear infinite;
+}
+
+@keyframes address-autocomplete-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.address-autocomplete__dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--color-bg-default);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevation-lg);
+  z-index: 100;
+}
+
+.address-autocomplete__option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.address-autocomplete__option:hover,
+.address-autocomplete__option--highlighted {
+  background: var(--color-surface-subtle);
+}
+
+.address-autocomplete__option-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-text-tertiary);
+}
+
+.address-autocomplete__option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.address-autocomplete__option-main {
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.address-autocomplete__option-secondary {
+  font-size: 0.78rem;
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.address-autocomplete__error {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--color-danger-text);
+}
+
+.address-autocomplete--error .address-autocomplete__input {
+  border-color: var(--color-danger-border);
+}
