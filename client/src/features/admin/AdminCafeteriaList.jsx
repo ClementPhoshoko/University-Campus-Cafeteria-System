@@ -114,6 +114,40 @@ function CollectionPointRow({ point }) {
   );
 }
 
+function Field({ label, children, full = false }) {
+  return (
+    <label className={`admin-modal__field${full ? ' admin-modal__field--full' : ''}`}>
+      <span>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function FileInput({ value, onChange, accept = 'image/jpeg,image/png,image/webp' }) {
+  const [fileName, setFileName] = useState('');
+  const inputRef = useRef(null);
+  const handleChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    setFileName(file?.name || '');
+    onChange(file);
+  };
+  return (
+    <div className="admin-file-input" onClick={() => inputRef.current?.click()}>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        onChange={handleChange}
+        className="admin-file-input__native"
+      />
+      <div className="admin-file-input__display">
+        <span className="admin-file-input__text">{fileName || 'Choose file...'}</span>
+        <span className="admin-file-input__btn">Browse</span>
+      </div>
+    </div>
+  );
+}
+
 function NewSiteModal({ onClose, onSubmit, submitting }) {
   const [form, setForm] = useState({ name: '', code: '', address: '', latitude: '', longitude: '', timezone: 'Africa/Johannesburg', is_active: true, cover_file: null });
   const [error, setError] = useState('');
@@ -125,21 +159,59 @@ function NewSiteModal({ onClose, onSubmit, submitting }) {
       onClose();
     } catch (err) { setError(err.message || 'Could not create site.'); }
   };
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   return (
-    <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card admin-modal__card--lg">
-      <header className="admin-modal__head"><div className="admin-modal__icon admin-modal__icon--info"><IconPlus size={20} /></div><div><h3 className="admin-modal__title">Register new site</h3><p className="admin-modal__sub">Add a top-level campus location.</p></div></header>
-      {error && <div className="vendor-form-error">{error}</div>}
-      <div className="admin-form-grid">
-        <label className="admin-modal__field"><span>Site name</span><input autoFocus className="admin-input" value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Merchant Place Riverside" /></label>
-        <label className="admin-modal__field"><span>Site code</span><input className="admin-input" value={form.code} onChange={(e) => update('code', e.target.value)} placeholder="MP-RIVERSIDE" /></label>
-        <label className="admin-modal__field admin-modal__field--full"><span>Address</span><input className="admin-input" value={form.address} onChange={(e) => update('address', e.target.value)} /></label>
-        <label className="admin-modal__field"><span>Latitude</span><input className="admin-input" type="number" step="any" value={form.latitude} onChange={(e) => update('latitude', e.target.value)} /></label>
-        <label className="admin-modal__field"><span>Longitude</span><input className="admin-input" type="number" step="any" value={form.longitude} onChange={(e) => update('longitude', e.target.value)} /></label>
-        <label className="admin-modal__field"><span>Timezone</span><input className="admin-input" value={form.timezone} onChange={(e) => update('timezone', e.target.value)} /></label><label className="admin-modal__field"><span>Cover image</span><input className="admin-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => update('cover_file', e.target.files?.[0] || null)} /></label>
-        <label className="vendor-checkbox"><input type="checkbox" checked={form.is_active} onChange={(e) => update('is_active', e.target.checked)} /> Active site</label>
+    <div className="admin-modal" role="dialog" aria-modal="true">
+      <div className="admin-modal__overlay" onClick={onClose} />
+      <div className="admin-modal__card admin-modal__card--lg">
+        <header className="admin-modal__head">
+          <div className="admin-modal__icon admin-modal__icon--info"><IconPlus size={20} /></div>
+          <div>
+            <h3 className="admin-modal__title">Register new site</h3>
+            <p className="admin-modal__sub">Add a top-level campus location.</p>
+          </div>
+        </header>
+        {error && <div className="vendor-form-error">{error}</div>}
+        <div className="admin-form-grid">
+          <Field label="Site name">
+            <input autoFocus className="admin-input" value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Merchant Place Riverside" />
+          </Field>
+          <Field label="Site code">
+            <input className="admin-input" value={form.code} onChange={(e) => update('code', e.target.value)} placeholder="MP-RIVERSIDE" />
+          </Field>
+          <Field label="Address" full>
+            <input className="admin-input" value={form.address} onChange={(e) => update('address', e.target.value)} />
+          </Field>
+          <Field label="Latitude">
+            <input className="admin-input" type="number" step="any" value={form.latitude} onChange={(e) => update('latitude', e.target.value)} />
+          </Field>
+          <Field label="Longitude">
+            <input className="admin-input" type="number" step="any" value={form.longitude} onChange={(e) => update('longitude', e.target.value)} />
+          </Field>
+          <Field label="Timezone">
+            <input className="admin-input" value={form.timezone} onChange={(e) => update('timezone', e.target.value)} />
+          </Field>
+          <Field label="Cover image" full>
+            <FileInput value={form.cover_file} onChange={(file) => update('cover_file', file)} />
+          </Field>
+          <label className="vendor-checkbox">
+            <input type="checkbox" checked={form.is_active} onChange={(e) => update('is_active', e.target.checked)} />
+            Active site
+          </label>
+        </div>
+        <footer className="admin-modal__foot">
+          <button type="button" className="admin-action" onClick={onClose}>Cancel</button>
+          <button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>
+            {submitting ? 'Registering…' : 'Register site'}
+          </button>
+        </footer>
       </div>
-      <footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Registering…' : 'Register site'}</button></footer>
-    </div></div>
+    </div>
   );
 }
 

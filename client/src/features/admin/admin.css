@@ -2543,6 +2543,8 @@
   flex-direction: column;
   gap: var(--space-4);
   width: min(440px, 90vw);
+  max-height: 90vh;
+  overflow-y: auto;
   padding: var(--space-6);
   background: var(--color-bg-default);
   border: 1px solid var(--glass-border);
@@ -2605,8 +2607,9 @@
 
 .admin-modal__field span {
   font-size: 0.78rem;
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
+  letter-spacing: -0.01em;
 }
 
 .admin-modal__textarea {
@@ -4275,6 +4278,8 @@
 
 .admin-modal__card--lg {
   width: min(560px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .admin-topbar__chip--healthy {
@@ -5323,7 +5328,7 @@
 .admin-form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-3);
+  gap: var(--space-4) var(--space-3);
   margin-top: var(--space-2);
 }
 
@@ -5335,9 +5340,9 @@
   width: 100%;
   height: 40px;
   padding: 0 var(--space-3);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-xs);
-  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-default);
   font-family: var(--font-primary);
   font-size: 0.85rem;
   color: var(--color-text-primary);
@@ -5345,9 +5350,78 @@
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
+.admin-input:hover {
+  border-color: var(--color-border-default);
+}
+
 .admin-input:focus {
   border-color: var(--color-action-primary);
-  box-shadow: 0 0 0 3px rgba(10, 140, 255, 0.16);
+  box-shadow: 0 0 0 3px rgba(10, 140, 255, 0.12);
+}
+
+.admin-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+select.admin-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.admin-file-input {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  cursor: pointer;
+}
+
+.admin-file-input__native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.admin-file-input__display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-default);
+  transition: border-color var(--transition-fast);
+}
+
+.admin-file-input:hover .admin-file-input__display {
+  border-color: var(--color-border-default);
+}
+
+.admin-file-input__text {
+  font-size: 0.85rem;
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-file-input__btn {
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  font-size: 0.78rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  margin-left: var(--space-2);
 }
 
 /* ── Feature flags list ── */
