@@ -26,9 +26,39 @@ export async function listUsers(req, res) {
     const from = (pageNum - 1) * limitNum;
     const to = from + limitNum - 1;
 
+    // NOTE: user_roles has TWO FKs to profiles (user_id, granted_by), so
+    // `profiles -> user_roles` embedding is ambiguous in PostgREST
+    // ("more than one relationship was found"). Avoid embedding entirely:
+    // query profiles, then user_roles separately.
+    let roleUserIds = null;
+    if (role) {
+      const { data: roleRows, error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', role);
+      if (roleError) {
+        return res.status(500).json({
+          success: false,
+          error: { code: 'QUERY_ERROR', message: roleError.message },
+        });
+      }
+      roleUserIds = (roleRows || []).map((r) => r.user_id);
+      if (roleUserIds.length === 0) {
+        return respond(req, res, {
+          success: true,
+          users: [],
+          pagination: { page: pageNum, limit: limitNum, total: 0, totalPages: 0 },
+        }, { cacheControl: CACHE.adminConfig });
+      }
+    }
+
     let query = supabaseAdmin
       .from('profiles')
-      .select('id, email, full_name, employee_number, department, is_active, created_at, user_roles(role)', { count: 'exact' });
+      .select('id, email, full_name, employee_number, department, is_active, created_at', { count: 'exact' });
+
+    if (roleUserIds) {
+      query = query.in('id', roleUserIds);
+    }
 
     if (search) {
       query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,employee_number.ilike.%${search}%`);
@@ -45,22 +75,30 @@ export async function listUsers(req, res) {
       });
     }
 
-    // Build role map from embedded data (single query, no N+1)
+    // Fetch roles for the page (single query, no N+1, no embed)
+    const ids = (users || []).map((u) => u.id);
     let roleMap = {};
-    for (const u of users || []) {
-      roleMap[u.id] = (u.user_roles || []).map((r) => r.role);
+    if (ids.length) {
+      const { data: roleRows, error: rolesError } = await supabaseAdmin
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', ids);
+      if (rolesError) {
+        return res.status(500).json({
+          success: false,
+          error: { code: 'QUERY_ERROR', message: rolesError.message },
+        });
+      }
+      for (const r of roleRows || []) {
+        if (!roleMap[r.user_id]) roleMap[r.user_id] = [];
+        roleMap[r.user_id].push(r.role);
+      }
     }
 
-    // If role filter is set, filter users server-side
-    let filtered = (users || []).map((u) => ({
+    const filtered = (users || []).map((u) => ({
       ...u,
-      user_roles: undefined,
       roles: roleMap[u.id] || [],
     }));
-
-    if (role) {
-      filtered = filtered.filter((u) => u.roles.includes(role));
-    }
 
     return respond(req, res, {
       success: true,

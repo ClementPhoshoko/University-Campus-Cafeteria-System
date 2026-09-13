@@ -23,7 +23,17 @@ function normalizePayload(payload) {
 
 function ChildRows({ items, type, onEdit }) {
   if (!items.length) return <p className="admin-vendor-empty-copy">No {type} configured.</p>;
-  return <div className="location-child-list">{items.map((item) => <div className="vendor-managed-row" key={item.id}><div><strong>{item.name}</strong><span>{type === 'floors' ? `Level ${item.level_number ?? '—'}` : item.instructions || item.room_or_venue || item.service_status || 'No additional details'}</span></div><div className="vendor-managed-row__actions"><StatusPill active={item.is_active ?? item.location_is_active} />{onEdit && <button type="button" className="admin-action admin-action--ghost" onClick={() => onEdit(item)}>Edit</button>}</div></div>)}</div>;
+  return <div className="location-child-list">{items.map((item) => {
+    let subtitle = item.instructions || item.room_or_venue || item.service_status || 'No additional details';
+    if (type !== 'floors') {
+      const floorLabel = item.floor?.name ? `${item.floor.name}${item.floor.level_number !== null && item.floor.level_number !== undefined ? ` (Level ${item.floor.level_number})` : ''}` : 'Building level';
+      const detail = item.instructions || item.room_or_venue || item.service_status || '';
+      subtitle = detail ? `${floorLabel} · ${detail}` : floorLabel;
+    } else {
+      subtitle = `Level ${item.level_number ?? '—'}`;
+    }
+    return <div className="vendor-managed-row" key={item.id}><div><strong>{item.name}</strong><span>{subtitle}</span></div><div className="vendor-managed-row__actions"><StatusPill active={item.is_active ?? item.location_is_active} />{onEdit && <button type="button" className="admin-action admin-action--ghost" onClick={() => onEdit(item)}>Edit</button>}</div></div>;
+  })}</div>;
 }
 
 export default function AdminCafeteriaDetail() {
@@ -87,11 +97,11 @@ export default function AdminCafeteriaDetail() {
     {modal === 'edit' && <LocationModal title={isSite ? 'Edit site' : 'Edit building'} initial={entity} fields={isSite ? siteFields : buildingFields} onClose={() => setModal(null)} onSubmit={(payload) => mutate(async () => { const { cover_file: coverFile, ...entityPayload } = payload; if (isSite) await updateSite(token, entity.id, normalizePayload(entityPayload)); else await updateBuilding(token, entity.id, normalizePayload(entityPayload)); if (coverFile) await uploadAdminAsset(token, isSite ? 'site' : 'building', entity.id, coverFile); })} submitting={mutating} />}
     {modal === 'building' && <LocationModal title="Add building" fields={buildingFields} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => createBuilding(token, entity.id, normalizePayload(payload)))} submitting={mutating} />}
     {modal === 'floor' && <LocationModal title="Add floor" fields={floorFields} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => createFloor(token, entity.id, normalizePayload(payload)))} submitting={mutating} />}
-    {modal?.type === 'floor' && <LocationModal title="Edit floor" initial={modal.item} fields={floorFields} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => updateFloor(token, modal.item.id, normalizePayload(payload)))} submitting={mutating} />}
-    {modal === 'collection-point' && <LocationModal title="Add collection point" fields={collectionPointFields} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => createCollectionPoint(token, entity.id, normalizePayload(payload)))} submitting={mutating} />}
-    {modal?.type === 'collection-point' && <LocationModal title="Edit collection point" initial={modal.item} fields={collectionPointFields} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => updateCollectionPoint(token, modal.item.id, normalizePayload(payload)))} submitting={mutating} />}
-    {modal === 'delivery' && <LocationModal title="Add delivery location" fields={deliveryFields} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => createDeliveryLocation(token, entity.id, normalizePayload(payload)))} submitting={mutating} />}
-    {modal?.type === 'delivery' && <LocationModal title="Edit delivery location" initial={modal.item} fields={deliveryFields} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => updateDeliveryLocation(token, modal.item.id, normalizePayload(payload)))} submitting={mutating} />}
+    {modal?.type === 'floor' && <LocationModal key={modal.item.id} title="Edit floor" initial={modal.item} fields={floorFields} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => updateFloor(token, modal.item.id, normalizePayload(payload)))} submitting={mutating} />}
+    {modal === 'collection-point' && <LocationModal title="Add collection point" fields={collectionPointFields} floors={floors} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => createCollectionPoint(token, entity.id, normalizePayload(payload)))} submitting={mutating} />}
+    {modal?.type === 'collection-point' && <LocationModal key={modal.item.id} title="Edit collection point" initial={modal.item} fields={collectionPointFields} floors={floors} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => updateCollectionPoint(token, modal.item.id, normalizePayload(payload)))} submitting={mutating} />}
+    {modal === 'delivery' && <LocationModal title="Add delivery location" fields={deliveryFields} floors={floors} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => createDeliveryLocation(token, entity.id, normalizePayload(payload)))} submitting={mutating} />}
+    {modal?.type === 'delivery' && <LocationModal key={modal.item.id} title="Edit delivery location" initial={modal.item} fields={deliveryFields} floors={floors} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => updateDeliveryLocation(token, modal.item.id, normalizePayload(payload)))} submitting={mutating} />}
   </div>;
 }
 

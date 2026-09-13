@@ -22,10 +22,12 @@ export async function login(req, res) {
     });
   }
 
-  // Fetch profile to attach role info
+  // Fetch profile + roles separately: user_roles has two FKs to profiles
+  // (user_id, granted_by), so embedding user_roles under profiles is
+  // ambiguous in PostgREST.
   const { data: profile, error: profileError } = await supabase
     .from('public.profiles')
-    .select('*, user_roles(role)')
+    .select('*')
     .eq('id', data.user.id)
     .single();
 
@@ -36,8 +38,20 @@ export async function login(req, res) {
     });
   }
 
+  const { data: roleRows, error: rolesError } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', data.user.id);
+
+  if (rolesError) {
+    return res.status(500).json({
+      success: false,
+      error: { code: 'PROFILE_ERROR', message: rolesError.message }
+    });
+  }
+
   // Build user object with roles
-  const userRoles = profile.user_roles ? profile.user_roles.map(ur => ur.role) : [];
+  const userRoles = (roleRows || []).map((ur) => ur.role);
   const user = {
     id: data.user.id,
     email: data.user.email,
@@ -70,7 +84,7 @@ export async function refresh(req, res) {
 export async function me(req, res) {
   const { data: profile, error: profileError } = await supabase
     .from('public.profiles')
-    .select('*, user_roles(role)')
+    .select('*')
     .eq('id', req.user?.id)
     .single();
 
@@ -81,7 +95,19 @@ export async function me(req, res) {
     });
   }
 
-  const userRoles = profile.user_roles ? profile.user_roles.map(ur => ur.role) : [];
+  const { data: roleRows, error: rolesError } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', req.user?.id);
+
+  if (rolesError) {
+    return res.status(500).json({
+      success: false,
+      error: { code: 'PROFILE_ERROR', message: rolesError.message }
+    });
+  }
+
+  const userRoles = (roleRows || []).map((ur) => ur.role);
   const user = {
     id: profile.id,
     email: profile.email,

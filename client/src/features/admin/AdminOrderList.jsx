@@ -176,6 +176,7 @@ export default function AdminOrderList() {
   const [page, setPageState] = useState(() => parseInt(searchParams.get('page')) || 1);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const urlPage = parseInt(searchParams.get('page')) || 1;
@@ -195,7 +196,12 @@ export default function AdminOrderList() {
     let cancelled = false;
 
     const fetchOrders = async () => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
+      setError('');
       try {
         const params = {
           search: query || undefined,
@@ -204,11 +210,15 @@ export default function AdminOrderList() {
         };
 
         const response = await listOrders(token, params);
-        setOrders(response.orders || []);
+        if (!cancelled) setOrders(response.orders || []);
       } catch (err) {
-        console.error('Failed to fetch orders:', err);
+        if (!cancelled) {
+          console.error('Failed to fetch orders:', err);
+          setError(err.message || 'Could not load orders.');
+          setOrders([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
@@ -353,7 +363,20 @@ export default function AdminOrderList() {
         </div>
       </div>
 
-      {loading ? <div className="admin-vendor-detail"><SkeletonTable rows={5} columns={5} /></div> : paginatedOrders.length > 0 ? (
+      {loading ? <div className="admin-vendor-detail"><SkeletonTable rows={5} columns={5} /></div> : error ? (
+        <div className="admin-empty">
+          <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
+          <h3>Could not load orders</h3>
+          <p>{error}</p>
+          <button
+            type="button"
+            className="admin-action--ghost"
+            onClick={() => { setError(''); setQuery(''); setStatusFilter('all'); setVendorFilter('all'); }}
+          >
+            Clear filters and retry
+          </button>
+        </div>
+      ) : paginatedOrders.length > 0 ? (
         <>
           <div className="admin-card admin-card--full">
             <table className="admin-table">
