@@ -28,7 +28,7 @@ export async function listUsers(req, res) {
 
     let query = supabaseAdmin
       .from('profiles')
-      .select('id, email, full_name, employee_number, department, is_active, created_at, user_roles(role)', { count: 'exact' });
+      .select('id, email, full_name, employee_number, department, is_active, created_at', { count: 'exact' });
 
     if (search) {
       query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,employee_number.ilike.%${search}%`);
@@ -45,16 +45,22 @@ export async function listUsers(req, res) {
       });
     }
 
-    // Build role map from embedded data (single query, no N+1)
+    // Fetch roles separately — avoids PostgREST embedding ambiguity
+    const userIds = (users || []).map((u) => u.id);
     let roleMap = {};
-    for (const u of users || []) {
-      roleMap[u.id] = (u.user_roles || []).map((r) => r.role);
+    if (userIds.length > 0) {
+      const { data: allRoles } = await supabaseAdmin
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', userIds);
+      for (const r of allRoles || []) {
+        if (!roleMap[r.user_id]) roleMap[r.user_id] = [];
+        roleMap[r.user_id].push(r.role);
+      }
     }
 
-    // If role filter is set, filter users server-side
     let filtered = (users || []).map((u) => ({
       ...u,
-      user_roles: undefined,
       roles: roleMap[u.id] || [],
     }));
 

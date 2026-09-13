@@ -25,7 +25,7 @@ export async function login(req, res) {
   // Fetch profile to attach role info
   const { data: profile, error: profileError } = await supabase
     .from('public.profiles')
-    .select('*, user_roles(role)')
+    .select('*')
     .eq('id', data.user.id)
     .single();
 
@@ -36,8 +36,13 @@ export async function login(req, res) {
     });
   }
 
-  // Build user object with roles
-  const userRoles = profile.user_roles ? profile.user_roles.map(ur => ur.role) : [];
+  // Fetch roles separately to avoid PostgREST embedding ambiguity
+  const { data: roleRows } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', data.user.id);
+
+  const userRoles = (roleRows || []).map(ur => ur.role);
   const user = {
     id: data.user.id,
     email: data.user.email,
@@ -70,7 +75,7 @@ export async function refresh(req, res) {
 export async function me(req, res) {
   const { data: profile, error: profileError } = await supabase
     .from('public.profiles')
-    .select('*, user_roles(role)')
+    .select('*')
     .eq('id', req.user?.id)
     .single();
 
@@ -81,7 +86,13 @@ export async function me(req, res) {
     });
   }
 
-  const userRoles = profile.user_roles ? profile.user_roles.map(ur => ur.role) : [];
+  // Fetch roles separately to avoid PostgREST embedding ambiguity
+  const { data: roleRows } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', req.user?.id);
+
+  const userRoles = (roleRows || []).map(ur => ur.role);
   const user = {
     id: profile.id,
     email: profile.email,

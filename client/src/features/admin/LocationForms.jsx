@@ -69,13 +69,29 @@ export const floorFields = [
   { key: 'is_active', label: 'Status', type: 'select', options: [{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }] },
 ];
 
-export const collectionPointFields = [
-  { key: 'name', label: 'Collection point name' }, { key: 'floor_id', label: 'Floor ID' }, { key: 'instructions', label: 'Instructions', type: 'textarea', full: true },
-  { key: 'is_express', label: 'Type', type: 'select', options: [{ value: true, label: 'Express' }, { value: false, label: 'Catering' }] },
-  { key: 'is_active', label: 'Status', type: 'select', options: [{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }] },
-];
+function floorOptions(floors) {
+  return [
+    { value: '', label: 'None (unassigned)' },
+    ...floors.map((f) => ({ value: f.id, label: f.name + (f.level_number != null ? ` — Level ${f.level_number}` : '') })),
+  ];
+}
 
-export const deliveryFields = [
-  { key: 'name', label: 'Delivery location name' }, { key: 'floor_id', label: 'Floor ID' }, { key: 'room_or_venue', label: 'Room or venue', full: true },
-  { key: 'instructions', label: 'Instructions', type: 'textarea', full: true }, { key: 'is_active', label: 'Status', type: 'select', options: [{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }] },
-];
+export function collectionPointFields(floors = []) {
+  return [
+    { key: 'name', label: 'Collection point name' },
+    { key: 'floor_id', label: 'Floor', type: 'select', options: floorOptions(floors) },
+    { key: 'instructions', label: 'Instructions', type: 'textarea', full: true },
+    { key: 'is_express', label: 'Type', type: 'select', options: [{ value: true, label: 'Express' }, { value: false, label: 'Catering' }] },
+    { key: 'is_active', label: 'Status', type: 'select', options: [{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }] },
+  ];
+}
+
+export function deliveryFields(floors = []) {
+  return [
+    { key: 'name', label: 'Delivery location name' },
+    { key: 'floor_id', label: 'Floor', type: 'select', options: floorOptions(floors) },
+    { key: 'room_or_venue', label: 'Room or venue', full: true },
+    { key: 'instructions', label: 'Instructions', type: 'textarea', full: true },
+    { key: 'is_active', label: 'Status', type: 'select', options: [{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }] },
+  ];
+}
