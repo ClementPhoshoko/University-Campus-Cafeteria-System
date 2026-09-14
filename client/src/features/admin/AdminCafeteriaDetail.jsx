@@ -5,7 +5,7 @@ import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import {
-  createBuilding, createCollectionPoint, createDeliveryLocation, createFloor, getBuilding, getSite, listBuildings, listBuildingVendors, listCollectionPoints, listDeliveryLocations, listFloors, updateBuilding, updateCollectionPoint, updateDeliveryLocation, updateFloor, updateSite, uploadAdminAsset,
+  createBuilding, createCollectionPoint, createDeliveryLocation, createFloor, getBuilding, getSite, listAllBuildings, listBuildings, listBuildingVendors, listCollectionPoints, listDeliveryLocations, listFloors, listSites, updateBuilding, updateCollectionPoint, updateDeliveryLocation, updateFloor, updateSite, uploadAdminAsset,
 } from '../../services/adminApi.js';
 import { buildingFields, collectionPointFields, deliveryFields, floorFields, LocationModal, siteFields } from './LocationForms.jsx';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
@@ -41,6 +41,8 @@ export default function AdminCafeteriaDetail() {
   const [modal, setModal] = useState(null);
   const [mutating, setMutating] = useState(false);
   const requestIdRef = useState(0);
+  const [allBuildings, setAllBuildings] = useState([]);
+  const [floorsByBuilding, setFloorsByBuilding] = useState({});
 
   const load = useCallback(async (signal) => {
     const requestId = ++requestIdRef[0];
@@ -93,6 +95,30 @@ export default function AdminCafeteriaDetail() {
   }, [load]);
 
   const mutate = async (operation) => { setMutating(true); try { await operation(); setModal(null); await load(); } finally { setMutating(false); } };
+
+  useEffect(() => {
+    if ((modal === 'collection-point' || modal?.type === 'collection-point') && token) {
+      let cancelled = false;
+      (async () => {
+        try {
+          const res = await listAllBuildings(token, { page: 1, limit: 100 });
+          if (cancelled) return;
+          setAllBuildings(res?.buildings || []);
+          const bldgs = res?.buildings || [];
+          const floorsMap = {};
+          await Promise.all(bldgs.map(async (b) => {
+            try {
+              const fRes = await listFloors(token, b.id, { page: 1, limit: 100 });
+              if (!cancelled) floorsMap[b.id] = fRes?.floors || [];
+            } catch { /* skip */ }
+          }));
+          if (!cancelled) setFloorsByBuilding(floorsMap);
+        } catch { /* ignore */ }
+      })();
+      return () => { cancelled = true; };
+    }
+  }, [modal, token]);
+
   const title = entity?.name || 'Location';
   if (loading) return <div className="admin-vendor-detail"><Breadcrumb homeLabel="Dashboard" homeTo="/admin" items={[{ label: 'Locations', to: '/admin/cafeterias' }, { label: 'Loading...' }]} /><section className="admin-site-hero"><div className="admin-site-hero__cover admin-site-card__cover--plain"><span className="skeleton" style={{ width: 48, height: 48, borderRadius: 'var(--radius-md)' }} /></div><div className="admin-site-hero__info"><div className="admin-site-hero__head"><span className="skeleton skeleton--kpi-value" style={{ width: 80 }} /></div><div className="skeleton skeleton--title" style={{ width: '35%', marginTop: 8 }} /><div className="skeleton skeleton--text" style={{ width: '50%', marginTop: 8 }} /></div></section><section className="admin-vendor-stats"><div className="admin-vendor-stat"><div className="admin-vendor-stat__body"><span className="admin-vendor-stat__label">Buildings</span><span className="admin-vendor-stat__value"><span className="skeleton skeleton--kpi-value" /></span></div></div><div className="admin-vendor-stat"><div className="admin-vendor-stat__body"><span className="admin-vendor-stat__label">Collection points</span><span className="admin-vendor-stat__value"><span className="skeleton skeleton--kpi-value" /></span></div></div><div className="admin-vendor-stat"><div className="admin-vendor-stat__body"><span className="admin-vendor-stat__label">Delivery locations</span><span className="admin-vendor-stat__value"><span className="skeleton skeleton--kpi-value" /></span></div></div><div className="admin-vendor-stat"><div className="admin-vendor-stat__body"><span className="admin-vendor-stat__label">Vendors</span><span className="admin-vendor-stat__value"><span className="skeleton skeleton--kpi-value" /></span></div></div></section><SkeletonTable rows={4} columns={3} /></div>;
   if (!entity || error) return <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>Location not found</h3><p>{error || 'This site or building may have been removed.'}</p><Link to="/admin/cafeterias" className="admin-action--ghost"><IconChevronLeft size={13} /> Back to locations</Link></div>;
@@ -114,8 +140,8 @@ export default function AdminCafeteriaDetail() {
     {modal === 'building' && <LocationModal title="Add building" fields={buildingFields} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => createBuilding(token, entity.id, normalizePayload(payload)))} submitting={mutating} />}
     {modal === 'floor' && <LocationModal title="Add floor" fields={floorFields} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => createFloor(token, entity.id, normalizePayload(payload)))} submitting={mutating} />}
     {modal?.type === 'floor' && <LocationModal title="Edit floor" initial={modal.item} fields={floorFields} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => updateFloor(token, modal.item.id, normalizePayload(payload)))} submitting={mutating} />}
-    {modal === 'collection-point' && <LocationModal title="Add collection point" fields={collectionPointFields(floors)} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => createCollectionPoint(token, entity.id, normalizePayload(payload)))} submitting={mutating} />}
-    {modal?.type === 'collection-point' && <LocationModal title="Edit collection point" initial={modal.item} fields={collectionPointFields(floors)} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => updateCollectionPoint(token, modal.item.id, normalizePayload(payload)))} submitting={mutating} />}
+    {modal === 'collection-point' && <LocationModal title="Add collection point" fields={(form) => collectionPointFields(floors, allBuildings, floorsByBuilding, form.building_id)} onClose={() => setModal(null)} onSubmit={(payload) => { const buildingId = payload.building_id || entity.id; const { building_id, ...rest } = payload; return mutate(() => createCollectionPoint(token, buildingId, normalizePayload(rest))); }} submitting={mutating} />}
+    {modal?.type === 'collection-point' && <LocationModal title="Edit collection point" initial={modal.item} fields={(form) => collectionPointFields(floors, allBuildings, floorsByBuilding, form.building_id)} onClose={() => setModal(null)} onSubmit={(payload) => { const { building_id, ...rest } = payload; return mutate(() => updateCollectionPoint(token, modal.item.id, normalizePayload(rest))); }} submitting={mutating} />}
     {modal === 'delivery' && <LocationModal title="Add delivery location" fields={deliveryFields(floors)} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => createDeliveryLocation(token, entity.id, normalizePayload(payload)))} submitting={mutating} />}
     {modal?.type === 'delivery' && <LocationModal title="Edit delivery location" initial={modal.item} fields={deliveryFields(floors)} onClose={() => setModal(null)} onSubmit={(payload) => mutate(() => updateDeliveryLocation(token, modal.item.id, normalizePayload(payload)))} submitting={mutating} />}
   </div>;

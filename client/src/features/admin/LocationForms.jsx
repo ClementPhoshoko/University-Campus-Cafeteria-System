@@ -14,6 +14,8 @@ export function LocationModal({ title, initial = {}, fields, onClose, onSubmit, 
   const { session } = useAuth();
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
+  const resolvedFields = typeof fields === 'function' ? fields(form) : fields;
+
   const handleAddressSelect = (locationData) => {
     setForm((prev) => ({
       ...prev,
@@ -32,8 +34,8 @@ export function LocationModal({ title, initial = {}, fields, onClose, onSubmit, 
 
   const submit = async () => { try { await onSubmit(form); onClose(); } catch (err) { setError(err.message || 'Could not save changes.'); } };
 
-  const fileFields = fields.filter((f) => f.type === 'file');
-  const otherFields = fields.filter((f) => f.type !== 'file');
+  const fileFields = resolvedFields.filter((f) => f.type === 'file');
+  const otherFields = resolvedFields.filter((f) => f.type !== 'file');
 
   const renderField = (field) => {
     if (field.type === 'address') {
@@ -94,10 +96,19 @@ function floorOptions(floors) {
   ];
 }
 
-export function collectionPointFields(floors = []) {
+function buildingOptions(buildings) {
   return [
+    { value: '', label: 'Select a building' },
+    ...buildings.map((b) => ({ value: b.id, label: b.site_name ? `${b.name} (${b.site_name})` : b.name })),
+  ];
+}
+
+export function collectionPointFields(floors = [], buildings = [], floorsByBuilding = {}, selectedBuildingId = '') {
+  const availableFloors = selectedBuildingId ? (floorsByBuilding[selectedBuildingId] || []) : floors;
+  return [
+    { key: 'building_id', label: 'Building', type: 'select', options: buildingOptions(buildings) },
     { key: 'name', label: 'Collection point name' },
-    { key: 'floor_id', label: 'Floor', type: 'select', options: floorOptions(floors) },
+    { key: 'floor_id', label: 'Floor', type: 'select', options: floorOptions(availableFloors) },
     { key: 'instructions', label: 'Instructions', type: 'textarea', full: true },
     { key: 'is_express', label: 'Type', type: 'select', options: [{ value: true, label: 'Express' }, { value: false, label: 'Catering' }] },
     { key: 'is_active', label: 'Status', type: 'select', options: [{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }] },

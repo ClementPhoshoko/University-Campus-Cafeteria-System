@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCheck, IconPlus, IconUpload, IconX } from '@tabler/icons-react';
-import { useAdminLocations } from '../../hooks/useAdminLocations.js';
+import { useAuth } from '../../hooks/useAuth.js';
+import { listSites, listBuildings, listCollectionPoints } from '../../services/adminApi.js';
 import { FileInput } from './AdminCafeteriaList.jsx';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -14,19 +15,38 @@ function Field({ label, children, full = false }) {
 }
 
 function LocationFields({ form, setForm }) {
-  const {
-    sites, buildingsBySite, collectionPointsByBuilding, fetchBuildings, fetchCollectionPoints,
-  } = useAdminLocations();
-  const buildings = buildingsBySite[form.site_id] || [];
-  const collectionPoints = collectionPointsByBuilding[form.building_id] || [];
+  const { session } = useAuth();
+  const token = session?.access_token;
+  const [sites, setSites] = useState([]);
+  const [buildings, setBuildings] = useState([]);
+  const [collectionPoints, setCollectionPoints] = useState([]);
 
   useEffect(() => {
-    if (form.site_id) fetchBuildings(form.site_id).catch(() => {});
-  }, [fetchBuildings, form.site_id]);
+    if (!token) return;
+    let cancelled = false;
+    listSites(token, { page: 1, limit: 100 }).then((res) => {
+      if (!cancelled) setSites(res?.sites || []);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [token]);
 
   useEffect(() => {
-    if (form.building_id) fetchCollectionPoints(form.building_id).catch(() => {});
-  }, [fetchCollectionPoints, form.building_id]);
+    if (!token || !form.site_id) { setBuildings([]); return; }
+    let cancelled = false;
+    listBuildings(token, form.site_id, { page: 1, limit: 100 }).then((res) => {
+      if (!cancelled) setBuildings(res?.buildings || []);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [token, form.site_id]);
+
+  useEffect(() => {
+    if (!token || !form.building_id) { setCollectionPoints([]); return; }
+    let cancelled = false;
+    listCollectionPoints(token, form.building_id, { page: 1, limit: 100 }).then((res) => {
+      if (!cancelled) setCollectionPoints(res?.collectionPoints || []);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [token, form.building_id]);
 
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
