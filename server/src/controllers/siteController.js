@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../config/supabase.js';
+import { supabaseAdmin, getPublicAssetUrl } from '../config/supabase.js';
 import { parsePagination, buildPagination } from '../utils/pagination.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { writeAudit } from '../utils/audit.js';
@@ -20,15 +20,19 @@ import {
 
 const db = () => supabaseAdmin;
 
-async function resolveAssetUrl(path) {
-  if (!path || /^https?:\/\//i.test(path)) return path;
-  const { data } = await db().storage.from('vendor-assets').createSignedUrl(path, 3600);
-  return data?.signedUrl || path;
-}
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+async function resolveAssetUrl(path) {
+  if (!path || /^https?:\/\//i.test(path)) return path;
+  try {
+    const { data } = await db().storage.from('vendor-assets').createSignedUrl(path, 3600);
+    return data?.signedUrl || getPublicAssetUrl(path);
+  } catch {
+    return getPublicAssetUrl(path);
+  }
+}
 
 function handleControllerError(res, err) {
   if (err instanceof ApiError) {

@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../config/supabase.js';
+import { supabaseAdmin, getPublicAssetUrl } from '../config/supabase.js';
 import { parsePagination, buildPagination } from '../utils/pagination.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { writeAudit } from '../utils/audit.js';
@@ -20,12 +20,6 @@ import {
 
 const db = () => supabaseAdmin;
 
-async function resolveAssetUrl(path) {
-  if (!path || /^https?:\/\//i.test(path)) return path;
-  const { data } = await supabaseAdmin.storage.from('vendor-assets').createSignedUrl(path, 3600);
-  return data?.signedUrl || path;
-}
-
 const LOCATION_SELECT = '*, sites(id, name), buildings(id, name), collection_points(id, name), operating_hours(*)';
 
 const ONBOARDING_KEY_FIELD = 'onboarding_key';
@@ -35,6 +29,16 @@ const VENDOR_PUBLIC_FIELDS = 'id, name, slug, description, logo_url, corporate_c
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
+
+async function resolveAssetUrl(path) {
+  if (!path || /^https?:\/\//i.test(path)) return path;
+  try {
+    const { data } = await db().storage.from('vendor-assets').createSignedUrl(path, 3600);
+    return data?.signedUrl || getPublicAssetUrl(path);
+  } catch {
+    return getPublicAssetUrl(path);
+  }
+}
 
 function handleControllerError(res, err) {
   if (err instanceof ApiError) {
@@ -77,6 +81,7 @@ function pickPublicVendor(vendor) {
   const fields = VENDOR_PUBLIC_FIELDS.split(', ').filter((f) => !f.includes(':'));
   const out = {};
   for (const f of fields) out[f] = vendor[f];
+  out.logo_url = resolveAssetUrl(vendor.logo_url);
   return out;
 }
 
@@ -970,7 +975,7 @@ export async function getPublicVendor(req, res) {
 
     return respond(req, res, {
       success: true,
-      vendor: { ...vendor, locations: activeLocations },
+      vendor: { ...vendor, logo_url: resolveAssetUrl(vendor.logo_url), locations: activeLocations },
     }, { cacheControl: CACHE.publicRef });
   } catch (err) {
     return handleControllerError(res, err);

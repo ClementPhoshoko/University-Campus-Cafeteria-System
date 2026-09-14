@@ -32,19 +32,16 @@ export default function OrdersPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const [allRes, activeRes, completedRes, cancelledRes] = await Promise.all([
-        listMyOrders({ page: 1, limit: 100, token, signal }),
-        listMyOrders({ page: 1, limit: 100, status: 'active', token, signal }),
-        listMyOrders({ page: 1, limit: 100, status: 'completed', token, signal }),
-        listMyOrders({ page: 1, limit: 100, status: 'cancelled', token, signal }),
-      ]);
-      setOrders(allRes?.orders || []);
-      setCounts({
-        all: allRes?.pagination?.total || (allRes?.orders || []).length,
-        active: activeRes?.pagination?.total || (activeRes?.orders || []).length,
-        completed: completedRes?.pagination?.total || (completedRes?.orders || []).length,
-        cancelled: cancelledRes?.pagination?.total || (cancelledRes?.orders || []).length,
-      });
+      const allRes = await listMyOrders({ page: 1, limit: 100, token, signal });
+      const allOrders = allRes?.orders || [];
+      setOrders(allOrders);
+      const counts = { all: allOrders.length };
+      for (const f of FILTERS) {
+        if (f.id !== 'all') {
+          counts[f.id] = allOrders.filter((o) => o.status === f.id).length;
+        }
+      }
+      setCounts(counts);
     } catch (err) {
       if (err?.name !== 'AbortError') console.error('Failed to fetch orders:', err);
     } finally {

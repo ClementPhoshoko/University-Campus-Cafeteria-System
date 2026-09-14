@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../config/supabase.js';
+import { supabaseAdmin, getPublicAssetUrl } from '../config/supabase.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { respond, CACHE } from '../utils/http.js';
 import { isUuid } from '../validators/vendorValidators.js';
@@ -26,6 +26,11 @@ async function assertApprovedVendor(vendorId) {
   if (error) throw error;
   if (!data) throw new ApiError(404, 'VENDOR_NOT_FOUND', 'Vendor not found');
   return data;
+}
+
+function resolveAssetUrl(path) {
+  if (!path || /^https?:\/\//i.test(path)) return path;
+  return getPublicAssetUrl(path);
 }
 
 // ---------------------------------------------------------------------------
@@ -130,7 +135,7 @@ export async function listVendorMenu(req, res) {
         id: item.id,
         name: item.name,
         description: item.description,
-        image_url: item.image_url,
+        image_url: resolveAssetUrl(item.image_url),
         base_price: item.base_price,
         prep_minutes: item.prep_minutes,
         status: item.status,
@@ -228,7 +233,7 @@ export async function getMenuItem(req, res) {
         id: item.id,
         name: item.name,
         description: item.description,
-        image_url: item.image_url,
+        image_url: resolveAssetUrl(item.image_url),
         base_price: item.base_price,
         prep_minutes: item.prep_minutes,
         status: item.status,

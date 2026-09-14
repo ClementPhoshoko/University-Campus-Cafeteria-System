@@ -199,8 +199,9 @@ export default function BrowseCafeteriaPage() {
 
   const [vendor, setVendor] = useState(null);
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [menuLoading, setMenuLoading] = useState(false);
+  const [menuError, setMenuError] = useState(null);
+  const [headerReady, setHeaderReady] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
   const [addedItems, setAddedItems] = useState([]);
   const [selectedRating, setSelectedRating] = useState(null);
@@ -216,7 +217,9 @@ export default function BrowseCafeteriaPage() {
     let cancelled = false;
     setVendor(null);
     setCategories([]);
-    setLoading(true);
+    setHeaderReady(false);
+    setMenuLoading(true);
+    setMenuError(null);
 
     Promise.all([
       getVendor(cafeteriaId, { token }),
@@ -224,15 +227,16 @@ export default function BrowseCafeteriaPage() {
     ]).then(([vendorRes, menuRes]) => {
       if (cancelled) return;
       setVendor(vendorRes?.vendor || null);
+      setHeaderReady(true);
       const cats = menuRes?.categories || [];
       setCategories(cats);
       if (cats.length) setActiveCategory('All');
-      setError(null);
+      setMenuError(null);
     }).catch((err) => {
       if (cancelled) return;
-      setError(err?.message || 'Failed to load menu');
+      setMenuError(err?.message || 'Failed to load menu');
     }).finally(() => {
-      if (!cancelled) setLoading(false);
+      if (!cancelled) { setMenuLoading(false); setHeaderReady(true); }
     });
 
     return () => { cancelled = true; };
@@ -351,14 +355,14 @@ export default function BrowseCafeteriaPage() {
               </div>
               <span className="browse_cafeteria-item-count">{visibleItems.length} items</span>
             </div>
-            {loading ? (
+            {menuLoading ? (
               <div className="browse_cafeteria-empty">
                 <p>Loading menu...</p>
               </div>
-            ) : error ? (
+            ) : menuError ? (
               <div className="browse_cafeteria-empty">
                 <h2>Unable to load menu</h2>
-                <p>{error}</p>
+                <p>{menuError}</p>
               </div>
             ) : visibleItems.length > 0 ? (
               <div className="browse_cafeteria-item-list">
