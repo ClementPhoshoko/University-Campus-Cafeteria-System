@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth.js';
 import AddressAutocomplete from '../../components/ui/AddressAutocomplete.jsx';
+import { FileInput } from './AdminCafeteriaList.jsx';
+import { IconUpload } from '@tabler/icons-react';
 
 function Field({ label, children, full = false }) {
   return <label className={`admin-modal__field${full ? ' admin-modal__field--full' : ''}`}><span>{label}</span>{children}</label>;
@@ -30,7 +32,23 @@ export function LocationModal({ title, initial = {}, fields, onClose, onSubmit, 
 
   const submit = async () => { try { await onSubmit(form); onClose(); } catch (err) { setError(err.message || 'Could not save changes.'); } };
 
-  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card admin-modal__card--lg"><header className="admin-modal__head"><div><h3 className="admin-modal__title">{title}</h3><p className="admin-modal__sub">Update the location data stored by the platform.</p></div></header>{error && <div className="vendor-form-error">{error}</div>}<div className="admin-form-grid">{fields.map((field) => <Field key={field.key} label={field.label} full={field.full}>{field.type === 'address' ? <AddressAutocomplete value={form[field.key] || ''} onChange={(val) => update(field.key, val)} onSelect={handleAddressSelect} token={session?.access_token} placeholder="Search for an address..." /> : field.type === 'file' ? <input className="admin-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => update(field.key, e.target.files?.[0] || null)} /> : field.type === 'textarea' ? <textarea className="admin-modal__textarea" rows={3} value={form[field.key] || ''} onChange={(e) => update(field.key, e.target.value)} /> : field.type === 'select' ? <select className="admin-input" value={String(form[field.key] ?? '')} onChange={(e) => update(field.key, e.target.value)}>{field.options.map((option) => <option key={String(option.value)} value={String(option.value)}>{option.label}</option>)}</select> : <input className="admin-input" type={field.type || 'text'} step={field.type === 'number' ? 'any' : undefined} value={form[field.key] ?? ''} onChange={(e) => update(field.key, e.target.value)} />}</Field>)}</div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Saving…' : 'Save changes'}</button></footer></div></div>;
+  const fileFields = fields.filter((f) => f.type === 'file');
+  const otherFields = fields.filter((f) => f.type !== 'file');
+
+  const renderField = (field) => {
+    if (field.type === 'address') {
+      return <AddressAutocomplete value={form[field.key] || ''} onChange={(val) => update(field.key, val)} onSelect={handleAddressSelect} token={session?.access_token} placeholder="Search for an address..." />;
+    }
+    if (field.type === 'textarea') {
+      return <textarea className="admin-modal__textarea" rows={3} value={form[field.key] || ''} onChange={(e) => update(field.key, e.target.value)} />;
+    }
+    if (field.type === 'select') {
+      return <select className="admin-input" value={String(form[field.key] ?? '')} onChange={(e) => update(field.key, e.target.value)}>{field.options.map((option) => <option key={String(option.value)} value={String(option.value)}>{option.label}</option>)}</select>;
+    }
+    return <input className="admin-input" type={field.type || 'text'} step={field.type === 'number' ? 'any' : undefined} value={form[field.key] ?? ''} onChange={(e) => update(field.key, e.target.value)} />;
+  };
+
+  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card admin-modal__card--lg"><header className="admin-modal__head"><div><h3 className="admin-modal__title">{title}</h3><p className="admin-modal__sub">Update the location data stored by the platform.</p></div></header>{error && <div className="vendor-form-error">{error}</div>}<div className="admin-modal__body"><div className="admin-modal__left">{otherFields.map((field) => <Field key={field.key} label={field.label} full={field.full}>{renderField(field)}</Field>)}</div><div className="admin-modal__right">{fileFields.length > 0 ? fileFields.map((field) => <Field key={field.key} label={field.label} full><FileInput value={form[field.key]} onChange={(file) => update(field.key, file)} /></Field>) : <div className="admin-modal__image-area"><IconUpload size={32} stroke={1.5} className="admin-modal__image-icon" /><span className="admin-modal__image-text">Click to upload cover image</span><span className="admin-modal__image-hint">JPEG, PNG or WebP</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => update('cover_file', e.target.files?.[0] || null)} /></div>}</div></div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Saving…' : 'Save changes'}</button></footer></div></div>;
 }
 
 export const siteFields = [

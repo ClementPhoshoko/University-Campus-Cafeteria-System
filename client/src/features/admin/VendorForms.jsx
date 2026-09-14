@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { IconArrowLeft, IconArrowRight, IconCheck, IconPlus, IconX } from '@tabler/icons-react';
+import { IconArrowLeft, IconArrowRight, IconCheck, IconPlus, IconUpload, IconX } from '@tabler/icons-react';
 import { useAdminLocations } from '../../hooks/useAdminLocations.js';
+import { FileInput } from './AdminCafeteriaList.jsx';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -81,6 +82,7 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ name: '', description: '', logo_url: '', logo_file: null, support_email: '', support_phone: '', corporate_catering_enabled: false, onboarding_key: '', site_id: '', building_id: '', collection_point_id: '', service_status: 'closed', estimated_prep_minutes: '15', order_cutoff_minutes: '0', collection_instructions: '' });
+  const [logoPreview, setLogoPreview] = useState(null);
   const [hours, setHours] = useState(emptyHours);
 
   const steps = useMemo(() => ['Vendor profile', 'Operating location', 'Opening hours'], []);
@@ -113,7 +115,31 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
         </header>
         <div className="vendor-wizard__steps">{steps.map((label, index) => <span className={index === step ? 'is-active' : index < step ? 'is-complete' : ''} key={label}><b>{index + 1}</b>{label}</span>)}</div>
         {error && <div className="vendor-form-error" role="alert">{error}</div>}
-        {step === 0 && <div className="admin-form-grid"><Field label="Vendor name"><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Riverside Kitchen" /></Field><Field label="Support email"><input className="admin-input" type="email" value={form.support_email} onChange={(e) => setForm({ ...form, support_email: e.target.value })} /></Field><Field label="Support phone"><input className="admin-input" value={form.support_phone} onChange={(e) => setForm({ ...form, support_phone: e.target.value })} /></Field><Field label="Logo image"><input className="admin-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setForm({ ...form, logo_file: e.target.files?.[0] || null })} /></Field><Field label="Logo URL (optional)"><input className="admin-input" type="url" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} /></Field><Field label="Description" full><textarea className="admin-modal__textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} /></Field><Field label="Onboarding key (optional)"><input className="admin-input" value={form.onboarding_key} onChange={(e) => setForm({ ...form, onboarding_key: e.target.value })} /></Field><label className="vendor-checkbox"><input type="checkbox" checked={form.corporate_catering_enabled} onChange={(e) => setForm({ ...form, corporate_catering_enabled: e.target.checked })} /> Corporate catering enabled</label></div>}
+        {step === 0 && <div className="admin-modal__body">
+          <div className="admin-modal__left">
+            <Field label="Vendor name"><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Riverside Kitchen" /></Field>
+            <Field label="Support email"><input className="admin-input" type="email" value={form.support_email} onChange={(e) => setForm({ ...form, support_email: e.target.value })} /></Field>
+            <Field label="Support phone"><input className="admin-input" value={form.support_phone} onChange={(e) => setForm({ ...form, support_phone: e.target.value })} /></Field>
+            <Field label="Description" full><textarea className="admin-modal__textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} /></Field>
+            <Field label="Onboarding key (optional)"><input className="admin-input" value={form.onboarding_key} onChange={(e) => setForm({ ...form, onboarding_key: e.target.value })} /></Field>
+          </div>
+          <div className="admin-modal__right">
+            <div className="admin-modal__image-area admin-modal__image-area--sm">
+              {logoPreview ? (
+                <img src={logoPreview} alt="Logo preview" />
+              ) : (
+                <>
+                  <IconUpload size={24} stroke={1.5} className="admin-modal__image-icon" />
+                  <span className="admin-modal__image-text">Click to upload vendor logo</span>
+                  <span className="admin-modal__image-hint">JPEG, PNG or WebP</span>
+                </>
+              )}
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setForm({ ...form, logo_file: file }); setLogoPreview(file ? URL.createObjectURL(file) : null); }} />
+            </div>
+            <Field label="Logo URL (optional)"><input className="admin-input" type="url" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} /></Field>
+            <label className="vendor-checkbox"><input type="checkbox" checked={form.corporate_catering_enabled} onChange={(e) => setForm({ ...form, corporate_catering_enabled: e.target.checked })} /> Corporate catering enabled</label>
+          </div>
+        </div>}
         {step === 1 && <LocationFields form={form} setForm={setForm} />}
         {step === 2 && <HoursFields hours={hours} setHours={setHours} />}
         <footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={step === 0 ? onClose : () => setStep((value) => value - 1)}>{step === 0 ? 'Cancel' : <><IconArrowLeft size={14} /> Back</>}</button>{step < 2 ? <button type="button" className="admin-action admin-action--approve" onClick={next}>Continue <IconArrowRight size={14} /></button> : <button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}><IconCheck size={14} /> {submitting ? 'Creating…' : 'Create vendor'}</button>}</footer>
@@ -124,7 +150,45 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
 
 export function VendorProfileModal({ vendor, onClose, onSubmit, submitting = false }) {
   const [form, setForm] = useState({ name: vendor.name || '', description: vendor.description || '', logo_url: vendor.logo_url || '', logo_file: null, support_email: vendor.support_email || '', support_phone: vendor.support_phone || '', corporate_catering_enabled: !!vendor.corporate_catering_enabled });
-  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card admin-modal__card--lg"><header className="admin-modal__head"><div><h3 className="admin-modal__title">Edit vendor profile</h3><p className="admin-modal__sub">Update the information shown to internal teams.</p></div></header><div className="admin-form-grid"><Field label="Vendor name"><input className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field><Field label="Support email"><input className="admin-input" type="email" value={form.support_email} onChange={(e) => setForm({ ...form, support_email: e.target.value })} /></Field><Field label="Support phone"><input className="admin-input" value={form.support_phone} onChange={(e) => setForm({ ...form, support_phone: e.target.value })} /></Field><Field label="Logo image"><input className="admin-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setForm({ ...form, logo_file: e.target.files?.[0] || null })} /></Field><Field label="Logo URL"><input className="admin-input" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} /></Field><Field label="Description" full><textarea className="admin-modal__textarea" rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field><label className="vendor-checkbox"><input type="checkbox" checked={form.corporate_catering_enabled} onChange={(e) => setForm({ ...form, corporate_catering_enabled: e.target.checked })} /> Corporate catering enabled</label></div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" disabled={submitting} onClick={() => onSubmit(form)}>{submitting ? 'Saving…' : 'Save changes'}</button></footer></div></div>;
+  const [logoPreview, setLogoPreview] = useState(vendor.logo_url || null);
+  return (
+    <div className="admin-modal" role="dialog" aria-modal="true">
+      <div className="admin-modal__overlay" onClick={onClose} />
+      <div className="admin-modal__card admin-modal__card--lg">
+        <header className="admin-modal__head">
+          <div><h3 className="admin-modal__title">Edit vendor profile</h3><p className="admin-modal__sub">Update the information shown to internal teams.</p></div>
+        </header>
+        <div className="admin-modal__body">
+          <div className="admin-modal__left">
+            <Field label="Vendor name"><input className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+            <Field label="Support email"><input className="admin-input" type="email" value={form.support_email} onChange={(e) => setForm({ ...form, support_email: e.target.value })} /></Field>
+            <Field label="Support phone"><input className="admin-input" value={form.support_phone} onChange={(e) => setForm({ ...form, support_phone: e.target.value })} /></Field>
+            <Field label="Description" full><textarea className="admin-modal__textarea" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+          </div>
+          <div className="admin-modal__right">
+            <div className="admin-modal__image-area admin-modal__image-area--sm">
+              {logoPreview ? (
+                <img src={logoPreview} alt="Logo preview" />
+              ) : (
+                <>
+                  <IconUpload size={24} stroke={1.5} className="admin-modal__image-icon" />
+                  <span className="admin-modal__image-text">Click to upload vendor logo</span>
+                  <span className="admin-modal__image-hint">JPEG, PNG or WebP</span>
+                </>
+              )}
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setForm({ ...form, logo_file: file }); setLogoPreview(file ? URL.createObjectURL(file) : null); }} />
+            </div>
+            <Field label="Logo URL"><input className="admin-input" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} /></Field>
+            <label className="vendor-checkbox"><input type="checkbox" checked={form.corporate_catering_enabled} onChange={(e) => setForm({ ...form, corporate_catering_enabled: e.target.checked })} /> Corporate catering enabled</label>
+          </div>
+        </div>
+        <footer className="admin-modal__foot">
+          <button type="button" className="admin-action" onClick={onClose}>Cancel</button>
+          <button type="button" className="admin-action admin-action--approve" disabled={submitting} onClick={() => onSubmit(form)}>{submitting ? 'Saving…' : 'Save changes'}</button>
+        </footer>
+      </div>
+    </div>
+  );
 }
 
 export function StaffModal({ onClose, onSubmit, submitting = false }) {
@@ -153,6 +217,7 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
     ingredients: Array.isArray(item?.ingredients) ? item.ingredients.join(', ') : '',
     image_file: null,
   });
+  const [imagePreview, setImagePreview] = useState(item?.image_url || null);
   const editing = !!item;
 
   const submit = () => {
@@ -177,28 +242,43 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
         <header className="admin-modal__head">
           <div><h3 className="admin-modal__title">{editing ? 'Edit menu item' : 'Add menu item'}</h3><p className="admin-modal__sub">{editing ? 'Update the item details and availability.' : 'Add a new item to this vendor\'s menu.'}</p></div>
         </header>
-        <div className="admin-form-grid">
-          <Field label="Item name" full><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Classic Chicken Wrap" /></Field>
-          <Field label="Category">
-            <select className="admin-input" value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
-              <option value="">No category</option>
-              {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-            </select>
-          </Field>
-          <Field label="Base price (ZAR)"><input className="admin-input" type="number" min="0" step="0.01" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} /></Field>
-          <Field label="Prep time (min)"><input className="admin-input" type="number" min="1" value={form.prep_minutes} onChange={(e) => setForm({ ...form, prep_minutes: e.target.value })} /></Field>
-          <Field label="Status">
-            <select className="admin-input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-              <option value="available">Available</option>
-              <option value="limited">Limited</option>
-              <option value="sold_out">Sold out</option>
-              <option value="unavailable">Unavailable</option>
-            </select>
-          </Field>
-          <Field label="Portion description" full><input className="admin-input" value={form.portion_description} onChange={(e) => setForm({ ...form, portion_description: e.target.value })} placeholder="e.g. 300g serving" /></Field>
-          <Field label="Ingredients" full><input className="admin-input" value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} placeholder="Comma-separated, e.g. chicken, lettuce, tomato" /></Field>
-          <Field label="Item image" full><input className="admin-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setForm({ ...form, image_file: e.target.files?.[0] || null })} />{editing && item?.image_url && !form.image_file && <span style={{ fontSize: '0.72rem', color: 'var(--color-text-tertiary)', marginTop: 4, display: 'block' }}>Current image uploaded. Select a file to replace it.</span>}</Field>
-          <Field label="Description" full><textarea className="admin-modal__textarea" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+        <div className="admin-modal__body">
+          <div className="admin-modal__left">
+            <Field label="Item name" full><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Classic Chicken Wrap" /></Field>
+            <Field label="Category">
+              <select className="admin-input" value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
+                <option value="">No category</option>
+                {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+              </select>
+            </Field>
+            <Field label="Base price (ZAR)"><input className="admin-input" type="number" min="0" step="0.01" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} /></Field>
+            <Field label="Prep time (min)"><input className="admin-input" type="number" min="1" value={form.prep_minutes} onChange={(e) => setForm({ ...form, prep_minutes: e.target.value })} /></Field>
+            <Field label="Status">
+              <select className="admin-input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+                <option value="available">Available</option>
+                <option value="limited">Limited</option>
+                <option value="sold_out">Sold out</option>
+                <option value="unavailable">Unavailable</option>
+              </select>
+            </Field>
+            <Field label="Portion description" full><input className="admin-input" value={form.portion_description} onChange={(e) => setForm({ ...form, portion_description: e.target.value })} placeholder="e.g. 300g serving" /></Field>
+            <Field label="Ingredients" full><input className="admin-input" value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} placeholder="Comma-separated, e.g. chicken, lettuce, tomato" /></Field>
+            <Field label="Description" full><textarea className="admin-modal__textarea" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+          </div>
+          <div className="admin-modal__right">
+            <div className="admin-modal__image-area admin-modal__image-area--sm">
+              {imagePreview ? (
+                <img src={imagePreview} alt="Item preview" />
+              ) : (
+                <>
+                  <IconUpload size={24} stroke={1.5} className="admin-modal__image-icon" />
+                  <span className="admin-modal__image-text">Click to upload item image</span>
+                  <span className="admin-modal__image-hint">JPEG, PNG or WebP</span>
+                </>
+              )}
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setForm({ ...form, image_file: file }); setImagePreview(file ? URL.createObjectURL(file) : null); }} />
+            </div>
+          </div>
         </div>
         <footer className="admin-modal__foot">
           <button type="button" className="admin-action" onClick={onClose}>Cancel</button>
