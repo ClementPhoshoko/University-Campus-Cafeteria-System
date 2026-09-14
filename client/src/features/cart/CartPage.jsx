@@ -163,7 +163,7 @@ export default function CartPage() {
               <div className="cart__vendor">
                 {vendorImage && (
                   <div className="cart__vendor-image">
-                    <img src={vendorImage} alt={vendorName} />
+                    <img src={vendorImage} alt={vendorName} loading="lazy" />
                   </div>
                 )}
                 <div className="cart__vendor-details">

@@ -5,6 +5,7 @@ import Pagination from '../../components/ui/Pagination.jsx';
 import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { listUsers } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
+import { useDebounce } from '../../hooks/useDebounce.js';
 import { ALL_ROLES, ROLE_FILTERS, USER_STATUS_FILTERS } from './adminMockData.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
@@ -24,6 +25,7 @@ export default function AdminUserList() {
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: ITEMS_PER_PAGE, total: 0, totalPages: 0 });
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 300);
   const [statusFilter, setStatusFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
@@ -48,17 +50,17 @@ export default function AdminUserList() {
   };
 
   useEffect(() => { const close = (event) => { if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target)) setRoleDropdownOpen(false); }; document.addEventListener('mousedown', close); return () => document.removeEventListener('mousedown', close); }, []);
-  useEffect(() => { setPage(1); }, [query, statusFilter, roleFilter]);
+  useEffect(() => { setPage(1); }, [debouncedQuery, statusFilter, roleFilter]);
   useEffect(() => {
     if (!initialized || !token) return;
     let cancelled = false;
     setLoading(true); setError('');
-    listUsers(token, { page, limit: ITEMS_PER_PAGE, search: query, role: ROLE_FILTER_MAP[roleFilter] })
+    listUsers(token, { page, limit: ITEMS_PER_PAGE, search: debouncedQuery, role: ROLE_FILTER_MAP[roleFilter] })
       .then((response) => { if (!cancelled) { setUsers(response.users || []); setPagination(response.pagination || {}); } })
       .catch((err) => { if (!cancelled) setError(err.message || 'Could not load users.'); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [initialized, page, query, roleFilter, token]);
+  }, [initialized, page, debouncedQuery, roleFilter, token]);
 
   const visibleUsers = useMemo(() => users.filter((user) => statusFilter === 'all' || (statusFilter === 'active' && user.is_active) || (statusFilter !== 'active' && !user.is_active)), [statusFilter, users]);
   const activeCount = users.filter((user) => user.is_active).length;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { IconBuilding, IconBuildingStore, IconCheck, IconChevronLeft, IconClipboardCheck, IconEdit, IconMapPin, IconPlus, IconPower } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
@@ -40,34 +40,57 @@ export default function AdminCafeteriaDetail() {
   const [error, setError] = useState('');
   const [modal, setModal] = useState(null);
   const [mutating, setMutating] = useState(false);
+  const requestIdRef = useState(0);
 
-  const load = async () => {
+  const load = useCallback(async (signal) => {
+    const requestId = ++requestIdRef[0];
     if (!token || !locationId) return;
     setLoading(true); setError('');
     try {
-      const siteResponse = await getSite(token, locationId);
+      const siteResponse = await getSite(token, locationId, { signal });
+      if (requestId !== requestIdRef[0]) return;
       setKind('site'); setEntity(siteResponse.site);
-      const buildingResponse = await listBuildings(token, locationId, { page: 1, limit: 100 });
+      const buildingResponse = await listBuildings(token, locationId, { page: 1, limit: 100 }, { signal });
+      if (requestId !== requestIdRef[0]) return;
       const nextBuildings = buildingResponse.buildings || [];
       setBuildings(nextBuildings);
       const children = await Promise.all(nextBuildings.map(async (building) => {
-        const [floorsResponse, pointsResponse, vendorsResponse] = await Promise.all([listFloors(token, building.id, { page: 1, limit: 100 }), listCollectionPoints(token, building.id, { page: 1, limit: 100 }), listBuildingVendors(token, building.id)]);
+        const [floorsResponse, pointsResponse, vendorsResponse] = await Promise.all([
+          listFloors(token, building.id, { page: 1, limit: 100 }, { signal }),
+          listCollectionPoints(token, building.id, { page: 1, limit: 100 }, { signal }),
+          listBuildingVendors(token, building.id, { signal }),
+        ]);
         return { floors: floorsResponse.floors || [], points: pointsResponse.collectionPoints || [], vendors: vendorsResponse.vendors || [] };
       }));
+      if (requestId !== requestIdRef[0]) return;
       setFloors(children.flatMap((child) => child.floors)); setCollectionPoints(children.flatMap((child) => child.points)); setDeliveryLocations([]);
       setVendors(children.flatMap((child) => child.vendors));
     } catch (siteError) {
+      if (siteError?.name === 'AbortError') return;
       try {
-        const buildingResponse = await getBuilding(token, locationId);
+        const buildingResponse = await getBuilding(token, locationId, { signal });
+        if (requestId !== requestIdRef[0]) return;
         setKind('building'); setEntity(buildingResponse.building);
-        const [floorsResponse, pointsResponse, deliveryResponse] = await Promise.all([listFloors(token, locationId, { page: 1, limit: 100 }), listCollectionPoints(token, locationId, { page: 1, limit: 100 }), listDeliveryLocations(token, locationId, { page: 1, limit: 100 })]);
-        const vendorsResponse = await listBuildingVendors(token, locationId);
+        const [floorsResponse, pointsResponse, deliveryResponse] = await Promise.all([
+          listFloors(token, locationId, { page: 1, limit: 100 }, { signal }),
+          listCollectionPoints(token, locationId, { page: 1, limit: 100 }, { signal }),
+          listDeliveryLocations(token, locationId, { page: 1, limit: 100 }, { signal }),
+        ]);
+        const vendorsResponse = await listBuildingVendors(token, locationId, { signal });
+        if (requestId !== requestIdRef[0]) return;
         setBuildings([]); setFloors(floorsResponse.floors || []); setCollectionPoints(pointsResponse.collectionPoints || []); setDeliveryLocations(deliveryResponse.deliveryLocations || []); setVendors(vendorsResponse.vendors || []);
-      } catch (buildingError) { setError(buildingError.message || siteError.message || 'Location could not be loaded.'); }
-    } finally { setLoading(false); }
-  };
+      } catch (buildingError) {
+        if (buildingError?.name === 'AbortError') return;
+        if (requestId === requestIdRef[0]) setError(buildingError.message || siteError.message || 'Location could not be loaded.');
+      }
+    } finally { if (requestId === requestIdRef[0]) setLoading(false); }
+  }, [token, locationId]);
 
-  useEffect(() => { load(); }, [locationId, token]);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
 
   const mutate = async (operation) => { setMutating(true); try { await operation(); setModal(null); await load(); } finally { setMutating(false); } };
   const title = entity?.name || 'Location';
@@ -108,7 +131,7 @@ function BuildingPreview({ building }) {
     <Link to={`/admin/cafeterias/${building.id}`} className="admin-building-card">
       <div className="admin-building-card__media">
         {building.cover_image_url ? (
-          <img src={building.cover_image_url} alt={building.name} />
+          <img src={building.cover_image_url} alt={building.name} loading="lazy" />
         ) : (
           <div className="admin-building-card__placeholder"><IconBuilding size={22} /></div>
         )}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IconHelpCircle, IconClipboardCheck, IconKey } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
@@ -28,42 +28,40 @@ export default function OrdersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [counts, setCounts] = useState({ all: 0, active: 0, completed: 0, cancelled: 0 });
 
-  useEffect(() => {
+  const fetchOrders = useCallback(async (signal) => {
     if (!token) return;
-    let cancelled = false;
-
-    const fetchAll = async () => {
-      setLoading(true);
-      try {
-        const [allRes, activeRes, completedRes, cancelledRes] = await Promise.all([
-          listMyOrders({ page: 1, limit: 100, token }),
-          listMyOrders({ page: 1, limit: 100, status: 'active', token }),
-          listMyOrders({ page: 1, limit: 100, status: 'completed', token }),
-          listMyOrders({ page: 1, limit: 100, status: 'cancelled', token }),
-        ]);
-        if (!cancelled) {
-          setOrders(allRes?.orders || []);
-          setCounts({
-            all: allRes?.pagination?.total || (allRes?.orders || []).length,
-            active: activeRes?.pagination?.total || (activeRes?.orders || []).length,
-            completed: completedRes?.pagination?.total || (completedRes?.orders || []).length,
-            cancelled: cancelledRes?.pagination?.total || (cancelledRes?.orders || []).length,
-          });
-        }
-      } catch (err) {
-        console.error('Failed to fetch orders:', err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    fetchAll();
-    return () => { cancelled = true; };
+    setLoading(true);
+    try {
+      const [allRes, activeRes, completedRes, cancelledRes] = await Promise.all([
+        listMyOrders({ page: 1, limit: 100, token, signal }),
+        listMyOrders({ page: 1, limit: 100, status: 'active', token, signal }),
+        listMyOrders({ page: 1, limit: 100, status: 'completed', token, signal }),
+        listMyOrders({ page: 1, limit: 100, status: 'cancelled', token, signal }),
+      ]);
+      setOrders(allRes?.orders || []);
+      setCounts({
+        all: allRes?.pagination?.total || (allRes?.orders || []).length,
+        active: activeRes?.pagination?.total || (activeRes?.orders || []).length,
+        completed: completedRes?.pagination?.total || (completedRes?.orders || []).length,
+        cancelled: cancelledRes?.pagination?.total || (cancelledRes?.orders || []).length,
+      });
+    } catch (err) {
+      if (err?.name !== 'AbortError') console.error('Failed to fetch orders:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchOrders(controller.signal);
+    return () => controller.abort();
+  }, [fetchOrders]);
+
   const filteredOrders = useMemo(() => {
-    return orders;
-  }, [orders]);
+    if (activeFilter === 'all') return orders;
+    return orders.filter((o) => o.status === activeFilter);
+  }, [orders, activeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PER_PAGE));
 

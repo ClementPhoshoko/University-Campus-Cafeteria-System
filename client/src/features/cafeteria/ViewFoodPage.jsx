@@ -142,7 +142,7 @@ export default function ViewFoodPage() {
         <div className="view-food__content">
           <div className="view-food__main">
             <div className="view-food__image-wrap">
-              <img src={menuItem.image_url} alt={menuItem.name} className="view-food__image" />
+              <img src={menuItem.image_url} alt={menuItem.name} className="view-food__image" loading="lazy" />
               {menuItem.status !== 'available' && (
                 <div className="view-food__status-badge">
                   {menuItem.status === 'sold_out' ? 'Sold Out' : 'Unavailable'}

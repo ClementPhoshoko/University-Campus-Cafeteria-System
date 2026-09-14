@@ -214,6 +214,8 @@ export default function BrowseCafeteriaPage() {
   useEffect(() => {
     if (!token || !cafeteriaId) return;
     let cancelled = false;
+    setVendor(null);
+    setCategories([]);
     setLoading(true);
 
     Promise.all([
@@ -298,7 +300,7 @@ export default function BrowseCafeteriaPage() {
 
         <header className="browse_cafeteria-header">
           <div className="browse_cafeteria-header-image">
-            <img src={cafeteria.image} alt="" />
+            <img src={cafeteria.image} alt="" loading="lazy" />
           </div>
           <div className="browse_cafeteria-header-content">
             <div className="browse_cafeteria-heading-line">

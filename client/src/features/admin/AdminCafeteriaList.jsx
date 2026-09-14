@@ -39,7 +39,7 @@ function SiteCard({ site }) {
     <Link to={`/admin/cafeterias/${site.id}`} className="admin-site-card">
       <div className="admin-site-card__hero">
         {site.cover_image_url ? (
-          <img src={site.cover_image_url} alt={site.name} className="admin-site-card__image" />
+          <img src={site.cover_image_url} alt={site.name} className="admin-site-card__image" loading="lazy" />
         ) : (
           <div className="admin-site-card__placeholder">
             <IconBuildingStore size={40} stroke={1.2} />
@@ -99,7 +99,7 @@ function SiteCard({ site }) {
 function BuildingCard({ building }) {
   return (
     <Link to={`/admin/cafeterias/${building.id}`} className="admin-building-card">
-      <div className="admin-building-card__media">{building.cover_image_url ? <img src={building.cover_image_url} alt={building.name} /> : <div className="admin-building-card__placeholder"><IconBuilding size={22} stroke={1.4} /></div>}</div>
+      <div className="admin-building-card__media">{building.cover_image_url ? <img src={building.cover_image_url} alt={building.name} loading="lazy" /> : <div className="admin-building-card__placeholder"><IconBuilding size={22} stroke={1.4} /></div>}</div>
       <div className="admin-building-card__body">
         <div className="admin-building-card__head"><span className="admin-building-card__code">{building.code || 'BUILDING'}</span><StatusPill active={building.is_active} /></div>
         <h4 className="admin-building-card__name">{building.name}</h4>

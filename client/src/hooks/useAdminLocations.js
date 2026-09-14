@@ -53,6 +53,7 @@ export function useAdminLocations({
   const { session, initialized } = useAuth();
   const token = session?.access_token;
   const mountedRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const [sites, setSites] = useState([]);
   const [sitePagination, setSitePagination] = useState(EMPTY_PAGINATION);
@@ -109,32 +110,37 @@ export function useAdminLocations({
   }, [token]);
 
   const fetchSites = useCallback(async (params = siteParams, options = {}) => {
+    const requestId = ++requestIdRef.current;
+    const controller = new AbortController();
     setLoadingKey('sites', true);
     setErrorKey('sites', null);
     try {
-      const payload = await listSites(requireToken(), params, options);
-      if (!mountedRef.current) return payload;
+      const payload = await listSites(requireToken(), params, { ...options, signal: controller.signal });
+      if (!mountedRef.current || requestId !== requestIdRef.current) return payload;
       setSites(payload?.sites || []);
       setSitePagination(payload?.pagination || EMPTY_PAGINATION);
       return payload;
     } catch (error) {
-      setErrorKey('sites', getMessage(error));
+      if (error?.name === 'AbortError') return undefined;
+      if (requestId === requestIdRef.current) setErrorKey('sites', getMessage(error));
       throw error;
     } finally {
-      setLoadingKey('sites', false);
+      if (requestId === requestIdRef.current) setLoadingKey('sites', false);
     }
   }, [requireToken, setErrorKey, setLoadingKey, siteParams]);
 
   const fetchBuildings = useCallback(async (siteId, params = DEFAULT_LIST_PARAMS, options = {}) => {
+    const requestId = ++requestIdRef.current;
     setLoadingKey('buildings', true);
     setErrorKey('buildings', null);
     try {
       const payload = await listBuildings(requireToken(), siteId, params, options);
-      if (!mountedRef.current) return payload;
+      if (!mountedRef.current || requestId !== requestIdRef.current) return payload;
       setBuildingsBySite((prev) => ({ ...prev, [siteId]: payload?.buildings || [] }));
       setBuildingPaginationBySite((prev) => ({ ...prev, [siteId]: payload?.pagination || EMPTY_PAGINATION }));
       return payload;
     } catch (error) {
+      if (error?.name === 'AbortError') return undefined;
       setErrorKey('buildings', getMessage(error));
       throw error;
     } finally {
