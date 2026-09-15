@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCheck, IconPlus, IconUpload, IconX } from '@tabler/icons-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { listSites, listBuildings, listCollectionPoints } from '../../services/adminApi.js';
+import AdminDropdown from '../../components/ui/AdminDropdown.jsx';
 import { FileInput } from './AdminCafeteriaList.jsx';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -10,8 +11,8 @@ function emptyHours() {
   return DAYS.map((_, day_of_week) => ({ day_of_week, is_closed: day_of_week === 0 || day_of_week === 6, opens_at: '07:00', closes_at: '17:00' }));
 }
 
-function Field({ label, children, full = false }) {
-  return <label className={`admin-modal__field${full ? ' admin-modal__field--full' : ''}`}><span>{label}</span>{children}</label>;
+function Field({ label, children, full = false, renderLabel = true }) {
+  return <label className={`admin-modal__field${full ? ' admin-modal__field--full' : ''}`}>{renderLabel && <span>{label}</span>}{children}</label>;
 }
 
 function LocationFields({ form, setForm }) {
@@ -20,60 +21,65 @@ function LocationFields({ form, setForm }) {
   const [sites, setSites] = useState([]);
   const [buildings, setBuildings] = useState([]);
   const [collectionPoints, setCollectionPoints] = useState([]);
+  const [loadingSites, setLoadingSites] = useState(false);
+  const [loadingBuildings, setLoadingBuildings] = useState(false);
+  const [loadingPoints, setLoadingPoints] = useState(false);
 
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
+    setLoadingSites(true);
     listSites(token, { page: 1, limit: 100 }).then((res) => {
       if (!cancelled) setSites(res?.sites || []);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => { if (!cancelled) setLoadingSites(false); });
     return () => { cancelled = true; };
   }, [token]);
 
   useEffect(() => {
     if (!token || !form.site_id) { setBuildings([]); return; }
     let cancelled = false;
+    setLoadingBuildings(true);
     listBuildings(token, form.site_id, { page: 1, limit: 100 }).then((res) => {
       if (!cancelled) setBuildings(res?.buildings || []);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => { if (!cancelled) setLoadingBuildings(false); });
     return () => { cancelled = true; };
   }, [token, form.site_id]);
 
   useEffect(() => {
     if (!token || !form.building_id) { setCollectionPoints([]); return; }
     let cancelled = false;
+    setLoadingPoints(true);
     listCollectionPoints(token, form.building_id, { page: 1, limit: 100 }).then((res) => {
       if (!cancelled) setCollectionPoints(res?.collectionPoints || []);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => { if (!cancelled) setLoadingPoints(false); });
     return () => { cancelled = true; };
   }, [token, form.building_id]);
 
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
+  const siteOptions = [{ value: '', label: 'Select a site' }, ...sites.map((s) => ({ value: s.id, label: s.name }))];
+  const buildingOptions = [{ value: '', label: 'Select a building' }, ...buildings.map((b) => ({ value: b.id, label: b.name }))];
+  const pointOptions = [{ value: '', label: 'No collection point' }, ...collectionPoints.map((p) => ({ value: p.id, label: p.name }))];
+  const statusOptions = [
+    { value: 'closed', label: 'Closed' },
+    { value: 'open', label: 'Open' },
+    { value: 'busy', label: 'Busy' },
+    { value: 'temporarily_unavailable', label: 'Temporarily unavailable' },
+  ];
+
   return (
     <div className="admin-form-grid">
-      <Field label="Site">
-        <select className="admin-input" value={form.site_id} onChange={(e) => setForm((prev) => ({ ...prev, site_id: e.target.value, building_id: '', collection_point_id: '' }))}>
-          <option value="">Select a site</option>
-          {sites.map((site) => <option key={site.id} value={site.id}>{site.name}</option>)}
-        </select>
+      <Field label="Site" renderLabel={false}>
+        <AdminDropdown label="Site" options={siteOptions} value={form.site_id} onChange={(val) => setForm((prev) => ({ ...prev, site_id: val, building_id: '', collection_point_id: '' }))} loading={loadingSites} />
       </Field>
-      <Field label="Building">
-        <select className="admin-input" value={form.building_id} disabled={!form.site_id} onChange={(e) => setForm((prev) => ({ ...prev, building_id: e.target.value, collection_point_id: '' }))}>
-          <option value="">Select a building</option>
-          {buildings.map((building) => <option key={building.id} value={building.id}>{building.name}</option>)}
-        </select>
+      <Field label="Building" renderLabel={false}>
+        <AdminDropdown label="Building" options={buildingOptions} value={form.building_id} onChange={(val) => setForm((prev) => ({ ...prev, building_id: val, collection_point_id: '' }))} disabled={!form.site_id} loading={loadingBuildings} />
       </Field>
-      <Field label="Collection point">
-        <select className="admin-input" value={form.collection_point_id} disabled={!form.building_id} onChange={(e) => update('collection_point_id', e.target.value)}>
-          <option value="">No collection point</option>
-          {collectionPoints.map((point) => <option key={point.id} value={point.id}>{point.name}</option>)}
-        </select>
+      <Field label="Collection point" renderLabel={false}>
+        <AdminDropdown label="Collection point" options={pointOptions} value={form.collection_point_id} onChange={(val) => update('collection_point_id', val)} disabled={!form.building_id} loading={loadingPoints} />
       </Field>
-      <Field label="Service status">
-        <select className="admin-input" value={form.service_status} onChange={(e) => update('service_status', e.target.value)}>
-          <option value="closed">Closed</option><option value="open">Open</option><option value="busy">Busy</option><option value="temporarily_unavailable">Temporarily unavailable</option>
-        </select>
+      <Field label="Service status" renderLabel={false}>
+        <AdminDropdown label="Service status" options={statusOptions} value={form.service_status} onChange={(val) => update('service_status', val)} />
       </Field>
       <Field label="Estimated prep time (minutes)"><input className="admin-input" type="number" min="1" value={form.estimated_prep_minutes} onChange={(e) => update('estimated_prep_minutes', e.target.value)} /></Field>
       <Field label="Order cutoff (minutes)"><input className="admin-input" type="number" min="0" value={form.order_cutoff_minutes} onChange={(e) => update('order_cutoff_minutes', e.target.value)} /></Field>
@@ -101,7 +107,7 @@ function HoursFields({ hours, setHours }) {
 export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ name: '', description: '', logo_url: '', logo_file: null, support_email: '', support_phone: '', corporate_catering_enabled: false, onboarding_key: '', site_id: '', building_id: '', collection_point_id: '', service_status: 'closed', estimated_prep_minutes: '15', order_cutoff_minutes: '0', collection_instructions: '' });
+  const [form, setForm] = useState({ name: '', description: '', logo_file: null, support_email: '', support_phone: '', corporate_catering_enabled: false, onboarding_key: '', site_id: '', building_id: '', collection_point_id: '', service_status: 'closed', estimated_prep_minutes: '15', order_cutoff_minutes: '0', collection_instructions: '' });
   const [logoPreview, setLogoPreview] = useState(null);
   const [hours, setHours] = useState(emptyHours);
 
@@ -115,7 +121,7 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
     setError('');
     try {
       await onSubmit({
-        name: form.name.trim(), description: form.description.trim() || null, logo_url: form.logo_url.trim() || null, logoFile: form.logo_file,
+        name: form.name.trim(), description: form.description.trim() || null, logoFile: form.logo_file,
         support_email: form.support_email.trim() || null, support_phone: form.support_phone.trim() || null,
         corporate_catering_enabled: form.corporate_catering_enabled, onboarding_key: form.onboarding_key.trim() || null,
         location: { site_id: form.site_id, building_id: form.building_id, collection_point_id: form.collection_point_id || null, service_status: form.service_status, estimated_prep_minutes: Number(form.estimated_prep_minutes), order_cutoff_minutes: Number(form.order_cutoff_minutes), collection_instructions: form.collection_instructions.trim() || null, hours },
@@ -156,7 +162,6 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
               )}
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setForm({ ...form, logo_file: file }); setLogoPreview(file ? URL.createObjectURL(file) : null); }} />
             </div>
-            <Field label="Logo URL (optional)"><input className="admin-input" type="url" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} /></Field>
             <label className="vendor-checkbox"><input type="checkbox" checked={form.corporate_catering_enabled} onChange={(e) => setForm({ ...form, corporate_catering_enabled: e.target.checked })} /> Corporate catering enabled</label>
           </div>
         </div>}
@@ -198,7 +203,6 @@ export function VendorProfileModal({ vendor, onClose, onSubmit, submitting = fal
               )}
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setForm({ ...form, logo_file: file }); setLogoPreview(file ? URL.createObjectURL(file) : null); }} />
             </div>
-            <Field label="Logo URL"><input className="admin-input" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} /></Field>
             <label className="vendor-checkbox"><input type="checkbox" checked={form.corporate_catering_enabled} onChange={(e) => setForm({ ...form, corporate_catering_enabled: e.target.checked })} /> Corporate catering enabled</label>
           </div>
         </div>
@@ -213,7 +217,8 @@ export function VendorProfileModal({ vendor, onClose, onSubmit, submitting = fal
 
 export function StaffModal({ onClose, onSubmit, submitting = false }) {
   const [form, setForm] = useState({ email: '', role: 'staff' });
-  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card"><header className="admin-modal__head"><div><h3 className="admin-modal__title">Add vendor staff</h3><p className="admin-modal__sub">The user must already have a platform profile.</p></div></header><div className="admin-form-grid"><Field label="User email" full><input autoFocus className="admin-input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field><Field label="Vendor role"><select className="admin-input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}><option value="staff">Staff</option><option value="manager">Manager</option></select></Field></div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.email.trim()} onClick={() => onSubmit(form)}>{submitting ? 'Adding…' : 'Add staff member'}</button></footer></div></div>;
+  const roleOptions = [{ value: 'staff', label: 'Staff' }, { value: 'manager', label: 'Manager' }];
+  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card"><header className="admin-modal__head"><div><h3 className="admin-modal__title">Add vendor staff</h3><p className="admin-modal__sub">The user must already have a platform profile.</p></div></header><div className="admin-form-grid"><Field label="User email" full><input autoFocus className="admin-input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field><Field label="Vendor role" renderLabel={false}><AdminDropdown label="Vendor role" options={roleOptions} value={form.role} onChange={(val) => setForm({ ...form, role: val })} /></Field></div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.email.trim()} onClick={() => onSubmit(form)}>{submitting ? 'Adding…' : 'Add staff member'}</button></footer></div></div>;
 }
 
 export function VendorLocationModal({ location, onClose, onSubmit, submitting = false }) {
@@ -240,6 +245,14 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
   const [imagePreview, setImagePreview] = useState(item?.image_url || null);
   const editing = !!item;
 
+  const categoryOptions = [{ value: '', label: 'No category' }, ...categories.map((c) => ({ value: c.id, label: c.name }))];
+  const statusOptions = [
+    { value: 'available', label: 'Available' },
+    { value: 'limited', label: 'Limited' },
+    { value: 'sold_out', label: 'Sold out' },
+    { value: 'unavailable', label: 'Unavailable' },
+  ];
+
   const submit = () => {
     const payload = {
       name: form.name.trim(),
@@ -265,21 +278,13 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
         <div className="admin-modal__body">
           <div className="admin-modal__left">
             <Field label="Item name" full><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Classic Chicken Wrap" /></Field>
-            <Field label="Category">
-              <select className="admin-input" value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
-                <option value="">No category</option>
-                {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-              </select>
+            <Field label="Category" renderLabel={false}>
+              <AdminDropdown label="Category" options={categoryOptions} value={form.category_id} onChange={(val) => setForm({ ...form, category_id: val })} />
             </Field>
             <Field label="Base price (ZAR)"><input className="admin-input" type="number" min="0" step="0.01" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} /></Field>
             <Field label="Prep time (min)"><input className="admin-input" type="number" min="1" value={form.prep_minutes} onChange={(e) => setForm({ ...form, prep_minutes: e.target.value })} /></Field>
-            <Field label="Status">
-              <select className="admin-input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                <option value="available">Available</option>
-                <option value="limited">Limited</option>
-                <option value="sold_out">Sold out</option>
-                <option value="unavailable">Unavailable</option>
-              </select>
+            <Field label="Status" renderLabel={false}>
+              <AdminDropdown label="Status" options={statusOptions} value={form.status} onChange={(val) => setForm({ ...form, status: val })} />
             </Field>
             <Field label="Portion description" full><input className="admin-input" value={form.portion_description} onChange={(e) => setForm({ ...form, portion_description: e.target.value })} placeholder="e.g. 300g serving" /></Field>
             <Field label="Ingredients" full><input className="admin-input" value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} placeholder="Comma-separated, e.g. chicken, lettuce, tomato" /></Field>
