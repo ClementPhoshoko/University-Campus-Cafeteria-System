@@ -2729,7 +2729,7 @@
   font-family: var(--font-primary);
   font-size: 0.85rem;
   color: var(--color-text-primary);
-  resize: vertical;
+  resize: none;
   outline: none;
   min-height: 80px;
   transition: background var(--transition-fast), box-shadow var(--transition-fast);
