@@ -41,7 +41,7 @@ export const CACHE = {
   // Public — CDN-shareable; infrequently changing reference data
   publicRef: 'public, max-age=300, must-revalidate',
   // Public — menus change a few times per day
-  publicMenu: 'public, max-age=120, must-revalidate',
+  publicMenu: 'public, max-age=300, must-revalidate',
   // Employee — user-specific reads (cart, favorites, orders)
   employeeRead: 'private, max-age=10, must-revalidate',
   // Legacy aliases kept for minimal diff during migration
