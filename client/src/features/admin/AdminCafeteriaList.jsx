@@ -160,8 +160,24 @@ export function FileInput({ value, onChange, accept = 'image/jpeg,image/png,imag
   );
 }
 
-function NewSiteModal({ onClose, onSubmit, submitting }) {
-  const [form, setForm] = useState({
+export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
+  const editing = !!initial;
+  const [form, setForm] = useState(() => initial ? {
+    name: initial.name || '',
+    code: initial.code || '',
+    address: initial.address || '',
+    street_address: initial.street_address || '',
+    city: initial.city || '',
+    province: initial.province || '',
+    postal_code: initial.postal_code || '',
+    country: initial.country || 'ZA',
+    place_id: initial.place_id || '',
+    latitude: initial.latitude ?? '',
+    longitude: initial.longitude ?? '',
+    timezone: initial.timezone || 'Africa/Johannesburg',
+    is_active: initial.is_active ?? true,
+    cover_file: null,
+  } : {
     name: '',
     code: '',
     address: '',
@@ -177,7 +193,7 @@ function NewSiteModal({ onClose, onSubmit, submitting }) {
     is_active: true,
     cover_file: null,
   });
-  const [coverPreview, setCoverPreview] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(initial?.cover_image_url || null);
   const [error, setError] = useState('');
   const { session } = useAuth();
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
@@ -217,7 +233,7 @@ function NewSiteModal({ onClose, onSubmit, submitting }) {
       });
       onClose();
     } catch (err) {
-      setError(err.message || 'Could not create site.');
+      setError(err.message || `Could not ${editing ? 'update' : 'create'} site.`);
     }
   };
 
@@ -237,8 +253,8 @@ function NewSiteModal({ onClose, onSubmit, submitting }) {
             <IconPlus size={20} />
           </div>
           <div>
-            <h3 className="admin-modal__title">Register new site</h3>
-            <p className="admin-modal__sub">Add a top-level campus location to manage vendors and collection points.</p>
+            <h3 className="admin-modal__title">{editing ? 'Edit site' : 'Register new site'}</h3>
+            <p className="admin-modal__sub">{editing ? 'Update the site information and cover image.' : 'Add a top-level campus location to manage vendors and collection points.'}</p>
           </div>
         </header>
         {error && <div className="vendor-form-error">{error}</div>}
@@ -293,7 +309,7 @@ function NewSiteModal({ onClose, onSubmit, submitting }) {
         </div>
         <footer className="admin-modal__foot">
           <button type="button" className="admin-action" onClick={onClose}>Cancel</button>
-          <button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Registering…' : 'Register site'}</button>
+          <button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? (editing ? 'Saving…' : 'Registering…') : (editing ? 'Save changes' : 'Register site')}</button>
         </footer>
       </div>
     </div>
@@ -339,18 +355,18 @@ export default function AdminCafeteriaList() {
   const collectionPointsFetchedRef = useRef(false);
 
   useEffect(() => {
-    if (view === 'buildings' && !buildingsFetchedRef.current && sites.length > 0) {
+    if (!buildingsFetchedRef.current && sites.length > 0) {
       buildingsFetchedRef.current = true;
       fetchAllBuildings({ page: 1, limit: 1000 }).catch(() => {});
     }
-  }, [view, sites.length, fetchAllBuildings]);
+  }, [sites.length, fetchAllBuildings]);
 
   useEffect(() => {
-    if (view === 'collection-points' && !collectionPointsFetchedRef.current && sites.length > 0) {
+    if (!collectionPointsFetchedRef.current && sites.length > 0) {
       collectionPointsFetchedRef.current = true;
       fetchAllCollectionPoints({ page: 1, limit: 1000 }).catch(() => {});
     }
-  }, [view, sites.length, fetchAllCollectionPoints]);
+  }, [sites.length, fetchAllCollectionPoints]);
 
   const buildings = useMemo(() => allBuildings.map((building) => ({ ...building, site_name: sites.find((site) => site.id === building.site_id)?.name || 'Unknown site' })), [allBuildings, sites]);
   const collectionPoints = useMemo(() => allCollectionPoints.map((point) => { const building = buildings.find((item) => item.id === point.building_id); return { ...point, building_name: building?.name, site_name: building?.site_name }; }), [allCollectionPoints, buildings]);
