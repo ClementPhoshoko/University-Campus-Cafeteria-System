@@ -86,7 +86,7 @@ export default function HomePage() {
   return (
     <PageContainer noPad>
       <div className="home-hero">
-        <img src={heroImage} alt="" className="home-hero-bg" aria-hidden="true" />
+        <img src={heroImage} alt="" className="home-hero-bg" aria-hidden="true" loading="eager" />
         <div className="home-hero-inner">
           <div className="home-hero-left">
             <PageHeader

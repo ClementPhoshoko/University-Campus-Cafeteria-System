@@ -104,7 +104,7 @@ export default function CafeteriaPage() {
   return (
     <PageContainer noPad>
       <div className="cafeteria_hero">
-        <img src={heroImage} alt="" className="cafeteria_hero-bg" aria-hidden="true" />
+        <img src={heroImage} alt="" className="cafeteria_hero-bg" aria-hidden="true" loading="eager" />
         <div className="cafeteria_hero-inner">
           <div className="cafeteria_hero-left">
             <PageHeader

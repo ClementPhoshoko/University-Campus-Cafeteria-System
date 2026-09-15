@@ -29,7 +29,7 @@ export default function ApplicationHeader({ actions }) {
     <header className="topbar" ref={ref}>
       <div className="topbar-inner">
         <Link to="/" className="brand app-brand" aria-label="Merchant Munchies home">
-          <img src={logo} alt="" className="brand-logo" />
+          <img src={logo} alt="" className="brand-logo" loading="eager" />
           <span className="brand-word">
             <span className="brand-merchant">merchant</span>
             <span className="brand-munchies">munchies</span>

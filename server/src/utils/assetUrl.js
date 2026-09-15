@@ -19,14 +19,16 @@ export async function resolveAssetUrl(path) {
   const cached = cache.get(cacheKey);
   if (cached) return cached;
 
+  const publicUrl = getPublicAssetUrl(path);
+
   try {
-    const { data } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(path, SIGN_EXPIRY);
-    const url = data?.signedUrl || getPublicAssetUrl(path);
-    cache.set(cacheKey, url);
-    return url;
-  } catch {
-    const url = getPublicAssetUrl(path);
-    cache.set(cacheKey, url);
-    return url;
-  }
+    const { data, error } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(path, SIGN_EXPIRY);
+    if (!error && data?.signedUrl) {
+      cache.set(cacheKey, data.signedUrl);
+      return data.signedUrl;
+    }
+  } catch {}
+
+  cache.set(cacheKey, publicUrl);
+  return publicUrl;
 }

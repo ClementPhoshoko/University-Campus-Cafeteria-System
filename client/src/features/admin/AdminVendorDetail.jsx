@@ -30,7 +30,7 @@ function StatusPill({ status }) {
 function VendorLogo({ src, alt }) {
   return (
     <div className="admin-vendor-detail__logo">
-      <img src={src} alt={alt || ''} />
+      <img src={src} alt={alt || ''} loading="eager" />
     </div>
   );
 }
