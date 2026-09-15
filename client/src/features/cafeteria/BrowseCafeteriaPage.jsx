@@ -304,7 +304,7 @@ export default function BrowseCafeteriaPage() {
 
         <header className="browse_cafeteria-header">
           <div className="browse_cafeteria-header-image">
-            <img src={cafeteria.image} alt="" loading="lazy" />
+            <img src={cafeteria.image} alt="" />
           </div>
           <div className="browse_cafeteria-header-content">
             <div className="browse_cafeteria-heading-line">

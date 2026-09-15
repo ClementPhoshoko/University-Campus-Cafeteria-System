@@ -3,6 +3,7 @@ import { parsePagination, buildPagination } from '../utils/pagination.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { writeAudit } from '../utils/audit.js';
 import { respond, CACHE } from '../utils/http.js';
+import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { sendEmail } from '../services/email/sendEmail.js';
 import vendorDecisionEmail from '../services/email/templates/vendorDecision.js';
 import {
@@ -29,16 +30,6 @@ const VENDOR_PUBLIC_FIELDS = 'id, name, slug, description, logo_url, corporate_c
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
-
-async function resolveAssetUrl(path) {
-  if (!path || /^https?:\/\//i.test(path)) return path;
-  try {
-    const { data } = await db().storage.from('vendor-assets').createSignedUrl(path, 3600);
-    return data?.signedUrl || getPublicAssetUrl(path);
-  } catch {
-    return getPublicAssetUrl(path);
-  }
-}
 
 function handleControllerError(res, err) {
   if (err instanceof ApiError) {
@@ -77,11 +68,11 @@ function embedCount(row, child) {
 }
 
 /** Keep only the fields the public-facing API needs on a vendor row. */
-function pickPublicVendor(vendor) {
+async function pickPublicVendor(vendor) {
   const fields = VENDOR_PUBLIC_FIELDS.split(', ').filter((f) => !f.includes(':'));
   const out = {};
   for (const f of fields) out[f] = vendor[f];
-  out.logo_url = resolveAssetUrl(vendor.logo_url);
+  out.logo_url = await resolveAssetUrl(vendor.logo_url);
   return out;
 }
 
@@ -933,10 +924,10 @@ export async function listPublicVendors(req, res) {
     const { data, error, count } = await query;
     if (error) throw error;
 
-    const items = (data || []).map((vendor) => ({
-      ...pickPublicVendor(vendor),
+    const items = await Promise.all((data || []).map(async (vendor) => ({
+      ...(await pickPublicVendor(vendor)),
       location_count: (vendor.vendor_locations || []).length,
-    }));
+    })));
 
     return respond(req, res, {
       success: true,
@@ -975,7 +966,7 @@ export async function getPublicVendor(req, res) {
 
     return respond(req, res, {
       success: true,
-      vendor: { ...vendor, logo_url: resolveAssetUrl(vendor.logo_url), locations: activeLocations },
+      vendor: { ...vendor, logo_url: await resolveAssetUrl(vendor.logo_url), locations: activeLocations },
     }, { cacheControl: CACHE.publicRef });
   } catch (err) {
     return handleControllerError(res, err);

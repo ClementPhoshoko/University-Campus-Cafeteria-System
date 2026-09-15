@@ -19,7 +19,7 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, to }) {
     <div className="cart-item">
       <Link to={to} className="cart-item__image">
         {menuItem.image ? (
-          <img src={menuItem.image} alt={menuItem.name} loading="lazy" />
+          <img src={menuItem.image} alt={menuItem.name} />
         ) : (
           <div className="cart-item__image-placeholder">
             <IconLeaf size={20} stroke={1.2} />
