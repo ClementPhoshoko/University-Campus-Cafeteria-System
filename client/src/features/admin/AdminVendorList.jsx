@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   IconSearch,
@@ -168,6 +168,27 @@ export default function AdminVendorList() {
     };
   }, [currentPage, initialized, debouncedQuery, statusFilter, token]);
 
+  const refetchData = useCallback(async () => {
+    if (!token) return;
+    try {
+      const [vendorsResponse, approvalsResponse] = await Promise.all([
+        listVendors(token, {
+          page: currentPage,
+          limit: itemsPerPage,
+          search: query,
+          status: statusFilter === 'all' ? undefined : statusFilter,
+        }),
+        listVendorApprovals(token, { page: currentPage, limit: itemsPerPage, search: query }),
+      ]);
+      setActiveVendors(vendorsResponse.vendors || []);
+      setActivePagination(vendorsResponse.pagination || null);
+      setPendingApprovals(approvalsResponse.approvals || []);
+      setApprovalPagination(approvalsResponse.pagination || null);
+    } catch (err) {
+      console.error('Failed to refetch vendor data:', err);
+    }
+  }, [token, currentPage, itemsPerPage, query, statusFilter]);
+
   useEffect(() => {
     setPage(1);
   }, [debouncedQuery, statusFilter]);
@@ -264,7 +285,8 @@ export default function AdminVendorList() {
       const { logoFile, ...vendorPayload } = payload;
       const response = await createVendor(token, vendorPayload);
       if (logoFile && response.vendor?.id) await uploadAdminAsset(token, 'vendor', response.vendor.id, logoFile);
-      if (response.vendor) setPendingApprovals((items) => [response.vendor, ...items]);
+      await refetchData();
+      handleTabChange('approvals');
     } finally {
       setAddVendorLoading(false);
     }
