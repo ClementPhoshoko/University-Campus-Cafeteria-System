@@ -352,18 +352,11 @@ export default function AdminCafeteriaList() {
   useEffect(() => { setPage(1); }, [query, statusFilter, view]);
 
   useEffect(() => {
-    if (!buildingsFetchedRef.current && sites.length > 0) {
-      buildingsFetchedRef.current = true;
+    if (sites.length > 0) {
       fetchAllBuildings({ page: 1, limit: 1000 }).catch(() => {});
-    }
-  }, [sites.length, fetchAllBuildings]);
-
-  useEffect(() => {
-    if (!collectionPointsFetchedRef.current && sites.length > 0) {
-      collectionPointsFetchedRef.current = true;
       fetchAllCollectionPoints({ page: 1, limit: 1000 }).catch(() => {});
     }
-  }, [sites.length, fetchAllCollectionPoints]);
+  }, [sites.length, fetchAllBuildings, fetchAllCollectionPoints]);
 
   const buildings = useMemo(() => allBuildings.map((building) => ({ ...building, site_name: sites.find((site) => site.id === building.site_id)?.name || 'Unknown site' })), [allBuildings, sites]);
   const collectionPoints = useMemo(() => allCollectionPoints.map((point) => { const building = buildings.find((item) => item.id === point.building_id); return { ...point, building_name: building?.name, site_name: building?.site_name }; }), [allCollectionPoints, buildings]);
