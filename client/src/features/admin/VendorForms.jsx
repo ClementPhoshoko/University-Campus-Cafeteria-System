@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCheck, IconPlus, IconUpload, IconX } from '@tabler/icons-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { listSites, listBuildings, listCollectionPoints } from '../../services/adminApi.js';
@@ -110,6 +110,22 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
   const [form, setForm] = useState({ name: '', description: '', logo_file: null, support_email: '', support_phone: '', corporate_catering_enabled: false, site_id: '', building_id: '', collection_point_id: '', service_status: 'closed', estimated_prep_minutes: '15', order_cutoff_minutes: '0', collection_instructions: '' });
   const [logoPreview, setLogoPreview] = useState(null);
   const [hours, setHours] = useState(emptyHours);
+  const [creating, setCreating] = useState(false);
+  const [loadMsg, setLoadMsg] = useState(0);
+  const loadTimerRef = useRef(null);
+
+  const LOAD_MESSAGES = [
+    'Setting up your vendor profile...',
+    'Configuring operating location...',
+    'Saving opening hours...',
+    'Almost there...',
+  ];
+
+  useEffect(() => {
+    if (!creating) { setLoadMsg(0); return; }
+    loadTimerRef.current = setInterval(() => setLoadMsg((i) => (i + 1) % LOAD_MESSAGES.length), 1800);
+    return () => clearInterval(loadTimerRef.current);
+  }, [creating]);
 
   const steps = useMemo(() => ['Vendor profile', 'Operating location', 'Opening hours'], []);
   const next = () => {
@@ -119,6 +135,7 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
   };
   const submit = async () => {
     setError('');
+    setCreating(true);
     try {
       await onSubmit({
         name: form.name.trim(), description: form.description.trim() || null, logoFile: form.logo_file,
@@ -127,7 +144,7 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
         location: { site_id: form.site_id, building_id: form.building_id, collection_point_id: form.collection_point_id || null, service_status: form.service_status, estimated_prep_minutes: Number(form.estimated_prep_minutes), order_cutoff_minutes: Number(form.order_cutoff_minutes), collection_instructions: form.collection_instructions.trim() || null, hours },
       });
       onClose();
-    } catch (err) { setError(err.message || 'Could not create vendor.'); }
+    } catch (err) { setError(err.message || 'Could not create vendor.'); setCreating(false); }
   };
 
   return (
@@ -166,7 +183,17 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
         </div>}
         {step === 1 && <LocationFields form={form} setForm={setForm} />}
         {step === 2 && <HoursFields hours={hours} setHours={setHours} />}
-        <footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={step === 0 ? onClose : () => setStep((value) => value - 1)}>{step === 0 ? 'Cancel' : <><IconArrowLeft size={14} /> Back</>}</button>{step < 2 ? <button type="button" className="admin-action admin-action--approve" onClick={next}>Continue <IconArrowRight size={14} /></button> : <button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}><IconCheck size={14} /> {submitting ? 'Creating…' : 'Create vendor'}</button>}</footer>
+        <footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={step === 0 ? onClose : () => setStep((value) => value - 1)}>{step === 0 ? 'Cancel' : <><IconArrowLeft size={14} /> Back</>}</button>{step < 2 ? <button type="button" className="admin-action admin-action--approve" onClick={next}>Continue <IconArrowRight size={14} /></button> : <button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting || creating}><IconCheck size={14} /> Create vendor</button>}</footer>
+        {creating && (
+          <div className="vendor-creating-overlay">
+            <div className="vendor-creating-card">
+              <div className="vendor-creating-spinner" />
+              <p className="vendor-creating-msg">{LOAD_MESSAGES[loadMsg]}</p>
+              <div className="vendor-creating-bar"><div className="vendor-creating-bar__fill" /></div>
+              <p className="vendor-creating-hint">Hang tight, this won't take long.</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
