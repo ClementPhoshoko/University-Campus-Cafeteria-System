@@ -337,7 +337,7 @@ export default function AdminVendorDetail() {
         <div className="admin-vendor-header__actions">
           {vendor.isPending ? (
             <>
-                <button type="button" className="admin-action admin-action--ghost" onClick={() => handleApproval('reject')} disabled={actionLoading}>
+                <button type="button" className="admin-action admin-action--reject" onClick={() => handleApproval('reject')} disabled={actionLoading}>
                 <IconBan size={14} stroke={2} /> Reject
               </button>
               <button type="button" className="admin-action admin-action--approve" onClick={() => handleApproval('approve')} disabled={actionLoading}>

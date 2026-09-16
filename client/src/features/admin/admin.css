@@ -1316,25 +1316,27 @@
 }
 
 .admin-action--approve {
-  background: var(--success-500);
-  border-color: var(--success-500);
-  color: white;
+  color: var(--success-600);
+  border-color: rgba(34, 165, 89, 0.25);
+  background: rgba(34, 165, 89, 0.05);
 }
 
 .admin-action--approve:hover {
-  background: var(--success-700);
-  border-color: var(--success-700);
+  background: var(--success-500);
+  color: white;
+  border-color: var(--success-500);
 }
 
 [data-theme="dark"] .admin-action--approve {
-  background: rgba(34, 165, 89, 0.2);
-  border-color: rgba(34, 165, 89, 0.4);
-  color: var(--success-500);
+  background: rgba(34, 165, 89, 0.12);
+  border-color: rgba(34, 165, 89, 0.3);
+  color: var(--success-400);
 }
 
 [data-theme="dark"] .admin-action--approve:hover {
-  background: rgba(34, 165, 89, 0.3);
+  background: rgba(34, 165, 89, 0.25);
   border-color: var(--success-500);
+  color: var(--success-200);
 }
 
 .admin-action--reject {
