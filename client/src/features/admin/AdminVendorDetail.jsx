@@ -23,7 +23,6 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
-import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { addVendorUser, adminRequest, createVendorLocation, listMenuItems, listVendorCategories, createMenuItem, updateMenuItem, deleteMenuItem, createVendorCategory, updateVendorCategory, deleteVendorCategory, removeVendorUser, updateVendor, updateVendorApproval, updateVendorLocation, uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
@@ -101,6 +100,24 @@ export default function AdminVendorDetail() {
     'Almost there...',
   ];
 
+  const PAGE_SIZE = 5;
+
+  const [locationsVisibleCount, setLocationsVisibleCount] = useState(PAGE_SIZE);
+  const [locationsLoading, setLocationsLoading] = useState(false);
+  const locationsBottomRef = useRef(null);
+
+  const [staffVisibleCount, setStaffVisibleCount] = useState(PAGE_SIZE);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const staffBottomRef = useRef(null);
+
+  const [categoriesVisibleCount, setCategoriesVisibleCount] = useState(PAGE_SIZE);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const categoriesBottomRef = useRef(null);
+
+  const [menuItemsVisibleCount, setMenuItemsVisibleCount] = useState(PAGE_SIZE);
+  const [menuItemsPageLoading, setMenuItemsPageLoading] = useState(false);
+  const menuItemsBottomRef = useRef(null);
+
   useEffect(() => {
     if (!creating) { setLoadMsg(0); return; }
     loadTimerRef.current = setInterval(() => setLoadMsg((i) => (i + 1) % LOAD_MESSAGES.length), 1800);
@@ -159,6 +176,42 @@ export default function AdminVendorDetail() {
       const catsRes = await listVendorCategories(token, vendorId);
       setMenuCategories(catsRes.categories || []);
     } catch (err) { console.error('Failed to refresh menu categories:', err); }
+  };
+
+  const loadMoreLocations = () => {
+    setLocationsLoading(true);
+    setTimeout(() => {
+      setLocationsVisibleCount((prev) => prev + PAGE_SIZE);
+      setLocationsLoading(false);
+      locationsBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 400);
+  };
+
+  const loadMoreStaff = () => {
+    setStaffLoading(true);
+    setTimeout(() => {
+      setStaffVisibleCount((prev) => prev + PAGE_SIZE);
+      setStaffLoading(false);
+      staffBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 400);
+  };
+
+  const loadMoreCategories = () => {
+    setCategoriesLoading(true);
+    setTimeout(() => {
+      setCategoriesVisibleCount((prev) => prev + PAGE_SIZE);
+      setCategoriesLoading(false);
+      categoriesBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 400);
+  };
+
+  const loadMoreMenuItems = () => {
+    setMenuItemsPageLoading(true);
+    setTimeout(() => {
+      setMenuItemsVisibleCount((prev) => prev + PAGE_SIZE);
+      setMenuItemsPageLoading(false);
+      menuItemsBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 400);
   };
 
   const handleApproval = async (decision, reason) => {
@@ -301,16 +354,54 @@ export default function AdminVendorDetail() {
           <div className="vd-hero__content">
             <div className="vd-hero__top">
               <span className="skeleton" style={{ width: 80, height: 22, borderRadius: 'var(--radius-full)' }} />
+              <span className="skeleton" style={{ width: 60, height: 14, borderRadius: 4 }} />
             </div>
             <div className="skeleton" style={{ width: '35%', height: 28, borderRadius: 'var(--radius-xs)', marginTop: 8 }} />
-            <div className="skeleton" style={{ width: '55%', height: 16, borderRadius: 'var(--radius-xs)', marginTop: 8 }} />
+            <div className="skeleton" style={{ width: '55%', height: 14, borderRadius: 'var(--radius-xs)', marginTop: 8 }} />
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+              <span className="skeleton" style={{ width: 70, height: 20, borderRadius: 'var(--radius-full)' }} />
+              <span className="skeleton" style={{ width: 90, height: 20, borderRadius: 'var(--radius-full)' }} />
+            </div>
+          </div>
+          <div className="vd-hero__actions">
+            <span className="skeleton" style={{ width: 90, height: 34, borderRadius: 'var(--radius-xs)' }} />
+            <span className="skeleton" style={{ width: 80, height: 34, borderRadius: 'var(--radius-xs)' }} />
           </div>
         </div>
         <div className="vd-metrics">
           <div className="vd-metric"><div className="skeleton" style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)' }} /><div style={{ flex: 1 }}><div className="skeleton" style={{ width: 40, height: 24, borderRadius: 4 }} /><div className="skeleton" style={{ width: 80, height: 12, borderRadius: 4, marginTop: 6 }} /></div></div>
           <div className="vd-metric"><div className="skeleton" style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)' }} /><div style={{ flex: 1 }}><div className="skeleton" style={{ width: 40, height: 24, borderRadius: 4 }} /><div className="skeleton" style={{ width: 100, height: 12, borderRadius: 4, marginTop: 6 }} /></div></div>
         </div>
-        <SkeletonTable rows={4} columns={3} />
+        <div className="vd-grid">
+          <div className="vd-grid__main">
+            <div className="vd-panel">
+              <div className="skeleton" style={{ width: 120, height: 12, borderRadius: 4, marginBottom: 16 }} />
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: i < 5 ? '1px solid var(--color-border-subtle)' : 'none' }}>
+                  <div className="skeleton" style={{ width: 28, height: 28, borderRadius: 'var(--radius-xs)', flexShrink: 0 }} />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div className="skeleton" style={{ width: '40%', height: 10, borderRadius: 4 }} />
+                    <div className="skeleton" style={{ width: '70%', height: 14, borderRadius: 4 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="vd-grid__side">
+            <div className="vd-panel">
+              <div className="skeleton" style={{ width: 80, height: 12, borderRadius: 4, marginBottom: 16 }} />
+              {[1, 2, 3].map((i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < 3 ? '1px solid var(--color-border-subtle)' : 'none' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div className="skeleton" style={{ width: 100, height: 14, borderRadius: 4 }} />
+                    <div className="skeleton" style={{ width: 70, height: 10, borderRadius: 4 }} />
+                  </div>
+                  <div className="skeleton" style={{ width: 60, height: 28, borderRadius: 'var(--radius-xs)' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -536,23 +627,37 @@ export default function AdminVendorDetail() {
               {vendor.locations.length === 0 ? (
                 <p className="vd-panel__empty">No operating locations have been assigned.</p>
               ) : (
-                <div className="vd-locations">
-                  {vendor.locations.map((location) => (
-                    <div className="vd-locations__row" key={location.id}>
-                      <div className="vd-locations__info">
-                        <span className="vd-locations__name">
-                          {[location.site_name, location.building_name, location.collection_point_name].filter(Boolean).join(' \u00b7 ')}
-                        </span>
-                        <span className="vd-locations__meta">
-                          {location.service_status}{' \u00b7 '}{location.estimated_prep_minutes || '\u2014'} min prep
-                        </span>
+                <div className="vd-list-wrap">
+                  <div className="vd-locations">
+                    {vendor.locations.slice(0, locationsVisibleCount).map((location) => (
+                      <div className="vd-locations__row" key={location.id}>
+                        <div className="vd-locations__info">
+                          <span className="vd-locations__name">
+                            {[location.site_name, location.building_name, location.collection_point_name].filter(Boolean).join(' \u00b7 ')}
+                          </span>
+                          <span className="vd-locations__meta">
+                            {location.service_status}{' \u00b7 '}{location.estimated_prep_minutes || '\u2014'} min prep
+                          </span>
+                        </div>
+                        <div className="vd-locations__actions">
+                          <StatusPill status={location.service_status} />
+                          <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'location', location })}>Edit</button>
+                        </div>
                       </div>
-                      <div className="vd-locations__actions">
-                        <StatusPill status={location.service_status} />
-                        <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'location', location })}>Edit</button>
-                      </div>
+                    ))}
+                  </div>
+                  {locationsLoading && (
+                    <div className="vd-loading-skeleton">
+                      <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
+                      <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
                     </div>
-                  ))}
+                  )}
+                  <div ref={locationsBottomRef} />
+                  {vendor.locations.length > locationsVisibleCount && !locationsLoading && (
+                    <button type="button" className="vd-load-more" onClick={loadMoreLocations}>
+                      Load more ({vendor.locations.length - locationsVisibleCount} remaining)
+                    </button>
+                  )}
                 </div>
               )}
             </section>
@@ -571,16 +676,30 @@ export default function AdminVendorDetail() {
               {vendor.staff.length === 0 ? (
                 <p className="vd-panel__empty">No staff members assigned.</p>
               ) : (
-                <div className="vd-staff">
-                  {vendor.staff.map((member) => (
-                    <div className="vd-staff__row" key={member.user_id}>
-                      <div className="vd-staff__info">
-                        <span className="vd-staff__name">{member.full_name || member.email || member.user_id}</span>
-                        <span className="vd-staff__meta">{member.role} \u00b7 {member.is_active ? 'Active' : 'Inactive'}</span>
+                <div className="vd-list-wrap">
+                  <div className="vd-staff">
+                    {vendor.staff.slice(0, staffVisibleCount).map((member) => (
+                      <div className="vd-staff__row" key={member.user_id}>
+                        <div className="vd-staff__info">
+                          <span className="vd-staff__name">{member.full_name || member.email || member.user_id}</span>
+                          <span className="vd-staff__meta">{member.role} · {member.is_active ? 'Active' : 'Inactive'}</span>
+                        </div>
+                        <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleStaffRemove(member.user_id)} disabled={actionLoading}>Remove</button>
                       </div>
-                      <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleStaffRemove(member.user_id)} disabled={actionLoading}>Remove</button>
+                    ))}
+                  </div>
+                  {staffLoading && (
+                    <div className="vd-loading-skeleton">
+                      <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
+                      <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
                     </div>
-                  ))}
+                  )}
+                  <div ref={staffBottomRef} />
+                  {vendor.staff.length > staffVisibleCount && !staffLoading && (
+                    <button type="button" className="vd-load-more" onClick={loadMoreStaff}>
+                      Load more ({vendor.staff.length - staffVisibleCount} remaining)
+                    </button>
+                  )}
                 </div>
               )}
             </section>
@@ -594,25 +713,43 @@ export default function AdminVendorDetail() {
                 </button>
               </div>
               {menuItemsLoading ? (
-                <p className="vd-panel__empty">Loading categories...</p>
+                <div className="vd-loading-skeleton">
+                  <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
+                  <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
+                  <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
+                </div>
               ) : menuCategories.length === 0 ? (
                 <p className="vd-panel__empty">No categories defined.</p>
               ) : (
-                <div className="admin-menu-items-table">
-                  <div className="admin-menu-items-table__head">
-                    <span>Name</span><span>Sort</span><span>Items</span><span /><span /></div>
-                  {menuCategories.map((cat) => (
-                    <div className="admin-menu-items-table__row" key={cat.id}>
-                      <div className="admin-menu-items-table__name"><strong>{cat.name}</strong></div>
-                      <span>{cat.sort_order ?? 0}</span>
-                      <span>{menuItems.filter((item) => item.category_id === cat.id).length}</span>
-                      <span />
-                      <div className="vendor-managed-row__actions">
-                        <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'category', category: cat })}>Edit</button>
-                        <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleCategoryDelete(cat.id)} disabled={actionLoading}><IconTrash size={13} /></button>
+                <div className="vd-list-wrap">
+                  <div className="admin-menu-items-table">
+                    <div className="admin-menu-items-table__head">
+                      <span>Name</span><span>Sort</span><span>Items</span><span /><span /></div>
+                    {menuCategories.slice(0, categoriesVisibleCount).map((cat) => (
+                      <div className="admin-menu-items-table__row" key={cat.id}>
+                        <div className="admin-menu-items-table__name"><strong>{cat.name}</strong></div>
+                        <span>{cat.sort_order ?? 0}</span>
+                        <span>{menuItems.filter((item) => item.category_id === cat.id).length}</span>
+                        <span />
+                        <div className="vendor-managed-row__actions">
+                          <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'category', category: cat })}>Edit</button>
+                          <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleCategoryDelete(cat.id)} disabled={actionLoading}><IconTrash size={13} /></button>
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                  {categoriesLoading && (
+                    <div className="vd-loading-skeleton">
+                      <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
+                      <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
                     </div>
-                  ))}
+                  )}
+                  <div ref={categoriesBottomRef} />
+                  {menuCategories.length > categoriesVisibleCount && !categoriesLoading && (
+                    <button type="button" className="vd-load-more" onClick={loadMoreCategories}>
+                      Load more ({menuCategories.length - categoriesVisibleCount} remaining)
+                    </button>
+                  )}
                 </div>
               )}
             </section>
@@ -626,28 +763,46 @@ export default function AdminVendorDetail() {
                 </button>
               </div>
               {menuItemsLoading ? (
-                <p className="vd-panel__empty">Loading menu items...</p>
+                <div className="vd-loading-skeleton">
+                  <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
+                  <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
+                  <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
+                </div>
               ) : menuItems.length === 0 ? (
                 <p className="vd-panel__empty">No menu items have been added.</p>
               ) : (
-                <div className="admin-menu-items-table">
-                  <div className="admin-menu-items-table__head">
-                    <span>Name</span><span>Category</span><span>Price</span><span>Status</span><span /></div>
-                  {menuItems.map((item) => (
-                    <div className="admin-menu-items-table__row" key={item.id}>
-                      <div className="admin-menu-items-table__name">
-                        <strong>{item.name}</strong>
-                        {item.description && <span>{item.description.slice(0, 50)}{item.description.length > 50 ? '\u2026' : ''}</span>}
+                <div className="vd-list-wrap">
+                  <div className="admin-menu-items-table">
+                    <div className="admin-menu-items-table__head">
+                      <span>Name</span><span>Category</span><span>Price</span><span>Status</span><span /></div>
+                    {menuItems.slice(0, menuItemsVisibleCount).map((item) => (
+                      <div className="admin-menu-items-table__row" key={item.id}>
+                        <div className="admin-menu-items-table__name">
+                          <strong>{item.name}</strong>
+                          {item.description && <span>{item.description.slice(0, 50)}{item.description.length > 50 ? '\u2026' : ''}</span>}
+                        </div>
+                        <span>{item.menu_categories?.name || '\u2014'}</span>
+                        <span>R {Number(item.base_price).toFixed(2)}</span>
+                        <span className={`admin-status admin-status--${item.status === 'available' ? 'approved' : item.status === 'sold_out' ? 'rejected' : 'pending'}`}>{item.status}</span>
+                        <div className="vendor-managed-row__actions">
+                          <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'menuItem', item })}>Edit</button>
+                          <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleMenuItemDelete(item.id)} disabled={actionLoading}><IconTrash size={13} /></button>
+                        </div>
                       </div>
-                      <span>{item.menu_categories?.name || '\u2014'}</span>
-                      <span>R {Number(item.base_price).toFixed(2)}</span>
-                      <span className={`admin-status admin-status--${item.status === 'available' ? 'approved' : item.status === 'sold_out' ? 'rejected' : 'pending'}`}>{item.status}</span>
-                      <div className="vendor-managed-row__actions">
-                        <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'menuItem', item })}>Edit</button>
-                        <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleMenuItemDelete(item.id)} disabled={actionLoading}><IconTrash size={13} /></button>
-                      </div>
+                    ))}
+                  </div>
+                  {menuItemsPageLoading && (
+                    <div className="vd-loading-skeleton">
+                      <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
+                      <div className="skeleton skeleton--text" style={{ width: '100%', height: 20 }} />
                     </div>
-                  ))}
+                  )}
+                  <div ref={menuItemsBottomRef} />
+                  {menuItems.length > menuItemsVisibleCount && !menuItemsPageLoading && (
+                    <button type="button" className="vd-load-more" onClick={loadMoreMenuItems}>
+                      Load more ({menuItems.length - menuItemsVisibleCount} remaining)
+                    </button>
+                  )}
                 </div>
               )}
             </section>
