@@ -488,8 +488,8 @@ export default function AdminVendorDetail() {
               <IconStarFilled size={18} stroke={0} />
             </div>
             <div className="vd-metric__body">
-              <span className="vd-metric__value">{Number(vendor.average_rating || 0).toFixed(1)}</span>
               <span className="vd-metric__label">Average rating</span>
+              <span className="vd-metric__value">{Number(vendor.average_rating || 0).toFixed(1)}</span>
               <span className="vd-metric__sub">{vendor.rating_count || 0} reviews</span>
             </div>
           </div>
@@ -498,8 +498,8 @@ export default function AdminVendorDetail() {
               <IconMapPin size={18} stroke={2} />
             </div>
             <div className="vd-metric__body">
-              <span className="vd-metric__value">{vendor.locations.length}</span>
               <span className="vd-metric__label">Operating locations</span>
+              <span className="vd-metric__value">{vendor.locations.length}</span>
               <span className="vd-metric__sub">Configured locations</span>
             </div>
           </div>

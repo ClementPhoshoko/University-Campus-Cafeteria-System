@@ -2961,23 +2961,14 @@
 .vd-metric {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-4);
+  gap: var(--space-3);
   padding: var(--space-5);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  border-left: 3px solid var(--color-border-default);
   border-radius: var(--radius-lg);
   box-shadow: var(--glass-shadow);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-}
-
-.vd-metric:first-child {
-  border-left-color: var(--warning-500);
-}
-
-.vd-metric:nth-child(2) {
-  border-left-color: var(--color-action-primary);
 }
 
 .vd-metric__icon {
@@ -3003,16 +2994,8 @@
 .vd-metric__body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
-}
-
-.vd-metric__value {
-  font-size: 1.35rem;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  letter-spacing: -0.02em;
-  line-height: 1.1;
 }
 
 .vd-metric__label {
@@ -3021,6 +3004,14 @@
   color: var(--color-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.vd-metric__value {
+  font-size: 1.35rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .vd-metric__sub {
