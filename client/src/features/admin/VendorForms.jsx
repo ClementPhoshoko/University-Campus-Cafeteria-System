@@ -107,7 +107,7 @@ function HoursFields({ hours, setHours }) {
 export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ name: '', description: '', logo_file: null, support_email: '', support_phone: '', corporate_catering_enabled: false, onboarding_key: '', site_id: '', building_id: '', collection_point_id: '', service_status: 'closed', estimated_prep_minutes: '15', order_cutoff_minutes: '0', collection_instructions: '' });
+  const [form, setForm] = useState({ name: '', description: '', logo_file: null, support_email: '', support_phone: '', corporate_catering_enabled: false, site_id: '', building_id: '', collection_point_id: '', service_status: 'closed', estimated_prep_minutes: '15', order_cutoff_minutes: '0', collection_instructions: '' });
   const [logoPreview, setLogoPreview] = useState(null);
   const [hours, setHours] = useState(emptyHours);
 
@@ -123,7 +123,7 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
       await onSubmit({
         name: form.name.trim(), description: form.description.trim() || null, logoFile: form.logo_file,
         support_email: form.support_email.trim() || null, support_phone: form.support_phone.trim() || null,
-        corporate_catering_enabled: form.corporate_catering_enabled, onboarding_key: form.onboarding_key.trim() || null,
+        corporate_catering_enabled: form.corporate_catering_enabled,
         location: { site_id: form.site_id, building_id: form.building_id, collection_point_id: form.collection_point_id || null, service_status: form.service_status, estimated_prep_minutes: Number(form.estimated_prep_minutes), order_cutoff_minutes: Number(form.order_cutoff_minutes), collection_instructions: form.collection_instructions.trim() || null, hours },
       });
       onClose();
@@ -147,7 +147,6 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
             <Field label="Support email"><input className="admin-input" type="email" value={form.support_email} onChange={(e) => setForm({ ...form, support_email: e.target.value })} /></Field>
             <Field label="Support phone"><input className="admin-input" value={form.support_phone} onChange={(e) => setForm({ ...form, support_phone: e.target.value })} /></Field>
             <Field label="Description" full><textarea className="admin-modal__textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} /></Field>
-            <Field label="Onboarding key (optional)"><input className="admin-input" value={form.onboarding_key} onChange={(e) => setForm({ ...form, onboarding_key: e.target.value })} /></Field>
             <label className="vendor-checkbox"><input type="checkbox" checked={form.corporate_catering_enabled} onChange={(e) => setForm({ ...form, corporate_catering_enabled: e.target.checked })} /> Corporate catering enabled</label>
           </div>
           <div className="admin-modal__right">
