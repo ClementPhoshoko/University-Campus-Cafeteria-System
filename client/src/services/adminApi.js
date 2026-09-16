@@ -77,6 +77,7 @@ export async function adminRequest(path, {
   try {
     const response = await fetch(buildUrl(path, query), {
       method,
+      cache: 'no-store',
       headers: {
         Accept: 'application/json',
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),

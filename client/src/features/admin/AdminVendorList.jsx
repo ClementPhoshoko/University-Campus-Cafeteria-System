@@ -224,10 +224,10 @@ export default function AdminVendorList() {
         }),
         listVendorApprovals(token, { page: currentPage, limit: itemsPerPage, search: query }),
       ]);
-      setActiveVendors(vendorsResponse.vendors || []);
-      setActivePagination(vendorsResponse.pagination || null);
-      setPendingApprovals(approvalsResponse.approvals || []);
-      setApprovalPagination(approvalsResponse.pagination || null);
+      if (vendorsResponse.vendors) setActiveVendors(vendorsResponse.vendors);
+      if (vendorsResponse.pagination) setActivePagination(vendorsResponse.pagination);
+      if (approvalsResponse.approvals) setPendingApprovals(approvalsResponse.approvals);
+      if (approvalsResponse.pagination) setApprovalPagination(approvalsResponse.pagination);
     } catch (err) {
       console.error('Failed to refetch vendor data:', err);
     }
