@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   IconChevronLeft,
@@ -83,6 +83,22 @@ export default function AdminVendorDetail() {
   const [menuItems, setMenuItems] = useState([]);
   const [menuCategories, setMenuCategories] = useState([]);
   const [menuItemsLoading, setMenuItemsLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [loadMsg, setLoadMsg] = useState(0);
+  const loadTimerRef = useRef(null);
+
+  const LOAD_MESSAGES = [
+    'Processing approval decision...',
+    'Updating vendor status...',
+    'Syncing account settings...',
+    'Almost there...',
+  ];
+
+  useEffect(() => {
+    if (!creating) { setLoadMsg(0); return; }
+    loadTimerRef.current = setInterval(() => setLoadMsg((i) => (i + 1) % LOAD_MESSAGES.length), 1800);
+    return () => clearInterval(loadTimerRef.current);
+  }, [creating]);
 
   useEffect(() => {
     if (!vendorId || !token) return;
@@ -146,7 +162,7 @@ export default function AdminVendorDetail() {
     const reason = decision === 'reject' ? window.prompt('Reason for rejection:') : undefined;
     if (decision === 'reject' && !reason?.trim()) return;
 
-    setActionLoading(true);
+    setCreating(true);
     try {
       const response = await updateVendorApproval(token, vendorId, {
         decision,
@@ -157,7 +173,7 @@ export default function AdminVendorDetail() {
     } catch (err) {
       console.error('Failed to update vendor approval:', err);
     } finally {
-      setActionLoading(false);
+      setCreating(false);
     }
   };
 
@@ -342,10 +358,10 @@ export default function AdminVendorDetail() {
         <div className="admin-vendor-header__actions">
           {vendor.isPending ? (
             <>
-                <button type="button" className="admin-action admin-action--ghost" onClick={() => handleApproval('reject')} disabled={actionLoading}>
+                <button type="button" className="admin-action admin-action--ghost" onClick={() => handleApproval('reject')} disabled={creating || actionLoading}>
                 <IconBan size={14} stroke={2} /> Reject
               </button>
-              <button type="button" className="admin-action admin-action--ghost admin-action--ghost-success" onClick={() => handleApproval('approve')} disabled={actionLoading}>
+              <button type="button" className="admin-action admin-action--ghost admin-action--ghost-success" onClick={() => handleApproval('approve')} disabled={creating || actionLoading}>
                 <IconCheck size={14} stroke={2} /> Approve
               </button>
             </>
@@ -354,7 +370,7 @@ export default function AdminVendorDetail() {
               <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('edit')}>
                 <IconEdit size={14} stroke={2} /> Edit profile
               </button>
-              <button type="button" className="admin-action admin-action--ghost admin-action--destructive" onClick={() => handleApproval(vendor.status === 'approved' ? 'suspend' : 'activate')} disabled={actionLoading}>
+              <button type="button" className="admin-action admin-action--ghost admin-action--destructive" onClick={() => handleApproval(vendor.status === 'approved' ? 'suspend' : 'activate')} disabled={creating || actionLoading}>
                 <IconPower size={14} stroke={2} /> {vendor.status === 'approved' ? 'Suspend' : 'Activate'}
               </button>
             </>
@@ -560,6 +576,16 @@ export default function AdminVendorDetail() {
       {modal?.type === 'menuItem' && <MenuItemModal key={modal.item.id} item={modal.item} categories={menuCategories} onClose={() => setModal(null)} onSubmit={(payload) => handleMenuItemUpdate(modal.item.id, payload)} submitting={actionLoading} />}
       {modal === 'category' && <CategoryModal onClose={() => setModal(null)} onSubmit={handleCategoryCreate} submitting={actionLoading} />}
       {modal?.type === 'category' && <CategoryModal key={modal.category.id} category={modal.category} onClose={() => setModal(null)} onSubmit={(payload) => handleCategoryUpdate(modal.category.id, payload)} submitting={actionLoading} />}
+      {creating && (
+        <div className="vendor-creating-overlay">
+          <div className="vendor-creating-card">
+            <div className="vendor-creating-spinner" />
+            <p className="vendor-creating-msg">{LOAD_MESSAGES[loadMsg]}</p>
+            <div className="vendor-creating-bar"><div className="vendor-creating-bar__fill" /></div>
+            <p className="vendor-creating-hint">Hang tight, this won't take long.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
