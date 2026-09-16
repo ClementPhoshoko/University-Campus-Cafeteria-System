@@ -1420,6 +1420,20 @@
   color: var(--error-400);
 }
 
+.admin-action--ghost-success {
+  color: var(--success-600);
+}
+
+.admin-action--ghost-success:hover {
+  background: var(--success-50);
+  color: var(--success-700);
+}
+
+[data-theme="dark"] .admin-action--ghost-success:hover {
+  background: rgba(34, 165, 89, 0.15);
+  color: var(--success-400);
+}
+
 .admin-action--active {
   background: var(--color-action-secondary);
   border-color: var(--color-action-primary);
@@ -3302,7 +3316,6 @@
   font-size: 0.72rem;
   font-weight: var(--font-weight-semibold);
   color: var(--warning-700);
-  background: rgba(217, 154, 0, 0.12);
   padding: 4px 10px;
   border-radius: var(--radius-full);
 }
@@ -3310,7 +3323,6 @@
 .admin-vendor-checklist__list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
   list-style: none;
   padding: 0;
   margin: 0;
@@ -3320,8 +3332,14 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  padding: var(--space-3) 0;
   font-size: 0.85rem;
   color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.admin-vendor-checklist__item:last-child {
+  border-bottom: none;
 }
 
 .admin-vendor-checklist__item svg {

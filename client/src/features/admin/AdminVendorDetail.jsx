@@ -15,6 +15,11 @@ import {
   IconPower,
   IconPlus,
   IconTrash,
+  IconHeartbeat,
+  IconShieldCheck,
+  IconMenu2,
+  IconCreditCard,
+  IconClipboardCheck,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
@@ -337,10 +342,10 @@ export default function AdminVendorDetail() {
         <div className="admin-vendor-header__actions">
           {vendor.isPending ? (
             <>
-                <button type="button" className="admin-action admin-action--reject" onClick={() => handleApproval('reject')} disabled={actionLoading}>
+                <button type="button" className="admin-action admin-action--ghost" onClick={() => handleApproval('reject')} disabled={actionLoading}>
                 <IconBan size={14} stroke={2} /> Reject
               </button>
-              <button type="button" className="admin-action admin-action--approve" onClick={() => handleApproval('approve')} disabled={actionLoading}>
+              <button type="button" className="admin-action admin-action--ghost admin-action--ghost-success" onClick={() => handleApproval('approve')} disabled={actionLoading}>
                 <IconCheck size={14} stroke={2} /> Approve
               </button>
             </>
@@ -387,22 +392,22 @@ export default function AdminVendorDetail() {
           </div>
           <ul className="admin-vendor-checklist__list">
             <li className="admin-vendor-checklist__item admin-vendor-checklist__item--done">
-              <IconCheck size={14} stroke={2} /> Business registration verified
+              <IconBuildingStore size={14} stroke={2} /> Business registration verified
             </li>
             <li className="admin-vendor-checklist__item admin-vendor-checklist__item--done">
-              <IconCheck size={14} stroke={2} /> Health certificate on file
+              <IconHeartbeat size={14} stroke={2} /> Health certificate on file
             </li>
             <li className="admin-vendor-checklist__item admin-vendor-checklist__item--done">
-              <IconCheck size={14} stroke={2} /> Insurance details confirmed
+              <IconShieldCheck size={14} stroke={2} /> Insurance details confirmed
             </li>
             <li className="admin-vendor-checklist__item admin-vendor-checklist__item--done">
-              <IconCheck size={14} stroke={2} /> Menu reviewed for allergen labelling
+              <IconMenu2 size={14} stroke={2} /> Menu reviewed for allergen labelling
             </li>
             <li className="admin-vendor-checklist__item admin-vendor-checklist__item--pending">
-              <IconClock size={14} stroke={2} /> Payment provider pending
+              <IconCreditCard size={14} stroke={2} /> Payment provider pending
             </li>
             <li className="admin-vendor-checklist__item admin-vendor-checklist__item--pending">
-              <IconClock size={14} stroke={2} /> Final operational sign-off
+              <IconClipboardCheck size={14} stroke={2} /> Final operational sign-off
             </li>
           </ul>
         </section>
