@@ -89,6 +89,7 @@ export default function AdminVendorDetail() {
   const [rejectModal, setRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectError, setRejectError] = useState('');
+  const [approvalError, setApprovalError] = useState('');
 
   const LOAD_MESSAGES = [
     'Processing approval decision...',
@@ -161,10 +162,11 @@ export default function AdminVendorDetail() {
   };
 
   const handleApproval = async (decision, reason) => {
-    if (!token || !vendorId || actionLoading) return;
+    if (!token || !vendorId || creating) return;
 
     setCreating(true);
     setRejectError('');
+    setApprovalError('');
     try {
       await updateVendorApproval(token, vendorId, {
         decision,
@@ -176,7 +178,11 @@ export default function AdminVendorDetail() {
       setRejectReason('');
     } catch (err) {
       const msg = err?.message || 'Action failed. Please try again.';
-      setRejectError(msg);
+      if (decision === 'reject') {
+        setRejectError(msg);
+      } else {
+        setApprovalError(msg);
+      }
     } finally {
       setCreating(false);
     }
@@ -361,6 +367,7 @@ export default function AdminVendorDetail() {
           </div>
         </div>
         <div className="admin-vendor-header__actions">
+          {approvalError && <div className="vendor-form-error" role="alert" style={{ width: '100%', marginBottom: 'var(--space-3)' }}>{approvalError}</div>}
           {vendor.isPending ? (
             <>
                 <button type="button" className="admin-action admin-action--ghost" onClick={() => { setRejectModal(true); setRejectError(''); }} disabled={creating || actionLoading}>
