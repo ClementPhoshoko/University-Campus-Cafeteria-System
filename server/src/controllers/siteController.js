@@ -1,8 +1,9 @@
-import { supabaseAdmin } from '../config/supabase.js';
+import { supabaseAdmin, getPublicAssetUrl } from '../config/supabase.js';
 import { parsePagination, buildPagination } from '../utils/pagination.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { writeAudit } from '../utils/audit.js';
 import { respond, CACHE } from '../utils/http.js';
+import { resolveAssetUrl } from '../utils/assetUrl.js';
 import {
   isUuid,
   parseOptionalBoolean,
@@ -19,12 +20,6 @@ import {
 } from '../validators/siteValidators.js';
 
 const db = () => supabaseAdmin;
-
-async function resolveAssetUrl(path) {
-  if (!path || /^https?:\/\//i.test(path)) return path;
-  const { data } = await db().storage.from('vendor-assets').createSignedUrl(path, 3600);
-  return data?.signedUrl || path;
-}
 
 // ---------------------------------------------------------------------------
 // Helpers

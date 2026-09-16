@@ -23,8 +23,9 @@ export default function ViewFoodPage() {
 
   const [menuItem, setMenuItem] = useState(null);
   const [vendor, setVendor] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [itemLoading, setItemLoading] = useState(true);
+  const [itemError, setItemError] = useState(null);
+  const [vendorReady, setVendorReady] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState({});
   const [addedToCart, setAddedToCart] = useState(false);
@@ -34,22 +35,31 @@ export default function ViewFoodPage() {
   useEffect(() => {
     if (!token || !cafeteriaId || !menuItemId) return;
     let cancelled = false;
-    setLoading(true);
+    setItemLoading(true);
+    setItemError(null);
 
-    Promise.all([
-      getVendor(cafeteriaId, { token }),
-      getMenuItem(cafeteriaId, menuItemId, { token }),
-    ]).then(([vendorRes, itemRes]) => {
+    const vendorPromise = getVendor(cafeteriaId, { token }).then((vendorRes) => {
       if (cancelled) return;
       setVendor(vendorRes?.vendor || null);
-      setMenuItem(itemRes?.menuItem || null);
-      setError(null);
+      setVendorReady(true);
     }).catch((err) => {
       if (cancelled) return;
-      setError(err?.message || 'Failed to load item');
-    }).finally(() => {
-      if (!cancelled) setLoading(false);
+      console.error('Failed to load vendor:', err);
+      setVendorReady(true);
     });
+
+    const itemPromise = getMenuItem(cafeteriaId, menuItemId, { token }).then((itemRes) => {
+      if (cancelled) return;
+      setMenuItem(itemRes?.menuItem || null);
+      setItemError(null);
+    }).catch((err) => {
+      if (cancelled) return;
+      setItemError(err?.message || 'Failed to load item');
+    }).finally(() => {
+      if (!cancelled) setItemLoading(false);
+    });
+
+    Promise.all([vendorPromise, itemPromise]);
 
     return () => { cancelled = true; };
   }, [cafeteriaId, menuItemId, token]);
@@ -102,23 +112,12 @@ export default function ViewFoodPage() {
     }
   };
 
-  if (loading) {
+  if (itemError || !menuItem) {
     return (
       <PageContainer className="view-food-page-container">
         <ViewFoodBackground />
         <main className="view-food-page">
-          <div className="view-food__empty"><p>Loading...</p></div>
-        </main>
-      </PageContainer>
-    );
-  }
-
-  if (error || !menuItem) {
-    return (
-      <PageContainer className="view-food-page-container">
-        <ViewFoodBackground />
-        <main className="view-food-page">
-          <div className="view-food__empty"><h2>Item not found</h2><p>{error || 'This menu item could not be loaded.'}</p></div>
+          <div className="view-food__empty"><h2>Item not found</h2><p>{itemError || 'This menu item could not be loaded.'}</p></div>
         </main>
       </PageContainer>
     );

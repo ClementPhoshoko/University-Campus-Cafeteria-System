@@ -10,7 +10,7 @@ export default function AuthLayout() {
       <AuthBackground />
       <div className="auth-content">
         <div className="auth-brand">
-          <img src={mainLogo} alt="Merchant Munchies" className="auth-logo" />
+          <img src={mainLogo} alt="Merchant Munchies" className="auth-logo" loading="eager" />
           <div className="auth-brand-name">
             <span className="auth-brand-merchant">merchant</span>
             <span className="auth-brand-munchies">munchies</span>

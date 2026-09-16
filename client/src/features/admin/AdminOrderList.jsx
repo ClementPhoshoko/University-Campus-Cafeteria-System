@@ -20,6 +20,7 @@ import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { listOrders } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useRoles } from '../../hooks/useRoles.js';
+import { useDebounce } from '../../hooks/useDebounce.js';
 import { formatCurrency } from './adminMockData.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 import {
@@ -169,6 +170,7 @@ export default function AdminOrderList() {
   }, [initialized, session]);
 
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 300);
   const [statusFilter, setStatusFilter] = useState('all');
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [vendorFilter, setVendorFilter] = useState('all');
@@ -215,7 +217,7 @@ export default function AdminOrderList() {
     if (initialized && token) {
       fetchOrders();
     }
-  }, [initialized, token, query, statusFilter, roles]);
+  }, [initialized, token, debouncedQuery, statusFilter, roles]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -232,7 +234,7 @@ export default function AdminOrderList() {
 
   useEffect(() => {
     setPage(1);
-  }, [query, statusFilter]);
+  }, [debouncedQuery, statusFilter]);
 
   // Derive vendor list from orders for the filter dropdown
   const uniqueVendors = useMemo(() => {

@@ -15,13 +15,14 @@ import Pagination from '../../components/ui/Pagination.jsx';
 import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { createVendor, listVendorApprovals, listVendors, updateVendorApproval, uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
+import { useDebounce } from '../../hooks/useDebounce.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 import { AddVendorModal } from './VendorForms.jsx';
 
 function VendorLogo({ src, alt }) {
   return (
     <div className="admin-vendors__vendor-logo">
-      <img src={src} alt={alt || ''} />
+      <img src={src} alt={alt || ''} loading="lazy" />
     </div>
   );
 }
@@ -96,6 +97,7 @@ export default function AdminVendorList() {
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [approvalPagination, setApprovalPagination] = useState(null);
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 300);
   const [statusFilter, setStatusFilter] = useState('all');
   const [campusFilter, setCampusFilter] = useState('all');
   const [modal, setModal] = useState(null);
@@ -164,11 +166,11 @@ export default function AdminVendorList() {
     return () => {
       cancelled = true;
     };
-  }, [currentPage, initialized, query, statusFilter, token]);
+  }, [currentPage, initialized, debouncedQuery, statusFilter, token]);
 
   useEffect(() => {
     setPage(1);
-  }, [query, statusFilter]);
+  }, [debouncedQuery, statusFilter]);
 
   const handlePageChange = (page) => {
     setPage(page);

@@ -90,7 +90,7 @@ export default function AdminLayout() {
 
       <aside className="admin-sidebar">
         <div className="admin-sidebar__brand">
-          <img src={mainLogo} alt="Logo" className="admin-sidebar__logo" />
+          <img src={mainLogo} alt="Logo" className="admin-sidebar__logo" loading="eager" />
           <div className="admin-sidebar__brand-text">
             <span className="admin-sidebar__brand-title">Merchant Munchies</span>
             <span className="admin-sidebar__brand-sub">Admin Console</span>

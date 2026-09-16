@@ -1,6 +1,7 @@
-import { supabaseAdmin } from '../config/supabase.js';
+import { supabaseAdmin, getPublicAssetUrl } from '../config/supabase.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { respond, CACHE } from '../utils/http.js';
+import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { isUuid } from '../validators/vendorValidators.js';
 
 const db = () => supabaseAdmin;
@@ -124,19 +125,19 @@ export async function listVendorMenu(req, res) {
 
     const uncategorized = { id: null, name: 'Other', sort_order: 999, items: [] };
 
-    menuItems.forEach((item) => {
+    for (const item of menuItems) {
       const cat = categoryMap[item.category_id] || uncategorized;
       cat.items.push({
         id: item.id,
         name: item.name,
         description: item.description,
-        image_url: item.image_url,
+        image_url: await resolveAssetUrl(item.image_url),
         base_price: item.base_price,
         prep_minutes: item.prep_minutes,
         status: item.status,
         dietary_tags: dietaryByItem[item.id] || [],
       });
-    });
+    }
 
     const allCategories = Object.values(categoryMap)
       .filter((c) => c.items.length > 0)
@@ -228,7 +229,7 @@ export async function getMenuItem(req, res) {
         id: item.id,
         name: item.name,
         description: item.description,
-        image_url: item.image_url,
+        image_url: await resolveAssetUrl(item.image_url),
         base_price: item.base_price,
         prep_minutes: item.prep_minutes,
         status: item.status,

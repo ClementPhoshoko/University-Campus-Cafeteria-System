@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from './useAuth.js';
+import { getCache, setCache, invalidateCache, invalidateCachePattern, makeCacheKey } from '../services/cache.js';
 import {
   createBuilding,
   createCollectionPoint,
@@ -53,6 +54,7 @@ export function useAdminLocations({
   const { session, initialized } = useAuth();
   const token = session?.access_token;
   const mountedRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const [sites, setSites] = useState([]);
   const [sitePagination, setSitePagination] = useState(EMPTY_PAGINATION);
@@ -109,32 +111,83 @@ export function useAdminLocations({
   }, [token]);
 
   const fetchSites = useCallback(async (params = siteParams, options = {}) => {
+    const requestId = ++requestIdRef.current;
+    const controller = new AbortController();
+    const cacheKey = makeCacheKey('/admin/sites', params);
+
+    const cached = getCache(cacheKey);
+    if (cached && !cached.isStale && mountedRef.current) {
+      setSites(cached.data.sites || []);
+      setSitePagination(cached.data.pagination || EMPTY_PAGINATION);
+      setLoadingKey('sites', false);
+      setErrorKey('sites', null);
+      setCache(cacheKey, cached.data, 300_000);
+      const doRefresh = async () => {
+        try {
+          const fresh = await listSites(requireToken(), params, { ...options, signal: controller.signal });
+          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          setSites(fresh?.sites || []);
+          setSitePagination(fresh?.pagination || EMPTY_PAGINATION);
+          setCache(cacheKey, fresh, 300_000);
+        } catch { /* background refresh failed, keep stale data */ }
+      };
+      doRefresh();
+      return cached.data;
+    }
+
     setLoadingKey('sites', true);
     setErrorKey('sites', null);
     try {
-      const payload = await listSites(requireToken(), params, options);
-      if (!mountedRef.current) return payload;
+      const payload = await listSites(requireToken(), params, { ...options, signal: controller.signal });
+      if (!mountedRef.current || requestId !== requestIdRef.current) return payload;
       setSites(payload?.sites || []);
       setSitePagination(payload?.pagination || EMPTY_PAGINATION);
+      setCache(cacheKey, payload, 300_000);
       return payload;
     } catch (error) {
-      setErrorKey('sites', getMessage(error));
+      if (error?.name === 'AbortError') return undefined;
+      if (requestId === requestIdRef.current) setErrorKey('sites', getMessage(error));
       throw error;
     } finally {
-      setLoadingKey('sites', false);
+      if (requestId === requestIdRef.current) setLoadingKey('sites', false);
     }
   }, [requireToken, setErrorKey, setLoadingKey, siteParams]);
 
   const fetchBuildings = useCallback(async (siteId, params = DEFAULT_LIST_PARAMS, options = {}) => {
+    const requestId = ++requestIdRef.current;
+    const controller = new AbortController();
+    const cacheKey = makeCacheKey(`/admin/sites/${siteId}/buildings`, params);
+
+    const cached = getCache(cacheKey);
+    if (cached && !cached.isStale && mountedRef.current) {
+      setBuildingsBySite((prev) => ({ ...prev, [siteId]: cached.data.buildings || [] }));
+      setBuildingPaginationBySite((prev) => ({ ...prev, [siteId]: cached.data.pagination || EMPTY_PAGINATION }));
+      setLoadingKey('buildings', false);
+      setErrorKey('buildings', null);
+      const doRefresh = async () => {
+        try {
+          const fresh = await listBuildings(requireToken(), siteId, params, { ...options, signal: controller.signal });
+          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          setBuildingsBySite((prev) => ({ ...prev, [siteId]: fresh?.buildings || [] }));
+          setBuildingPaginationBySite((prev) => ({ ...prev, [siteId]: fresh?.pagination || EMPTY_PAGINATION }));
+          setCache(cacheKey, fresh, 300_000);
+        } catch { /* background refresh failed */ }
+      };
+      doRefresh();
+      return cached.data;
+    }
+
     setLoadingKey('buildings', true);
     setErrorKey('buildings', null);
     try {
       const payload = await listBuildings(requireToken(), siteId, params, options);
-      if (!mountedRef.current) return payload;
+      if (!mountedRef.current || requestId !== requestIdRef.current) return payload;
       setBuildingsBySite((prev) => ({ ...prev, [siteId]: payload?.buildings || [] }));
       setBuildingPaginationBySite((prev) => ({ ...prev, [siteId]: payload?.pagination || EMPTY_PAGINATION }));
+      setCache(cacheKey, payload, 300_000);
       return payload;
     } catch (error) {
+      if (error?.name === 'AbortError') return undefined;
       setErrorKey('buildings', getMessage(error));
       throw error;
     } finally {
@@ -143,6 +196,29 @@ export function useAdminLocations({
   }, [requireToken, setErrorKey, setLoadingKey]);
 
   const fetchFloors = useCallback(async (buildingId, params = DEFAULT_LIST_PARAMS, options = {}) => {
+    const requestId = ++requestIdRef.current;
+    const controller = new AbortController();
+    const cacheKey = makeCacheKey(`/admin/buildings/${buildingId}/floors`, params);
+
+    const cached = getCache(cacheKey);
+    if (cached && !cached.isStale && mountedRef.current) {
+      setFloorsByBuilding((prev) => ({ ...prev, [buildingId]: cached.data.floors || [] }));
+      setFloorPaginationByBuilding((prev) => ({ ...prev, [buildingId]: cached.data.pagination || EMPTY_PAGINATION }));
+      setLoadingKey('floors', false);
+      setErrorKey('floors', null);
+      const doRefresh = async () => {
+        try {
+          const fresh = await listFloors(requireToken(), buildingId, params, { ...options, signal: controller.signal });
+          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          setFloorsByBuilding((prev) => ({ ...prev, [buildingId]: fresh?.floors || [] }));
+          setFloorPaginationByBuilding((prev) => ({ ...prev, [buildingId]: fresh?.pagination || EMPTY_PAGINATION }));
+          setCache(cacheKey, fresh, 300_000);
+        } catch { /* background refresh failed */ }
+      };
+      doRefresh();
+      return cached.data;
+    }
+
     setLoadingKey('floors', true);
     setErrorKey('floors', null);
     try {
@@ -150,6 +226,7 @@ export function useAdminLocations({
       if (!mountedRef.current) return payload;
       setFloorsByBuilding((prev) => ({ ...prev, [buildingId]: payload?.floors || [] }));
       setFloorPaginationByBuilding((prev) => ({ ...prev, [buildingId]: payload?.pagination || EMPTY_PAGINATION }));
+      setCache(cacheKey, payload, 300_000);
       return payload;
     } catch (error) {
       setErrorKey('floors', getMessage(error));
@@ -160,6 +237,29 @@ export function useAdminLocations({
   }, [requireToken, setErrorKey, setLoadingKey]);
 
   const fetchCollectionPoints = useCallback(async (buildingId, params = DEFAULT_LIST_PARAMS, options = {}) => {
+    const requestId = ++requestIdRef.current;
+    const controller = new AbortController();
+    const cacheKey = makeCacheKey(`/admin/buildings/${buildingId}/collection-points`, params);
+
+    const cached = getCache(cacheKey);
+    if (cached && !cached.isStale && mountedRef.current) {
+      setCollectionPointsByBuilding((prev) => ({ ...prev, [buildingId]: cached.data.collectionPoints || [] }));
+      setCollectionPointPaginationByBuilding((prev) => ({ ...prev, [buildingId]: cached.data.pagination || EMPTY_PAGINATION }));
+      setLoadingKey('collectionPoints', false);
+      setErrorKey('collectionPoints', null);
+      const doRefresh = async () => {
+        try {
+          const fresh = await listCollectionPoints(requireToken(), buildingId, params, { ...options, signal: controller.signal });
+          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          setCollectionPointsByBuilding((prev) => ({ ...prev, [buildingId]: fresh?.collectionPoints || [] }));
+          setCollectionPointPaginationByBuilding((prev) => ({ ...prev, [buildingId]: fresh?.pagination || EMPTY_PAGINATION }));
+          setCache(cacheKey, fresh, 300_000);
+        } catch { /* background refresh failed */ }
+      };
+      doRefresh();
+      return cached.data;
+    }
+
     setLoadingKey('collectionPoints', true);
     setErrorKey('collectionPoints', null);
     try {
@@ -167,6 +267,7 @@ export function useAdminLocations({
       if (!mountedRef.current) return payload;
       setCollectionPointsByBuilding((prev) => ({ ...prev, [buildingId]: payload?.collectionPoints || [] }));
       setCollectionPointPaginationByBuilding((prev) => ({ ...prev, [buildingId]: payload?.pagination || EMPTY_PAGINATION }));
+      setCache(cacheKey, payload, 300_000);
       return payload;
     } catch (error) {
       setErrorKey('collectionPoints', getMessage(error));
@@ -177,6 +278,29 @@ export function useAdminLocations({
   }, [requireToken, setErrorKey, setLoadingKey]);
 
   const fetchDeliveryLocations = useCallback(async (buildingId, params = DEFAULT_LIST_PARAMS, options = {}) => {
+    const requestId = ++requestIdRef.current;
+    const controller = new AbortController();
+    const cacheKey = makeCacheKey(`/admin/buildings/${buildingId}/delivery-locations`, params);
+
+    const cached = getCache(cacheKey);
+    if (cached && !cached.isStale && mountedRef.current) {
+      setDeliveryLocationsByBuilding((prev) => ({ ...prev, [buildingId]: cached.data.deliveryLocations || [] }));
+      setDeliveryLocationPaginationByBuilding((prev) => ({ ...prev, [buildingId]: cached.data.pagination || EMPTY_PAGINATION }));
+      setLoadingKey('deliveryLocations', false);
+      setErrorKey('deliveryLocations', null);
+      const doRefresh = async () => {
+        try {
+          const fresh = await listDeliveryLocations(requireToken(), buildingId, params, { ...options, signal: controller.signal });
+          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          setDeliveryLocationsByBuilding((prev) => ({ ...prev, [buildingId]: fresh?.deliveryLocations || [] }));
+          setDeliveryLocationPaginationByBuilding((prev) => ({ ...prev, [buildingId]: fresh?.pagination || EMPTY_PAGINATION }));
+          setCache(cacheKey, fresh, 300_000);
+        } catch { /* background refresh failed */ }
+      };
+      doRefresh();
+      return cached.data;
+    }
+
     setLoadingKey('deliveryLocations', true);
     setErrorKey('deliveryLocations', null);
     try {
@@ -184,6 +308,7 @@ export function useAdminLocations({
       if (!mountedRef.current) return payload;
       setDeliveryLocationsByBuilding((prev) => ({ ...prev, [buildingId]: payload?.deliveryLocations || [] }));
       setDeliveryLocationPaginationByBuilding((prev) => ({ ...prev, [buildingId]: payload?.pagination || EMPTY_PAGINATION }));
+      setCache(cacheKey, payload, 300_000);
       return payload;
     } catch (error) {
       setErrorKey('deliveryLocations', getMessage(error));
@@ -194,6 +319,41 @@ export function useAdminLocations({
   }, [requireToken, setErrorKey, setLoadingKey]);
 
   const fetchAllBuildings = useCallback(async (params = DEFAULT_LIST_PARAMS, options = {}) => {
+    const requestId = ++requestIdRef.current;
+    const controller = new AbortController();
+    const cacheKey = makeCacheKey('/admin/all-buildings', params);
+
+    const cached = getCache(cacheKey);
+    if (cached && !cached.isStale && mountedRef.current) {
+      const buildings = cached.data.buildings || [];
+      const grouped = {};
+      for (const b of buildings) {
+        const sid = b.site_id;
+        if (!grouped[sid]) grouped[sid] = [];
+        grouped[sid].push(b);
+      }
+      setBuildingsBySite((prev) => ({ ...prev, ...grouped }));
+      setLoadingKey('buildings', false);
+      setErrorKey('buildings', null);
+      const doRefresh = async () => {
+        try {
+          const fresh = await listAllBuildings(requireToken(), params, { ...options, signal: controller.signal });
+          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          const buildings = fresh?.buildings || [];
+          const grouped = {};
+          for (const b of buildings) {
+            const sid = b.site_id;
+            if (!grouped[sid]) grouped[sid] = [];
+            grouped[sid].push(b);
+          }
+          setBuildingsBySite((prev) => ({ ...prev, ...grouped }));
+          setCache(cacheKey, fresh, 300_000);
+        } catch { /* background refresh failed */ }
+      };
+      doRefresh();
+      return cached.data;
+    }
+
     setLoadingKey('buildings', true);
     setErrorKey('buildings', null);
     try {
@@ -207,6 +367,7 @@ export function useAdminLocations({
         grouped[sid].push(b);
       }
       setBuildingsBySite((prev) => ({ ...prev, ...grouped }));
+      setCache(cacheKey, payload, 300_000);
       return payload;
     } catch (error) {
       setErrorKey('buildings', getMessage(error));
@@ -217,6 +378,41 @@ export function useAdminLocations({
   }, [requireToken, setErrorKey, setLoadingKey]);
 
   const fetchAllCollectionPoints = useCallback(async (params = DEFAULT_LIST_PARAMS, options = {}) => {
+    const requestId = ++requestIdRef.current;
+    const controller = new AbortController();
+    const cacheKey = makeCacheKey('/admin/all-collection-points', params);
+
+    const cached = getCache(cacheKey);
+    if (cached && !cached.isStale && mountedRef.current) {
+      const points = cached.data.collectionPoints || [];
+      const grouped = {};
+      for (const cp of points) {
+        const bid = cp.building_id;
+        if (!grouped[bid]) grouped[bid] = [];
+        grouped[bid].push(cp);
+      }
+      setCollectionPointsByBuilding((prev) => ({ ...prev, ...grouped }));
+      setLoadingKey('collectionPoints', false);
+      setErrorKey('collectionPoints', null);
+      const doRefresh = async () => {
+        try {
+          const fresh = await listAllCollectionPoints(requireToken(), params, { ...options, signal: controller.signal });
+          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          const points = fresh?.collectionPoints || [];
+          const grouped = {};
+          for (const cp of points) {
+            const bid = cp.building_id;
+            if (!grouped[bid]) grouped[bid] = [];
+            grouped[bid].push(cp);
+          }
+          setCollectionPointsByBuilding((prev) => ({ ...prev, ...grouped }));
+          setCache(cacheKey, fresh, 300_000);
+        } catch { /* background refresh failed */ }
+      };
+      doRefresh();
+      return cached.data;
+    }
+
     setLoadingKey('collectionPoints', true);
     setErrorKey('collectionPoints', null);
     try {
@@ -230,6 +426,7 @@ export function useAdminLocations({
         grouped[bid].push(cp);
       }
       setCollectionPointsByBuilding((prev) => ({ ...prev, ...grouped }));
+      setCache(cacheKey, payload, 300_000);
       return payload;
     } catch (error) {
       setErrorKey('collectionPoints', getMessage(error));
@@ -257,6 +454,7 @@ export function useAdminLocations({
     if (mountedRef.current && response?.site) {
       setSites((prev) => upsertById(prev, response.site));
     }
+    invalidateCachePattern('/admin/sites');
     await fetchSites();
     return response;
   }), [fetchSites, runMutation]);
@@ -266,6 +464,7 @@ export function useAdminLocations({
     if (mountedRef.current && response?.site) {
       setSites((prev) => upsertById(prev, response.site));
     }
+    invalidateCachePattern('/admin/sites');
     return response;
   }), [runMutation]);
 
@@ -277,6 +476,8 @@ export function useAdminLocations({
         [siteId]: upsertById(prev[siteId] || [], response.building),
       }));
     }
+    invalidateCachePattern(`/admin/sites/${siteId}/buildings`);
+    invalidateCachePattern('/admin/all-buildings');
     await fetchSites();
     await fetchBuildings(siteId);
     return response;
@@ -302,6 +503,7 @@ export function useAdminLocations({
         [buildingId]: upsertById(prev[buildingId] || [], response.floor),
       }));
     }
+    invalidateCachePattern(`/admin/buildings/${buildingId}/floors`);
     await fetchFloors(buildingId);
     return response;
   }), [fetchFloors, runMutation]);
@@ -326,6 +528,7 @@ export function useAdminLocations({
         [buildingId]: upsertById(prev[buildingId] || [], response.collectionPoint),
       }));
     }
+    invalidateCachePattern(`/admin/buildings/${buildingId}/collection-points`);
     await fetchCollectionPoints(buildingId);
     return response;
   }), [fetchCollectionPoints, runMutation]);
@@ -350,6 +553,7 @@ export function useAdminLocations({
         [buildingId]: upsertById(prev[buildingId] || [], response.deliveryLocation),
       }));
     }
+    invalidateCachePattern(`/admin/buildings/${buildingId}/delivery-locations`);
     await fetchDeliveryLocations(buildingId);
     return response;
   }), [fetchDeliveryLocations, runMutation]);
@@ -369,6 +573,7 @@ export function useAdminLocations({
   const resetBuildingCache = useCallback((siteId) => {
     setBuildingsBySite((prev) => removeKey(prev, siteId));
     setBuildingPaginationBySite((prev) => removeKey(prev, siteId));
+    invalidateCachePattern(`/admin/sites/${siteId}/buildings`);
   }, []);
 
   const resetBuildingChildrenCache = useCallback((buildingId) => {
@@ -378,6 +583,7 @@ export function useAdminLocations({
     setCollectionPointPaginationByBuilding((prev) => removeKey(prev, buildingId));
     setDeliveryLocationsByBuilding((prev) => removeKey(prev, buildingId));
     setDeliveryLocationPaginationByBuilding((prev) => removeKey(prev, buildingId));
+    invalidateCachePattern(`/admin/buildings/${buildingId}/`);
   }, []);
 
   useEffect(() => {

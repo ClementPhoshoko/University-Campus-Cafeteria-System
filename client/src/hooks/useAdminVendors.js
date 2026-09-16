@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from './useAuth.js';
+import { getCache, setCache, invalidateCache, invalidateCachePattern, makeCacheKey } from '../services/cache.js';
 import {
   addVendorUser,
   createVendor,
@@ -50,6 +51,7 @@ export function useAdminVendors({
   const { session, initialized } = useAuth();
   const token = session?.access_token;
   const mountedRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const [vendors, setVendors] = useState([]);
   const [vendorPagination, setVendorPagination] = useState(EMPTY_PAGINATION);
@@ -97,13 +99,38 @@ export function useAdminVendors({
   }, [token]);
 
   const fetchVendors = useCallback(async (params = vendorParams, options = {}) => {
+    const requestId = ++requestIdRef.current;
+    const controller = new AbortController();
+    const cacheKey = makeCacheKey('/admin/vendors', params);
+
+    const cached = getCache(cacheKey);
+    if (cached && !cached.isStale && mountedRef.current) {
+      setVendors(cached.data.vendors || []);
+      setVendorPagination(cached.data.pagination || EMPTY_PAGINATION);
+      setLoadingKey('vendors', false);
+      setErrorKey('vendors', null);
+      setCache(cacheKey, cached.data, 120_000);
+      const doRefresh = async () => {
+        try {
+          const fresh = await listVendors(requireToken(), params, { ...options, signal: controller.signal });
+          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          setVendors(fresh?.vendors || []);
+          setVendorPagination(fresh?.pagination || EMPTY_PAGINATION);
+          setCache(cacheKey, fresh, 120_000);
+        } catch { /* background refresh failed */ }
+      };
+      doRefresh();
+      return cached.data;
+    }
+
     setLoadingKey('vendors', true);
     setErrorKey('vendors', null);
     try {
       const payload = await listVendors(requireToken(), params, options);
-      if (!mountedRef.current) return payload;
+      if (!mountedRef.current || requestId !== requestIdRef.current) return payload;
       setVendors(payload?.vendors || []);
       setVendorPagination(payload?.pagination || EMPTY_PAGINATION);
+      setCache(cacheKey, payload, 120_000);
       return payload;
     } catch (error) {
       setErrorKey('vendors', getMessage(error));
@@ -114,13 +141,38 @@ export function useAdminVendors({
   }, [requireToken, setErrorKey, setLoadingKey, vendorParams]);
 
   const fetchApprovals = useCallback(async (params = approvalParams, options = {}) => {
+    const requestId = ++requestIdRef.current;
+    const controller = new AbortController();
+    const cacheKey = makeCacheKey('/admin/vendors/approvals', params);
+
+    const cached = getCache(cacheKey);
+    if (cached && !cached.isStale && mountedRef.current) {
+      setApprovals(cached.data.approvals || []);
+      setApprovalPagination(cached.data.pagination || EMPTY_PAGINATION);
+      setLoadingKey('approvals', false);
+      setErrorKey('approvals', null);
+      setCache(cacheKey, cached.data, 60_000);
+      const doRefresh = async () => {
+        try {
+          const fresh = await listVendorApprovals(requireToken(), params, { ...options, signal: controller.signal });
+          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          setApprovals(fresh?.approvals || []);
+          setApprovalPagination(fresh?.pagination || EMPTY_PAGINATION);
+          setCache(cacheKey, fresh, 60_000);
+        } catch { /* background refresh failed */ }
+      };
+      doRefresh();
+      return cached.data;
+    }
+
     setLoadingKey('approvals', true);
     setErrorKey('approvals', null);
     try {
       const payload = await listVendorApprovals(requireToken(), params, options);
-      if (!mountedRef.current) return payload;
+      if (!mountedRef.current || requestId !== requestIdRef.current) return payload;
       setApprovals(payload?.approvals || []);
       setApprovalPagination(payload?.pagination || EMPTY_PAGINATION);
+      setCache(cacheKey, payload, 60_000);
       return payload;
     } catch (error) {
       setErrorKey('approvals', getMessage(error));
@@ -131,13 +183,39 @@ export function useAdminVendors({
   }, [approvalParams, requireToken, setErrorKey, setLoadingKey]);
 
   const fetchVendor = useCallback(async (vendorId, options = {}) => {
+    const requestId = ++requestIdRef.current;
+    const controller = new AbortController();
+    const cacheKey = makeCacheKey(`/admin/vendors/${vendorId}`, {});
+
+    const cached = getCache(cacheKey);
+    if (cached && !cached.isStale && mountedRef.current) {
+      if (cached.data.vendor) {
+        setVendorDetails((prev) => ({ ...prev, [vendorId]: cached.data.vendor }));
+      }
+      setLoadingKey('detail', false);
+      setErrorKey('detail', null);
+      const doRefresh = async () => {
+        try {
+          const fresh = await getVendor(requireToken(), vendorId, { ...options, signal: controller.signal });
+          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          if (fresh?.vendor) {
+            setVendorDetails((prev) => ({ ...prev, [vendorId]: fresh.vendor }));
+            setCache(cacheKey, fresh, 120_000);
+          }
+        } catch { /* background refresh failed */ }
+      };
+      doRefresh();
+      return cached.data;
+    }
+
     setLoadingKey('detail', true);
     setErrorKey('detail', null);
     try {
       const payload = await getVendor(requireToken(), vendorId, options);
-      if (!mountedRef.current) return payload;
+      if (!mountedRef.current || requestId !== requestIdRef.current) return payload;
       if (payload?.vendor) {
         setVendorDetails((prev) => ({ ...prev, [vendorId]: payload.vendor }));
+        setCache(cacheKey, payload, 120_000);
       }
       return payload;
     } catch (error) {
@@ -167,6 +245,8 @@ export function useAdminVendors({
       setVendors((prev) => upsertById(prev, response.vendor));
       setApprovals((prev) => upsertById(prev, response.vendor));
     }
+    invalidateCachePattern('/admin/vendors');
+    invalidateCachePattern('/admin/vendors/approvals');
     await Promise.all([
       fetchVendors(),
       fetchApprovals(),
@@ -184,6 +264,7 @@ export function useAdminVendors({
         [vendorId]: updateDetailVendor(prev[vendorId], response.vendor),
       }));
     }
+    invalidateCachePattern(`/admin/vendors/${vendorId}`);
     return response;
   }), [runMutation]);
 
@@ -201,6 +282,9 @@ export function useAdminVendors({
         setApprovals((prev) => removeById(prev, vendorId));
       }
     }
+    invalidateCachePattern('/admin/vendors');
+    invalidateCachePattern('/admin/vendors/approvals');
+    invalidateCachePattern(`/admin/vendors/${vendorId}`);
     await Promise.all([
       fetchVendors(),
       fetchApprovals(),
@@ -239,6 +323,7 @@ export function useAdminVendors({
         };
       });
     }
+    invalidateCachePattern(`/admin/vendors/${vendorId}`);
     await fetchVendor(vendorId);
     return response;
   }), [fetchVendor, runMutation]);
@@ -258,6 +343,7 @@ export function useAdminVendors({
         };
       });
     }
+    invalidateCachePattern(`/admin/vendors/${vendorId}`);
     return response;
   }), [runMutation]);
 

@@ -16,7 +16,7 @@ export default function OrderConfirmation({ orderId, onContinue }) {
 
   return (
     <div className="order-confirmation">
-      <img src={successImg} alt="" className="order-confirmation__avatar" />
+      <img src={successImg} alt="" className="order-confirmation__avatar" loading="eager" />
       <h1 className="order-confirmation__title">Order Placed!</h1>
       <p className="order-confirmation__text">
         Your order has been received and is being prepared.

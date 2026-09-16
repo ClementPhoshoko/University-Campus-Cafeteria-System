@@ -9,6 +9,7 @@ import {
   IconMapPin,
   IconPlus,
   IconSearch,
+  IconUpload,
   IconUsers,
 } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
@@ -38,7 +39,7 @@ function SiteCard({ site }) {
     <Link to={`/admin/cafeterias/${site.id}`} className="admin-site-card">
       <div className="admin-site-card__hero">
         {site.cover_image_url ? (
-          <img src={site.cover_image_url} alt={site.name} className="admin-site-card__image" />
+          <img src={site.cover_image_url} alt={site.name} className="admin-site-card__image" loading="lazy" />
         ) : (
           <div className="admin-site-card__placeholder">
             <IconBuildingStore size={40} stroke={1.2} />
@@ -98,7 +99,7 @@ function SiteCard({ site }) {
 function BuildingCard({ building }) {
   return (
     <Link to={`/admin/cafeterias/${building.id}`} className="admin-building-card">
-      <div className="admin-building-card__media">{building.cover_image_url ? <img src={building.cover_image_url} alt={building.name} /> : <div className="admin-building-card__placeholder"><IconBuilding size={22} stroke={1.4} /></div>}</div>
+      <div className="admin-building-card__media">{building.cover_image_url ? <img src={building.cover_image_url} alt={building.name} loading="lazy" /> : <div className="admin-building-card__placeholder"><IconBuilding size={22} stroke={1.4} /></div>}</div>
       <div className="admin-building-card__body">
         <div className="admin-building-card__head"><span className="admin-building-card__code">{building.code || 'BUILDING'}</span><StatusPill active={building.is_active} /></div>
         <h4 className="admin-building-card__name">{building.name}</h4>
@@ -131,7 +132,7 @@ function Field({ label, children, full = false }) {
   );
 }
 
-function FileInput({ value, onChange, accept = 'image/jpeg,image/png,image/webp' }) {
+export function FileInput({ value, onChange, accept = 'image/jpeg,image/png,image/webp' }) {
   const [fileName, setFileName] = useState('');
   const inputRef = useRef(null);
   const handleChange = (e) => {
@@ -149,15 +150,34 @@ function FileInput({ value, onChange, accept = 'image/jpeg,image/png,image/webp'
         className="admin-file-input__native"
       />
       <div className="admin-file-input__display">
-        <span className="admin-file-input__text">{fileName || 'Choose file...'}</span>
-        <span className="admin-file-input__btn">Browse</span>
+        <IconUpload size={20} stroke={1.5} className="admin-file-input__icon" />
+        <span className={`admin-file-input__text${fileName ? ' admin-file-input__text--selected' : ''}`}>
+          {fileName || 'Click to upload image'}
+        </span>
+        <span className="admin-file-input__hint">JPEG, PNG or WebP</span>
       </div>
     </div>
   );
 }
 
-function NewSiteModal({ onClose, onSubmit, submitting }) {
-  const [form, setForm] = useState({
+export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
+  const editing = !!initial;
+  const [form, setForm] = useState(() => initial ? {
+    name: initial.name || '',
+    code: initial.code || '',
+    address: initial.address || '',
+    street_address: initial.street_address || '',
+    city: initial.city || '',
+    province: initial.province || '',
+    postal_code: initial.postal_code || '',
+    country: initial.country || 'ZA',
+    place_id: initial.place_id || '',
+    latitude: initial.latitude ?? '',
+    longitude: initial.longitude ?? '',
+    timezone: initial.timezone || 'Africa/Johannesburg',
+    is_active: initial.is_active ?? true,
+    cover_file: null,
+  } : {
     name: '',
     code: '',
     address: '',
@@ -173,6 +193,7 @@ function NewSiteModal({ onClose, onSubmit, submitting }) {
     is_active: true,
     cover_file: null,
   });
+  const [coverPreview, setCoverPreview] = useState(initial?.cover_image_url || null);
   const [error, setError] = useState('');
   const { session } = useAuth();
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
@@ -212,7 +233,7 @@ function NewSiteModal({ onClose, onSubmit, submitting }) {
       });
       onClose();
     } catch (err) {
-      setError(err.message || 'Could not create site.');
+      setError(err.message || `Could not ${editing ? 'update' : 'create'} site.`);
     }
   };
 
@@ -232,123 +253,63 @@ function NewSiteModal({ onClose, onSubmit, submitting }) {
             <IconPlus size={20} />
           </div>
           <div>
-            <h3 className="admin-modal__title">Register new site</h3>
-            <p className="admin-modal__sub">Add a top-level campus location.</p>
+            <h3 className="admin-modal__title">{editing ? 'Edit site' : 'Register new site'}</h3>
+            <p className="admin-modal__sub">{editing ? 'Update the site information and cover image.' : 'Add a top-level campus location to manage vendors and collection points.'}</p>
           </div>
         </header>
         {error && <div className="vendor-form-error">{error}</div>}
-        <div className="admin-form-grid">
-          <Field label="Site name">
-            <input
-              autoFocus
-              className="admin-input"
-              value={form.name}
-              onChange={(e) => update('name', e.target.value)}
-              placeholder="Merchant Place Riverside"
-            />
-          </Field>
-          <Field label="Site code">
-            <input
-              className="admin-input"
-              value={form.code}
-              onChange={(e) => update('code', e.target.value)}
-              placeholder="MP-RIVERSIDE"
-            />
-          </Field>
-          <Field label="Search address" full>
-            <AddressAutocomplete
-              value={form.address}
-              onChange={(val) => update('address', val)}
-              onSelect={handleAddressSelect}
-              token={session?.access_token}
-              placeholder="Start typing to search..."
-            />
-          </Field>
-          <Field label="Street address">
-            <input
-              className="admin-input"
-              value={form.street_address}
-              onChange={(e) => update('street_address', e.target.value)}
-              placeholder="Auto-filled from search"
-            />
-          </Field>
-          <Field label="City">
-            <input
-              className="admin-input"
-              value={form.city}
-              onChange={(e) => update('city', e.target.value)}
-              placeholder="Auto-filled from search"
-            />
-          </Field>
-          <Field label="Province">
-            <input
-              className="admin-input"
-              value={form.province}
-              onChange={(e) => update('province', e.target.value)}
-              placeholder="Auto-filled from search"
-            />
-          </Field>
-          <Field label="Postal code">
-            <input
-              className="admin-input"
-              value={form.postal_code}
-              onChange={(e) => update('postal_code', e.target.value)}
-              placeholder="Auto-filled from search"
-            />
-          </Field>
-          <Field label="Timezone">
-            <input
-              className="admin-input"
-              value={form.timezone}
-              onChange={(e) => update('timezone', e.target.value)}
-              placeholder="Africa/Johannesburg"
-            />
-          </Field>
-          <Field label="Latitude">
-            <input
-              className="admin-input"
-              type="number"
-              step="any"
-              value={form.latitude}
-              onChange={(e) => update('latitude', e.target.value)}
-            />
-          </Field>
-          <Field label="Longitude">
-            <input
-              className="admin-input"
-              type="number"
-              step="any"
-              value={form.longitude}
-              onChange={(e) => update('longitude', e.target.value)}
-            />
-          </Field>
-          <Field label="Cover image" full>
-            <FileInput
-              value={form.cover_file}
-              onChange={(file) => update('cover_file', file)}
-            />
-          </Field>
-          <label className="vendor-checkbox">
-            <input
-              type="checkbox"
-              checked={form.is_active}
-              onChange={(e) => update('is_active', e.target.checked)}
-            />
-            Active site
-          </label>
+        <div className="admin-modal__body">
+          <div className="admin-modal__left">
+            <div className="admin-modal__row">
+              <Field label="Site name">
+                <input autoFocus className="admin-input" value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Merchant Place Riverside" />
+              </Field>
+              <Field label="Site code">
+                <input className="admin-input" value={form.code} onChange={(e) => update('code', e.target.value)} placeholder="MP-RIVERSIDE" />
+              </Field>
+            </div>
+            <Field label="Search address">
+              <AddressAutocomplete value={form.address} onChange={(val) => update('address', val)} onSelect={handleAddressSelect} token={session?.access_token} placeholder="Start typing to search..." />
+            </Field>
+            <div className="admin-modal__row">
+              <Field label="Street address">
+                <input className="admin-input" value={form.street_address} onChange={(e) => update('street_address', e.target.value)} placeholder="Auto-filled from search" />
+              </Field>
+              <Field label="City">
+                <input className="admin-input" value={form.city} onChange={(e) => update('city', e.target.value)} placeholder="Auto-filled from search" />
+              </Field>
+            </div>
+            <div className="admin-modal__row">
+              <Field label="Province">
+                <input className="admin-input" value={form.province} onChange={(e) => update('province', e.target.value)} placeholder="Auto-filled from search" />
+              </Field>
+              <Field label="Postal code">
+                <input className="admin-input" value={form.postal_code} onChange={(e) => update('postal_code', e.target.value)} placeholder="Auto-filled from search" />
+              </Field>
+            </div>
+            <label className="vendor-checkbox">
+              <input type="checkbox" checked={form.is_active} onChange={(e) => update('is_active', e.target.checked)} />
+              Active site
+            </label>
+          </div>
+          <div className="admin-modal__right">
+            <div className="admin-modal__image-area admin-modal__image-area--sm">
+              {coverPreview ? (
+                <img src={coverPreview} alt="Cover preview" />
+              ) : (
+                <>
+                  <IconUpload size={24} stroke={1.5} className="admin-modal__image-icon" />
+                  <span className="admin-modal__image-text">Click to upload cover image</span>
+                  <span className="admin-modal__image-hint">JPEG, PNG or WebP</span>
+                </>
+              )}
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; update('cover_file', file); setCoverPreview(file ? URL.createObjectURL(file) : null); }} />
+            </div>
+          </div>
         </div>
         <footer className="admin-modal__foot">
-          <button type="button" className="admin-action" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="admin-action admin-action--approve"
-            onClick={submit}
-            disabled={submitting}
-          >
-            {submitting ? 'Registering…' : 'Register site'}
-          </button>
+          <button type="button" className="admin-action" onClick={onClose}>Cancel</button>
+          <button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? (editing ? 'Saving…' : 'Registering…') : (editing ? 'Save changes' : 'Register site')}</button>
         </footer>
       </div>
     </div>
@@ -391,11 +352,18 @@ export default function AdminCafeteriaList() {
   useEffect(() => { setPage(1); }, [query, statusFilter, view]);
 
   useEffect(() => {
-    if (sites.length > 0) {
+    if (!buildingsFetchedRef.current && sites.length > 0) {
+      buildingsFetchedRef.current = true;
       fetchAllBuildings({ page: 1, limit: 1000 }).catch(() => {});
+    }
+  }, [sites.length, fetchAllBuildings]);
+
+  useEffect(() => {
+    if (!collectionPointsFetchedRef.current && sites.length > 0) {
+      collectionPointsFetchedRef.current = true;
       fetchAllCollectionPoints({ page: 1, limit: 1000 }).catch(() => {});
     }
-  }, [sites.length, fetchAllBuildings, fetchAllCollectionPoints]);
+  }, [sites.length, fetchAllCollectionPoints]);
 
   const buildings = useMemo(() => allBuildings.map((building) => ({ ...building, site_name: sites.find((site) => site.id === building.site_id)?.name || 'Unknown site' })), [allBuildings, sites]);
   const collectionPoints = useMemo(() => allCollectionPoints.map((point) => { const building = buildings.find((item) => item.id === point.building_id); return { ...point, building_name: building?.name, site_name: building?.site_name }; }), [allCollectionPoints, buildings]);
