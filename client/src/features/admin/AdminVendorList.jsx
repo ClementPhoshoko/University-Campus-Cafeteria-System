@@ -161,6 +161,7 @@ export default function AdminVendorList() {
 
   const [showAddVendor, setShowAddVendor] = useState(false);
   const [addVendorLoading, setAddVendorLoading] = useState(false);
+  const [bulkApproving, setBulkApproving] = useState(false);
   const [tab, setTab] = useState(() => searchParams.get('tab') === 'approvals' ? 'approvals' : 'active');
   const [loading, setLoading] = useState(true);
   const itemsPerPage = 5;
@@ -280,11 +281,7 @@ export default function AdminVendorList() {
         decision: mode === 'approve' ? 'approve' : 'reject',
         ...(reason?.trim() ? { reason: reason.trim() } : {}),
       });
-      setPendingApprovals((items) => items.filter((i) => i.id !== vendor.id));
-      setActiveVendors((items) => items.map((item) => item.id === vendor.id
-        ? { ...item, status: mode === 'approve' ? 'approved' : 'rejected' }
-        : item));
-      setSelectedApprovals((prev) => prev.filter((id) => id !== vendor.id));
+      await refetchData();
       setModal(null);
     } catch (err) {
       console.error('Failed to update vendor approval:', err);
@@ -307,13 +304,16 @@ export default function AdminVendorList() {
   };
 
   const handleApproveSelected = async () => {
-    if (!token) return;
+    if (!token || bulkApproving) return;
+    setBulkApproving(true);
     try {
       await Promise.all(selectedApprovals.map((id) => updateVendorApproval(token, id, { decision: 'approve' })));
-      setPendingApprovals((items) => items.filter((i) => !selectedApprovals.includes(i.id)));
+      await refetchData();
       setSelectedApprovals([]);
     } catch (err) {
       console.error('Failed to approve selected vendors:', err);
+    } finally {
+      setBulkApproving(false);
     }
   };
 
@@ -593,8 +593,9 @@ export default function AdminVendorList() {
                           type="button"
                           className={`admin-vendors__bulk-approve${selectedApprovals.length === 0 ? ' admin-vendors__bulk-approve--hidden' : ''}`}
                           onClick={handleApproveSelected}
+                          disabled={bulkApproving}
                         >
-                          Approve ({selectedApprovals.length})
+                          {bulkApproving ? 'Approving…' : `Approve (${selectedApprovals.length})`}
                         </button>
                       </th>
                     </tr>
