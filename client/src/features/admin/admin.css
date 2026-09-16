@@ -2680,7 +2680,9 @@
 }
 
 .admin-modal__image-area--sm {
-  min-height: 100px;
+  min-height: 80px;
+  flex: none;
+  width: 100%;
 }
 
 .admin-modal__image-area img {
