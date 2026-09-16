@@ -86,6 +86,9 @@ export default function AdminVendorDetail() {
   const [creating, setCreating] = useState(false);
   const [loadMsg, setLoadMsg] = useState(0);
   const loadTimerRef = useRef(null);
+  const [rejectModal, setRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectError, setRejectError] = useState('');
 
   const LOAD_MESSAGES = [
     'Processing approval decision...',
@@ -157,21 +160,23 @@ export default function AdminVendorDetail() {
     } catch (err) { console.error('Failed to refresh menu categories:', err); }
   };
 
-  const handleApproval = async (decision) => {
+  const handleApproval = async (decision, reason) => {
     if (!token || !vendorId || actionLoading) return;
-    const reason = decision === 'reject' ? window.prompt('Reason for rejection:') : undefined;
-    if (decision === 'reject' && !reason?.trim()) return;
 
     setCreating(true);
+    setRejectError('');
     try {
-      const response = await updateVendorApproval(token, vendorId, {
+      await updateVendorApproval(token, vendorId, {
         decision,
         ...(reason?.trim() ? { reason: reason.trim() } : {}),
       });
       const refreshed = await adminRequest(`/admin/vendors/${vendorId}`, { token });
       if (refreshed.vendor) setVendor(getVendorDetails(refreshed.vendor));
+      setRejectModal(false);
+      setRejectReason('');
     } catch (err) {
-      console.error('Failed to update vendor approval:', err);
+      const msg = err?.message || 'Action failed. Please try again.';
+      setRejectError(msg);
     } finally {
       setCreating(false);
     }
@@ -358,7 +363,7 @@ export default function AdminVendorDetail() {
         <div className="admin-vendor-header__actions">
           {vendor.isPending ? (
             <>
-                <button type="button" className="admin-action admin-action--ghost" onClick={() => handleApproval('reject')} disabled={creating || actionLoading}>
+                <button type="button" className="admin-action admin-action--ghost" onClick={() => { setRejectModal(true); setRejectError(''); }} disabled={creating || actionLoading}>
                 <IconBan size={14} stroke={2} /> Reject
               </button>
               <button type="button" className="admin-action admin-action--ghost admin-action--ghost-success" onClick={() => handleApproval('approve')} disabled={creating || actionLoading}>
@@ -583,6 +588,38 @@ export default function AdminVendorDetail() {
             <p className="vendor-creating-msg">{LOAD_MESSAGES[loadMsg]}</p>
             <div className="vendor-creating-bar"><div className="vendor-creating-bar__fill" /></div>
             <p className="vendor-creating-hint">Hang tight, this won't take long.</p>
+          </div>
+        </div>
+      )}
+      {rejectModal && (
+        <div className="admin-modal" role="dialog" aria-modal="true">
+          <div className="admin-modal__overlay" onClick={() => { if (!creating) { setRejectModal(false); setRejectReason(''); setRejectError(''); } }} />
+          <div className="admin-modal__card">
+            <header className="admin-modal__head">
+              <div className="admin-modal__icon admin-modal__icon--error"><IconX size={20} stroke={2} /></div>
+              <div>
+                <h3 className="admin-modal__title">Reject application?</h3>
+                <p className="admin-modal__sub">{vendor.name}</p>
+              </div>
+            </header>
+            <p className="admin-modal__copy">The vendor will be notified that their application was not accepted at this time. They will not appear in the active vendor list.</p>
+            {rejectError && <div className="vendor-form-error" role="alert">{rejectError}</div>}
+            <label className="admin-modal__field">
+              <span>Reason (will be sent to applicant)</span>
+              <textarea
+                className="admin-modal__textarea"
+                placeholder="Briefly explain why this application was rejected..."
+                rows={3}
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+              />
+            </label>
+            <footer className="admin-modal__foot">
+              <button type="button" className="admin-action admin-action--ghost" onClick={() => { setRejectModal(false); setRejectReason(''); setRejectError(''); }} disabled={creating}>Cancel</button>
+              <button type="button" className="admin-action admin-action--reject" onClick={() => handleApproval('reject', rejectReason)} disabled={creating || !rejectReason.trim()}>
+                <IconBan size={13} stroke={2} /> Confirm rejection
+              </button>
+            </footer>
           </div>
         </div>
       )}

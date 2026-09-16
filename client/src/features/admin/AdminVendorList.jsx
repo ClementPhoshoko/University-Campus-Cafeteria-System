@@ -35,6 +35,7 @@ function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
   const [reason, setReason] = useState('');
   const [creating, setCreating] = useState(false);
   const [loadMsg, setLoadMsg] = useState(0);
+  const [error, setError] = useState('');
   const loadTimerRef = useRef(null);
 
   const LOAD_MESSAGES = [
@@ -54,10 +55,12 @@ function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
   const isApprove = mode === 'approve';
 
   const handleConfirm = async () => {
+    setError('');
     setCreating(true);
     try {
       await onConfirm(vendor, mode, isApprove ? undefined : reason);
-    } catch {
+    } catch (err) {
+      setError(err?.message || 'Action failed. Please try again.');
       setCreating(false);
     }
   };
@@ -86,6 +89,8 @@ function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
             : 'The vendor will be notified that their application was not accepted at this time. They will not appear in the active vendor list.'}
         </p>
 
+        {error && <div className="vendor-form-error" role="alert">{error}</div>}
+
         {!isApprove && (
           <label className="admin-modal__field">
             <span>Reason (will be sent to applicant)</span>
@@ -105,7 +110,7 @@ function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
             type="button"
             className={`admin-action ${isApprove ? 'admin-action--approve' : 'admin-action--reject'}`}
             onClick={handleConfirm}
-            disabled={creating}
+            disabled={creating || (!isApprove && !reason.trim())}
           >
             <IconShieldCheck size={13} stroke={2} />
             {isApprove ? 'Confirm approval' : 'Confirm rejection'}
