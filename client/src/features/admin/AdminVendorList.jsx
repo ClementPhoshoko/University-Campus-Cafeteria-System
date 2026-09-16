@@ -276,17 +276,12 @@ export default function AdminVendorList() {
 
   const handleConfirm = async (vendor, mode, reason) => {
     if (!token) return;
-    try {
-      await updateVendorApproval(token, vendor.id, {
-        decision: mode === 'approve' ? 'approve' : 'reject',
-        ...(reason?.trim() ? { reason: reason.trim() } : {}),
-      });
-      await refetchData();
-      setModal(null);
-    } catch (err) {
-      console.error('Failed to update vendor approval:', err);
-      throw err;
-    }
+    await updateVendorApproval(token, vendor.id, {
+      decision: mode === 'approve' ? 'approve' : 'reject',
+      ...(reason?.trim() ? { reason: reason.trim() } : {}),
+    });
+    setModal(null);
+    refetchData().catch(() => {});
   };
 
   const handleSelectAll = () => {
