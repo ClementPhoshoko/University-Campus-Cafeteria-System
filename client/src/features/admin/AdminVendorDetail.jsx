@@ -20,6 +20,7 @@ import {
   IconMenu2,
   IconCreditCard,
   IconClipboardCheck,
+  IconX,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
@@ -28,16 +29,21 @@ import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 import { StaffModal, VendorLocationModal, VendorProfileModal, MenuItemModal, CategoryModal } from './VendorForms.jsx';
 
-function StatusPill({ status }) {
-  return <span className={`admin-status admin-status--${status}`}>{status}</span>;
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function formatOperatingHours(hours) {
+  if (!hours || hours.length === 0) return null;
+  const byDay = {};
+  hours.forEach((h) => { byDay[h.day_of_week] = h; });
+  return DAY_LABELS.map((label, i) => {
+    const h = byDay[i];
+    const closed = !h || h.is_closed;
+    return { label, time: closed ? null : `${h.opens_at}\u2009\u2013\u2009${h.closes_at}`, closed };
+  });
 }
 
-function VendorLogo({ src, alt }) {
-  return (
-    <div className="admin-vendor-detail__logo">
-      <img src={src} alt={alt || ''} loading="eager" />
-    </div>
-  );
+function StatusPill({ status }) {
+  return <span className={`admin-status admin-status--${status}`}>{status}</span>;
 }
 
 function getVendorDetails(vendor) {
@@ -54,19 +60,16 @@ function getVendorDetails(vendor) {
     isPending: vendor.status === 'pending',
     vendor_location_name: [location?.site_name, location?.building_name, location?.collection_point_name]
       .filter(Boolean)
-      .join(' · ') || 'No location assigned',
+      .join(' \u00b7 ') || 'No location assigned',
     categories: vendor.categories || [],
     corporate_catering_enabled: vendor.corporate_catering_enabled || false,
-    manager_name: manager?.full_name || '—',
+    manager_name: manager?.full_name || '\u2014',
     support_email: vendor.support_email || '',
     support_phone: vendor.support_phone || '',
     operating_hours: location?.hours || [],
     estimated_prep_minutes: location?.estimated_prep_minutes || 0,
-    revenue_30d: null,
     average_rating: vendor.average_rating || 0,
     rating_count: vendor.rating_count || 0,
-    menu_item_count: null,
-    orders_today: null,
     locations: vendor.locations || [],
     staff: vendor.staff || [],
   };
@@ -108,9 +111,7 @@ export default function AdminVendorDetail() {
     if (!vendorId || !token) return;
     const fetchVendor = async () => {
       try {
-        const response = await adminRequest(`/admin/vendors/${vendorId}`, {
-          token,
-        });
+        const response = await adminRequest(`/admin/vendors/${vendorId}`, { token });
         setVendor(getVendorDetails(response.vendor));
         setLoading(false);
       } catch (err) {
@@ -118,7 +119,6 @@ export default function AdminVendorDetail() {
         setLoading(false);
       }
     };
-
     fetchVendor();
   }, [vendorId, token]);
 
@@ -163,7 +163,6 @@ export default function AdminVendorDetail() {
 
   const handleApproval = async (decision, reason) => {
     if (!token || !vendorId || creating) return;
-
     setCreating(true);
     setRejectError('');
     setApprovalError('');
@@ -178,14 +177,9 @@ export default function AdminVendorDetail() {
       setRejectReason('');
     } catch (err) {
       const msg = err?.message || 'Action failed. Please try again.';
-      if (decision === 'reject') {
-        setRejectError(msg);
-      } else {
-        setApprovalError(msg);
-      }
-    } finally {
-      setCreating(false);
-    }
+      if (decision === 'reject') setRejectError(msg);
+      else setApprovalError(msg);
+    } finally { setCreating(false); }
   };
 
   const handleProfileUpdate = async (payload) => {
@@ -297,67 +291,72 @@ export default function AdminVendorDetail() {
     } finally { setActionLoading(false); }
   };
 
+  /* ── Loading State ── */
   if (loading) {
     return (
-      <div className="admin-vendor-detail">
+      <div className="vd">
         <Breadcrumb homeLabel="Dashboard" homeTo="/admin" items={[{ label: 'Vendors', to: '/admin/vendors' }, { label: 'Loading...' }]} />
-        <header className="admin-vendor-header">
-          <div className="admin-vendor-header__logo"><span className="skeleton" style={{ width: 64, height: 64, borderRadius: 'var(--radius-lg)' }} /></div>
-          <div className="admin-vendor-header__content">
-            <div className="admin-vendor-header__top"><span className="skeleton skeleton--kpi-value" style={{ width: 80 }} /></div>
-            <div className="skeleton skeleton--title" style={{ width: '40%', marginTop: 8 }} />
-            <div className="skeleton skeleton--text" style={{ width: '60%', marginTop: 8 }} />
+        <div className="vd-hero">
+          <div className="vd-hero__logo"><span className="skeleton" style={{ width: 72, height: 72, borderRadius: 'var(--radius-lg)' }} /></div>
+          <div className="vd-hero__content">
+            <div className="vd-hero__top">
+              <span className="skeleton" style={{ width: 80, height: 22, borderRadius: 'var(--radius-full)' }} />
+            </div>
+            <div className="skeleton" style={{ width: '35%', height: 28, borderRadius: 'var(--radius-xs)', marginTop: 8 }} />
+            <div className="skeleton" style={{ width: '55%', height: 16, borderRadius: 'var(--radius-xs)', marginTop: 8 }} />
           </div>
-        </header>
-        <section className="admin-vendor-performance">
-          <div className="admin-vendor-performance__metric"><span className="admin-vendor-performance__label">Average rating</span><span className="admin-vendor-performance__value"><span className="skeleton skeleton--kpi-value" /></span></div>
-          <div className="admin-vendor-performance__metric"><span className="admin-vendor-performance__label">Operating locations</span><span className="admin-vendor-performance__value"><span className="skeleton skeleton--kpi-value" /></span></div>
-        </section>
+        </div>
+        <div className="vd-metrics">
+          <div className="vd-metric"><div className="skeleton" style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)' }} /><div style={{ flex: 1 }}><div className="skeleton" style={{ width: 40, height: 24, borderRadius: 4 }} /><div className="skeleton" style={{ width: 80, height: 12, borderRadius: 4, marginTop: 6 }} /></div></div>
+          <div className="vd-metric"><div className="skeleton" style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)' }} /><div style={{ flex: 1 }}><div className="skeleton" style={{ width: 40, height: 24, borderRadius: 4 }} /><div className="skeleton" style={{ width: 100, height: 12, borderRadius: 4, marginTop: 6 }} /></div></div>
+        </div>
         <SkeletonTable rows={4} columns={3} />
       </div>
     );
   }
 
+  /* ── Empty State ── */
   if (!vendor) {
     return (
-      <div className="admin-empty">
-        <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
-        <h3>Vendor not found</h3>
-        <p>The vendor you are looking for may have been removed.</p>
-        <Link to="/admin/vendors" className="admin-action--ghost">
-          <IconChevronLeft size={13} stroke={2} />
-          Back to all vendors
-        </Link>
+      <div className="vd">
+        <Breadcrumb homeLabel="Dashboard" homeTo="/admin" items={[{ label: 'Vendors', to: '/admin/vendors' }, { label: 'Not found' }]} />
+        <div className="vd-empty">
+          <img src={emptyStateAvatar} alt="" className="vd-empty__img" />
+          <h3 className="vd-empty__title">Vendor not found</h3>
+          <p className="vd-empty__copy">The vendor you are looking for may have been removed.</p>
+          <Link to="/admin/vendors" className="admin-action admin-action--ghost">
+            <IconChevronLeft size={13} stroke={2} /> Back to all vendors
+          </Link>
+        </div>
       </div>
     );
   }
 
+  const statusLabel = vendor.isPending ? 'Pending approval' : vendor.status;
+  const statusClass = vendor.isPending ? 'pending' : vendor.status;
+  const hours = formatOperatingHours(vendor.operating_hours);
+
   return (
-    <div className="admin-vendor-detail">
+    <div className="vd">
       <Breadcrumb
         homeLabel="Dashboard"
         homeTo="/admin"
-        items={[
-          { label: 'Vendors', to: '/admin/vendors' },
-          { label: vendor.name }
-        ]}
+        items={[{ label: 'Vendors', to: '/admin/vendors' }, { label: vendor.name }]}
       />
 
-      {/* Vendor Header */}
-      <header className="admin-vendor-header">
-        <div className="admin-vendor-header__logo">
+      {/* ── Hero Header ── */}
+      <header className="vd-hero">
+        <div className="vd-hero__logo">
           <img src={vendor.logo_url} alt={vendor.name} />
         </div>
-        <div className="admin-vendor-header__content">
-          <div className="admin-vendor-header__top">
-            <span className="admin-vendor-header__slug">/{vendor.slug}</span>
-            <span className={`admin-status admin-status--${vendor.isPending ? 'pending' : vendor.status}`}>
-              {vendor.isPending ? 'Pending approval' : vendor.status}
-            </span>
+        <div className="vd-hero__content">
+          <div className="vd-hero__top">
+            <StatusPill status={statusClass} />
+            <span className="vd-hero__slug">/{vendor.slug}</span>
           </div>
-          <h1 className="admin-vendor-header__name">{vendor.name}</h1>
-          <p className="admin-vendor-header__desc">{vendor.description}</p>
-          <div className="admin-vendor-header__tags">
+          <h1 className="vd-hero__name">{vendor.name}</h1>
+          {vendor.description && <p className="vd-hero__desc">{vendor.description}</p>}
+          <div className="vd-hero__tags">
             {vendor.categories.map((cat) => (
               <span key={cat} className="admin-tag">{cat}</span>
             ))}
@@ -366,11 +365,11 @@ export default function AdminVendorDetail() {
             )}
           </div>
         </div>
-        <div className="admin-vendor-header__actions">
-          {approvalError && <div className="vendor-form-error" role="alert" style={{ width: '100%', marginBottom: 'var(--space-3)' }}>{approvalError}</div>}
+        <div className="vd-hero__actions">
+          {approvalError && <div className="vendor-form-error" role="alert">{approvalError}</div>}
           {vendor.isPending ? (
             <>
-                <button type="button" className="admin-action admin-action--ghost" onClick={() => { setRejectModal(true); setRejectError(''); }} disabled={creating || actionLoading}>
+              <button type="button" className="admin-action admin-action--ghost" onClick={() => { setRejectModal(true); setRejectError(''); }} disabled={creating || actionLoading}>
                 <IconBan size={14} stroke={2} /> Reject
               </button>
               <button type="button" className="admin-action admin-action--ghost admin-action--ghost-success" onClick={() => handleApproval('approve')} disabled={creating || actionLoading}>
@@ -390,196 +389,273 @@ export default function AdminVendorDetail() {
         </div>
       </header>
 
-      {/* Performance Strip */}
+      {/* ── Metrics ── */}
       {!vendor.isPending && (
-        <section className="admin-vendor-performance">
-          <div className="admin-vendor-performance__metric">
-            <span className="admin-vendor-performance__label">Average rating</span>
-            <span className="admin-vendor-performance__value">
-              {Number(vendor.average_rating || 0).toFixed(1)}
-              <IconStarFilled size={16} stroke={0} className="admin-vendor-performance__star" />
-            </span>
-            <span className="admin-vendor-performance__sub">{vendor.rating_count || 0} reviews</span>
+        <div className="vd-metrics">
+          <div className="vd-metric">
+            <div className="vd-metric__icon vd-metric__icon--warning">
+              <IconStarFilled size={18} stroke={0} />
+            </div>
+            <div className="vd-metric__body">
+              <span className="vd-metric__value">{Number(vendor.average_rating || 0).toFixed(1)}</span>
+              <span className="vd-metric__label">Average rating</span>
+              <span className="vd-metric__sub">{vendor.rating_count || 0} reviews</span>
+            </div>
           </div>
-          <div className="admin-vendor-performance__metric">
-            <span className="admin-vendor-performance__label">Operating locations</span>
-            <span className="admin-vendor-performance__value">
-              {vendor.locations.length}
-            </span>
-            <span className="admin-vendor-performance__sub">Configured locations</span>
+          <div className="vd-metric">
+            <div className="vd-metric__icon vd-metric__icon--info">
+              <IconMapPin size={18} stroke={2} />
+            </div>
+            <div className="vd-metric__body">
+              <span className="vd-metric__value">{vendor.locations.length}</span>
+              <span className="vd-metric__label">Operating locations</span>
+              <span className="vd-metric__sub">Configured locations</span>
+            </div>
           </div>
-        </section>
-      )}
-
-      {/* Pending Application Review */}
-      {vendor.isPending && (
-        <section className="admin-vendor-checklist">
-          <div className="admin-vendor-checklist__header">
-            <h3 className="admin-vendor-checklist__title">Application review</h3>
-            <div className="admin-vendor-checklist__actions"><span className="admin-vendor-checklist__badge">Review required</span><button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('location')}>Add location</button></div>
-          </div>
-          <ul className="admin-vendor-checklist__list">
-            <li className="admin-vendor-checklist__item admin-vendor-checklist__item--done">
-              <IconBuildingStore size={14} stroke={2} /> Business registration verified
-            </li>
-            <li className="admin-vendor-checklist__item admin-vendor-checklist__item--done">
-              <IconHeartbeat size={14} stroke={2} /> Health certificate on file
-            </li>
-            <li className="admin-vendor-checklist__item admin-vendor-checklist__item--done">
-              <IconShieldCheck size={14} stroke={2} /> Insurance details confirmed
-            </li>
-            <li className="admin-vendor-checklist__item admin-vendor-checklist__item--done">
-              <IconMenu2 size={14} stroke={2} /> Menu reviewed for allergen labelling
-            </li>
-            <li className="admin-vendor-checklist__item admin-vendor-checklist__item--pending">
-              <IconCreditCard size={14} stroke={2} /> Payment provider pending
-            </li>
-            <li className="admin-vendor-checklist__item admin-vendor-checklist__item--pending">
-              <IconClipboardCheck size={14} stroke={2} /> Final operational sign-off
-            </li>
-          </ul>
-        </section>
-      )}
-
-      {/* Main Content */}
-      {!vendor.isPending && (
-        <div className="admin-vendor-content">
-          {/* Left Column - Vendor Information */}
-          <section className="admin-vendor-info">
-            <h3 className="admin-vendor-info__heading">Vendor information</h3>
-
-            <div className="admin-vendor-info__section">
-              <h4 className="admin-vendor-info__section-title">Location</h4>
-              <div className="admin-vendor-info__row">
-                <IconMapPin size={14} stroke={1.8} />
-                <span>{vendor.vendor_location_name}</span>
-              </div>
-            </div>
-
-            <div className="admin-vendor-info__section">
-              <h4 className="admin-vendor-info__section-title">Operating hours</h4>
-              <div className="admin-vendor-info__row">
-                <IconClock size={14} stroke={1.8} />
-                <span>{vendor.operating_hours.length > 0 ? vendor.operating_hours.map((h) => `${h.day_of_week}: ${h.opens_at}-${h.closes_at}`).join(', ') : 'Not set'}</span>
-              </div>
-              <div className="admin-vendor-info__row admin-vendor-info__row--muted">
-                <span>Est. prep time</span>
-                <span>{vendor.estimated_prep_minutes || 0} minutes</span>
-              </div>
-            </div>
-
-            <div className="admin-vendor-info__section">
-              <h4 className="admin-vendor-info__section-title">Contact</h4>
-              <div className="admin-vendor-info__row">
-                <IconUser size={14} stroke={1.8} />
-                <span>{vendor.manager_name || '—'}</span>
-              </div>
-              <div className="admin-vendor-info__row">
-                <IconMail size={14} stroke={1.8} />
-                  {vendor.support_email ? <a href={`mailto:${vendor.support_email}`}>{vendor.support_email}</a> : <span>—</span>}
-              </div>
-              <div className="admin-vendor-info__row">
-                <IconPhone size={14} stroke={1.8} />
-                <span>{vendor.support_phone || '—'}</span>
-              </div>
-            </div>
-          </section>
-
-          <section className="admin-vendor-info admin-vendor-management-card">
-            <div className="admin-vendor-top-items__header"><h3 className="admin-vendor-info__heading">Operating locations</h3><button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('location')}><IconPlus size={14} /> Add location</button></div>
-            {vendor.locations.length === 0 ? <p className="admin-vendor-empty-copy">No operating locations have been assigned.</p> : vendor.locations.map((location) => <div className="vendor-managed-row" key={location.id}><div><strong>{[location.site_name, location.building_name, location.collection_point_name].filter(Boolean).join(' · ')}</strong><span>{location.service_status} · {location.estimated_prep_minutes || '—'} min prep</span></div><div className="vendor-managed-row__actions"><StatusPill status={location.service_status} /><button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'location', location })}>Edit</button></div></div>)}
-          </section>
-
-          <section className="admin-vendor-info admin-vendor-management-card">
-            <div className="admin-vendor-top-items__header"><h3 className="admin-vendor-info__heading">Vendor staff</h3><button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('staff')}><IconPlus size={14} /> Add staff</button></div>
-            {vendor.staff.length === 0 ? <p className="admin-vendor-empty-copy">No staff members assigned.</p> : vendor.staff.map((member) => <div className="vendor-managed-row" key={member.user_id}><div><strong>{member.full_name || member.email || member.user_id}</strong><span>{member.role} · {member.is_active ? 'Active' : 'Inactive'}</span></div><button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleStaffRemove(member.user_id)} disabled={actionLoading}>Remove</button></div>)}
-          </section>
-
-          <section className="admin-vendor-info admin-vendor-management-card">
-            <div className="admin-vendor-top-items__header"><h3 className="admin-vendor-info__heading">Menu categories</h3><button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('category')}><IconPlus size={14} /> Add category</button></div>
-            {menuItemsLoading ? <p className="admin-vendor-empty-copy">Loading categories...</p> : menuCategories.length === 0 ? <p className="admin-vendor-empty-copy">No categories defined.</p> : (
-              <div className="admin-menu-items-table">
-                <div className="admin-menu-items-table__head"><span>Name</span><span>Sort order</span><span>Items</span><span /><span /></div>
-                {menuCategories.map((cat) => (
-                  <div className="admin-menu-items-table__row" key={cat.id}>
-                    <div className="admin-menu-items-table__name"><strong>{cat.name}</strong></div>
-                    <span>{cat.sort_order ?? 0}</span>
-                    <span>{menuItems.filter((item) => item.category_id === cat.id).length}</span>
-                    <span />
-                    <div className="vendor-managed-row__actions">
-                      <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'category', category: cat })}>Edit</button>
-                      <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleCategoryDelete(cat.id)} disabled={actionLoading}><IconTrash size={13} /></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="admin-vendor-info admin-vendor-management-card">
-            <div className="admin-vendor-top-items__header"><h3 className="admin-vendor-info__heading">Menu items</h3><button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('menuItem')}><IconPlus size={14} /> Add item</button></div>
-            {menuItemsLoading ? <p className="admin-vendor-empty-copy">Loading menu items...</p> : menuItems.length === 0 ? <p className="admin-vendor-empty-copy">No menu items have been added.</p> : (
-              <div className="admin-menu-items-table">
-                <div className="admin-menu-items-table__head"><span>Name</span><span>Category</span><span>Price</span><span>Status</span><span /></div>
-                {menuItems.map((item) => (
-                  <div className="admin-menu-items-table__row" key={item.id}>
-                    <div className="admin-menu-items-table__name"><strong>{item.name}</strong>{item.description && <span>{item.description.slice(0, 60)}{item.description.length > 60 ? '...' : ''}</span>}</div>
-                    <span>{item.menu_categories?.name || '—'}</span>
-                    <span>R {Number(item.base_price).toFixed(2)}</span>
-                    <span className={`admin-status admin-status--${item.status === 'available' ? 'approved' : item.status === 'sold_out' ? 'rejected' : 'pending'}`}>{item.status}</span>
-                    <div className="vendor-managed-row__actions">
-                      <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'menuItem', item })}>Edit</button>
-                      <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleMenuItemDelete(item.id)} disabled={actionLoading}><IconTrash size={13} /></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Right Column - Top Selling Items */}
-          <section className="admin-vendor-top-items">
-            <div className="admin-vendor-top-items__header">
-              <h3 className="admin-vendor-top-items__heading">Top selling items</h3>
-              <button type="button" className="admin-vendor-top-items__link">
-                View all <IconChevronLeft size={12} stroke={2} style={{ transform: 'rotate(180deg)' }} />
-              </button>
-            </div>
-            <ul className="admin-vendor-top-items__list">
-              {/* Top items would come from API - showing placeholder for now */}
-              <li className="admin-vendor-top-items__item" style={{ display: 'none' }}>
-                <span className="admin-vendor-top-items__rank">1</span>
-                <div className="admin-vendor-top-items__image" />
-                <div className="admin-vendor-top-items__body">
-                  <span className="admin-vendor-top-items__name">No data</span>
-                  <span className="admin-vendor-top-items__meta">0 orders</span>
-                </div>
-                <span className="admin-vendor-top-items__revenue">—</span>
-              </li>
-            </ul>
-          </section>
         </div>
       )}
 
-      {/* Recent Activity - Full Width */}
-      {!vendor.isPending && (
-        <section className="admin-vendor-activity">
-          <div className="admin-vendor-activity__header">
-            <h3 className="admin-vendor-activity__heading">Recent activity</h3>
-            <button type="button" className="admin-vendor-activity__link">
-              View all <IconChevronLeft size={12} stroke={2} style={{ transform: 'rotate(180deg)' }} />
-            </button>
+      {/* ── Pending Checklist ── */}
+      {vendor.isPending && (
+        <section className="vd-checklist">
+          <div className="vd-checklist__header">
+            <div>
+              <h3 className="vd-checklist__title">Application review</h3>
+              <p className="vd-checklist__sub">Verify the following before approving this vendor.</p>
+            </div>
+            <div className="vd-checklist__actions">
+              <span className="vd-checklist__badge">Review required</span>
+              <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('location')}>Add location</button>
+            </div>
           </div>
-          <ul className="admin-vendor-activity__list">
-            {/* Recent activity would come from API - showing placeholder */}
-            <li className="admin-vendor-activity__item" style={{ display: 'none' }}>
-              <span className="admin-vendor-activity__icon admin-vendor-activity__icon--check" />
-              <span className="admin-vendor-activity__message">No recent activity</span>
-              <span className="admin-vendor-activity__time">—</span>
+          <ul className="vd-checklist__list">
+            <li className="vd-checklist__item vd-checklist__item--done">
+              <IconBuildingStore size={15} stroke={2} />
+              <span>Business registration verified</span>
+            </li>
+            <li className="vd-checklist__item vd-checklist__item--done">
+              <IconHeartbeat size={15} stroke={2} />
+              <span>Health certificate on file</span>
+            </li>
+            <li className="vd-checklist__item vd-checklist__item--done">
+              <IconShieldCheck size={15} stroke={2} />
+              <span>Insurance details confirmed</span>
+            </li>
+            <li className="vd-checklist__item vd-checklist__item--done">
+              <IconMenu2 size={15} stroke={2} />
+              <span>Menu reviewed for allergen labelling</span>
+            </li>
+            <li className="vd-checklist__item vd-checklist__item--pending">
+              <IconCreditCard size={15} stroke={2} />
+              <span>Payment provider pending</span>
+            </li>
+            <li className="vd-checklist__item vd-checklist__item--pending">
+              <IconClipboardCheck size={15} stroke={2} />
+              <span>Final operational sign-off</span>
             </li>
           </ul>
         </section>
       )}
+
+      {/* ── Content Grid ── */}
+      {!vendor.isPending && (
+        <div className="vd-grid">
+          {/* Left Column */}
+          <div className="vd-grid__main">
+            {/* Vendor Information */}
+            <section className="vd-panel">
+              <h3 className="vd-panel__heading">Vendor information</h3>
+              <div className="vd-info">
+                <div className="vd-info__row">
+                  <div className="vd-info__icon"><IconMapPin size={15} stroke={1.8} /></div>
+                  <div className="vd-info__field">
+                    <span className="vd-info__label">Location</span>
+                    <span className="vd-info__value">{vendor.vendor_location_name}</span>
+                  </div>
+                </div>
+
+                <div className="vd-info__row vd-info__row--block">
+                  <div className="vd-info__icon"><IconClock size={15} stroke={1.8} /></div>
+                  <div className="vd-info__field">
+                    <span className="vd-info__label">Operating hours</span>
+                    {hours ? (
+                      <div className="vd-hours">
+                        {DAY_LABELS.map((label, i) => {
+                          const day = hours[i];
+                          return (
+                            <div key={i} className={`vd-hours__day${day.closed ? ' vd-hours__day--closed' : ''}`}>
+                              <span className="vd-hours__label">{label}</span>
+                              <span className="vd-hours__time">{day.closed ? 'Closed' : day.time}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="vd-info__value">Not set</span>
+                    )}
+                    <span className="vd-info__muted">Est. prep time: {vendor.estimated_prep_minutes || 0} min</span>
+                  </div>
+                </div>
+
+                <div className="vd-info__row">
+                  <div className="vd-info__icon"><IconUser size={15} stroke={1.8} /></div>
+                  <div className="vd-info__field">
+                    <span className="vd-info__label">Contact person</span>
+                    <span className="vd-info__value">{vendor.manager_name}</span>
+                  </div>
+                </div>
+
+                <div className="vd-info__row">
+                  <div className="vd-info__icon"><IconMail size={15} stroke={1.8} /></div>
+                  <div className="vd-info__field">
+                    <span className="vd-info__label">Email</span>
+                    {vendor.support_email
+                      ? <a href={`mailto:${vendor.support_email}`} className="vd-info__link">{vendor.support_email}</a>
+                      : <span className="vd-info__value">\u2014</span>}
+                  </div>
+                </div>
+
+                <div className="vd-info__row">
+                  <div className="vd-info__icon"><IconPhone size={15} stroke={1.8} /></div>
+                  <div className="vd-info__field">
+                    <span className="vd-info__label">Phone</span>
+                    <span className="vd-info__value">{vendor.support_phone || '\u2014'}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Operating Locations */}
+            <section className="vd-panel">
+              <div className="vd-panel__header">
+                <h3 className="vd-panel__heading">Operating locations</h3>
+                <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('location')}>
+                  <IconPlus size={14} /> Add location
+                </button>
+              </div>
+              {vendor.locations.length === 0 ? (
+                <p className="vd-panel__empty">No operating locations have been assigned.</p>
+              ) : (
+                <div className="vd-locations">
+                  {vendor.locations.map((location) => (
+                    <div className="vd-locations__row" key={location.id}>
+                      <div className="vd-locations__info">
+                        <span className="vd-locations__name">
+                          {[location.site_name, location.building_name, location.collection_point_name].filter(Boolean).join(' \u00b7 ')}
+                        </span>
+                        <span className="vd-locations__meta">
+                          {location.service_status}{' \u00b7 '}{location.estimated_prep_minutes || '\u2014'} min prep
+                        </span>
+                      </div>
+                      <div className="vd-locations__actions">
+                        <StatusPill status={location.service_status} />
+                        <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'location', location })}>Edit</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+
+          {/* Right Column */}
+          <div className="vd-grid__side">
+            {/* Staff */}
+            <section className="vd-panel">
+              <div className="vd-panel__header">
+                <h3 className="vd-panel__heading">Staff</h3>
+                <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('staff')}>
+                  <IconPlus size={14} /> Add staff
+                </button>
+              </div>
+              {vendor.staff.length === 0 ? (
+                <p className="vd-panel__empty">No staff members assigned.</p>
+              ) : (
+                <div className="vd-staff">
+                  {vendor.staff.map((member) => (
+                    <div className="vd-staff__row" key={member.user_id}>
+                      <div className="vd-staff__info">
+                        <span className="vd-staff__name">{member.full_name || member.email || member.user_id}</span>
+                        <span className="vd-staff__meta">{member.role} \u00b7 {member.is_active ? 'Active' : 'Inactive'}</span>
+                      </div>
+                      <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleStaffRemove(member.user_id)} disabled={actionLoading}>Remove</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Menu Categories */}
+            <section className="vd-panel">
+              <div className="vd-panel__header">
+                <h3 className="vd-panel__heading">Menu categories</h3>
+                <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('category')}>
+                  <IconPlus size={14} /> Add category
+                </button>
+              </div>
+              {menuItemsLoading ? (
+                <p className="vd-panel__empty">Loading categories...</p>
+              ) : menuCategories.length === 0 ? (
+                <p className="vd-panel__empty">No categories defined.</p>
+              ) : (
+                <div className="admin-menu-items-table">
+                  <div className="admin-menu-items-table__head">
+                    <span>Name</span><span>Sort</span><span>Items</span><span /><span /></div>
+                  {menuCategories.map((cat) => (
+                    <div className="admin-menu-items-table__row" key={cat.id}>
+                      <div className="admin-menu-items-table__name"><strong>{cat.name}</strong></div>
+                      <span>{cat.sort_order ?? 0}</span>
+                      <span>{menuItems.filter((item) => item.category_id === cat.id).length}</span>
+                      <span />
+                      <div className="vendor-managed-row__actions">
+                        <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'category', category: cat })}>Edit</button>
+                        <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleCategoryDelete(cat.id)} disabled={actionLoading}><IconTrash size={13} /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Menu Items */}
+            <section className="vd-panel">
+              <div className="vd-panel__header">
+                <h3 className="vd-panel__heading">Menu items</h3>
+                <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('menuItem')}>
+                  <IconPlus size={14} /> Add item
+                </button>
+              </div>
+              {menuItemsLoading ? (
+                <p className="vd-panel__empty">Loading menu items...</p>
+              ) : menuItems.length === 0 ? (
+                <p className="vd-panel__empty">No menu items have been added.</p>
+              ) : (
+                <div className="admin-menu-items-table">
+                  <div className="admin-menu-items-table__head">
+                    <span>Name</span><span>Category</span><span>Price</span><span>Status</span><span /></div>
+                  {menuItems.map((item) => (
+                    <div className="admin-menu-items-table__row" key={item.id}>
+                      <div className="admin-menu-items-table__name">
+                        <strong>{item.name}</strong>
+                        {item.description && <span>{item.description.slice(0, 50)}{item.description.length > 50 ? '\u2026' : ''}</span>}
+                      </div>
+                      <span>{item.menu_categories?.name || '\u2014'}</span>
+                      <span>R {Number(item.base_price).toFixed(2)}</span>
+                      <span className={`admin-status admin-status--${item.status === 'available' ? 'approved' : item.status === 'sold_out' ? 'rejected' : 'pending'}`}>{item.status}</span>
+                      <div className="vendor-managed-row__actions">
+                        <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'menuItem', item })}>Edit</button>
+                        <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleMenuItemDelete(item.id)} disabled={actionLoading}><IconTrash size={13} /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modals ── */}
       {modal === 'edit' && <VendorProfileModal vendor={vendor} onClose={() => setModal(null)} onSubmit={handleProfileUpdate} submitting={actionLoading} />}
       {modal === 'location' && <VendorLocationModal onClose={() => setModal(null)} onSubmit={handleLocationCreate} submitting={actionLoading} />}
       {modal?.type === 'location' && <VendorLocationModal key={modal.location.id} location={modal.location} onClose={() => setModal(null)} onSubmit={(payload) => handleLocationUpdate(modal.location.id, payload)} submitting={actionLoading} />}
@@ -588,6 +664,8 @@ export default function AdminVendorDetail() {
       {modal?.type === 'menuItem' && <MenuItemModal key={modal.item.id} item={modal.item} categories={menuCategories} onClose={() => setModal(null)} onSubmit={(payload) => handleMenuItemUpdate(modal.item.id, payload)} submitting={actionLoading} />}
       {modal === 'category' && <CategoryModal onClose={() => setModal(null)} onSubmit={handleCategoryCreate} submitting={actionLoading} />}
       {modal?.type === 'category' && <CategoryModal key={modal.category.id} category={modal.category} onClose={() => setModal(null)} onSubmit={(payload) => handleCategoryUpdate(modal.category.id, payload)} submitting={actionLoading} />}
+
+      {/* ── Approval Loading Overlay ── */}
       {creating && (
         <div className="vendor-creating-overlay">
           <div className="vendor-creating-card">
@@ -598,6 +676,8 @@ export default function AdminVendorDetail() {
           </div>
         </div>
       )}
+
+      {/* ── Reject Modal ── */}
       {rejectModal && (
         <div className="admin-modal" role="dialog" aria-modal="true">
           <div className="admin-modal__overlay" onClick={() => { if (!creating) { setRejectModal(false); setRejectReason(''); setRejectError(''); } }} />
