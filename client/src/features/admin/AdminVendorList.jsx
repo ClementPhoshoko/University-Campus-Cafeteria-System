@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   IconSearch,
@@ -33,8 +33,35 @@ function StatusPill({ status }) {
 
 function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
   const [reason, setReason] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [loadMsg, setLoadMsg] = useState(0);
+  const loadTimerRef = useRef(null);
+
+  const LOAD_MESSAGES = [
+    'Processing approval decision...',
+    'Updating vendor status...',
+    'Syncing account settings...',
+    'Almost there...',
+  ];
+
+  useEffect(() => {
+    if (!creating) { setLoadMsg(0); return; }
+    loadTimerRef.current = setInterval(() => setLoadMsg((i) => (i + 1) % LOAD_MESSAGES.length), 1800);
+    return () => clearInterval(loadTimerRef.current);
+  }, [creating]);
+
   if (!vendor) return null;
   const isApprove = mode === 'approve';
+
+  const handleConfirm = async () => {
+    setCreating(true);
+    try {
+      await onConfirm(vendor, mode, isApprove ? undefined : reason);
+    } catch {
+      setCreating(false);
+    }
+  };
+
   return (
     <div className="admin-modal" role="dialog" aria-modal="true">
       <div className="admin-modal__overlay" onClick={onCancel} />
@@ -73,16 +100,27 @@ function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
         )}
 
         <footer className="admin-modal__foot">
-          <button type="button" className="admin-action admin-action--ghost" onClick={onCancel}>Cancel</button>
+          <button type="button" className="admin-action admin-action--ghost" onClick={onCancel} disabled={creating}>Cancel</button>
           <button
             type="button"
             className={`admin-action ${isApprove ? 'admin-action--approve' : 'admin-action--reject'}`}
-            onClick={() => onConfirm(vendor, mode, isApprove ? undefined : reason)}
+            onClick={handleConfirm}
+            disabled={creating}
           >
             <IconShieldCheck size={13} stroke={2} />
             {isApprove ? 'Confirm approval' : 'Confirm rejection'}
           </button>
         </footer>
+        {creating && (
+          <div className="vendor-creating-overlay">
+            <div className="vendor-creating-card">
+              <div className="vendor-creating-spinner" />
+              <p className="vendor-creating-msg">{LOAD_MESSAGES[loadMsg]}</p>
+              <div className="vendor-creating-bar"><div className="vendor-creating-bar__fill" /></div>
+              <p className="vendor-creating-hint">Hang tight, this won't take long.</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
