@@ -288,6 +288,7 @@ export default function AdminVendorList() {
       setModal(null);
     } catch (err) {
       console.error('Failed to update vendor approval:', err);
+      throw err;
     }
   };
 
@@ -678,7 +679,7 @@ export default function AdminVendorList() {
       <ApprovalModal
         vendor={modal?.vendor}
         mode={modal?.mode}
-        onConfirm={(vendor, mode) => handleConfirm(vendor, mode)}
+        onConfirm={(vendor, mode, reason) => handleConfirm(vendor, mode, reason)}
         onCancel={() => setModal(null)}
       />
       {showAddVendor && <AddVendorModal onClose={() => setShowAddVendor(false)} onSubmit={handleAddVendor} submitting={addVendorLoading} />}
