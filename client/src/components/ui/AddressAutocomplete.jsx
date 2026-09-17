@@ -105,7 +105,7 @@ export default function AddressAutocomplete({
     setIsLoading(true);
 
     try {
-      const response = await geocodeResolve(token, { place_id: prediction.place_id });
+      const response = await geocodeResolve(token, { address: prediction.description });
       onSelect?.(response.location);
     } catch {
       // If resolve fails, still pass basic data from prediction

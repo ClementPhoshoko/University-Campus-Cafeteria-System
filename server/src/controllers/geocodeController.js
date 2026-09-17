@@ -5,7 +5,7 @@ import {
   autocompleteAddress,
   geocodePlaceId,
   geocodeAddress,
-} from '../services/googleMaps.js';
+} from '../services/geoapify.js';
 import { ApiError, sendError, sendInternalError } from '../utils/errors.js';
 import { respond } from '../utils/http.js';
 
