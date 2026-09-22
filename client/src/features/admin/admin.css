@@ -2641,6 +2641,14 @@
   min-height: 0;
 }
 
+.admin-modal__body--single {
+  grid-template-columns: 1fr;
+}
+
+.admin-modal__body--single .admin-modal__left {
+  grid-column: 1 / -1;
+}
+
 .admin-modal__left {
   display: flex;
   flex-direction: column;
