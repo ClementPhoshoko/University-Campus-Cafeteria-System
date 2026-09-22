@@ -30,6 +30,22 @@ import { StaffModal, VendorLocationModal, VendorProfileModal, MenuItemModal, Cat
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+function getRatingGrade(rating, count) {
+  if (count <= 0) return { label: 'No reviews yet', tone: 'none' };
+  if (rating >= 4.5) return { label: 'Excellent', tone: 'great' };
+  if (rating >= 4.0) return { label: 'Very good', tone: 'great' };
+  if (rating >= 3.0) return { label: 'Good', tone: 'fair' };
+  if (rating >= 2.0) return { label: 'Fair', tone: 'fair' };
+  return { label: 'Poor', tone: 'poor' };
+}
+
+const LOCATION_STATUS_META = {
+  open: { label: 'Open', tone: 'open' },
+  busy: { label: 'Busy', tone: 'busy' },
+  closed: { label: 'Closed', tone: 'closed' },
+  temporarily_unavailable: { label: 'Unavailable', tone: 'unavailable' },
+};
+
 function formatOperatingHours(hours) {
   if (!hours || hours.length === 0) return null;
   const byDay = {};
@@ -369,8 +385,16 @@ export default function AdminVendorDetail() {
           </div>
         </div>
         <div className="vd-metrics">
-          <div className="vd-metric"><div className="skeleton" style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)' }} /><div style={{ flex: 1 }}><div className="skeleton" style={{ width: 40, height: 24, borderRadius: 4 }} /><div className="skeleton" style={{ width: 80, height: 12, borderRadius: 4, marginTop: 6 }} /></div></div>
-          <div className="vd-metric"><div className="skeleton" style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)' }} /><div style={{ flex: 1 }}><div className="skeleton" style={{ width: 40, height: 24, borderRadius: 4 }} /><div className="skeleton" style={{ width: 100, height: 12, borderRadius: 4, marginTop: 6 }} /></div></div>
+          <div className="vd-metric">
+            <div className="skeleton" style={{ width: '62%', height: 12, borderRadius: 4 }} />
+            <div className="skeleton" style={{ width: '46%', height: 20, borderRadius: 4, marginTop: 10 }} />
+            <div className="skeleton" style={{ width: '36%', height: 10, borderRadius: 4, marginTop: 10 }} />
+          </div>
+          <div className="vd-metric">
+            <div className="skeleton" style={{ width: '62%', height: 12, borderRadius: 4 }} />
+            <div className="skeleton" style={{ width: '32%', height: 20, borderRadius: 4, marginTop: 10 }} />
+            <div className="skeleton" style={{ width: '42%', height: 10, borderRadius: 4, marginTop: 10 }} />
+          </div>
         </div>
         <div className="vd-grid">
           <div className="vd-grid__main">
@@ -426,6 +450,13 @@ export default function AdminVendorDetail() {
   const statusLabel = vendor.isPending ? 'Pending approval' : vendor.status;
   const statusClass = vendor.isPending ? 'pending' : vendor.status;
   const hours = formatOperatingHours(vendor.operating_hours);
+
+  const rating = Number(vendor.average_rating || 0);
+  const ratingPct = Math.min(100, Math.max(0, (rating / 5) * 100));
+  const ratingGrade = getRatingGrade(rating, vendor.rating_count);
+  const locationStatuses = Object.entries(LOCATION_STATUS_META)
+    .map(([key, meta]) => ({ key, ...meta, count: vendor.locations.filter((loc) => loc.service_status === key).length }))
+    .filter((item) => item.count > 0);
 
   return (
     <div className="vd">
@@ -484,24 +515,50 @@ export default function AdminVendorDetail() {
       {!vendor.isPending && (
         <div className="vd-metrics">
           <div className="vd-metric">
-            <div className="vd-metric__icon vd-metric__icon--warning">
-              <IconStarFilled size={18} stroke={0} />
-            </div>
-            <div className="vd-metric__body">
+            <div className="vd-metric__head">
+              <div className="vd-metric__icon vd-metric__icon--warning">
+                <IconStarFilled size={15} stroke={0} />
+              </div>
               <span className="vd-metric__label">Average rating</span>
-              <span className="vd-metric__value">{Number(vendor.average_rating || 0).toFixed(1)}</span>
-              <span className="vd-metric__sub">{vendor.rating_count || 0} reviews</span>
+              <span className={`vd-metric__pill vd-metric__pill--${ratingGrade.tone}`}>{ratingGrade.label}</span>
             </div>
+            <div className="vd-metric__main">
+              <span className="vd-metric__value">{rating.toFixed(1)}</span>
+              <span className="vd-metric__value-max">/ 5</span>
+              <span className="vd-metric__stars" role="img" aria-label={`Rated ${rating.toFixed(1)} out of 5`}>
+                <span className="vd-metric__stars-track">
+                  {[...Array(5)].map((_, i) => <IconStarFilled key={i} size={14} stroke={0} />)}
+                </span>
+                <span className="vd-metric__stars-fill" style={{ width: `${ratingPct}%` }} aria-hidden="true">
+                  {[...Array(5)].map((_, i) => <IconStarFilled key={i} size={14} stroke={0} />)}
+                </span>
+              </span>
+            </div>
+            <span className="vd-metric__footnote">{vendor.rating_count || 0} reviews</span>
           </div>
           <div className="vd-metric">
-            <div className="vd-metric__icon vd-metric__icon--info">
-              <IconMapPin size={18} stroke={2} />
-            </div>
-            <div className="vd-metric__body">
+            <div className="vd-metric__head">
+              <div className="vd-metric__icon vd-metric__icon--info">
+                <IconMapPin size={15} stroke={2} />
+              </div>
               <span className="vd-metric__label">Operating locations</span>
-              <span className="vd-metric__value">{vendor.locations.length}</span>
-              <span className="vd-metric__sub">Configured locations</span>
             </div>
+            <div className="vd-metric__main">
+              <span className="vd-metric__value">{vendor.locations.length}</span>
+              <span className="vd-metric__value-max">{vendor.locations.length === 1 ? 'site' : 'sites'}</span>
+              {locationStatuses.length > 0 ? (
+                <span className="vd-metric__statuses">
+                  {locationStatuses.map((s) => (
+                    <span key={s.key} className={`vd-metric__pill vd-metric__pill--${s.tone}`}>
+                      {s.count} {s.label.toLowerCase()}
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <span className="vd-metric__pill vd-metric__pill--unavailable">No locations</span>
+              )}
+            </div>
+            <span className="vd-metric__footnote">Configured locations</span>
           </div>
         </div>
       )}
