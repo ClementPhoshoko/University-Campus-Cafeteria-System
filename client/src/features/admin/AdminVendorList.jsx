@@ -188,16 +188,17 @@ export default function AdminVendorList() {
             page: currentPage,
             limit: itemsPerPage,
             search: query,
-            status: statusFilter === 'all' ? undefined : statusFilter,
           }),
           listVendorApprovals(token, { page: currentPage, limit: itemsPerPage, search: query }),
         ]);
-        setActiveVendors(vendorsResponse.vendors || []);
-        setActivePagination(vendorsResponse.pagination || null);
-        setPendingApprovals(approvalsResponse.approvals || []);
-        setApprovalPagination(approvalsResponse.pagination || null);
+        if (!cancelled) {
+          setActiveVendors(vendorsResponse.vendors || []);
+          setActivePagination(vendorsResponse.pagination || null);
+          setPendingApprovals(approvalsResponse.approvals || []);
+          setApprovalPagination(approvalsResponse.pagination || null);
+        }
       } catch (err) {
-        console.error('Failed to fetch vendor data:', err);
+        if (!cancelled) console.error('Failed to fetch vendor data:', err);
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -210,7 +211,7 @@ export default function AdminVendorList() {
     return () => {
       cancelled = true;
     };
-  }, [currentPage, initialized, debouncedQuery, statusFilter, token]);
+  }, [currentPage, initialized, debouncedQuery, token]);
 
   const refetchData = useCallback(async () => {
     if (!token) return;
@@ -220,7 +221,6 @@ export default function AdminVendorList() {
           page: currentPage,
           limit: itemsPerPage,
           search: query,
-          status: statusFilter === 'all' ? undefined : statusFilter,
         }),
         listVendorApprovals(token, { page: currentPage, limit: itemsPerPage, search: query }),
       ]);
@@ -231,7 +231,7 @@ export default function AdminVendorList() {
     } catch (err) {
       console.error('Failed to refetch vendor data:', err);
     }
-  }, [token, currentPage, itemsPerPage, query, statusFilter]);
+  }, [token, currentPage, itemsPerPage, query]);
 
   useEffect(() => {
     setPage(1);

@@ -10,7 +10,6 @@ import { ALL_ROLES, ROLE_FILTERS, USER_STATUS_FILTERS } from './adminMockData.js
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 
 const ITEMS_PER_PAGE = 10;
-const ROLE_FILTER_MAP = { all: undefined, employee: 'employee', vendor: 'vendor_staff', finance: 'finance', support: 'support', admin: 'admin' };
 const roleMeta = ALL_ROLES.reduce((map, role) => ({ ...map, [role.id]: role }), {});
 
 function Avatar({ name = '' }) { return <span className="admin-user-avatar" style={{ width: 36, height: 36, fontSize: 13 }}>{name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span>; }
@@ -55,7 +54,7 @@ export default function AdminUserList() {
     if (!initialized || !token) return;
     let cancelled = false;
     setLoading(true); setError('');
-    listUsers(token, { page, limit: ITEMS_PER_PAGE, search: debouncedQuery, role: ROLE_FILTER_MAP[roleFilter] })
+    listUsers(token, { page, limit: ITEMS_PER_PAGE, search: debouncedQuery, role: roleFilter === 'all' ? undefined : roleFilter })
       .then((response) => { if (!cancelled) { setUsers(response.users || []); setPagination(response.pagination || {}); } })
       .catch((err) => { if (!cancelled) setError(err.message || 'Could not load users.'); })
       .finally(() => { if (!cancelled) setLoading(false); });

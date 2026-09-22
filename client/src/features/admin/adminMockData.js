@@ -1534,24 +1534,6 @@ export const USER_STATUS_FILTERS = [
   { id: 'inactive', label: 'Inactive' },
 ];
 
-export const ROLE_FILTERS = [
-  { id: 'all', label: 'All roles' },
-  { id: 'employee', label: 'Employee' },
-  { id: 'vendor', label: 'Vendor' },
-  { id: 'finance', label: 'Finance' },
-  { id: 'support', label: 'Support' },
-  { id: 'admin', label: 'Admin' },
-];
-
-export const ROLE_FILTER_MATCH = {
-  all: () => true,
-  employee: (u) => u.roles.some((r) => ['employee', 'executive', 'executive_assistant', 'meeting_organiser', 'training_coordinator', 'cost_centre_owner'].includes(r)),
-  vendor: (u) => u.roles.some((r) => ['vendor_staff', 'vendor_manager'].includes(r)),
-  finance: (u) => u.roles.includes('finance'),
-  support: (u) => u.roles.includes('support'),
-  admin: (u) => u.roles.includes('admin'),
-};
-
 export const ALL_ROLES = [
   { id: 'employee', label: 'Employee', tone: 'info' },
   { id: 'executive', label: 'Executive', tone: 'error' },
@@ -1565,6 +1547,11 @@ export const ALL_ROLES = [
   { id: 'finance', label: 'Finance', tone: 'warning' },
   { id: 'support', label: 'Technical Support', tone: 'warning' },
   { id: 'auditor', label: 'System Auditor', tone: 'info' },
+];
+
+export const ROLE_FILTERS = [
+  { id: 'all', label: 'All roles' },
+  ...ALL_ROLES.map((role) => ({ id: role.id, label: role.label })),
 ];
 
 
