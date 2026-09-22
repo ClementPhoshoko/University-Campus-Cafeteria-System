@@ -366,8 +366,8 @@ export default function AdminVendorDetail() {
       <div className="vd">
         <Breadcrumb homeLabel="Dashboard" homeTo="/admin" items={[{ label: 'Vendors', to: '/admin/vendors' }, { label: 'Loading...' }]} />
         <div className="vd-hero">
-          <div className="vd-hero__logo"><span className="skeleton" style={{ width: 72, height: 72, borderRadius: 'var(--radius-lg)' }} /></div>
-          <div className="vd-hero__content">
+          <div className="vd-hero__cover"><span className="skeleton" style={{ display: 'block', width: '100%', height: '100%', borderRadius: 0 }} /></div>
+          <div className="vd-hero__info">
             <div className="vd-hero__top">
               <span className="skeleton" style={{ width: 80, height: 22, borderRadius: 'var(--radius-full)' }} />
               <span className="skeleton" style={{ width: 60, height: 14, borderRadius: 4 }} />
@@ -468,10 +468,14 @@ export default function AdminVendorDetail() {
 
       {/* ── Hero Header ── */}
       <header className="vd-hero">
-        <div className="vd-hero__logo">
-          <img src={vendor.logo_url} alt={vendor.name} />
+        <div className="vd-hero__cover">
+          {vendor.logo_url ? (
+            <img src={vendor.logo_url} alt={vendor.name} />
+          ) : (
+            <div className="vd-hero__placeholder"><IconBuildingStore size={44} stroke={1.2} /></div>
+          )}
         </div>
-        <div className="vd-hero__content">
+        <div className="vd-hero__info">
           <div className="vd-hero__top">
             <StatusPill status={statusClass} />
             <span className="vd-hero__slug">/{vendor.slug}</span>
