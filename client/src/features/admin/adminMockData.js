@@ -1545,7 +1545,7 @@ export const ROLE_FILTERS = [
 
 export const ROLE_FILTER_MATCH = {
   all: () => true,
-  employee: (u) => u.roles.some((r) => ['employee', 'executive_assistant', 'meeting_organiser'].includes(r)),
+  employee: (u) => u.roles.some((r) => ['employee', 'executive', 'executive_assistant', 'meeting_organiser', 'training_coordinator', 'cost_centre_owner'].includes(r)),
   vendor: (u) => u.roles.some((r) => ['vendor_staff', 'vendor_manager'].includes(r)),
   finance: (u) => u.roles.includes('finance'),
   support: (u) => u.roles.includes('support'),
@@ -1554,13 +1554,17 @@ export const ROLE_FILTER_MATCH = {
 
 export const ALL_ROLES = [
   { id: 'employee', label: 'Employee', tone: 'info' },
+  { id: 'executive', label: 'Executive', tone: 'error' },
   { id: 'executive_assistant', label: 'Executive Assistant', tone: 'info' },
   { id: 'meeting_organiser', label: 'Meeting Organiser', tone: 'info' },
+  { id: 'training_coordinator', label: 'Training Coordinator', tone: 'info' },
+  { id: 'cost_centre_owner', label: 'Cost Centre Owner', tone: 'warning' },
   { id: 'vendor_staff', label: 'Vendor Staff', tone: 'success' },
   { id: 'vendor_manager', label: 'Vendor Manager', tone: 'success' },
-  { id: 'finance', label: 'Finance', tone: 'warning' },
-  { id: 'support', label: 'Support', tone: 'warning' },
   { id: 'admin', label: 'Company Admin', tone: 'error' },
+  { id: 'finance', label: 'Finance', tone: 'warning' },
+  { id: 'support', label: 'Technical Support', tone: 'warning' },
+  { id: 'auditor', label: 'System Auditor', tone: 'info' },
 ];
 
 

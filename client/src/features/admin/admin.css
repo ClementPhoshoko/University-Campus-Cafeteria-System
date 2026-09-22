@@ -4470,9 +4470,28 @@
 }
 
 .admin-user-roles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  display: inline;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.admin-user-role {
+  font-weight: var(--font-weight-semibold);
+}
+
+.admin-user-role--info { color: var(--info-700); }
+.admin-user-role--success { color: var(--success-700); }
+.admin-user-role--warning { color: var(--warning-700); }
+.admin-user-role--error { color: var(--error-700); }
+
+.admin-user-roles__sep {
+  margin: 0 2px;
+  color: var(--color-text-tertiary);
+}
+
+.admin-user-roles__none {
+  color: var(--color-text-tertiary);
 }
 
 .admin-user-meta {
