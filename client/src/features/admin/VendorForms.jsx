@@ -164,7 +164,7 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
             <Field label="Support email"><input className="admin-input" type="email" value={form.support_email} onChange={(e) => setForm({ ...form, support_email: e.target.value })} /></Field>
             <Field label="Support phone"><input className="admin-input" value={form.support_phone} onChange={(e) => setForm({ ...form, support_phone: e.target.value })} /></Field>
             <Field label="Description" full><textarea className="admin-modal__textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} /></Field>
-            <label className="vendor-checkbox"><input type="checkbox" checked={form.corporate_catering_enabled} onChange={(e) => setForm({ ...form, corporate_catering_enabled: e.target.checked })} /> Corporate catering enabled</label>
+            <Field label="Corporate catering" renderLabel={false}><AdminDropdown label="Corporate catering" options={[{ value: true, label: 'Enabled' }, { value: false, label: 'Disabled' }]} value={form.corporate_catering_enabled ?? ''} onChange={(val) => setForm({ ...form, corporate_catering_enabled: val })} placeholder="Select..." /></Field>
           </div>
           <div className="admin-modal__right">
             <div className="admin-modal__image-area admin-modal__image-area--sm">
@@ -215,7 +215,7 @@ export function VendorProfileModal({ vendor, onClose, onSubmit, submitting = fal
             <Field label="Support email"><input className="admin-input" type="email" value={form.support_email} onChange={(e) => setForm({ ...form, support_email: e.target.value })} /></Field>
             <Field label="Support phone"><input className="admin-input" value={form.support_phone} onChange={(e) => setForm({ ...form, support_phone: e.target.value })} /></Field>
             <Field label="Description" full><textarea className="admin-modal__textarea" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
-            <label className="vendor-checkbox"><input type="checkbox" checked={form.corporate_catering_enabled} onChange={(e) => setForm({ ...form, corporate_catering_enabled: e.target.checked })} /> Corporate catering enabled</label>
+            <Field label="Corporate catering" renderLabel={false}><AdminDropdown label="Corporate catering" options={[{ value: true, label: 'Enabled' }, { value: false, label: 'Disabled' }]} value={form.corporate_catering_enabled ?? ''} onChange={(val) => setForm({ ...form, corporate_catering_enabled: val })} placeholder="Select..." /></Field>
           </div>
           <div className="admin-modal__right">
             <div className="admin-modal__image-area admin-modal__image-area--sm">

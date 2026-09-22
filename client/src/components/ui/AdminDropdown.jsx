@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { IconCheck, IconChevronDown, IconLoader2 } from '@tabler/icons-react';
 import './AdminDropdown.css';
 
@@ -31,12 +32,17 @@ export default function AdminDropdown({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [menuPos, setMenuPos] = useState(null);
+  const [openUp, setOpenUp] = useState(false);
   const hasOpenedRef = useRef(false);
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
   const listRef = useRef(null);
+  const isOpenRef = useRef(false);
+  const menuPosRef = useRef({ top: 0, left: 0, width: 0 });
 
   if (isOpen) hasOpenedRef.current = true;
+  isOpenRef.current = isOpen;
 
   const selectedOption = options.find((opt) => String(opt.value) === String(value));
 
@@ -44,6 +50,40 @@ export default function AdminDropdown({
     setIsOpen(false);
     setHighlightedIndex(-1);
   }, []);
+
+  const positionMenu = useCallback(() => {
+    const trigger = triggerRef.current;
+    const menu = menuRef.current;
+    if (!trigger || !menu) return;
+    const rect = trigger.getBoundingClientRect();
+    const menuHeight = menu.offsetHeight;
+    const gap = 6;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const shouldOpenUp = menuHeight + gap > spaceBelow && spaceAbove > spaceBelow;
+    const top = shouldOpenUp ? Math.max(8, rect.top - menuHeight - gap) : Math.min(rect.bottom + gap, window.innerHeight - 8);
+    const next = { top, left: rect.left, width: rect.width };
+    const prevTop = menuPosRef.current.top;
+    setOpenUp(shouldOpenUp);
+    if (next.top !== prevTop || next.left !== menuPosRef.current.left || next.width !== menuPosRef.current.width) {
+      menuPosRef.current = next;
+      setMenuPos(next);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    positionMenu();
+    const raf = requestAnimationFrame(() => positionMenu());
+    const handleScroll = () => positionMenu();
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [isOpen, positionMenu]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -142,11 +182,12 @@ export default function AdminDropdown({
           )}
         </button>
 
-        {hasOpenedRef.current && !loading && (
+        {hasOpenedRef.current && !loading && createPortal(
           <div
-            className={`admin-dropdown__menu${isOpen ? '' : ' admin-dropdown__menu--hidden'}`}
+            className={`admin-dropdown__menu${isOpen ? '' : ' admin-dropdown__menu--hidden'}${isOpen && openUp ? ' admin-dropdown__menu--up' : ''}`}
             ref={menuRef}
             role="listbox"
+            style={menuPos ? { position: 'fixed', top: menuPos.top, left: menuPos.left, width: menuPos.width } : { position: 'fixed', top: -9999, left: 0 }}
           >
             <div className="admin-dropdown__list" ref={listRef}>
               {options.length === 0 ? (
@@ -164,7 +205,8 @@ export default function AdminDropdown({
                 ))
               )}
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
       {error && <span className="admin-dropdown__error">{error}</span>}

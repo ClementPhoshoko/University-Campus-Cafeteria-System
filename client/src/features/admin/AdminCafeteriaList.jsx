@@ -14,6 +14,7 @@ import {
 } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
 import AddressAutocomplete from '../../components/ui/AddressAutocomplete.jsx';
+import AdminDropdown from '../../components/ui/AdminDropdown.jsx';
 import { useAdminLocations } from '../../hooks/useAdminLocations.js';
 import { uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -287,10 +288,7 @@ export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
                 <input className="admin-input" value={form.postal_code} onChange={(e) => update('postal_code', e.target.value)} placeholder="Auto-filled from search" />
               </Field>
             </div>
-            <label className="vendor-checkbox">
-              <input type="checkbox" checked={form.is_active} onChange={(e) => update('is_active', e.target.checked)} />
-              Active site
-            </label>
+            <AdminDropdown label="Status" options={[{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }]} value={form.is_active ?? ''} onChange={(val) => update('is_active', val)} placeholder="Select..." />
           </div>
           <div className="admin-modal__right">
             <div className="admin-modal__image-area admin-modal__image-area--sm">

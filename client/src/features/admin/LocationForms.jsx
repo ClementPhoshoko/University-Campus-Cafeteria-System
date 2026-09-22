@@ -9,7 +9,7 @@ function Field({ label, children, full = false, renderLabel = true }) {
   return <label className={`admin-modal__field${full ? ' admin-modal__field--full' : ''}`}>{renderLabel && <span>{label}</span>}{children}</label>;
 }
 
-export function LocationModal({ title, initial = {}, fields, onClose, onSubmit, submitting }) {
+export function LocationModal({ title, initial = {}, fields, rows, onClose, onSubmit, submitting }) {
   const [form, setForm] = useState(initial);
   const [error, setError] = useState('');
   const { session } = useAuth();
@@ -48,10 +48,10 @@ export function LocationModal({ title, initial = {}, fields, onClose, onSubmit, 
     if (field.type === 'select') {
       return <AdminDropdown label={field.label} options={field.options} value={form[field.key] ?? ''} onChange={(val) => update(field.key, val)} placeholder={field.placeholder || 'Select...'} loading={field.loading} />;
     }
-    return <input className="admin-input" type={field.type || 'text'} step={field.type === 'number' ? 'any' : undefined} value={form[field.key] ?? ''} onChange={(e) => update(field.key, e.target.value)} />;
+    return <input className="admin-input" type={field.type || 'text'} step={field.type === 'number' ? 'any' : undefined} placeholder={field.placeholder || ''} value={form[field.key] ?? ''} onChange={(e) => update(field.key, e.target.value)} />;
   };
 
-  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card admin-modal__card--lg"><header className="admin-modal__head"><div><h3 className="admin-modal__title">{title}</h3><p className="admin-modal__sub">Update the location data stored by the platform.</p></div></header>{error && <div className="vendor-form-error">{error}</div>}<div className="admin-modal__body"><div className="admin-modal__left">{otherFields.map((field) => <Field key={field.key} label={field.label} full={field.full} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>)}</div><div className="admin-modal__right">{fileFields.length > 0 ? fileFields.map((field) => <Field key={field.key} label={field.label} full><FileInput value={form[field.key]} onChange={(file) => update(field.key, file)} /></Field>) : <div className="admin-modal__image-area"><IconUpload size={32} stroke={1.5} className="admin-modal__image-icon" /><span className="admin-modal__image-text">Click to upload cover image</span><span className="admin-modal__image-hint">JPEG, PNG or WebP</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => update('cover_file', e.target.files?.[0] || null)} /></div>}</div></div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Saving…' : 'Save changes'}</button></footer></div></div>;
+  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card admin-modal__card--lg"><header className="admin-modal__head"><div><h3 className="admin-modal__title">{title}</h3><p className="admin-modal__sub">Update the location data stored by the platform.</p></div></header>{error && <div className="vendor-form-error">{error}</div>}<div className="admin-modal__body"><div className="admin-modal__left">{(rows && rows.length ? rows.map((group) => { const rowFields = group.map((key) => otherFields.find((f) => f.key === key)).filter(Boolean); return rowFields.length === 1 ? <Field key={rowFields[0].key} label={rowFields[0].label} renderLabel={rowFields[0].type !== 'select'}>{renderField(rowFields[0])}</Field> : <div className="admin-modal__row" key={group.join('-')}>{rowFields.map((field) => <Field key={field.key} label={field.label} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>)}</div>; }) : otherFields.map((field) => <Field key={field.key} label={field.label} full={field.full} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>))}</div><div className="admin-modal__right">{fileFields.length > 0 ? fileFields.map((field) => <Field key={field.key} label={field.label} full><FileInput value={form[field.key]} onChange={(file) => update(field.key, file)} /></Field>) : <div className="admin-modal__image-area"><IconUpload size={32} stroke={1.5} className="admin-modal__image-icon" /><span className="admin-modal__image-text">Click to upload cover image</span><span className="admin-modal__image-hint">JPEG, PNG or WebP</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => update('cover_file', e.target.files?.[0] || null)} /></div>}</div></div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Saving…' : 'Save changes'}</button></footer></div></div>;
 }
 
 export const siteFields = [
@@ -74,16 +74,38 @@ export const buildingFields = [
   { key: 'name', label: 'Building name' },
   { key: 'code', label: 'Building code' },
   { key: 'address', label: 'Search address', type: 'address', full: true },
-  { key: 'street_address', label: 'Street address' },
-  { key: 'city', label: 'City' },
-  { key: 'province', label: 'Province' },
-  { key: 'postal_code', label: 'Postal code' },
-  { key: 'country', label: 'Country' },
-  { key: 'latitude', label: 'Latitude', type: 'number' },
-  { key: 'longitude', label: 'Longitude', type: 'number' },
+  { key: 'street_address', label: 'Street address', placeholder: 'Auto-filled from search' },
+  { key: 'city', label: 'City', placeholder: 'Auto-filled from search' },
+  { key: 'province', label: 'Province', placeholder: 'Auto-filled from search' },
+  { key: 'postal_code', label: 'Postal code', placeholder: 'Auto-filled from search' },
+  { key: 'country', label: 'Country', placeholder: 'Auto-filled from search' },
   { key: 'is_active', label: 'Status', type: 'select', options: [{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }] },
   { key: 'cover_file', label: 'Cover image', type: 'file' },
 ];
+
+export const buildingFieldRows = [
+  ['name', 'code'],
+  ['address'],
+  ['street_address', 'city'],
+  ['province', 'postal_code'],
+  ['country', 'is_active'],
+];
+
+export const newBuildingDefaults = {
+  name: '',
+  code: '',
+  address: '',
+  street_address: '',
+  city: '',
+  province: '',
+  postal_code: '',
+  country: 'ZA',
+  place_id: '',
+  latitude: '',
+  longitude: '',
+  is_active: true,
+  cover_file: null,
+};
 
 export const floorFields = [
   { key: 'name', label: 'Floor name' }, { key: 'level_number', label: 'Level number', type: 'number' },
