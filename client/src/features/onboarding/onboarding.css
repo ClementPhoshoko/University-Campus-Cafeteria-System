@@ -82,7 +82,6 @@
   position: relative;
   z-index: 2;
 }
-}
 
 .onboarding-title {
   font-family: var(--font-primary, 'Inter', sans-serif);
