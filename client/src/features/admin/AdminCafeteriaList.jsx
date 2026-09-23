@@ -312,8 +312,8 @@ export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
           <button type="button" className="admin-action" onClick={onClose}>Cancel</button>
           <button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? (editing ? 'Saving…' : 'Registering…') : (editing ? 'Save changes' : 'Register site')}</button>
         </footer>
+        <ModalProgressOverlay active={submitting} messages={editing ? ['Updating site details...', 'Saving your changes...', 'Almost there...'] : ['Creating this campus site...', 'Configuring location details...', 'Almost there...']} />
       </div>
-      <ModalProgressOverlay active={submitting} messages={editing ? ['Updating site details...', 'Saving your changes...', 'Almost there...'] : ['Creating this campus site...', 'Configuring location details...', 'Almost there...']} />
     </div>
   );
 }

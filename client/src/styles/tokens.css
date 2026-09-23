@@ -81,6 +81,9 @@
   --color-border-focus:     var(--blue-500);
   --color-border-selected:  var(--blue-300);
 
+  /* ── Semantic: Overlay ── */
+  --color-overlay-soft:     rgba(255, 255, 255, 0.92);
+
   /* ── Semantic: Action ── */
   --color-action-primary:        var(--blue-500);
   --color-action-primary-hover:  var(--blue-400);
@@ -200,6 +203,9 @@
   --color-border-strong:    rgba(255, 255, 255, 0.12);
   --color-border-focus:     var(--blue-400);
   --color-border-selected:  var(--blue-500);
+
+  /* ── Semantic: Overlay ── */
+  --color-overlay-soft:     rgba(23, 29, 36, 0.9);
 
   /* ── Semantic: Action ── */
   --color-action-primary:        var(--blue-500);

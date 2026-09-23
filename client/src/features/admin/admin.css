@@ -2795,8 +2795,6 @@
   gap: var(--space-3);
   padding: var(--space-10) var(--space-6);
   text-align: center;
-  background: var(--glass-bg);
-  border: 1px dashed var(--color-border-default);
   border-radius: var(--radius-lg);
   color: var(--color-text-tertiary);
 }
@@ -4834,7 +4832,7 @@
 .vendor-creating-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--color-overlay-soft);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -4852,7 +4850,7 @@
 .vendor-creating-spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid var(--color-border-subtle);
+  border: 3px solid var(--color-border-strong);
   border-top-color: var(--color-action-primary);
   border-radius: 50%;
   margin: 0 auto 20px;
@@ -4872,7 +4870,7 @@
 
 .vendor-creating-bar {
   height: 4px;
-  background: var(--color-border-subtle);
+  background: var(--color-border-strong);
   border-radius: 2px;
   overflow: hidden;
   margin-bottom: 12px;
