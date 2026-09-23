@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { listSites, listBuildings, listCollectionPoints } from '../../services/adminApi.js';
 import AdminDropdown from '../../components/ui/AdminDropdown.jsx';
 import { FileInput } from './AdminCafeteriaList.jsx';
+import ModalProgressOverlay from './ModalProgressOverlay.jsx';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -237,6 +238,7 @@ export function VendorProfileModal({ vendor, onClose, onSubmit, submitting = fal
           <button type="button" className="admin-action admin-action--approve" disabled={submitting} onClick={() => onSubmit(form)}>{submitting ? 'Saving…' : 'Save changes'}</button>
         </footer>
       </div>
+      <ModalProgressOverlay active={submitting} messages={['Updating vendor profile...', 'Saving your changes...', 'Almost there...']} />
     </div>
   );
 }
@@ -244,14 +246,14 @@ export function VendorProfileModal({ vendor, onClose, onSubmit, submitting = fal
 export function StaffModal({ onClose, onSubmit, submitting = false }) {
   const [form, setForm] = useState({ email: '', role: 'staff' });
   const roleOptions = [{ value: 'staff', label: 'Staff' }, { value: 'manager', label: 'Manager' }];
-  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card"><header className="admin-modal__head"><div><h3 className="admin-modal__title">Add vendor staff</h3><p className="admin-modal__sub">The user must already have a platform profile.</p></div></header><div className="admin-form-grid"><Field label="User email" full><input autoFocus className="admin-input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field><Field label="Vendor role" renderLabel={false}><AdminDropdown label="Vendor role" options={roleOptions} value={form.role} onChange={(val) => setForm({ ...form, role: val })} /></Field></div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.email.trim()} onClick={() => onSubmit(form)}>{submitting ? 'Adding…' : 'Add staff member'}</button></footer></div></div>;
+  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card"><header className="admin-modal__head"><div><h3 className="admin-modal__title">Add vendor staff</h3><p className="admin-modal__sub">The user must already have a platform profile.</p></div></header><div className="admin-form-grid"><Field label="User email" full><input autoFocus className="admin-input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field><Field label="Vendor role" renderLabel={false}><AdminDropdown label="Vendor role" options={roleOptions} value={form.role} onChange={(val) => setForm({ ...form, role: val })} /></Field></div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.email.trim()} onClick={() => onSubmit(form)}>{submitting ? 'Adding…' : 'Add staff member'}</button></footer></div><ModalProgressOverlay active={submitting} messages={['Adding staff member...', 'Updating vendor team...', 'Almost there...']} /></div>;
 }
 
 export function VendorLocationModal({ location, onClose, onSubmit, submitting = false }) {
   const [form, setForm] = useState({ site_id: location?.site_id || '', building_id: location?.building_id || '', collection_point_id: location?.collection_point_id || '', service_status: location?.service_status || 'closed', estimated_prep_minutes: String(location?.estimated_prep_minutes || 15), order_cutoff_minutes: String(location?.order_cutoff_minutes || 0), collection_instructions: location?.collection_instructions || '' });
   const [hours, setHours] = useState(location?.hours?.length ? location.hours : emptyHours);
   const editing = !!location;
-  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card vendor-wizard"><header className="admin-modal__head"><div><h3 className="admin-modal__title">{editing ? 'Edit operating location' : 'Add operating location'}</h3><p className="admin-modal__sub">{editing ? 'Update service settings and weekly hours.' : 'Connect this vendor to an active campus location.'}</p></div></header><LocationFields form={form} setForm={setForm} /><details className="vendor-hours-details" open={editing}><summary>Configure weekly hours</summary><HoursFields hours={hours} setHours={setHours} /></details><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.site_id || !form.building_id} onClick={() => onSubmit({ ...form, estimated_prep_minutes: Number(form.estimated_prep_minutes), order_cutoff_minutes: Number(form.order_cutoff_minutes), collection_point_id: form.collection_point_id || null, collection_instructions: form.collection_instructions.trim() || null, hours })}>{submitting ? 'Saving…' : editing ? 'Save location' : 'Add location'}</button></footer></div></div>;
+  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card vendor-wizard"><header className="admin-modal__head"><div><h3 className="admin-modal__title">{editing ? 'Edit operating location' : 'Add operating location'}</h3><p className="admin-modal__sub">{editing ? 'Update service settings and weekly hours.' : 'Connect this vendor to an active campus location.'}</p></div></header><LocationFields form={form} setForm={setForm} /><details className="vendor-hours-details" open={editing}><summary>Configure weekly hours</summary><HoursFields hours={hours} setHours={setHours} /></details><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.site_id || !form.building_id} onClick={() => onSubmit({ ...form, estimated_prep_minutes: Number(form.estimated_prep_minutes), order_cutoff_minutes: Number(form.order_cutoff_minutes), collection_point_id: form.collection_point_id || null, collection_instructions: form.collection_instructions.trim() || null, hours })}>{submitting ? 'Saving…' : editing ? 'Save location' : 'Add location'}</button></footer></div><ModalProgressOverlay active={submitting} messages={editing ? ['Updating operating location...', 'Saving your changes...', 'Almost there...'] : ['Connecting vendor to location...', 'Configuring operating hours...', 'Almost there...']} /></div>;
 }
 
 export { HoursFields };
@@ -336,6 +338,7 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
           <button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.name.trim() || !form.base_price} onClick={submit}>{submitting ? 'Saving…' : editing ? 'Save item' : 'Add item'}</button>
         </footer>
       </div>
+      <ModalProgressOverlay active={submitting} messages={editing ? ['Updating menu item...', 'Saving your changes...', 'Almost there...'] : ['Adding menu item...', 'Updating the menu...', 'Almost there...']} />
     </div>
   );
 }
@@ -367,6 +370,7 @@ export function CategoryModal({ category, onClose, onSubmit, submitting = false 
           <button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.name.trim()} onClick={submit}>{submitting ? 'Saving…' : editing ? 'Save category' : 'Add category'}</button>
         </footer>
       </div>
+      <ModalProgressOverlay active={submitting} messages={editing ? ['Updating category...', 'Saving your changes...', 'Almost there...'] : ['Adding category...', 'Updating the menu...', 'Almost there...']} />
     </div>
   );
 }

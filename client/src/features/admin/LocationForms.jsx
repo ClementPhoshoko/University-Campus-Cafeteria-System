@@ -3,10 +3,13 @@ import { useAuth } from '../../hooks/useAuth.js';
 import AddressAutocomplete from '../../components/ui/AddressAutocomplete.jsx';
 import AdminDropdown from '../../components/ui/AdminDropdown.jsx';
 import { IconBuilding, IconUpload } from '@tabler/icons-react';
+import ModalProgressOverlay from './ModalProgressOverlay.jsx';
 
 function Field({ label, children, full = false, renderLabel = true }) {
   return <label className={`admin-modal__field${full ? ' admin-modal__field--full' : ''}`}>{renderLabel && <span>{label}</span>}{children}</label>;
 }
+
+const roundCoord = (value) => (value === undefined || value === null || value === '' ? value : Number(Number(value).toFixed(6)));
 
 export function LocationModal({ title, initial = {}, fields, rows, onClose, onSubmit, submitting }) {
   const [form, setForm] = useState(initial);
@@ -27,8 +30,8 @@ export function LocationModal({ title, initial = {}, fields, rows, onClose, onSu
       postal_code: locationData.postal_code || prev.postal_code,
       country: locationData.country_code || prev.country,
       place_id: locationData.place_id || prev.place_id,
-      latitude: locationData.latitude ?? prev.latitude,
-      longitude: locationData.longitude ?? prev.longitude,
+      latitude: roundCoord(locationData.latitude),
+      longitude: roundCoord(locationData.longitude),
       timezone: locationData.timezone || prev.timezone,
     }));
   };
@@ -54,7 +57,7 @@ export function LocationModal({ title, initial = {}, fields, rows, onClose, onSu
     return <input className="admin-input" type={field.type || 'text'} step={field.type === 'number' ? 'any' : undefined} placeholder={field.placeholder || ''} value={form[field.key] ?? ''} onChange={(e) => update(field.key, e.target.value)} />;
   };
 
-  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card admin-modal__card--lg"><header className="admin-modal__head"><div><h3 className="admin-modal__title">{title}</h3><p className="admin-modal__sub">Update the location data stored by the platform.</p></div></header>{error && <div className="vendor-form-error">{error}</div>}<div className="admin-modal__body{(hasRightColumn ? '' : ' admin-modal__body--single')}"><div className="admin-modal__left">{(rows && rows.length ? rows.map((group) => { const rowFields = group.map((key) => leftFields.find((f) => f.key === key)).filter(Boolean); return rowFields.length === 1 ? <Field key={rowFields[0].key} label={rowFields[0].label} renderLabel={rowFields[0].type !== 'select'}>{renderField(rowFields[0])}</Field> : <div className="admin-modal__row" key={group.join('-')}>{rowFields.map((field) => <Field key={field.key} label={field.label} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>)}</div>; }) : leftFields.map((field) => <Field key={field.key} label={field.label} full={field.full} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>))}</div>{hasRightColumn && <div className="admin-modal__right">{fileFields.length > 0 ? fileFields.map((field) => <Field key={field.key} label={field.label} full><div className={`admin-modal__image-area admin-modal__image-area--sm${preview ? ' admin-modal__image-area--has-image' : ''}`}>{preview ? <img src={preview} alt="Cover preview" /> : <><IconUpload size={24} stroke={1.5} className="admin-modal__image-icon" /><span className="admin-modal__image-text">Click to upload cover image</span><span className="admin-modal__image-hint">JPEG, PNG or WebP</span></>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; update(field.key, file); setPreview(file ? URL.createObjectURL(file) : (initial.cover_image_url || '')); }} /></div></Field>) : rightFields.map((field) => <Field key={field.key} label={field.label} full={field.full} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>)}</div>}</div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Saving…' : 'Save changes'}</button></footer></div></div>;
+  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card admin-modal__card--lg"><header className="admin-modal__head"><div><h3 className="admin-modal__title">{title}</h3><p className="admin-modal__sub">Update the location data stored by the platform.</p></div></header>{error && <div className="vendor-form-error">{error}</div>}<div className="admin-modal__body{(hasRightColumn ? '' : ' admin-modal__body--single')}"><div className="admin-modal__left">{(rows && rows.length ? rows.map((group) => { const rowFields = group.map((key) => leftFields.find((f) => f.key === key)).filter(Boolean); return rowFields.length === 1 ? <Field key={rowFields[0].key} label={rowFields[0].label} renderLabel={rowFields[0].type !== 'select'}>{renderField(rowFields[0])}</Field> : <div className="admin-modal__row" key={group.join('-')}>{rowFields.map((field) => <Field key={field.key} label={field.label} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>)}</div>; }) : leftFields.map((field) => <Field key={field.key} label={field.label} full={field.full} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>))}</div>{hasRightColumn && <div className="admin-modal__right">{fileFields.length > 0 ? fileFields.map((field) => <Field key={field.key} label={field.label} full><div className={`admin-modal__image-area admin-modal__image-area--sm${preview ? ' admin-modal__image-area--has-image' : ''}`}>{preview ? <img src={preview} alt="Cover preview" /> : <><IconUpload size={24} stroke={1.5} className="admin-modal__image-icon" /><span className="admin-modal__image-text">Click to upload cover image</span><span className="admin-modal__image-hint">JPEG, PNG or WebP</span></>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; update(field.key, file); setPreview(file ? URL.createObjectURL(file) : (initial.cover_image_url || '')); }} /></div></Field>) : rightFields.map((field) => <Field key={field.key} label={field.label} full={field.full} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>)}</div>}</div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Saving…' : 'Save changes'}</button></footer></div><ModalProgressOverlay active={submitting} messages={['Saving your changes...', 'Updating platform records...', 'Almost there...']} /></div>;
 }
 
 export function BuildingModal({ initial = {}, onClose, onSubmit, submitting }) {
@@ -89,22 +92,31 @@ export function BuildingModal({ initial = {}, onClose, onSubmit, submitting }) {
       postal_code: locationData.postal_code || prev.postal_code,
       country: locationData.country_code || prev.country,
       place_id: locationData.place_id || prev.place_id,
-      latitude: locationData.latitude ?? prev.latitude,
-      longitude: locationData.longitude ?? prev.longitude,
+      latitude: roundCoord(locationData.latitude),
+      longitude: roundCoord(locationData.longitude),
     }));
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.name.trim()) return setError('Building name is required.');
-    onSubmit({ ...form, name: form.name.trim() });
+    setError('');
+    try {
+      await onSubmit({
+        ...form,
+        name: form.name.trim(),
+        latitude: form.latitude === '' ? undefined : roundCoord(Number(form.latitude)),
+        longitude: form.longitude === '' ? undefined : roundCoord(Number(form.longitude)),
+      });
+      onClose();
+    } catch (err) {
+      setError(err?.message || 'Could not save the building.');
+    }
   };
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
-
-  const coverField = buildingFields.find((f) => f.type === 'file');
 
   return <div className="admin-modal" role="dialog" aria-modal="true">
     <div className="admin-modal__overlay" onClick={onClose} />
@@ -151,6 +163,7 @@ export function BuildingModal({ initial = {}, onClose, onSubmit, submitting }) {
         <button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Saving…' : 'Save changes'}</button>
       </footer>
     </div>
+    <ModalProgressOverlay active={submitting} messages={editing ? ['Updating building details...', 'Saving your changes...', 'Almost there...'] : ['Creating this building...', 'Configuring location details...', 'Almost there...']} />
   </div>;
 }
 

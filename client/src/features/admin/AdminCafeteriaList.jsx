@@ -20,6 +20,7 @@ import { uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import SkeletonCard from '../../components/ui/SkeletonCard.jsx';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
+import ModalProgressOverlay from './ModalProgressOverlay.jsx';
 
 const VIEW_TABS = [
   { id: 'sites', label: 'Sites' },
@@ -133,6 +134,8 @@ function Field({ label, children, full = false }) {
   );
 }
 
+const roundCoord = (value) => (value === undefined || value === null || value === '' ? value : Number(Number(value).toFixed(6)));
+
 export function FileInput({ value, onChange, accept = 'image/jpeg,image/png,image/webp' }) {
   const [fileName, setFileName] = useState('');
   const inputRef = useRef(null);
@@ -209,8 +212,8 @@ export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
       postal_code: locationData.postal_code || prev.postal_code,
       country: locationData.country_code || prev.country,
       place_id: locationData.place_id || prev.place_id,
-      latitude: locationData.latitude ?? prev.latitude,
-      longitude: locationData.longitude ?? prev.longitude,
+      latitude: roundCoord(locationData.latitude),
+      longitude: roundCoord(locationData.longitude),
       timezone: locationData.timezone || prev.timezone,
     }));
   };
@@ -229,8 +232,8 @@ export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
         postal_code: form.postal_code.trim() || null,
         country: form.country.trim() || null,
         place_id: form.place_id.trim() || null,
-        latitude: form.latitude === '' ? undefined : Number(form.latitude),
-        longitude: form.longitude === '' ? undefined : Number(form.longitude),
+        latitude: form.latitude === '' ? undefined : roundCoord(Number(form.latitude)),
+        longitude: form.longitude === '' ? undefined : roundCoord(Number(form.longitude)),
       });
       onClose();
     } catch (err) {
@@ -310,6 +313,7 @@ export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
           <button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? (editing ? 'Saving…' : 'Registering…') : (editing ? 'Save changes' : 'Register site')}</button>
         </footer>
       </div>
+      <ModalProgressOverlay active={submitting} messages={editing ? ['Updating site details...', 'Saving your changes...', 'Almost there...'] : ['Creating this campus site...', 'Configuring location details...', 'Almost there...']} />
     </div>
   );
 }
