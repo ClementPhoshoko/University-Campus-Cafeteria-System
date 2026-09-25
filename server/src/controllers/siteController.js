@@ -1,4 +1,4 @@
-import { supabaseAdmin, getPublicAssetUrl } from '../config/supabase.js';
+﻿import { supabaseAdmin, getPublicAssetUrl } from '../config/supabase.js';
 import { parsePagination, buildPagination } from '../utils/pagination.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { writeAudit } from '../utils/audit.js';
@@ -103,7 +103,7 @@ async function vendorIdsPerSite(siteIds) {
   return map;
 }
 
-/** Aggregated counts for a set of site ids (plan §4.1a). */
+/** Aggregated counts for a set of site ids (plan Â§4.1a). */
 async function getSiteCounts(siteIds) {
   const [buildings, collectionPoints, vendors] = await Promise.all([
     childCounts('sites', 'buildings', siteIds),
@@ -154,7 +154,7 @@ function normalizeListFilters(req, { sortDefaults, sortAllowed, extraParams = {}
 }
 
 // ---------------------------------------------------------------------------
-// Admin — sites
+// Admin â€” sites
 // ---------------------------------------------------------------------------
 
 export async function listSites(req, res) {
@@ -178,7 +178,7 @@ export async function listSites(req, res) {
     const counts = await getSiteCounts(sites.map((site) => site.id));
     const items = await Promise.all(sites.map(async (site) => ({
       ...site,
-      cover_image_url: await resolveAssetUrl(site.cover_image_url),
+      cover_image_url: await resolveAssetUrl(site.cover_image_url, { size: 'card' }),
       building_count: counts.buildings.get(site.id) || 0,
       collection_point_count: counts.collectionPoints.get(site.id) || 0,
       vendor_count: counts.vendors.get(site.id)?.size || 0,
@@ -206,7 +206,7 @@ export async function getSite(req, res) {
       success: true,
       site: {
         ...site,
-        cover_image_url: await resolveAssetUrl(site.cover_image_url),
+        cover_image_url: await resolveAssetUrl(site.cover_image_url, { size: 'hero' }),
         building_count: counts.buildings.get(siteId) || 0,
         collection_point_count: counts.collectionPoints.get(siteId) || 0,
         vendor_count: counts.vendors.get(siteId)?.size || 0,
@@ -254,7 +254,7 @@ export async function updateSite(req, res) {
 }
 
 // ---------------------------------------------------------------------------
-// Admin — buildings
+// Admin â€” buildings
 // ---------------------------------------------------------------------------
 
 export async function listBuildings(req, res) {
@@ -285,7 +285,7 @@ export async function listBuildings(req, res) {
 
     const items = await Promise.all(buildings.map(async (b) => ({
       ...b,
-      cover_image_url: await resolveAssetUrl(b.cover_image_url),
+      cover_image_url: await resolveAssetUrl(b.cover_image_url, { size: 'thumb' }),
       floor_count: floorCounts.get(b.id) || 0,
       collection_point_count: cpCounts.get(b.id) || 0,
     })));
@@ -333,7 +333,7 @@ export async function listAllBuildings(req, res) {
       ...b,
       site_name: b.sites?.name || null,
       sites: undefined,
-      cover_image_url: await resolveAssetUrl(b.cover_image_url),
+      cover_image_url: await resolveAssetUrl(b.cover_image_url, { size: 'thumb' }),
       floor_count: floorCounts.get(b.id) || 0,
       collection_point_count: cpCounts.get(b.id) || 0,
     })));
@@ -398,7 +398,7 @@ export async function getBuilding(req, res) {
       success: true,
       building: {
         ...building,
-        cover_image_url: await resolveAssetUrl(building.cover_image_url),
+        cover_image_url: await resolveAssetUrl(building.cover_image_url, { size: 'hero' }),
         floor_count: floorCounts.get(buildingId) || 0,
         collection_point_count: cpCounts.get(buildingId) || 0,
       },
@@ -449,7 +449,7 @@ export async function updateBuilding(req, res) {
 }
 
 // ---------------------------------------------------------------------------
-// Admin — floors
+// Admin â€” floors
 // ---------------------------------------------------------------------------
 
 export async function listFloors(req, res) {
@@ -525,7 +525,7 @@ export async function updateFloor(req, res) {
 }
 
 // ---------------------------------------------------------------------------
-// Admin — collection points
+// Admin â€” collection points
 // ---------------------------------------------------------------------------
 
 const POINT_SELECT = '*, floors(name, level_number)';
@@ -639,7 +639,7 @@ export async function updateCollectionPoint(req, res) {
 }
 
 // ---------------------------------------------------------------------------
-// Admin — delivery locations
+// Admin â€” delivery locations
 // ---------------------------------------------------------------------------
 
 const DELIVERY_SELECT = '*, floors(name, level_number)';
@@ -736,7 +736,7 @@ export async function updateDeliveryLocation(req, res) {
 }
 
 // ---------------------------------------------------------------------------
-// Public (employee-facing) reads — active records only
+// Public (employee-facing) reads â€” active records only
 // ---------------------------------------------------------------------------
 
 export async function listPublicSites(req, res) {
@@ -756,7 +756,7 @@ export async function listPublicSites(req, res) {
 
     const sites = await Promise.all((data || []).map(async (site) => ({
       ...site,
-      cover_image_url: await resolveAssetUrl(site.cover_image_url),
+      cover_image_url: await resolveAssetUrl(site.cover_image_url, { size: 'card' }),
     })));
 
     return respond(req, res, {
@@ -816,7 +816,7 @@ export async function listPublicBuildings(req, res) {
 
     const buildings = await Promise.all((data || []).map(async (b) => ({
       ...b,
-      cover_image_url: await resolveAssetUrl(b.cover_image_url),
+      cover_image_url: await resolveAssetUrl(b.cover_image_url, { size: 'thumb' }),
     })));
 
     return respond(req, res, {

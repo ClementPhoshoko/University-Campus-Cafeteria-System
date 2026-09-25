@@ -1,6 +1,7 @@
 import { IconCheck, IconPlus } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 import './FoodCard.css';
+import SmartImage from '../ui/SmartImage.jsx';
 
 export default function FoodCard({
   id,
@@ -25,7 +26,7 @@ export default function FoodCard({
       <>
         <div className="food_browse-image-wrap">
           {bestSeller && <span className="home_best-seller">Best Seller</span>}
-          <img src={image} alt={name} className="food_browse-image" loading="lazy" />
+          <SmartImage src={image} alt={name} className="food_browse-image" width={132} height={132} />
         </div>
         <div className="food_browse-content">
           <div className="food_browse-heading">
@@ -82,7 +83,7 @@ export default function FoodCard({
     <div className="home_vendor-card home_meal-card">
       {bestSeller && <span className="home_best-seller">Best Seller</span>}
       <div className="home_vendor-media">
-        <img src={image} alt={name} loading="lazy" />
+        <SmartImage src={image} alt={name} width={220} height={280} />
       </div>
 
       <div className="home_vendor-body">

@@ -16,6 +16,7 @@ import Pagination from '../../components/ui/Pagination.jsx';
 import AddressAutocomplete from '../../components/ui/AddressAutocomplete.jsx';
 import AdminDropdown from '../../components/ui/AdminDropdown.jsx';
 import { useAdminLocations } from '../../hooks/useAdminLocations.js';
+import SmartImage from '../../components/ui/SmartImage.jsx';
 import { uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import SkeletonCard from '../../components/ui/SkeletonCard.jsx';
@@ -41,7 +42,7 @@ function SiteCard({ site }) {
     <Link to={`/admin/cafeterias/${site.id}`} className="admin-site-card">
       <div className="admin-site-card__hero">
         {site.cover_image_url ? (
-          <img src={site.cover_image_url} alt={site.name} className="admin-site-card__image" loading="lazy" />
+          <SmartImage src={site.cover_image_url} alt={site.name} className="admin-site-card__image" width={320} height={160} />
         ) : (
           <div className="admin-site-card__placeholder">
             <IconBuildingStore size={40} stroke={1.2} />
@@ -101,7 +102,7 @@ function SiteCard({ site }) {
 function BuildingCard({ building }) {
   return (
     <Link to={`/admin/cafeterias/${building.id}`} className="admin-building-card">
-      <div className="admin-building-card__media">{building.cover_image_url ? <img src={building.cover_image_url} alt={building.name} loading="lazy" /> : <div className="admin-building-card__placeholder"><IconBuilding size={22} stroke={1.4} /></div>}</div>
+      <div className="admin-building-card__media">{building.cover_image_url ? <SmartImage src={building.cover_image_url} alt={building.name} width={160} height={160} /> : <div className="admin-building-card__placeholder"><IconBuilding size={22} stroke={1.4} /></div>}</div>
       <div className="admin-building-card__body">
         <div className="admin-building-card__head"><span className="admin-building-card__code">{building.code || 'BUILDING'}</span><StatusPill active={building.is_active} /></div>
         <h4 className="admin-building-card__name">{building.name}</h4>

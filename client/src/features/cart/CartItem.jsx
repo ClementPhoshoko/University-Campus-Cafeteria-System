@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { IconX, IconCheck, IconLeaf, IconFlame } from '@tabler/icons-react';
 import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
+import SmartImage from '../../components/ui/SmartImage.jsx';
 import './CartItem.css';
 
 export default function CartItem({ item, onUpdateQuantity, onRemove, to }) {
@@ -18,8 +19,8 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, to }) {
   return (
     <div className="cart-item">
       <Link to={to} className="cart-item__image">
-        {menuItem.image ? (
-          <img src={menuItem.image} alt={menuItem.name} />
+        {menuItem.image_url ? (
+          <SmartImage src={menuItem.image_url} alt={menuItem.name} width={100} height={100} />
         ) : (
           <div className="cart-item__image-placeholder">
             <IconLeaf size={20} stroke={1.2} />

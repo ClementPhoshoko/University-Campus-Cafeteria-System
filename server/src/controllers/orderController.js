@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { supabaseAdmin } from '../config/supabase.js';
+import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { respond, CACHE } from '../utils/http.js';
 import { parsePagination, buildPagination } from '../utils/pagination.js';
@@ -236,10 +237,11 @@ export async function listMyOrders(req, res) {
     const { data, error, count } = await query;
     if (error) throw error;
 
-    const orders = (data || []).map((o) => {
+    const orders = await Promise.all((data || []).map(async (o) => {
       const { vendors, ...rest } = o;
-      return { ...rest, vendorName: vendors?.name || null, vendorLogo: vendors?.logo_url || null };
-    });
+      const logo = vendors?.logo_url || null;
+      return { ...rest, vendorName: vendors?.name || null, vendorLogo: logo ? await resolveAssetUrl(logo, { size: 'icon' }) : null };
+    }));
 
     return respond(req, res, {
       success: true,
@@ -284,15 +286,19 @@ export async function getMyOrder(req, res) {
     if (hError) throw hError;
 
     const { vendors, ...orderRest } = order;
+    const vendor = vendors
+      ? { ...vendors, logo_url: await resolveAssetUrl(vendors.logo_url, { size: 'icon' }) }
+      : null;
     return respond(req, res, {
       success: true,
       order: {
         ...orderRest,
-        vendor: vendors,
-        items: (items || []).map((i) => {
+        vendor,
+        items: await Promise.all((items || []).map(async (i) => {
           const { menu_items, ...itemRest } = i;
-          return { ...itemRest, image_url: menu_items?.image_url || null };
-        }),
+          const image = menu_items?.image_url || null;
+          return { ...itemRest, image_url: image ? await resolveAssetUrl(image, { size: 'thumb' }) : null };
+        })),
         statusHistory: history || [],
       },
     }, { cacheControl: CACHE.employeeRead });

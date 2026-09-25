@@ -8,6 +8,7 @@ import ReviewStats from '../../components/reviews/ReviewStats.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import BrowseCafeteriaBackground from '../../components/BrowseCafeteriaBackground.jsx';
+import SmartImage from '../../components/ui/SmartImage.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { listVendorMenu, getVendor, addToCart } from '../../services/employeeApi.js';
 import { reviews } from '../home/homeData.js';
@@ -304,7 +305,7 @@ export default function BrowseCafeteriaPage() {
 
         <header className="browse_cafeteria-header">
           <div className="browse_cafeteria-header-image">
-            <img src={cafeteria.image} alt="" />
+            <SmartImage src={cafeteria.image} alt={cafeteria.name} eager width={220} height={180} />
           </div>
           <div className="browse_cafeteria-header-content">
             <div className="browse_cafeteria-heading-line">

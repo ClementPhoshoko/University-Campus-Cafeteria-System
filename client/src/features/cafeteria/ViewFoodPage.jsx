@@ -7,6 +7,7 @@ import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import ViewFoodBackground from '../../components/ViewFoodBackground.jsx';
+import SmartImage from '../../components/ui/SmartImage.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { getMenuItem, getVendor, addToCart } from '../../services/employeeApi.js';
 import './ViewFoodPage.css';
@@ -141,7 +142,7 @@ export default function ViewFoodPage() {
         <div className="view-food__content">
           <div className="view-food__main">
             <div className="view-food__image-wrap">
-              <img src={menuItem.image_url} alt={menuItem.name} className="view-food__image" />
+              <SmartImage src={menuItem.image_url} alt={menuItem.name} className="view-food__image" eager width={640} height={480} />
               {menuItem.status !== 'available' && (
                 <div className="view-food__status-badge">
                   {menuItem.status === 'sold_out' ? 'Sold Out' : 'Unavailable'}

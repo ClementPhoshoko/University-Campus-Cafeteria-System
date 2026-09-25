@@ -17,12 +17,13 @@ import { createVendor, listVendorApprovals, listVendors, updateVendorApproval, u
 import { useAuth } from '../../hooks/useAuth.js';
 import { useDebounce } from '../../hooks/useDebounce.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
+import SmartImage from '../../components/ui/SmartImage.jsx';
 import { AddVendorModal } from './VendorForms.jsx';
 
 function VendorLogo({ src, alt }) {
   return (
     <div className="admin-vendors__vendor-logo">
-      <img src={src} alt={alt || ''} loading="lazy" />
+      <SmartImage src={src} alt={alt || ''} width={44} height={44} />
     </div>
   );
 }

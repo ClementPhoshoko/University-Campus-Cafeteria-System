@@ -72,7 +72,7 @@ async function pickPublicVendor(vendor) {
   const fields = VENDOR_PUBLIC_FIELDS.split(', ').filter((f) => !f.includes(':'));
   const out = {};
   for (const f of fields) out[f] = vendor[f];
-  out.logo_url = await resolveAssetUrl(vendor.logo_url);
+  out.logo_url = await resolveAssetUrl(vendor.logo_url, { size: 'icon' });
   return out;
 }
 
@@ -292,7 +292,7 @@ export async function listVendors(req, res) {
 
     const items = await Promise.all((data || []).map(async (vendor) => ({
       ...vendor,
-      logo_url: await resolveAssetUrl(vendor.logo_url),
+      logo_url: await resolveAssetUrl(vendor.logo_url, { size: 'icon' }),
       location_count: countMap ? (countMap.get(vendor.id) || 0) : embedCount(vendor, 'vendor_locations'),
       vendor_locations: undefined,
     })));
@@ -334,7 +334,7 @@ export async function listApprovals(req, res) {
       }));
       return {
         ...vendor,
-        logo_url: await resolveAssetUrl(vendor.logo_url),
+        logo_url: await resolveAssetUrl(vendor.logo_url, { size: 'icon' }),
         location_count: locations.length,
         location: locations[0] || null,
         vendor_locations: undefined,
@@ -369,7 +369,7 @@ export async function getVendor(req, res) {
       success: true,
       vendor: {
         ...vendor,
-        logo_url: await resolveAssetUrl(vendor.logo_url),
+        logo_url: await resolveAssetUrl(vendor.logo_url, { size: 'hero' }),
         locations: (locationsData.data || []).map(transformLocation),
         staff,
         activity,
@@ -820,7 +820,7 @@ export async function listMenuItems(req, res) {
     if (search) query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
     const { data, error, count } = await query;
     if (error) throw error;
-    const items = await Promise.all((data || []).map(async (item) => ({ ...item, image_url: await resolveAssetUrl(item.image_url) })));
+    const items = await Promise.all((data || []).map(async (item) => ({ ...item, image_url: await resolveAssetUrl(item.image_url, { size: 'thumb' }) })));
     return respond(req, res, { success: true, menuItems: items, pagination: buildPagination(count, pageNum, limitNum) }, { cacheControl: CACHE.adminConfig });
   } catch (err) { return handleControllerError(res, err); }
 }
@@ -966,7 +966,7 @@ export async function getPublicVendor(req, res) {
 
     return respond(req, res, {
       success: true,
-      vendor: { ...vendor, logo_url: await resolveAssetUrl(vendor.logo_url), locations: activeLocations },
+      vendor: { ...vendor, logo_url: await resolveAssetUrl(vendor.logo_url, { size: 'card' }), locations: activeLocations },
     }, { cacheControl: CACHE.publicRef });
   } catch (err) {
     return handleControllerError(res, err);

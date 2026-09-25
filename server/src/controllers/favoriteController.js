@@ -117,13 +117,19 @@ export async function listFavoriteMenuItems(req, res) {
       .order('created_at', { ascending: false });
     if (error) throw error;
 
-    const favorites = (data || []).map((f) => ({
-      menuItem: f.menu_items ? {
-        ...f.menu_items,
-        vendor: f.menu_items.vendors,
-      } : null,
-      favoritedAt: f.created_at,
-    })).filter((f) => f.menuItem);
+    const favorites = await Promise.all((data || []).map(async (f) => {
+      const { vendors, ...rest } = f.menu_items || {};
+      return {
+        menuItem: f.menu_items ? {
+          ...rest,
+          image_url: await resolveAssetUrl(f.menu_items.image_url, { size: 'thumb' }),
+          vendor: vendors
+            ? { ...vendors, logo_url: await resolveAssetUrl(vendors.logo_url, { size: 'icon' }) }
+            : null,
+        } : null,
+        favoritedAt: f.created_at,
+      };
+    })).then((rows) => rows.filter((f) => f.menuItem));
 
     return respond(req, res, { success: true, favorites }, { cacheControl: CACHE.employeeRead });
   } catch (err) {

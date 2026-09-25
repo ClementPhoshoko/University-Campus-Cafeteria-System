@@ -27,6 +27,7 @@ import { addVendorUser, adminRequest, createVendorLocation, listMenuItems, listV
 import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
 import { StaffModal, VendorLocationModal, VendorProfileModal, MenuItemModal, CategoryModal } from './VendorForms.jsx';
+import SmartImage from '../../components/ui/SmartImage.jsx';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const ITEM_NAME_MAX = 21;
@@ -481,7 +482,7 @@ export default function AdminVendorDetail() {
       <header className="vd-hero">
         <div className="vd-hero__cover">
           {vendor.logo_url ? (
-            <img src={vendor.logo_url} alt={vendor.name} />
+            <SmartImage src={vendor.logo_url} alt={vendor.name} eager width={240} height={240} />
           ) : (
             <div className="vd-hero__placeholder"><IconBuildingStore size={44} stroke={1.2} /></div>
           )}

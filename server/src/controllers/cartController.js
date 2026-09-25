@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../config/supabase.js';
+import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { respond, CACHE } from '../utils/http.js';
 import { isUuid } from '../validators/vendorValidators.js';
@@ -47,7 +48,7 @@ async function getCartItems(cartId) {
     .eq('cart_id', cartId)
     .order('created_at');
   if (error) throw error;
-  return (data || []).map((item) => {
+  return Promise.all((data || []).map(async (item) => {
     const { menu_items, cart_item_options, ...rest } = item;
     return {
       ...rest,
@@ -55,7 +56,7 @@ async function getCartItems(cartId) {
         id: menu_items.id,
         name: menu_items.name,
         description: menu_items.description,
-        image_url: menu_items.image_url,
+        image_url: await resolveAssetUrl(menu_items.image_url, { size: 'thumb' }),
         base_price: menu_items.base_price,
         status: menu_items.status,
         prep_minutes: menu_items.prep_minutes,
@@ -68,7 +69,7 @@ async function getCartItems(cartId) {
         quantity: opt.quantity,
       })),
     };
-  });
+  }));
 }
 
 async function getCollectionSlots(vendorLocationId) {
@@ -155,7 +156,9 @@ export async function getCart(req, res) {
       success: true,
       cart: {
         id: cart.id,
-        vendor: cart.vendors,
+        vendor: cart.vendors
+          ? { ...cart.vendors, logo_url: await resolveAssetUrl(cart.vendors.logo_url, { size: 'icon' }) }
+          : null,
         vendorLocationId: cart.vendor_location_id,
         expiresAt: cart.expires_at,
         items,

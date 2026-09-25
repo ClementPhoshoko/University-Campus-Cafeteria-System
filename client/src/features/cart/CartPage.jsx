@@ -8,6 +8,7 @@ import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import CartBackground from '../../components/CartBackground.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import OrderConfirmation from '../../components/orders/OrderConfirmation.jsx';
+import SmartImage from '../../components/ui/SmartImage.jsx';
 import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.png';
 import { useAuth } from '../../hooks/useAuth.js';
 import { getCart, updateCartItem, removeCartItem, createOrder } from '../../services/employeeApi.js';
@@ -163,7 +164,7 @@ export default function CartPage() {
               <div className="cart__vendor">
                 {vendorImage && (
                   <div className="cart__vendor-image">
-                    <img src={vendorImage} alt={vendorName} />
+                    <SmartImage src={vendorImage} alt={vendorName} width={56} height={56} />
                   </div>
                 )}
                 <div className="cart__vendor-details">

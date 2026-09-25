@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import OrderStatusBadge from './OrderStatusBadge.jsx';
+import SmartImage from '../ui/SmartImage.jsx';
 import {
   getVendorById,
   getItemsForOrder,
@@ -13,15 +14,17 @@ export default function OrderCard({ order }) {
   const itemNames = items.map((item) => `${item.quantity}× ${item.item_name_snapshot}`);
   const displayItems = itemNames.slice(0, 2).join(', ');
   const remaining = itemNames.length - 2;
+  const logo = order.vendorLogo || vendor?.image || null;
+  const vendorName = order.vendorName || vendor?.name || 'Unknown vendor';
 
   return (
     <Link to={`/orders/${order.id}`} className="order-card">
       <div className="order-card__image">
-        <img src={vendor?.image} alt="" loading="lazy" />
+        <SmartImage src={logo} alt="" width={72} height={72} />
       </div>
       <div className="order-card__body">
         <div className="order-card__header">
-          <h3 className="order-card__vendor">{vendor?.name || 'Unknown vendor'}</h3>
+          <h3 className="order-card__vendor">{vendorName}</h3>
         </div>
         <div className="order-card__meta">
           <span>#{order.order_number}</span>

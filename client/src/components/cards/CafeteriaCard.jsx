@@ -7,6 +7,7 @@ import {
   IconCoffee,
 } from '@tabler/icons-react';
 import './CafeteriaCard.css';
+import SmartImage from '../ui/SmartImage.jsx';
 
 const STATUS_LABELS = {
   open: 'Open',
@@ -43,7 +44,7 @@ export default function CafeteriaCard({
       className={`home_vendor-card${status === 'closed' ? ' home_closed' : ''}${variant === 'directory' ? ' home_vendor-card--directory' : ''}`}
     >
       <div className="home_vendor-media">
-        <img src={image} alt={name} loading="lazy" />
+        <SmartImage src={image} alt={name} width={248} height={320} />
         <span className={`home_vendor-status-pill ${status}`}>
           {STATUS_LABELS[status]}
         </span>
