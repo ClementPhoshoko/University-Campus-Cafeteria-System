@@ -51,7 +51,11 @@ export function useAdminVendors({
   const { session, initialized } = useAuth();
   const token = session?.access_token;
   const mountedRef = useRef(false);
-  const requestIdRef = useRef(0);
+  const requestIdsRef = useRef({});
+  const nextRequestId = useCallback((key) => {
+    requestIdsRef.current[key] = (requestIdsRef.current[key] || 0) + 1;
+    return requestIdsRef.current[key];
+  }, []);
 
   const [vendors, setVendors] = useState([]);
   const [vendorPagination, setVendorPagination] = useState(EMPTY_PAGINATION);
@@ -99,7 +103,7 @@ export function useAdminVendors({
   }, [token]);
 
   const fetchVendors = useCallback(async (params = vendorParams, options = {}) => {
-    const requestId = ++requestIdRef.current;
+    const requestId = nextRequestId('vendors');
     const controller = new AbortController();
     const cacheKey = makeCacheKey('/admin/vendors', params);
 
@@ -113,7 +117,7 @@ export function useAdminVendors({
       const doRefresh = async () => {
         try {
           const fresh = await listVendors(requireToken(), params, { ...options, signal: controller.signal });
-          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          if (requestId !== requestIdsRef.current.vendors || !mountedRef.current) return;
           setVendors(fresh?.vendors || []);
           setVendorPagination(fresh?.pagination || EMPTY_PAGINATION);
           setCache(cacheKey, fresh, 120_000);
@@ -127,7 +131,7 @@ export function useAdminVendors({
     setErrorKey('vendors', null);
     try {
       const payload = await listVendors(requireToken(), params, options);
-      if (!mountedRef.current || requestId !== requestIdRef.current) return payload;
+      if (!mountedRef.current || requestId !== requestIdsRef.current.vendors) return payload;
       setVendors(payload?.vendors || []);
       setVendorPagination(payload?.pagination || EMPTY_PAGINATION);
       setCache(cacheKey, payload, 120_000);
@@ -141,7 +145,7 @@ export function useAdminVendors({
   }, [requireToken, setErrorKey, setLoadingKey, vendorParams]);
 
   const fetchApprovals = useCallback(async (params = approvalParams, options = {}) => {
-    const requestId = ++requestIdRef.current;
+    const requestId = nextRequestId('approvals');
     const controller = new AbortController();
     const cacheKey = makeCacheKey('/admin/vendors/approvals', params);
 
@@ -155,7 +159,7 @@ export function useAdminVendors({
       const doRefresh = async () => {
         try {
           const fresh = await listVendorApprovals(requireToken(), params, { ...options, signal: controller.signal });
-          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          if (requestId !== requestIdsRef.current.approvals || !mountedRef.current) return;
           setApprovals(fresh?.approvals || []);
           setApprovalPagination(fresh?.pagination || EMPTY_PAGINATION);
           setCache(cacheKey, fresh, 60_000);
@@ -169,7 +173,7 @@ export function useAdminVendors({
     setErrorKey('approvals', null);
     try {
       const payload = await listVendorApprovals(requireToken(), params, options);
-      if (!mountedRef.current || requestId !== requestIdRef.current) return payload;
+      if (!mountedRef.current || requestId !== requestIdsRef.current.approvals) return payload;
       setApprovals(payload?.approvals || []);
       setApprovalPagination(payload?.pagination || EMPTY_PAGINATION);
       setCache(cacheKey, payload, 60_000);
@@ -183,7 +187,7 @@ export function useAdminVendors({
   }, [approvalParams, requireToken, setErrorKey, setLoadingKey]);
 
   const fetchVendor = useCallback(async (vendorId, options = {}) => {
-    const requestId = ++requestIdRef.current;
+    const requestId = nextRequestId('detail');
     const controller = new AbortController();
     const cacheKey = makeCacheKey(`/admin/vendors/${vendorId}`, {});
 
@@ -197,7 +201,7 @@ export function useAdminVendors({
       const doRefresh = async () => {
         try {
           const fresh = await getVendor(requireToken(), vendorId, { ...options, signal: controller.signal });
-          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          if (requestId !== requestIdsRef.current.detail || !mountedRef.current) return;
           if (fresh?.vendor) {
             setVendorDetails((prev) => ({ ...prev, [vendorId]: fresh.vendor }));
             setCache(cacheKey, fresh, 120_000);
@@ -212,7 +216,7 @@ export function useAdminVendors({
     setErrorKey('detail', null);
     try {
       const payload = await getVendor(requireToken(), vendorId, options);
-      if (!mountedRef.current || requestId !== requestIdRef.current) return payload;
+      if (!mountedRef.current || requestId !== requestIdsRef.current.detail) return payload;
       if (payload?.vendor) {
         setVendorDetails((prev) => ({ ...prev, [vendorId]: payload.vendor }));
         setCache(cacheKey, payload, 120_000);

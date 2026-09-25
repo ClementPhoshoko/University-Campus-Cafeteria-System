@@ -4580,10 +4580,19 @@
 }
 
 .admin-user-hero__slug {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 0.72rem;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-tertiary);
   font-family: monospace;
+}
+
+.admin-user-hero__slug svg,
+.admin-user-hero__email svg {
+  flex-shrink: 0;
+  opacity: 0.75;
 }
 
 .admin-user-hero__name {
@@ -4595,6 +4604,9 @@
 }
 
 .admin-user-hero__email {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 0.85rem;
   color: var(--color-text-secondary);
 }

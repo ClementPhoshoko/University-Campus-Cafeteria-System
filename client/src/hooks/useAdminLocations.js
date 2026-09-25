@@ -54,7 +54,11 @@ export function useAdminLocations({
   const { session, initialized } = useAuth();
   const token = session?.access_token;
   const mountedRef = useRef(false);
-  const requestIdRef = useRef(0);
+  const requestIdsRef = useRef({});
+  const nextRequestId = useCallback((key) => {
+    requestIdsRef.current[key] = (requestIdsRef.current[key] || 0) + 1;
+    return requestIdsRef.current[key];
+  }, []);
 
   const [sites, setSites] = useState([]);
   const [sitePagination, setSitePagination] = useState(EMPTY_PAGINATION);
@@ -111,7 +115,7 @@ export function useAdminLocations({
   }, [token]);
 
   const fetchSites = useCallback(async (params = siteParams, options = {}) => {
-    const requestId = ++requestIdRef.current;
+    const requestId = nextRequestId('sites');
     const controller = new AbortController();
     const cacheKey = makeCacheKey('/admin/sites', params);
 
@@ -125,7 +129,7 @@ export function useAdminLocations({
       const doRefresh = async () => {
         try {
           const fresh = await listSites(requireToken(), params, { ...options, signal: controller.signal });
-          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          if (requestId !== requestIdsRef.current.sites || !mountedRef.current) return;
           setSites(fresh?.sites || []);
           setSitePagination(fresh?.pagination || EMPTY_PAGINATION);
           setCache(cacheKey, fresh, 300_000);
@@ -139,22 +143,22 @@ export function useAdminLocations({
     setErrorKey('sites', null);
     try {
       const payload = await listSites(requireToken(), params, { ...options, signal: controller.signal });
-      if (!mountedRef.current || requestId !== requestIdRef.current) return payload;
+      if (!mountedRef.current || requestId !== requestIdsRef.current.sites) return payload;
       setSites(payload?.sites || []);
       setSitePagination(payload?.pagination || EMPTY_PAGINATION);
       setCache(cacheKey, payload, 300_000);
       return payload;
     } catch (error) {
       if (error?.name === 'AbortError') return undefined;
-      if (requestId === requestIdRef.current) setErrorKey('sites', getMessage(error));
+      if (requestId === requestIdsRef.current.sites) setErrorKey('sites', getMessage(error));
       throw error;
     } finally {
-      if (requestId === requestIdRef.current) setLoadingKey('sites', false);
+      if (requestId === requestIdsRef.current.sites) setLoadingKey('sites', false);
     }
   }, [requireToken, setErrorKey, setLoadingKey, siteParams]);
 
   const fetchBuildings = useCallback(async (siteId, params = DEFAULT_LIST_PARAMS, options = {}) => {
-    const requestId = ++requestIdRef.current;
+    const requestId = nextRequestId('buildings');
     const controller = new AbortController();
     const cacheKey = makeCacheKey(`/admin/sites/${siteId}/buildings`, params);
 
@@ -167,7 +171,7 @@ export function useAdminLocations({
       const doRefresh = async () => {
         try {
           const fresh = await listBuildings(requireToken(), siteId, params, { ...options, signal: controller.signal });
-          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          if (requestId !== requestIdsRef.current.buildings || !mountedRef.current) return;
           setBuildingsBySite((prev) => ({ ...prev, [siteId]: fresh?.buildings || [] }));
           setBuildingPaginationBySite((prev) => ({ ...prev, [siteId]: fresh?.pagination || EMPTY_PAGINATION }));
           setCache(cacheKey, fresh, 300_000);
@@ -181,7 +185,7 @@ export function useAdminLocations({
     setErrorKey('buildings', null);
     try {
       const payload = await listBuildings(requireToken(), siteId, params, options);
-      if (!mountedRef.current || requestId !== requestIdRef.current) return payload;
+      if (!mountedRef.current || requestId !== requestIdsRef.current.buildings) return payload;
       setBuildingsBySite((prev) => ({ ...prev, [siteId]: payload?.buildings || [] }));
       setBuildingPaginationBySite((prev) => ({ ...prev, [siteId]: payload?.pagination || EMPTY_PAGINATION }));
       setCache(cacheKey, payload, 300_000);
@@ -196,7 +200,7 @@ export function useAdminLocations({
   }, [requireToken, setErrorKey, setLoadingKey]);
 
   const fetchFloors = useCallback(async (buildingId, params = DEFAULT_LIST_PARAMS, options = {}) => {
-    const requestId = ++requestIdRef.current;
+    const requestId = nextRequestId('floors');
     const controller = new AbortController();
     const cacheKey = makeCacheKey(`/admin/buildings/${buildingId}/floors`, params);
 
@@ -209,7 +213,7 @@ export function useAdminLocations({
       const doRefresh = async () => {
         try {
           const fresh = await listFloors(requireToken(), buildingId, params, { ...options, signal: controller.signal });
-          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          if (requestId !== requestIdsRef.current.floors || !mountedRef.current) return;
           setFloorsByBuilding((prev) => ({ ...prev, [buildingId]: fresh?.floors || [] }));
           setFloorPaginationByBuilding((prev) => ({ ...prev, [buildingId]: fresh?.pagination || EMPTY_PAGINATION }));
           setCache(cacheKey, fresh, 300_000);
@@ -237,7 +241,7 @@ export function useAdminLocations({
   }, [requireToken, setErrorKey, setLoadingKey]);
 
   const fetchCollectionPoints = useCallback(async (buildingId, params = DEFAULT_LIST_PARAMS, options = {}) => {
-    const requestId = ++requestIdRef.current;
+    const requestId = nextRequestId('collectionPoints');
     const controller = new AbortController();
     const cacheKey = makeCacheKey(`/admin/buildings/${buildingId}/collection-points`, params);
 
@@ -250,7 +254,7 @@ export function useAdminLocations({
       const doRefresh = async () => {
         try {
           const fresh = await listCollectionPoints(requireToken(), buildingId, params, { ...options, signal: controller.signal });
-          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          if (requestId !== requestIdsRef.current.collectionPoints || !mountedRef.current) return;
           setCollectionPointsByBuilding((prev) => ({ ...prev, [buildingId]: fresh?.collectionPoints || [] }));
           setCollectionPointPaginationByBuilding((prev) => ({ ...prev, [buildingId]: fresh?.pagination || EMPTY_PAGINATION }));
           setCache(cacheKey, fresh, 300_000);
@@ -278,7 +282,7 @@ export function useAdminLocations({
   }, [requireToken, setErrorKey, setLoadingKey]);
 
   const fetchDeliveryLocations = useCallback(async (buildingId, params = DEFAULT_LIST_PARAMS, options = {}) => {
-    const requestId = ++requestIdRef.current;
+    const requestId = nextRequestId('deliveryLocations');
     const controller = new AbortController();
     const cacheKey = makeCacheKey(`/admin/buildings/${buildingId}/delivery-locations`, params);
 
@@ -291,7 +295,7 @@ export function useAdminLocations({
       const doRefresh = async () => {
         try {
           const fresh = await listDeliveryLocations(requireToken(), buildingId, params, { ...options, signal: controller.signal });
-          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          if (requestId !== requestIdsRef.current.deliveryLocations || !mountedRef.current) return;
           setDeliveryLocationsByBuilding((prev) => ({ ...prev, [buildingId]: fresh?.deliveryLocations || [] }));
           setDeliveryLocationPaginationByBuilding((prev) => ({ ...prev, [buildingId]: fresh?.pagination || EMPTY_PAGINATION }));
           setCache(cacheKey, fresh, 300_000);
@@ -319,7 +323,7 @@ export function useAdminLocations({
   }, [requireToken, setErrorKey, setLoadingKey]);
 
   const fetchAllBuildings = useCallback(async (params = DEFAULT_LIST_PARAMS, options = {}) => {
-    const requestId = ++requestIdRef.current;
+    const requestId = nextRequestId('allBuildings');
     const controller = new AbortController();
     const cacheKey = makeCacheKey('/admin/all-buildings', params);
 
@@ -338,7 +342,7 @@ export function useAdminLocations({
       const doRefresh = async () => {
         try {
           const fresh = await listAllBuildings(requireToken(), params, { ...options, signal: controller.signal });
-          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          if (requestId !== requestIdsRef.current.allBuildings || !mountedRef.current) return;
           const buildings = fresh?.buildings || [];
           const grouped = {};
           for (const b of buildings) {
@@ -378,7 +382,7 @@ export function useAdminLocations({
   }, [requireToken, setErrorKey, setLoadingKey]);
 
   const fetchAllCollectionPoints = useCallback(async (params = DEFAULT_LIST_PARAMS, options = {}) => {
-    const requestId = ++requestIdRef.current;
+    const requestId = nextRequestId('allCollectionPoints');
     const controller = new AbortController();
     const cacheKey = makeCacheKey('/admin/all-collection-points', params);
 
@@ -397,7 +401,7 @@ export function useAdminLocations({
       const doRefresh = async () => {
         try {
           const fresh = await listAllCollectionPoints(requireToken(), params, { ...options, signal: controller.signal });
-          if (requestId !== requestIdRef.current || !mountedRef.current) return;
+          if (requestId !== requestIdsRef.current.allCollectionPoints || !mountedRef.current) return;
           const points = fresh?.collectionPoints || [];
           const grouped = {};
           for (const cp of points) {

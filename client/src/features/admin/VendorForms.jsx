@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCheck, IconPlus, IconUpload, IconX } from '@tabler/icons-react';
 import { useAuth } from '../../hooks/useAuth.js';
-import { listSites, listBuildings, listCollectionPoints } from '../../services/adminApi.js';
+import { useAdminLocations } from '../../hooks/useAdminLocations.js';
 import AdminDropdown from '../../components/ui/AdminDropdown.jsx';
 import { FileInput } from './AdminCafeteriaList.jsx';
 import ModalProgressOverlay from './ModalProgressOverlay.jsx';
@@ -19,48 +19,23 @@ function Field({ label, children, full = false, renderLabel = true }) {
 function LocationFields({ form, setForm }) {
   const { session } = useAuth();
   const token = session?.access_token;
-  const [sites, setSites] = useState([]);
-  const [buildings, setBuildings] = useState([]);
-  const [collectionPoints, setCollectionPoints] = useState([]);
-  const [loadingSites, setLoadingSites] = useState(false);
-  const [loadingBuildings, setLoadingBuildings] = useState(false);
-  const [loadingPoints, setLoadingPoints] = useState(false);
+  const { sites, buildingsBySite, collectionPointsByBuilding, loading, fetchBuildings, fetchCollectionPoints } = useAdminLocations();
 
   useEffect(() => {
-    if (!token) return;
-    let cancelled = false;
-    setLoadingSites(true);
-    listSites(token, { page: 1, limit: 100 }).then((res) => {
-      if (!cancelled) setSites(res?.sites || []);
-    }).catch(() => {}).finally(() => { if (!cancelled) setLoadingSites(false); });
-    return () => { cancelled = true; };
-  }, [token]);
+    if (!token || !form.site_id) return;
+    fetchBuildings(form.site_id).catch(() => {});
+  }, [token, form.site_id, fetchBuildings]);
 
   useEffect(() => {
-    if (!token || !form.site_id) { setBuildings([]); return; }
-    let cancelled = false;
-    setLoadingBuildings(true);
-    listBuildings(token, form.site_id, { page: 1, limit: 100 }).then((res) => {
-      if (!cancelled) setBuildings(res?.buildings || []);
-    }).catch(() => {}).finally(() => { if (!cancelled) setLoadingBuildings(false); });
-    return () => { cancelled = true; };
-  }, [token, form.site_id]);
-
-  useEffect(() => {
-    if (!token || !form.building_id) { setCollectionPoints([]); return; }
-    let cancelled = false;
-    setLoadingPoints(true);
-    listCollectionPoints(token, form.building_id, { page: 1, limit: 100 }).then((res) => {
-      if (!cancelled) setCollectionPoints(res?.collectionPoints || []);
-    }).catch(() => {}).finally(() => { if (!cancelled) setLoadingPoints(false); });
-    return () => { cancelled = true; };
-  }, [token, form.building_id]);
+    if (!token || !form.building_id) return;
+    fetchCollectionPoints(form.building_id).catch(() => {});
+  }, [token, form.building_id, fetchCollectionPoints]);
 
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const siteOptions = [{ value: '', label: 'Select a site' }, ...sites.map((s) => ({ value: s.id, label: s.name }))];
-  const buildingOptions = [{ value: '', label: 'Select a building' }, ...buildings.map((b) => ({ value: b.id, label: b.name }))];
-  const pointOptions = [{ value: '', label: 'No collection point' }, ...collectionPoints.map((p) => ({ value: p.id, label: p.name }))];
+  const buildingOptions = [{ value: '', label: 'Select a building' }, ...(buildingsBySite[form.site_id] || []).map((b) => ({ value: b.id, label: b.name }))];
+  const pointOptions = [{ value: '', label: 'No collection point' }, ...(collectionPointsByBuilding[form.building_id] || []).map((p) => ({ value: p.id, label: p.name }))];
   const statusOptions = [
     { value: 'closed', label: 'Closed' },
     { value: 'open', label: 'Open' },
@@ -71,13 +46,13 @@ function LocationFields({ form, setForm }) {
   return (
     <div className="admin-form-grid">
       <Field label="Site" renderLabel={false}>
-        <AdminDropdown label="Site" options={siteOptions} value={form.site_id} onChange={(val) => setForm((prev) => ({ ...prev, site_id: val, building_id: '', collection_point_id: '' }))} loading={loadingSites} />
+        <AdminDropdown label="Site" options={siteOptions} value={form.site_id} onChange={(val) => setForm((prev) => ({ ...prev, site_id: val, building_id: '', collection_point_id: '' }))} loading={loading.sites} />
       </Field>
       <Field label="Building" renderLabel={false}>
-        <AdminDropdown label="Building" options={buildingOptions} value={form.building_id} onChange={(val) => setForm((prev) => ({ ...prev, building_id: val, collection_point_id: '' }))} disabled={!form.site_id} loading={loadingBuildings} />
+        <AdminDropdown label="Building" options={buildingOptions} value={form.building_id} onChange={(val) => setForm((prev) => ({ ...prev, building_id: val, collection_point_id: '' }))} disabled={!form.site_id} loading={loading.buildings} />
       </Field>
       <Field label="Collection point" renderLabel={false}>
-        <AdminDropdown label="Collection point" options={pointOptions} value={form.collection_point_id} onChange={(val) => update('collection_point_id', val)} disabled={!form.building_id} loading={loadingPoints} />
+        <AdminDropdown label="Collection point" options={pointOptions} value={form.collection_point_id} onChange={(val) => update('collection_point_id', val)} disabled={!form.building_id} loading={loading.collectionPoints} />
       </Field>
       <Field label="Service status" renderLabel={false}>
         <AdminDropdown label="Service status" options={statusOptions} value={form.service_status} onChange={(val) => update('service_status', val)} />
