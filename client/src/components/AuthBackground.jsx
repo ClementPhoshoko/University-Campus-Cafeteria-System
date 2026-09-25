@@ -12,8 +12,6 @@ import {
   IconEgg,
   IconBeer,
 } from '@tabler/icons-react';
-import authWave from '../features/auth/auth_bottom_wave.svg';
-
 const icons = [
   { Icon: IconPizza, className: 'auth-bg-icon auth-bg-icon--1' },
   { Icon: IconSalad, className: 'auth-bg-icon auth-bg-icon--2' },
@@ -35,7 +33,12 @@ export default function AuthBackground() {
       {icons.map(({ Icon, className }, i) => (
         <Icon key={i} className={className} />
       ))}
-      <img src={authWave} className="auth-bg-wave" alt="" />
+      <svg className="auth-bg-wave" viewBox="0 0 1200 500" fill="none" aria-hidden="true">
+        <path
+          d="M0 155 C135 245 245 275 390 258 C535 241 625 155 770 145 C925 134 1040 205 1200 305 L1200 500 L0 500 Z"
+          fill="currentColor"
+        />
+      </svg>
     </div>
   );
 }

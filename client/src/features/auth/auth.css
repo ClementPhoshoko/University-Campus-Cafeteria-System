@@ -108,6 +108,11 @@
   width: 100%;
   height: auto;
   min-height: 180px;
+  color: var(--blue-50);
+}
+
+[data-theme="dark"] .auth-bg-wave {
+  color: var(--neutral-800);
 }
 
 .auth-bg-icon {
