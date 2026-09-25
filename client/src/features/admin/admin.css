@@ -1301,7 +1301,8 @@
   font-size: 0.75rem;
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  box-shadow: var(--glass-shadow);
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 [data-theme="dark"] .admin-action {
@@ -4986,8 +4987,8 @@
 }
 
 .admin-role-panel__list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
   padding-top: var(--space-3);
 }
@@ -9285,6 +9286,11 @@ select.admin-input {
   display: flex;
   flex-direction: row;
   gap: var(--space-6);
+}
+
+.admin-user-detail-sections .admin-role-panel {
+  flex: 1;
+  min-width: 0;
 }
 
 .admin-user-detail-sections .admin-vendor-section {
