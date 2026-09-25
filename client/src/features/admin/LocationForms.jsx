@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth.js';
+import useObjectPreview from '../../hooks/useObjectPreview.js';
 import AddressAutocomplete from '../../components/ui/AddressAutocomplete.jsx';
 import AdminDropdown from '../../components/ui/AdminDropdown.jsx';
 import { IconBuilding, IconUpload } from '@tabler/icons-react';
@@ -14,7 +15,7 @@ const roundCoord = (value) => (value === undefined || value === null || value ==
 export function LocationModal({ title, initial = {}, fields, rows, onClose, onSubmit, submitting }) {
   const [form, setForm] = useState(initial);
   const [error, setError] = useState('');
-  const [preview, setPreview] = useState(initial.cover_image_url || '');
+  const [preview, setPreview] = useObjectPreview(initial.cover_image_url || '');
   const { session } = useAuth();
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -57,7 +58,7 @@ export function LocationModal({ title, initial = {}, fields, rows, onClose, onSu
     return <input className="admin-input" type={field.type || 'text'} step={field.type === 'number' ? 'any' : undefined} placeholder={field.placeholder || ''} value={form[field.key] ?? ''} onChange={(e) => update(field.key, e.target.value)} />;
   };
 
-  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card"><header className="admin-modal__head"><div><h3 className="admin-modal__title">{title}</h3><p className="admin-modal__sub">Update the location data stored by the platform.</p></div></header>{error && <div className="vendor-form-error">{error}</div>}<div className="admin-modal__body{(hasRightColumn ? '' : ' admin-modal__body--single')}"><div className="admin-modal__left">{(rows && rows.length ? rows.map((group) => { const rowFields = group.map((key) => leftFields.find((f) => f.key === key)).filter(Boolean); return rowFields.length === 1 ? <Field key={rowFields[0].key} label={rowFields[0].label} renderLabel={rowFields[0].type !== 'select'}>{renderField(rowFields[0])}</Field> : <div className="admin-modal__row" key={group.join('-')}>{rowFields.map((field) => <Field key={field.key} label={field.label} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>)}</div>; }) : leftFields.map((field) => <Field key={field.key} label={field.label} full={field.full} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>))}</div>{hasRightColumn && <div className="admin-modal__right">{fileFields.length > 0 ? fileFields.map((field) => <Field key={field.key} label={field.label} full><div className={`admin-modal__image-area admin-modal__image-area--sm${preview ? ' admin-modal__image-area--has-image' : ''}`}>{preview ? <img src={preview} alt="Cover preview" /> : <><IconUpload size={24} stroke={1.5} className="admin-modal__image-icon" /><span className="admin-modal__image-text">Click to upload cover image</span><span className="admin-modal__image-hint">JPEG, PNG or WebP</span></>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; update(field.key, file); setPreview(file ? URL.createObjectURL(file) : (initial.cover_image_url || '')); }} /></div></Field>) : rightFields.map((field) => <Field key={field.key} label={field.label} full={field.full} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>)}</div>}</div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Saving…' : 'Save changes'}</button></footer><ModalProgressOverlay active={submitting} messages={['Saving your changes...', 'Updating platform records...', 'Almost there...']} /></div></div>;
+  return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card"><header className="admin-modal__head"><div><h3 className="admin-modal__title">{title}</h3><p className="admin-modal__sub">Update the location data stored by the platform.</p></div></header>{error && <div className="vendor-form-error">{error}</div>}<div className="admin-modal__body{(hasRightColumn ? '' : ' admin-modal__body--single')}"><div className="admin-modal__left">{(rows && rows.length ? rows.map((group) => { const rowFields = group.map((key) => leftFields.find((f) => f.key === key)).filter(Boolean); return rowFields.length === 1 ? <Field key={rowFields[0].key} label={rowFields[0].label} renderLabel={rowFields[0].type !== 'select'}>{renderField(rowFields[0])}</Field> : <div className="admin-modal__row" key={group.join('-')}>{rowFields.map((field) => <Field key={field.key} label={field.label} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>)}</div>; }) : leftFields.map((field) => <Field key={field.key} label={field.label} full={field.full} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>))}</div>{hasRightColumn && <div className="admin-modal__right">{fileFields.length > 0 ? fileFields.map((field) => <Field key={field.key} label={field.label} full><div className={`admin-modal__image-area admin-modal__image-area--sm${preview ? ' admin-modal__image-area--has-image' : ''}`}>{preview ? <img src={preview} alt="Cover preview" /> : <><IconUpload size={24} stroke={1.5} className="admin-modal__image-icon" /><span className="admin-modal__image-text">Click to upload cover image</span><span className="admin-modal__image-hint">JPEG, PNG or WebP</span></>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; update(field.key, file); setPreview(file); }} /></div></Field>) : rightFields.map((field) => <Field key={field.key} label={field.label} full={field.full} renderLabel={field.type !== 'select'}>{renderField(field)}</Field>)}</div>}</div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" onClick={submit} disabled={submitting}>{submitting ? 'Saving…' : 'Save changes'}</button></footer><ModalProgressOverlay active={submitting} messages={['Saving your changes...', 'Updating platform records...', 'Almost there...']} /></div></div>;
 }
 
 export function BuildingModal({ initial = {}, onClose, onSubmit, submitting }) {
@@ -77,7 +78,7 @@ export function BuildingModal({ initial = {}, onClose, onSubmit, submitting }) {
     is_active: initial.is_active ?? true,
     cover_file: null,
   }));
-  const [preview, setPreview] = useState(initial.cover_image_url || '');
+  const [preview, setPreview] = useObjectPreview(initial.cover_image_url || '');
   const [error, setError] = useState('');
   const { session } = useAuth();
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
@@ -153,7 +154,7 @@ export function BuildingModal({ initial = {}, onClose, onSubmit, submitting }) {
           <Field label="Cover image" full>
             <div className={`admin-modal__image-area admin-modal__image-area--sm${preview ? ' admin-modal__image-area--has-image' : ''}`}>
               {preview ? <img src={preview} alt="Cover preview" /> : <><IconUpload size={24} stroke={1.5} className="admin-modal__image-icon" /><span className="admin-modal__image-text">Click to upload cover image</span><span className="admin-modal__image-hint">JPEG, PNG or WebP</span></>}
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; update('cover_file', file); setPreview(file ? URL.createObjectURL(file) : (initial.cover_image_url || '')); }} />
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; update('cover_file', file); setPreview(file); }} />
             </div>
           </Field>
         </div>

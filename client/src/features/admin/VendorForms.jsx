@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCheck, IconPlus, IconUpload, IconX } from '@tabler/icons-react';
 import { useAuth } from '../../hooks/useAuth.js';
+import useObjectPreview from '../../hooks/useObjectPreview.js';
 import { useAdminLocations } from '../../hooks/useAdminLocations.js';
 import AdminDropdown from '../../components/ui/AdminDropdown.jsx';
 import { FileInput } from './AdminCafeteriaList.jsx';
@@ -84,7 +85,7 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ name: '', description: '', logo_file: null, support_email: '', support_phone: '', corporate_catering_enabled: false, site_id: '', building_id: '', collection_point_id: '', service_status: 'closed', estimated_prep_minutes: '15', order_cutoff_minutes: '0', collection_instructions: '' });
-  const [logoPreview, setLogoPreview] = useState(null);
+  const [logoPreview, setLogoPreview] = useObjectPreview(null);
   const [hours, setHours] = useState(emptyHours);
   const [creating, setCreating] = useState(false);
   const [loadMsg, setLoadMsg] = useState(0);
@@ -153,7 +154,7 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
                   <span className="admin-modal__image-hint">JPEG, PNG or WebP</span>
                 </>
               )}
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setForm({ ...form, logo_file: file }); setLogoPreview(file ? URL.createObjectURL(file) : null); }} />
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setForm({ ...form, logo_file: file }); setLogoPreview(file); }} />
             </div>
           </div>
         </div>}
@@ -177,7 +178,7 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
 
 export function VendorProfileModal({ vendor, onClose, onSubmit, submitting = false }) {
   const [form, setForm] = useState({ name: vendor.name || '', description: vendor.description || '', logo_url: vendor.logo_url || '', logo_file: null, support_email: vendor.support_email || '', support_phone: vendor.support_phone || '', corporate_catering_enabled: !!vendor.corporate_catering_enabled });
-  const [logoPreview, setLogoPreview] = useState(vendor.logo_url || null);
+  const [logoPreview, setLogoPreview] = useObjectPreview(vendor.logo_url || null);
   return (
     <div className="admin-modal" role="dialog" aria-modal="true">
       <div className="admin-modal__overlay" onClick={onClose} />
@@ -204,7 +205,7 @@ export function VendorProfileModal({ vendor, onClose, onSubmit, submitting = fal
                   <span className="admin-modal__image-hint">JPEG, PNG or WebP</span>
                 </>
               )}
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setForm({ ...form, logo_file: file }); setLogoPreview(file ? URL.createObjectURL(file) : null); }} />
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setForm({ ...form, logo_file: file }); setLogoPreview(file); }} />
             </div>
           </div>
         </div>
@@ -287,7 +288,7 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
     ingredients: Array.isArray(item?.ingredients) ? item.ingredients.join(', ') : '',
     image_file: null,
   });
-  const [imagePreview, setImagePreview] = useState(item?.image_url || null);
+  const [imagePreview, setImagePreview] = useObjectPreview(item?.image_url || null);
   const editing = !!item;
 
   const categoryOptions = [{ value: '', label: 'No category' }, ...categories.map((c) => ({ value: c.id, label: c.name }))];
@@ -350,7 +351,7 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
                   <span className="admin-modal__image-hint">JPEG, PNG or WebP</span>
                 </>
               )}
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setForm({ ...form, image_file: file }); setImagePreview(file ? URL.createObjectURL(file) : null); }} />
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setForm({ ...form, image_file: file }); setImagePreview(file); }} />
             </div>
           </div>
         </div>

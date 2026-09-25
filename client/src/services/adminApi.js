@@ -307,6 +307,14 @@ export function deleteMenuItem(token, itemId, options) {
 
 export function uploadAdminAsset(token, entityType, entityId, file, options) {
   return new Promise((resolve, reject) => {
+    if (!file || !/^image\/(jpeg|png|webp|avif|tiff|gif)$/.test(file.type || '')) {
+      reject(new Error('Please choose a JPEG, PNG or WebP image'));
+      return;
+    }
+    if (file.size > 7 * 1024 * 1024) {
+      reject(new Error('Images must be smaller than 7MB'));
+      return;
+    }
     const reader = new FileReader();
     reader.onload = async () => {
       try {

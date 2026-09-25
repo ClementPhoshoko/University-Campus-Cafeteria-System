@@ -16,6 +16,7 @@ import Pagination from '../../components/ui/Pagination.jsx';
 import AddressAutocomplete from '../../components/ui/AddressAutocomplete.jsx';
 import AdminDropdown from '../../components/ui/AdminDropdown.jsx';
 import { useAdminLocations } from '../../hooks/useAdminLocations.js';
+import useObjectPreview from '../../hooks/useObjectPreview.js';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import { uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -198,7 +199,7 @@ export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
     is_active: true,
     cover_file: null,
   });
-  const [coverPreview, setCoverPreview] = useState(initial?.cover_image_url || null);
+  const [coverPreview, setCoverPreview] = useObjectPreview(initial?.cover_image_url || null);
   const [error, setError] = useState('');
   const { session } = useAuth();
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
@@ -305,7 +306,7 @@ export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
                   <span className="admin-modal__image-hint">JPEG, PNG or WebP</span>
                 </>
               )}
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; update('cover_file', file); setCoverPreview(file ? URL.createObjectURL(file) : null); }} />
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; update('cover_file', file); setCoverPreview(file); }} />
             </div>
           </div>
         </div>

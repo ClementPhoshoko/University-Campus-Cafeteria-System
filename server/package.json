@@ -17,6 +17,7 @@
     "js-yaml": "^5.3.0",
     "morgan": "^1.10.0",
     "resend": "^6.22.1",
+    "sharp": "^0.35.4",
     "standardwebhooks": "^1.0.0",
     "swagger-ui-express": "^5.0.1"
   },
