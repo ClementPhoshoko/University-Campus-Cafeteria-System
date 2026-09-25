@@ -18,9 +18,11 @@
 
 .home_vendor-media {
   position: relative;
-  height: 50%;
+  height: 160px;
+  aspect-ratio: 248 / 160;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   overflow: hidden;
+  background: var(--color-surface-subtle);
 }
 
 .home_vendor-media img {
@@ -29,6 +31,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
 .home_vendor-card.home_closed .home_vendor-media img {

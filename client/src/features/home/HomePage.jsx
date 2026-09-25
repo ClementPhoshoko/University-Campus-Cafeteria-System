@@ -19,8 +19,8 @@ import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import androidBadge from '../../assets/android_download-PJqqAvJc.webp';
 import iosBadge from '../../assets/ios_download-Dn_KtiFi.webp';
 import HeroFoodShowcase from '../../components/hero/HeroFoodShowcase.jsx';
-import { listVendors, getVendor, listVendorMenu } from '../../services/employeeApi.js';
-import { mapVendorToCafeteria, mapMenuItemToMeal, mapCategoryToDisplay } from './homeTransform.js';
+import { listCafeterias, listVendorMenu } from '../../services/employeeApi.js';
+import { mapCafeteriaToCard, mapMenuItemToMeal, mapCategoryToDisplay } from './homeTransform.js';
 import { deliveryImage, reviewsImage, heroImage, heroFoods } from './homeData.js';
 import './home.css';
 
@@ -88,28 +88,22 @@ export default function HomePage() {
       setHomeError(null);
 
       try {
-        const vendorsResponse = await listVendors({ limit: 6, token });
-        const vendorList = vendorsResponse?.vendors || [];
-
-        const vendorDetails = await Promise.all(
-          vendorList.map((vendor) => getVendor(vendor.id, { token }).catch(() => null))
-        );
-
-        const mappedCafeterias = vendorList.map((vendor, index) => {
-          const detail = vendorDetails[index];
-          return mapVendorToCafeteria(vendor, detail, index);
-        });
+        const cafeteriasResponse = await listCafeterias({ limit: 6, token });
+        const cafeteriaList = cafeteriasResponse?.cafeterias || [];
+        const mappedCafeterias = cafeteriaList.map((cafeteria, index) => mapCafeteriaToCard(cafeteria, index));
 
         const menuResponses = await Promise.all(
-          vendorList.map((vendor) => listVendorMenu(vendor.id, { token }).catch(() => ({ categories: [] })))
+          cafeteriaList.map((cafeteria) => cafeteria.vendor_id
+            ? listVendorMenu(cafeteria.vendor_id, { token }).catch(() => ({ categories: [] }))
+            : Promise.resolve({ categories: [] }))
         );
 
         const flattenedMeals = menuResponses.flatMap((response, index) => {
-          const vendor = vendorList[index];
+          const cafeteria = cafeteriaList[index];
           const categoriesList = response?.categories || [];
 
           return categoriesList.flatMap((category) => (category.items || []).map((item, itemIndex) =>
-            mapMenuItemToMeal(item, vendor?.name || 'Campus vendor', vendor?.id, itemIndex + index)
+            mapMenuItemToMeal(item, cafeteria?.name || 'Campus cafeteria', cafeteria?.id, itemIndex + index)
           ));
         });
 
@@ -223,6 +217,7 @@ export default function HomePage() {
                   <CafeteriaCard
                     key={v.id}
                     id={v.id}
+                    siteName={v.siteName}
                     name={v.name}
                     status={v.status}
                     category={v.category}
@@ -230,6 +225,9 @@ export default function HomePage() {
                     description={v.description}
                     walkTime={v.walkTime}
                     prepWindow={v.prepWindow}
+                    rating={v.rating}
+                    reviewCount={v.reviewCount}
+                    location={v.location}
                   />
                 ))}
 
@@ -250,7 +248,7 @@ export default function HomePage() {
             <div className="home_meals-scroll" ref={meals.scrollRef} onScroll={meals.onScroll}>
               {popularMeals.map((m) => (
                 <FoodCard
-                  key={m.id}
+                  key={`${m.cafeteriaId}-${m.id}`}
                   id={m.id}
                   name={m.name}
                   price={m.price}

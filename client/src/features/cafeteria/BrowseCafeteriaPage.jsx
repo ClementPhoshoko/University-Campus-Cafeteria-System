@@ -10,7 +10,7 @@ import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import BrowseCafeteriaBackground from '../../components/BrowseCafeteriaBackground.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
-import { listVendorMenu, getVendor, addToCart } from '../../services/employeeApi.js';
+import { listVendorMenu, getCafeteria, addToCart } from '../../services/employeeApi.js';
 import './browse-cafeteria.css';
 
 const REVIEWS_PER_PAGE = 5;
@@ -222,11 +222,15 @@ export default function BrowseCafeteriaPage() {
     setMenuError(null);
 
     Promise.all([
-      getVendor(cafeteriaId, { token }),
-      listVendorMenu(cafeteriaId, { token }),
-    ]).then(([vendorRes, menuRes]) => {
+      getCafeteria(cafeteriaId, { token }),
+    ]).then(async ([cafeteriaRes]) => {
       if (cancelled) return;
-      setVendor(vendorRes?.vendor || null);
+      const cafeteriaData = cafeteriaRes?.cafeteria || null;
+      const menuRes = cafeteriaData?.vendor_id
+        ? await listVendorMenu(cafeteriaData.vendor_id, { token })
+        : { categories: [] };
+      if (cancelled) return;
+      setVendor(cafeteriaData);
       setHeaderReady(true);
       const cats = menuRes?.categories || [];
       setCategories(cats);
@@ -286,13 +290,13 @@ export default function BrowseCafeteriaPage() {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   };
 
-  const location = vendor?.locations?.[0];
+  const location = vendor?.location;
   const cafeteria = vendor
     ? {
         id: vendor.id,
         name: vendor.name,
         description: vendor.description,
-        image: vendor.logo_url,
+        image: vendor.cover_image_url,
         status: location?.service_status || 'open',
         walkTime: '6 min',
         prepWindow: location?.estimated_prep_minutes ? `${location.estimated_prep_minutes} min` : '15 min',

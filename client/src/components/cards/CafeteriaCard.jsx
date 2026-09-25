@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import {
   IconPlugX,
-  IconWalk,
   IconClock,
+  IconMapPin,
   IconToolsKitchen2,
   IconCoffee,
 } from '@tabler/icons-react';
@@ -23,6 +23,7 @@ const CATEGORY_ICONS = {
 
 export default function CafeteriaCard({
   id,
+  siteName,
   name,
   status,
   category,
@@ -60,29 +61,32 @@ export default function CafeteriaCard({
       </span>
 
       <div className="home_vendor-body">
-        <h3>{name}</h3>
+        <h3>{siteName || name}</h3>
         <p className="home_vendor-desc">{description}</p>
-        {variant === 'directory' && (
+        {Number(rating) > 0 && (
           <div className="home_vendor-directory-meta">
-            {rating && (
-              <span className="home_vendor-rating" aria-label={`${rating} out of 5 stars`}>
-                <span aria-hidden="true">★</span> {rating} <small>({reviewCount || 0})</small>
-              </span>
-            )}
-            {location && <span className="home_vendor-location">{location}</span>}
+            <span className="home_vendor-rating" aria-label={`${rating} out of 5 stars`}>
+              <span aria-hidden="true">★</span> {rating} <small>({reviewCount || 0})</small>
+            </span>
           </div>
         )}
         <div className="home_vendor-divider" />
         <div className="home_vendor-meta">
-          <span>
-            <IconWalk size={15} stroke={1.8} />
-            {walkTime}
-          </span>
-          <i className="home_meta-dot" />
-          <span>
-            <IconClock size={15} stroke={1.8} />
-            {prepWindow}
-          </span>
+          {location && (
+            <span>
+              <IconMapPin size={15} stroke={1.8} />
+              {location}
+            </span>
+          )}
+          {prepWindow && prepWindow !== '—' && (
+            <>
+              <i className="home_meta-dot" />
+              <span>
+                <IconClock size={15} stroke={1.8} />
+                {prepWindow}
+              </span>
+            </>
+          )}
         </div>
       </div>
     </Link>

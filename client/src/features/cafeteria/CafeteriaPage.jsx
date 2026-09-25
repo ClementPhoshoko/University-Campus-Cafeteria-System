@@ -9,8 +9,8 @@ import PageContainer from "../../components/layout/PageContainer.jsx";
 import PageHeader from "../../components/layout/PageHeader.jsx";
 import CafeteriaCard from "../../components/cards/CafeteriaCard.jsx";
 import { useAuth } from '../../hooks/useAuth.js';
-import { listVendors, getVendor } from '../../services/employeeApi.js';
-import { mapVendorToDirectory } from '../home/homeTransform.js';
+import { listCafeterias } from '../../services/employeeApi.js';
+import { mapCafeteriaToCard } from '../home/homeTransform.js';
 import { heroImage } from "../home/homeData.js";
 import "./cafeteria.css";
 
@@ -83,14 +83,11 @@ export default function CafeteriaPage() {
       setError(null);
 
       try {
-        const response = await listVendors({ limit: 20, token });
-        const vendorList = response?.vendors || [];
-        const details = await Promise.all(
-          vendorList.map((vendor) => getVendor(vendor.id, { token }).catch(() => null))
-        );
+        const response = await listCafeterias({ limit: 20, token });
+        const cafeteriaList = response?.cafeterias || [];
 
         if (!cancelled) {
-          setCafeterias(vendorList.map((vendor, index) => mapVendorToDirectory(vendor, details[index], index)));
+          setCafeterias(cafeteriaList.map((cafeteria, index) => mapCafeteriaToCard(cafeteria, index)));
         }
       } catch (err) {
         if (!cancelled) {

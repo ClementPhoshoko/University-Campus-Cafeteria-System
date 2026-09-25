@@ -9,7 +9,7 @@ import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import ViewFoodBackground from '../../components/ViewFoodBackground.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
-import { getMenuItem, getVendor, addToCart } from '../../services/employeeApi.js';
+import { getMenuItem, getCafeteria, addToCart } from '../../services/employeeApi.js';
 import './ViewFoodPage.css';
 
 function formatPrice(price) {
@@ -39,28 +39,23 @@ export default function ViewFoodPage() {
     setItemLoading(true);
     setItemError(null);
 
-    const vendorPromise = getVendor(cafeteriaId, { token }).then((vendorRes) => {
+    getCafeteria(cafeteriaId, { token }).then(async (cafeteriaRes) => {
+      const cafeteriaData = cafeteriaRes?.cafeteria || null;
       if (cancelled) return;
-      setVendor(vendorRes?.vendor || null);
+      setVendor(cafeteriaData);
       setVendorReady(true);
-    }).catch((err) => {
-      if (cancelled) return;
-      console.error('Failed to load vendor:', err);
-      setVendorReady(true);
-    });
-
-    const itemPromise = getMenuItem(cafeteriaId, menuItemId, { token }).then((itemRes) => {
+      if (!cafeteriaData?.vendor_id) throw new Error('Cafeteria vendor is unavailable');
+      const itemRes = await getMenuItem(cafeteriaData.vendor_id, menuItemId, { token });
       if (cancelled) return;
       setMenuItem(itemRes?.menuItem || null);
       setItemError(null);
     }).catch((err) => {
       if (cancelled) return;
       setItemError(err?.message || 'Failed to load item');
+      setVendorReady(true);
     }).finally(() => {
       if (!cancelled) setItemLoading(false);
     });
-
-    Promise.all([vendorPromise, itemPromise]);
 
     return () => { cancelled = true; };
   }, [cafeteriaId, menuItemId, token]);

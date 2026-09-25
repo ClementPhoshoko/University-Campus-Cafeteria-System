@@ -16,7 +16,7 @@ export function mapVendorToCafeteria(vendor, detail, index = 0) {
   const vendorData = detail?.vendor || detail || vendor || {};
   const locations = vendorData.locations || [];
   const location = locations.find((entry) => entry?.is_active !== false) || locations[0] || {};
-  const status = normalizeVendorStatus(location.service_status || 'open');
+  const status = normalizeVendorStatus(location.service_status || 'closed');
   const prepMinutes = Number(location.estimated_prep_minutes || 15);
   const walkMinutes = 5 + (index % 3);
 
@@ -30,6 +30,35 @@ export function mapVendorToCafeteria(vendor, detail, index = 0) {
     description: vendor?.description || vendorData.description || 'Fresh food for the campus community.',
     walkTime: `${walkMinutes} min`,
     prepWindow: `${prepMinutes} min`,
+  };
+}
+
+export function mapCafeteriaToCard(cafeteria, index = 0) {
+  const location = cafeteria?.location || {};
+  const status = normalizeVendorStatus(location.service_status || 'closed');
+  const prepMinutes = Number(location.estimated_prep_minutes);
+  const address = [
+    location.street_address,
+    location.city,
+    location.province,
+    location.postal_code,
+  ].filter(Boolean).join(', ') || location.address || location.site_name || 'Address unavailable';
+
+  return {
+    id: cafeteria?.id,
+    vendorId: cafeteria?.vendor_id,
+    siteName: cafeteria?.site_name || cafeteria?.name || 'Campus cafeteria',
+    name: cafeteria?.site_name || cafeteria?.name || 'Campus cafeteria',
+    status,
+    theme: ['blue', 'coral', 'mint'][index % 3],
+    image: cafeteria?.cover_image_url || cafeteria?.logo_url || '',
+    category: cafeteria?.category || null,
+    description: cafeteria?.description || cafeteria?.address || 'Address unavailable',
+    walkTime: '—',
+    prepWindow: Number.isFinite(prepMinutes) ? `${prepMinutes} min` : '—',
+    location: address,
+    rating: cafeteria?.average_rating ? String(Number(cafeteria.average_rating).toFixed(1)) : '0.0',
+    reviewCount: Number(cafeteria?.rating_count || 0),
   };
 }
 

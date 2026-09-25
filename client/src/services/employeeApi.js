@@ -2,6 +2,14 @@ import { apiRequest } from './api.js';
 
 // ─── Vendor Browsing ────────────────────────────────────────────────
 
+export function listCafeterias({ page, limit, site_id, search, token, signal } = {}) {
+  return apiRequest('/cafeterias', { query: { page, limit, site_id, search }, token, signal });
+}
+
+export function getCafeteria(cafeteriaId, { token, signal } = {}) {
+  return apiRequest(`/cafeterias/${cafeteriaId}`, { token, signal });
+}
+
 export function listVendors({ page, limit, site_id, search, token, signal } = {}) {
   return apiRequest('/vendors', { query: { page, limit, site_id, search }, token, signal });
 }

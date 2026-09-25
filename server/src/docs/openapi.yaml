@@ -1489,6 +1489,81 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  '/cafeterias':
+    get:
+      tags:
+        - Vendors
+      summary: List active employee cafeterias
+      description: 'Employee-facing list of active cafeteria locations. Each result represents one active vendor location and includes its vendor, site, building, collection point, status, hours, and menu-owner ID.'
+      operationId: listPublicCafeterias
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Case-insensitive search on the cafeteria vendor name, slug, or description
+        - name: site_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter cafeterias operating at this site
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Cafeterias retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  cafeterias:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Cafeteria'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/cafeterias/{cafeteriaId}':
+    get:
+      tags:
+        - Vendors
+      summary: Get an employee cafeteria
+      description: Returns one active cafeteria location with its vendor and location context.
+      operationId: getPublicCafeteria
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cafeteriaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Cafeteria retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  cafeteria:
+                    $ref: '#/components/schemas/Cafeteria'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   '/vendors':
     get:
       tags:
@@ -2800,6 +2875,41 @@ components:
               type: string
             message:
               type: string
+
+    Cafeteria:
+      type: object
+      required:
+        - id
+        - vendor_id
+        - name
+        - location
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Active vendor location ID used as the cafeteria ID
+        vendor_id:
+          type: string
+          format: uuid
+          description: Vendor ID used for menu and cart operations
+        name:
+          type: string
+        slug:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        cover_image_url:
+          type: string
+          nullable: true
+          description: Site cover image used by employee cafeteria cards
+        average_rating:
+          type: number
+        rating_count:
+          type: integer
+        location:
+          $ref: '#/components/schemas/VendorLocation'
 
     Vendor:
       type: object

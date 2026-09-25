@@ -186,7 +186,7 @@ export default function CartPage() {
                   <CartItem
                     key={item.id}
                     item={item}
-                    to={item.menuItem ? `/cafeterias/${cart.vendor?.id}/menu/${item.menuItem.id}` : '#'}
+                    to={item.menuItem ? `/cafeterias/${cart.vendorLocationId}/menu/${item.menuItem.id}` : '#'}
                     onUpdateQuantity={handleUpdateQuantity}
                     onRemove={handleRemoveItem}
                   />
