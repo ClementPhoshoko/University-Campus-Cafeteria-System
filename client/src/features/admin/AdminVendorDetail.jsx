@@ -29,6 +29,13 @@ import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Err
 import { StaffModal, VendorLocationModal, VendorProfileModal, MenuItemModal, CategoryModal } from './VendorForms.jsx';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const ITEM_NAME_MAX = 21;
+
+function truncate(text, max) {
+  if (!text) return text;
+  const value = String(text);
+  return value.length > max ? `${value.slice(0, max - 1)}\u2026` : value;
+}
 
 function getRatingGrade(rating, count) {
   if (count <= 0) return { label: 'No reviews yet', tone: 'none' };
@@ -307,9 +314,11 @@ export default function AdminVendorDetail() {
     try {
       const { image_file: imageFile, ...itemPayload } = payload;
       const response = await createMenuItem(token, vendorId, itemPayload);
-      if (imageFile && response?.menu_item?.id) await uploadAdminAsset(token, 'menu_item', response.menu_item.id, imageFile);
+      if (imageFile && response?.menuItem?.id) await uploadAdminAsset(token, 'menu_item', response.menuItem.id, imageFile);
       await refreshMenuItems();
       setModal(null);
+    } catch (err) {
+      console.error('Failed to create menu item:', err);
     } finally { setActionLoading(false); }
   };
 
@@ -321,6 +330,8 @@ export default function AdminVendorDetail() {
       if (imageFile) await uploadAdminAsset(token, 'menu_item', itemId, imageFile);
       await refreshMenuItems();
       setModal(null);
+    } catch (err) {
+      console.error('Failed to update menu item:', err);
     } finally { setActionLoading(false); }
   };
 
@@ -788,7 +799,7 @@ export default function AdminVendorDetail() {
                       <span>Name</span><span>Sort</span><span>Items</span><span /><span /></div>
                     {menuCategories.slice(0, categoriesVisibleCount).map((cat) => (
                       <div className="admin-menu-items-table__row" key={cat.id}>
-                        <div className="admin-menu-items-table__name"><strong>{cat.name}</strong></div>
+                        <div className="admin-menu-items-table__name"><strong>{truncate(cat.name, ITEM_NAME_MAX)}</strong></div>
                         <span>{cat.sort_order ?? 0}</span>
                         <span>{menuItems.filter((item) => item.category_id === cat.id).length}</span>
                         <span />
@@ -839,10 +850,10 @@ export default function AdminVendorDetail() {
                     {menuItems.slice(0, menuItemsVisibleCount).map((item) => (
                       <div className="admin-menu-items-table__row" key={item.id}>
                         <div className="admin-menu-items-table__name">
-                          <strong>{item.name}</strong>
-                          {item.description && <span>{item.description.slice(0, 50)}{item.description.length > 50 ? '\u2026' : ''}</span>}
+                          <strong>{truncate(item.name, ITEM_NAME_MAX)}</strong>
+                          {item.description && <span>{truncate(item.description, 50)}</span>}
                         </div>
-                        <span>{item.menu_categories?.name || '\u2014'}</span>
+                        <span>{truncate(item.menu_categories?.name, ITEM_NAME_MAX) || '\u2014'}</span>
                         <span>R {Number(item.base_price).toFixed(2)}</span>
                         <span className={`admin-status admin-status--${item.status === 'available' ? 'approved' : item.status === 'sold_out' ? 'rejected' : 'pending'}`}>{item.status}</span>
                         <div className="vendor-managed-row__actions">

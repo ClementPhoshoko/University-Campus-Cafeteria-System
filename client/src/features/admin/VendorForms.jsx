@@ -305,12 +305,16 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
         </header>
         <div className="admin-modal__body">
           <div className="admin-modal__left">
-            <Field label="Item name" full><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Classic Chicken Wrap" /></Field>
-            <Field label="Category" renderLabel={false}>
-              <AdminDropdown label="Category" options={categoryOptions} value={form.category_id} onChange={(val) => setForm({ ...form, category_id: val })} />
-            </Field>
-            <Field label="Base price (ZAR)"><input className="admin-input" type="number" min="0" step="0.01" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} /></Field>
-            <Field label="Prep time (min)"><input className="admin-input" type="number" min="1" value={form.prep_minutes} onChange={(e) => setForm({ ...form, prep_minutes: e.target.value })} /></Field>
+            <div className="admin-modal__row">
+              <Field label="Item name"><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Classic Chicken Wrap" /></Field>
+              <Field label="Category" renderLabel={false}>
+                <AdminDropdown label="Category" options={categoryOptions} value={form.category_id} onChange={(val) => setForm({ ...form, category_id: val })} />
+              </Field>
+            </div>
+            <div className="admin-modal__row">
+              <Field label="Base price (ZAR)"><input className="admin-input" type="number" min="0" step="0.01" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} /></Field>
+              <Field label="Prep time (min)"><input className="admin-input" type="number" min="1" value={form.prep_minutes} onChange={(e) => setForm({ ...form, prep_minutes: e.target.value })} /></Field>
+            </div>
             <Field label="Status" renderLabel={false}>
               <AdminDropdown label="Status" options={statusOptions} value={form.status} onChange={(val) => setForm({ ...form, status: val })} />
             </Field>
