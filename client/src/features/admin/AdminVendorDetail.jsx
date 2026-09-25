@@ -796,7 +796,7 @@ export default function AdminVendorDetail() {
                 <div className="vd-list-wrap">
                   <div className="admin-menu-items-table">
                     <div className="admin-menu-items-table__head">
-                      <span>Name</span><span>Sort</span><span>Items</span><span /><span /></div>
+                      <span>Name</span><span>Sort</span><span>Items</span><span /><span>Actions</span></div>
                     {menuCategories.slice(0, categoriesVisibleCount).map((cat) => (
                       <div className="admin-menu-items-table__row" key={cat.id}>
                         <div className="admin-menu-items-table__name"><strong>{truncate(cat.name, ITEM_NAME_MAX)}</strong></div>
@@ -846,7 +846,7 @@ export default function AdminVendorDetail() {
                 <div className="vd-list-wrap">
                   <div className="admin-menu-items-table">
                     <div className="admin-menu-items-table__head">
-                      <span>Name</span><span>Category</span><span>Price</span><span>Status</span><span /></div>
+                      <span>Name</span><span>Category</span><span>Price</span><span>Status</span><span>Actions</span></div>
                     {menuItems.slice(0, menuItemsVisibleCount).map((item) => (
                       <div className="admin-menu-items-table__row" key={item.id}>
                         <div className="admin-menu-items-table__name">

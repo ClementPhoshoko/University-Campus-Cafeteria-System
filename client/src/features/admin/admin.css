@@ -4792,7 +4792,7 @@
 .admin-menu-items-table { display: flex; flex-direction: column; }
 .admin-menu-items-table__head {
   display: grid;
-  grid-template-columns: 2fr 1fr 0.7fr 0.7fr 112px;
+  grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr) minmax(0, 0.8fr) 100px 112px;
   padding: 8px 12px;
   font-size: 0.72rem;
   font-weight: var(--font-weight-semibold);
@@ -4803,7 +4803,7 @@
 }
 .admin-menu-items-table__row {
   display: grid;
-  grid-template-columns: 2fr 1fr 0.7fr 0.7fr 112px;
+  grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr) minmax(0, 0.8fr) 100px 112px;
   align-items: center;
   padding: 10px 12px;
   font-size: 0.82rem;
