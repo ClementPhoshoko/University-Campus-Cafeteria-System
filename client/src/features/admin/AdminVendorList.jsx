@@ -168,7 +168,8 @@ export default function AdminVendorList() {
   const [addVendorLoading, setAddVendorLoading] = useState(false);
   const [bulkApproving, setBulkApproving] = useState(false);
   const [tab, setTab] = useState(() => searchParams.get('tab') === 'approvals' ? 'approvals' : 'active');
-  const [loading, setLoading] = useState(true);
+  const [vendorsLoading, setVendorsLoading] = useState(true);
+  const [approvalsLoading, setApprovalsLoading] = useState(true);
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -180,30 +181,34 @@ export default function AdminVendorList() {
   useEffect(() => {
     let cancelled = false;
 
-    const fetchData = async () => {
+    const fetchData = () => {
       if (!token) return;
-      try {
-        const [vendorsResponse, approvalsResponse] = await Promise.all([
-          listVendors(token, {
-            page: currentPage,
-            limit: itemsPerPage,
-            search: query,
-          }),
-          listVendorApprovals(token, { page: currentPage, limit: itemsPerPage, search: query }),
-        ]);
-        if (!cancelled) {
-          setActiveVendors(vendorsResponse.vendors || []);
-          setActivePagination(vendorsResponse.pagination || null);
-          setPendingApprovals(approvalsResponse.approvals || []);
-          setApprovalPagination(approvalsResponse.pagination || null);
-        }
-      } catch (err) {
-        if (!cancelled) console.error('Failed to fetch vendor data:', err);
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+      setVendorsLoading(true);
+      setApprovalsLoading(true);
+
+      listVendors(token, {
+        page: currentPage,
+        limit: itemsPerPage,
+        search: query,
+      })
+        .then((vendorsResponse) => {
+          if (!cancelled) {
+            setActiveVendors(vendorsResponse.vendors || []);
+            setActivePagination(vendorsResponse.pagination || null);
+          }
+        })
+        .catch((err) => { if (!cancelled) console.error('Failed to fetch vendors:', err); })
+        .finally(() => { if (!cancelled) setVendorsLoading(false); });
+
+      listVendorApprovals(token, { page: currentPage, limit: itemsPerPage, search: query })
+        .then((approvalsResponse) => {
+          if (!cancelled) {
+            setPendingApprovals(approvalsResponse.approvals || []);
+            setApprovalPagination(approvalsResponse.pagination || null);
+          }
+        })
+        .catch((err) => { if (!cancelled) console.error('Failed to fetch approvals:', err); })
+        .finally(() => { if (!cancelled) setApprovalsLoading(false); });
     };
 
     fetchData();
@@ -395,7 +400,7 @@ export default function AdminVendorList() {
           </div>
           <div className="admin-vendors__kpi-body">
             <span className="admin-vendors__kpi-label">Total vendors</span>
-             <span className="admin-vendors__kpi-value">{loading ? <span className="skeleton skeleton--kpi-value" /> : activePagination?.total ?? activeVendors.length}</span>
+             <span className="admin-vendors__kpi-value">{vendorsLoading ? <span className="skeleton skeleton--kpi-value" /> : activePagination?.total ?? activeVendors.length}</span>
           </div>
         </div>
         <div className="admin-vendors__kpi">
@@ -404,7 +409,7 @@ export default function AdminVendorList() {
           </div>
           <div className="admin-vendors__kpi-body">
             <span className="admin-vendors__kpi-label">Active vendors</span>
-            <span className="admin-vendors__kpi-value">{loading ? <span className="skeleton skeleton--kpi-value" /> : activeCount}</span>
+            <span className="admin-vendors__kpi-value">{vendorsLoading ? <span className="skeleton skeleton--kpi-value" /> : activeCount}</span>
           </div>
         </div>
         <div className="admin-vendors__kpi">
@@ -413,7 +418,7 @@ export default function AdminVendorList() {
           </div>
           <div className="admin-vendors__kpi-body">
             <span className="admin-vendors__kpi-label">Pending approvals</span>
-            <span className="admin-vendors__kpi-value">{loading ? <span className="skeleton skeleton--kpi-value" /> : pendingCount}</span>
+            <span className="admin-vendors__kpi-value">{approvalsLoading ? <span className="skeleton skeleton--kpi-value" /> : pendingCount}</span>
           </div>
         </div>
       </div>
@@ -475,7 +480,7 @@ export default function AdminVendorList() {
             </div>
           </div>
 
-          {loading ? <div className="admin-card admin-card--full"><SkeletonTable rows={5} columns={6} /></div> : filteredActive.length > 0 ? (
+          {vendorsLoading ? <div className="admin-card admin-card--full"><SkeletonTable rows={5} columns={6} /></div> : filteredActive.length > 0 ? (
             <>
               <div className="admin-vendors__table-wrap">
                 <table className="admin-vendors__table">
@@ -569,7 +574,7 @@ export default function AdminVendorList() {
 
       {tab === 'approvals' && (
         <>
-          {loading ? <div className="admin-card admin-card--full"><SkeletonTable rows={5} columns={6} /></div> : pendingApprovals.length > 0 ? (
+          {approvalsLoading ? <div className="admin-card admin-card--full"><SkeletonTable rows={5} columns={6} /></div> : pendingApprovals.length > 0 ? (
             <>
               <div className="admin-vendors__table-wrap">
                 <table className="admin-vendors__table">
