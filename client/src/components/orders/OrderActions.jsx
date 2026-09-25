@@ -1,5 +1,20 @@
 import { useState } from 'react';
-import { ORDER_STATUSES } from '../../features/orders/orderMockData.js';
+
+const ORDER_STATUSES = {
+  PAYMENT_PENDING: 'payment_pending',
+  SUBMITTED: 'submitted',
+  PAYMENT_CONFIRMED: 'payment_confirmed',
+  RECEIVED_BY_VENDOR: 'received_by_vendor',
+  ACCEPTED: 'accepted',
+  PREPARING: 'preparing',
+  READY_FOR_COLLECTION: 'ready_for_collection',
+  COLLECTED: 'collected',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+  REJECTED: 'rejected',
+  REFUNDED: 'refunded',
+  COLLECTION_NOT_COMPLETED: 'collection_not_completed',
+};
 
 export default function OrderActions({ order, onCancel, onReorder, onRate }) {
   const [isCancelling, setIsCancelling] = useState(false);

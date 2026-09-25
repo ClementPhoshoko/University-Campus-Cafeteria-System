@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   IconAdjustmentsHorizontal,
@@ -8,34 +8,21 @@ import {
 import PageContainer from "../../components/layout/PageContainer.jsx";
 import PageHeader from "../../components/layout/PageHeader.jsx";
 import CafeteriaCard from "../../components/cards/CafeteriaCard.jsx";
-import { cafeterias, heroImage } from "../home/homeData.js";
+import { useAuth } from '../../hooks/useAuth.js';
+import { listVendors, getVendor } from '../../services/employeeApi.js';
+import { mapVendorToDirectory } from '../home/homeTransform.js';
+import { heroImage } from "../home/homeData.js";
 import "./cafeteria.css";
 
 const DIRECTORY_FILTERS = [
+  { id: "all", label: "All" },
   { id: "open", label: "Open Now" },
   { id: "popular", label: "Popular" },
-  { id: "breakfast", label: "Breakfast" },
-  { id: "lunch", label: "Lunch" },
-  { id: "meals", label: "Meals" },
-  { id: "snacks", label: "Snacks" },
-  { id: "drinks", label: "Drinks" },
 ];
 
-const DIRECTORY_DETAILS = {
-  "main-campus-cafe": { category: "popular", location: "Main site · Near the atrium", rating: "4.6", reviewCount: 230 },
-  "library-bistro": { category: "lunch", location: "North site · Library level", rating: "4.8", reviewCount: 184 },
-  "res-court-kitchen": { category: "meals", location: "South site · Residence court", rating: "4.7", reviewCount: 156 },
-  "science-snack-bar": { category: "snacks", location: "North site · Science building", rating: "4.4", reviewCount: 98 },
-  "grill-house-court": { category: "lunch", location: "Main site · Courtyard", rating: "4.5", reviewCount: 212 },
-  "dining-hall-central": { category: "breakfast", location: "Main site · Central hall", rating: "4.6", reviewCount: 301 },
-  "east-gate-gather": { category: "drinks", location: "South site · East gate", rating: "4.5", reviewCount: 127 },
-  "courtyard-eats": { category: "snacks", location: "South site · Open courtyard", rating: "4.3", reviewCount: 89 },
-};
-
-const DIRECTORY_CAFETERIAS = cafeterias.map((cafeteria) => ({
-  ...cafeteria,
-  ...DIRECTORY_DETAILS[cafeteria.id],
-}));
+function cafeteriaPopularCount(list) {
+  return Math.min(3, list.length);
+}
 
 function FilterChip({ active, children, count, onClick }) {
   return (
@@ -53,17 +40,7 @@ function FilterChip({ active, children, count, onClick }) {
   );
 }
 
-function FilterChipGroup({ activeFilter, onChange }) {
-  const counts = useMemo(() => ({
-    open: DIRECTORY_CAFETERIAS.filter(c => c.status === 'open').length,
-    popular: DIRECTORY_CAFETERIAS.filter(c => c.category === 'popular').length,
-    breakfast: DIRECTORY_CAFETERIAS.filter(c => c.category === 'breakfast').length,
-    lunch: DIRECTORY_CAFETERIAS.filter(c => c.category === 'lunch').length,
-    meals: DIRECTORY_CAFETERIAS.filter(c => c.category === 'meals').length,
-    snacks: DIRECTORY_CAFETERIAS.filter(c => c.category === 'snacks').length,
-    drinks: DIRECTORY_CAFETERIAS.filter(c => c.category === 'drinks').length,
-  }), []);
-
+function FilterChipGroup({ activeFilter, onChange, counts }) {
   return (
     <div className="cafeteria_filter-scroll" role="group" aria-label="Cafeteria filters">
       {DIRECTORY_FILTERS.map((filter) => (
@@ -81,25 +58,75 @@ function FilterChipGroup({ activeFilter, onChange }) {
 }
 
 export default function CafeteriaPage() {
+  const { session } = useAuth();
+  const token = session?.access_token;
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState(searchParams.get("filter") || "open");
+  const [activeFilter, setActiveFilter] = useState(searchParams.get("filter") || "all");
   const [showFilters, setShowFilters] = useState(true);
+  const [cafeterias, setCafeterias] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!token) {
+      setCafeterias([]);
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const loadDirectory = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await listVendors({ limit: 20, token });
+        const vendorList = response?.vendors || [];
+        const details = await Promise.all(
+          vendorList.map((vendor) => getVendor(vendor.id, { token }).catch(() => null))
+        );
+
+        if (!cancelled) {
+          setCafeterias(vendorList.map((vendor, index) => mapVendorToDirectory(vendor, details[index], index)));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err?.message || 'Unable to load cafeterias.');
+          setCafeterias([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadDirectory();
+
+    return () => { cancelled = true; };
+  }, [token]);
+
+  const counts = useMemo(() => ({
+    all: cafeterias.length,
+    open: cafeterias.filter((c) => c.status === 'open').length,
+    popular: cafeteriaPopularCount(cafeterias),
+  }), [cafeterias]);
 
   const visibleCafeterias = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return DIRECTORY_CAFETERIAS.filter((cafeteria) => {
-      const matchesQuery = !normalizedQuery
-        || [cafeteria.name, cafeteria.description, cafeteria.location]
-          .some((value) => value.toLowerCase().includes(normalizedQuery));
-      const matchesFilter = activeFilter === "open"
-        ? cafeteria.status === "open"
-        : cafeteria.category === activeFilter;
+    return cafeterias.filter((cafeteria) => {
+      const matchesQuery = !normalizedQuery || [cafeteria.name, cafeteria.description, cafeteria.location].some((value) => String(value).toLowerCase().includes(normalizedQuery));
+      const matchesFilter = activeFilter === 'all'
+        ? true
+        : activeFilter === 'open'
+          ? cafeteria.status === 'open'
+          : true;
 
       return matchesQuery && matchesFilter;
     });
-  }, [activeFilter, query]);
+  }, [activeFilter, cafeterias, query]);
 
   return (
     <PageContainer noPad>
@@ -135,7 +162,7 @@ export default function CafeteriaPage() {
               </button>
             </div>
             <div className={`cafeteria_filters-bar${showFilters ? " cafeteria_filters-bar--visible" : ""}`}>
-              <FilterChipGroup activeFilter={activeFilter} onChange={setActiveFilter} />
+              <FilterChipGroup activeFilter={activeFilter} onChange={setActiveFilter} counts={counts} />
             </div>
           </div>
           <div className="cafeteria_hero-right">
@@ -150,10 +177,15 @@ export default function CafeteriaPage() {
       <main className="cafeteria_page">
         <section className="cafeteria_results" aria-live="polite" aria-label="Cafeteria results">
           <div className="cafeteria_results-heading">
-            <span>{visibleCafeterias.length} cafeterias</span>
+            <span>{loading ? 'Loading' : `${visibleCafeterias.length} cafeterias`}</span>
             {query && <span className="cafeteria_results-query">for "{query}"</span>}
           </div>
-          {visibleCafeterias.length > 0 ? (
+          {error ? (
+            <div className="cafeteria_empty">
+              <h2>Unable to load cafeterias</h2>
+              <p>{error}</p>
+            </div>
+          ) : visibleCafeterias.length > 0 ? (
             <div className="cafeteria_grid">
               {visibleCafeterias.map((cafeteria) => (
                 <CafeteriaCard key={cafeteria.id} {...cafeteria} variant="directory" to={`/cafeterias/${cafeteria.id}`} />
@@ -163,7 +195,7 @@ export default function CafeteriaPage() {
             <div className="cafeteria_empty">
               <h2>No cafeterias found</h2>
               <p>Try changing your search or filters.</p>
-              <button type="button" className="cafeteria_clear-button" onClick={() => { setQuery(""); setActiveFilter("open"); }}>
+              <button type="button" className="cafeteria_clear-button" onClick={() => { setQuery(""); setActiveFilter("all"); }}>
                 Clear filters
               </button>
             </div>

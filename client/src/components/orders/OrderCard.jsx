@@ -1,21 +1,26 @@
 import { Link } from 'react-router-dom';
 import OrderStatusBadge from './OrderStatusBadge.jsx';
 import SmartImage from '../ui/SmartImage.jsx';
-import {
-  getVendorById,
-  getItemsForOrder,
-  formatOrderDate,
-  formatOrderTime,
-} from '../../features/orders/orderMockData.js';
+
+function formatOrderDate(isoString) {
+  if (!isoString) return '';
+  return new Date(isoString).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function formatOrderTime(isoString) {
+  if (!isoString) return '';
+  return new Date(isoString).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
 
 export default function OrderCard({ order }) {
-  const vendor = getVendorById(order.vendor_id);
-  const items = getItemsForOrder(order.id);
-  const itemNames = items.map((item) => `${item.quantity}× ${item.item_name_snapshot}`);
+  const itemNames = Array.isArray(order.items)
+    ? order.items.map((item) => `${item.quantity || 1}× ${item.item_name_snapshot || item.name || 'Item'}`)
+    : [];
   const displayItems = itemNames.slice(0, 2).join(', ');
-  const remaining = itemNames.length - 2;
-  const logo = order.vendorLogo || vendor?.image || null;
-  const vendorName = order.vendorName || vendor?.name || 'Unknown vendor';
+  const remaining = Math.max(itemNames.length - 2, 0);
+  const logo = order.vendorLogo || order.vendor?.logo_url || null;
+  const vendorName = order.vendorName || order.vendor?.name || 'Unknown vendor';
+  const total = Number(order.total || 0);
 
   return (
     <Link to={`/orders/${order.id}`} className="order-card">
@@ -37,7 +42,7 @@ export default function OrderCard({ order }) {
         </p>
       </div>
       <div className="order-card__end">
-        <span className="order-card__total">R {order.total.toFixed(2)}</span>
+        <span className="order-card__total">R {total.toFixed(2)}</span>
         <OrderStatusBadge status={order.status} />
       </div>
     </Link>

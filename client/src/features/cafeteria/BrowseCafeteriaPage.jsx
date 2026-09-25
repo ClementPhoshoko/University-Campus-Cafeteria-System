@@ -11,7 +11,6 @@ import BrowseCafeteriaBackground from '../../components/BrowseCafeteriaBackgroun
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { listVendorMenu, getVendor, addToCart } from '../../services/employeeApi.js';
-import { reviews } from '../home/homeData.js';
 import './browse-cafeteria.css';
 
 const REVIEWS_PER_PAGE = 5;
@@ -209,9 +208,9 @@ export default function BrowseCafeteriaPage() {
   const [showAddReview, setShowAddReview] = useState(false);
 
   const isReviewsView = searchParams.get('view') === 'reviews';
-  const rating = 4.6;
-  const totalReviews = 230;
-  const hasOrdered = true;
+  const rating = vendor?.average_rating ? Number(vendor.average_rating) : 0;
+  const totalReviews = Number(vendor?.rating_count || 0);
+  const hasOrdered = false;
 
   useEffect(() => {
     if (!token || !cafeteriaId) return;
@@ -263,10 +262,7 @@ export default function BrowseCafeteriaPage() {
     return cat?.items || [];
   }, [activeCategory, categories, allItems]);
 
-  const filteredReviews = useMemo(() => {
-    if (!selectedRating) return reviews;
-    return reviews.filter((r) => r.stars === selectedRating);
-  }, [selectedRating]);
+  const filteredReviews = useMemo(() => [], [selectedRating]);
 
   const addItem = async (itemId) => {
     if (!token) return;
@@ -290,7 +286,18 @@ export default function BrowseCafeteriaPage() {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   };
 
-  const cafeteria = vendor ? { id: vendor.id, name: vendor.name, description: vendor.description, image: vendor.logo_url, status: 'open' } : { id: cafeteriaId, name: 'Loading...', description: '', image: null, status: 'open' };
+  const location = vendor?.locations?.[0];
+  const cafeteria = vendor
+    ? {
+        id: vendor.id,
+        name: vendor.name,
+        description: vendor.description,
+        image: vendor.logo_url,
+        status: location?.service_status || 'open',
+        walkTime: '6 min',
+        prepWindow: location?.estimated_prep_minutes ? `${location.estimated_prep_minutes} min` : '15 min',
+      }
+    : { id: cafeteriaId, name: 'Loading...', description: '', image: null, status: 'open', walkTime: '—', prepWindow: '—' };
 
   return (
     <PageContainer className="browse_cafeteria-page-container">

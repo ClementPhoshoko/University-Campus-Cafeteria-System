@@ -19,7 +19,9 @@ import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import androidBadge from '../../assets/android_download-PJqqAvJc.webp';
 import iosBadge from '../../assets/ios_download-Dn_KtiFi.webp';
 import HeroFoodShowcase from '../../components/hero/HeroFoodShowcase.jsx';
-import { cafeterias, popularMeals, categories, deliveryImage, reviews, reviewsImage, heroImage, heroFoods } from './homeData.js';
+import { listVendors, getVendor, listVendorMenu } from '../../services/employeeApi.js';
+import { mapVendorToCafeteria, mapMenuItemToMeal, mapCategoryToDisplay } from './homeTransform.js';
+import { deliveryImage, reviewsImage, heroImage, heroFoods } from './homeData.js';
 import './home.css';
 
 function greeting() {
@@ -57,19 +59,101 @@ function ScrollIndicator({ fillRef }) {
 }
 
 export default function HomePage() {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
   const cafeteria = useScrollProgress();
   const meals = useScrollProgress();
+  const token = session?.access_token;
+
+  const [cafeterias, setCafeterias] = useState([]);
+  const [popularMeals, setPopularMeals] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [homeError, setHomeError] = useState(null);
+  const [homeLoading, setHomeLoading] = useState(false);
+
+  useEffect(() => {
+    if (!token) {
+      setCafeterias([]);
+      setPopularMeals([]);
+      setCategories([]);
+      setHomeLoading(false);
+      setHomeError(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const loadHome = async () => {
+      setHomeLoading(true);
+      setHomeError(null);
+
+      try {
+        const vendorsResponse = await listVendors({ limit: 6, token });
+        const vendorList = vendorsResponse?.vendors || [];
+
+        const vendorDetails = await Promise.all(
+          vendorList.map((vendor) => getVendor(vendor.id, { token }).catch(() => null))
+        );
+
+        const mappedCafeterias = vendorList.map((vendor, index) => {
+          const detail = vendorDetails[index];
+          return mapVendorToCafeteria(vendor, detail, index);
+        });
+
+        const menuResponses = await Promise.all(
+          vendorList.map((vendor) => listVendorMenu(vendor.id, { token }).catch(() => ({ categories: [] })))
+        );
+
+        const flattenedMeals = menuResponses.flatMap((response, index) => {
+          const vendor = vendorList[index];
+          const categoriesList = response?.categories || [];
+
+          return categoriesList.flatMap((category) => (category.items || []).map((item, itemIndex) =>
+            mapMenuItemToMeal(item, vendor?.name || 'Campus vendor', vendor?.id, itemIndex + index)
+          ));
+        });
+
+        const mappedCategories = menuResponses.flatMap((response) => (response?.categories || [])).reduce((acc, category) => {
+          const name = category?.name || 'Other';
+          if (!acc.some((item) => item.name === name)) {
+            acc.push(mapCategoryToDisplay(category));
+          }
+          return acc;
+        }, []);
+
+        if (!cancelled) {
+          setCafeterias(mappedCafeterias);
+          setPopularMeals(flattenedMeals.slice(0, 8));
+          setCategories(mappedCategories.slice(0, 8));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setHomeError(error?.message || 'Unable to load the home feed right now.');
+          setCafeterias([]);
+          setPopularMeals([]);
+          setCategories([]);
+        }
+      } finally {
+        if (!cancelled) setHomeLoading(false);
+      }
+    };
+
+    loadHome();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const PER_PAGE = 3;
-  const totalPages = Math.ceil(reviews.length / PER_PAGE);
+  const homeReviews = [];
+  const totalPages = Math.max(1, Math.ceil(homeReviews.length / PER_PAGE));
   const [reviewPage, setReviewPage] = useState(0);
   const [reviewAnim, setReviewAnim] = useState('entering');
   const [searchQuery, setSearchQuery] = useState('');
   const timeoutRef = useRef(null);
 
-  const pageReviews = reviews.slice(reviewPage * PER_PAGE, reviewPage * PER_PAGE + PER_PAGE);
+  const pageReviews = homeReviews.slice(reviewPage * PER_PAGE, reviewPage * PER_PAGE + PER_PAGE);
 
   const goToPage = useCallback((next) => {
     if (next < 0 || next >= totalPages || next === reviewPage) return;
@@ -128,48 +212,60 @@ export default function HomePage() {
       <div className="home-content">
         <section aria-label="Our cafeterias">
           <SectionHeader title="Our cafeterias" actionLabel="View all" actionTo="/cafeterias" />
-          <div className="home_cafeteria-scroll" ref={cafeteria.scrollRef} onScroll={cafeteria.onScroll}>
-            {cafeterias.map((v) => (
-              <CafeteriaCard
-                key={v.id}
-                id={v.id}
-                name={v.name}
-                status={v.status}
-                category={v.category}
-                image={v.image}
-                description={v.description}
-                walkTime={v.walkTime}
-                prepWindow={v.prepWindow}
-              />
-            ))}
+          {homeLoading ? (
+            <p className="home_loading-text">Loading cafeterias…</p>
+          ) : homeError ? (
+            <p className="home_loading-text">{homeError}</p>
+          ) : (
+            <>
+              <div className="home_cafeteria-scroll" ref={cafeteria.scrollRef} onScroll={cafeteria.onScroll}>
+                {cafeterias.map((v) => (
+                  <CafeteriaCard
+                    key={v.id}
+                    id={v.id}
+                    name={v.name}
+                    status={v.status}
+                    category={v.category}
+                    image={v.image}
+                    description={v.description}
+                    walkTime={v.walkTime}
+                    prepWindow={v.prepWindow}
+                  />
+                ))}
 
-            <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all cafeterias">
-              <IconChevronRight size={26} stroke={2.2} />
-            </Link>
-          </div>
-          <ScrollIndicator fillRef={cafeteria.fillRef} />
+                <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all cafeterias">
+                  <IconChevronRight size={26} stroke={2.2} />
+                </Link>
+              </div>
+              <ScrollIndicator fillRef={cafeteria.fillRef} />
+            </>
+          )}
         </section>
 
         <section aria-label="Popular meals" style={{ marginTop: 'var(--space-8)' }}>
           <SectionHeader title="Popular right now" actionLabel="View all" actionTo="/cafeterias" />
-          <div className="home_meals-scroll" ref={meals.scrollRef} onScroll={meals.onScroll}>
-            {popularMeals.map((m) => (
-              <FoodCard
-                key={m.id}
-                id={m.id}
-                name={m.name}
-                price={m.price}
-                vendor={m.vendor}
-                image={m.image}
-                bestSeller={m.bestSeller}
-                to={`/cafeterias/${m.cafeteriaId}/menu/${m.id}`}
-              />
-            ))}
-            <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all meals">
-              <IconChevronRight size={26} stroke={2.2} />
-            </Link>
-          </div>
-          <ScrollIndicator fillRef={meals.fillRef} />
+          {homeLoading ? (
+            <p className="home_loading-text">Loading menu picks…</p>
+          ) : (
+            <div className="home_meals-scroll" ref={meals.scrollRef} onScroll={meals.onScroll}>
+              {popularMeals.map((m) => (
+                <FoodCard
+                  key={m.id}
+                  id={m.id}
+                  name={m.name}
+                  price={m.price}
+                  vendor={m.vendor}
+                  image={m.image}
+                  bestSeller={m.bestSeller}
+                  to={`/cafeterias/${m.cafeteriaId}/menu/${m.id}`}
+                />
+              ))}
+              <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all meals">
+                <IconChevronRight size={26} stroke={2.2} />
+              </Link>
+            </div>
+          )}
+          {!homeLoading && <ScrollIndicator fillRef={meals.fillRef} />}
         </section>
 
         <section aria-label="Shop by category" style={{ marginTop: 'var(--space-8)' }}>
@@ -202,59 +298,61 @@ export default function HomePage() {
           </div>
         </section>
 
-        <div className="home_reviews-wrap">
-          <div className="home_reviews-image">
-            <img src={reviewsImage} alt="" loading="lazy" />
-          </div>
-          <div className="home_reviews-content">
-            <h2 className="home_reviews-title">What colleagues are saying</h2>
-            <p className="home_reviews-subtitle">Real reviews from the workplace community</p>
-            <div className="home_reviews-list" key={reviewPage}>
-              {pageReviews.map((r) => (
-                <ReviewItem
-                  key={r.id}
-                  name={r.name}
-                  stars={r.stars}
-                  role={r.role}
-                  text={r.text}
-                  animState={reviewAnim}
-                />
-              ))}
+        {pageReviews.length > 0 && (
+          <div className="home_reviews-wrap">
+            <div className="home_reviews-image">
+              <img src={reviewsImage} alt="" loading="lazy" />
             </div>
-            <div className="home_reviews-pagination">
-              <button
-                type="button"
-                className="home_reviews-page-btn"
-                disabled={reviewPage === 0}
-                onClick={() => goToPage(reviewPage - 1)}
-                aria-label="Previous reviews"
-              >
-                <IconChevronLeft size={18} stroke={2} />
-              </button>
-              <div className="home_reviews-dots">
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className="home_reviews-dot"
-                    data-active={i === reviewPage}
-                    onClick={() => goToPage(i)}
-                    aria-label={`Go to page ${i + 1}`}
+            <div className="home_reviews-content">
+              <h2 className="home_reviews-title">What colleagues are saying</h2>
+              <p className="home_reviews-subtitle">Real reviews from the workplace community</p>
+              <div className="home_reviews-list" key={reviewPage}>
+                {pageReviews.map((r) => (
+                  <ReviewItem
+                    key={r.id}
+                    name={r.name}
+                    stars={r.stars}
+                    role={r.role}
+                    text={r.text}
+                    animState={reviewAnim}
                   />
                 ))}
               </div>
-              <button
-                type="button"
-                className="home_reviews-page-btn"
-                disabled={reviewPage === totalPages - 1}
-                onClick={() => goToPage(reviewPage + 1)}
-                aria-label="Next reviews"
-              >
-                <IconChevronRight size={18} stroke={2} />
-              </button>
+              <div className="home_reviews-pagination">
+                <button
+                  type="button"
+                  className="home_reviews-page-btn"
+                  disabled={reviewPage === 0}
+                  onClick={() => goToPage(reviewPage - 1)}
+                  aria-label="Previous reviews"
+                >
+                  <IconChevronLeft size={18} stroke={2} />
+                </button>
+                <div className="home_reviews-dots">
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className="home_reviews-dot"
+                      data-active={i === reviewPage}
+                      onClick={() => goToPage(i)}
+                      aria-label={`Go to page ${i + 1}`}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="home_reviews-page-btn"
+                  disabled={reviewPage === totalPages - 1}
+                  onClick={() => goToPage(reviewPage + 1)}
+                  aria-label="Next reviews"
+                >
+                  <IconChevronRight size={18} stroke={2} />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="home_app-download">
           <p className="home_app-download-text">

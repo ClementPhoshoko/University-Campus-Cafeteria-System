@@ -1,8 +1,24 @@
 import { IconCheck, IconWalk, IconChefHat, IconClipboardCheck, IconCircleCheck, IconBike } from '@tabler/icons-react';
-import {
-  ORDER_STATUSES,
-  formatOrderTime,
-} from '../../features/orders/orderMockData.js';
+const ORDER_STATUSES = {
+  PAYMENT_PENDING: 'payment_pending',
+  SUBMITTED: 'submitted',
+  PAYMENT_CONFIRMED: 'payment_confirmed',
+  RECEIVED_BY_VENDOR: 'received_by_vendor',
+  ACCEPTED: 'accepted',
+  PREPARING: 'preparing',
+  READY_FOR_COLLECTION: 'ready_for_collection',
+  COLLECTED: 'collected',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+  REJECTED: 'rejected',
+  REFUNDED: 'refunded',
+  COLLECTION_NOT_COMPLETED: 'collection_not_completed',
+};
+
+function formatOrderTime(isoString) {
+  if (!isoString) return '';
+  return new Date(isoString).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
 
 const PROGRESS_STEPS = [
   { key: 'placed', label: 'Placed', icon: IconClipboardCheck, match: [ORDER_STATUSES.PAYMENT_PENDING, ORDER_STATUSES.SUBMITTED] },
