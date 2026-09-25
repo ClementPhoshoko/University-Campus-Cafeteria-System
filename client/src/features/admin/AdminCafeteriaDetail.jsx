@@ -9,7 +9,7 @@ import {
 } from '../../services/adminApi.js';
 import { BuildingModal, collectionPointFields, deliveryFields, floorFields, LocationModal, newBuildingDefaults } from './LocationForms.jsx';
 import { NewSiteModal } from './AdminCafeteriaList.jsx';
-import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 
 function StatusPill({ active }) { return <span className={`admin-status admin-status--${active ? 'success' : 'info'}`}>{active ? 'Active' : 'Inactive'}</span>; }

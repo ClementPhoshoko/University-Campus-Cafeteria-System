@@ -6,7 +6,7 @@ import PasswordInput from '../../components/PasswordInput.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import GlassTooltip from '../../components/GlassTooltip.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
-import cheerfulAvatar from '../../assets/avatars/Cheerful_Student_with_Green_Checkmark.png';
+import cheerfulAvatar from '../../assets/avatars/Cheerful_Student_with_Green_Checkmark.webp';
 
 export default function Signup() {
   const { signUp, signInWithGoogle, loading: authLoading } = useAuth();

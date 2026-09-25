@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { IconBrandInstagram, IconBrandTwitter, IconBrandWhatsapp } from '@tabler/icons-react';
-import logo from '../../assets/main_logo.png';
+import logo from '../../assets/main_logo.webp';
 import './Footer.css';
 
 const quickLinks = [

@@ -24,7 +24,7 @@ import {
   ANNOUNCEMENT_CATEGORIES,
   ANNOUNCEMENT_CHANNELS,
 } from './adminMockData.js';
-import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 
 const SEVERITY_TONE = {
   info: 'info',

@@ -7,7 +7,7 @@ import { getUserRoles, setUserRoles } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import ModalProgressOverlay from './ModalProgressOverlay.jsx';
 import { ALL_ROLES } from './adminMockData.js';
-import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 
 const ROLE_HINTS = { admin: 'Full platform control and configuration access.', executive: 'Executive-level ordering and corporate catering workflows.', finance: 'Settlement, reconciliation and refund processing.', support: 'Order intervention, complaints and customer messages.', vendor_staff: 'Manage assigned vendor orders and menu updates.', vendor_manager: 'Vendor profile, staff and operating hours.', employee: 'Standard ordering and collection.', executive_assistant: 'Order on behalf of executives.', meeting_organiser: 'Submit and track corporate catering orders.', training_coordinator: 'Arrange catering for training sessions and programmes.', cost_centre_owner: 'Review and approve orders charged to assigned cost centres.', auditor: 'Read-only review of operational activity and audit records.' };
 function Avatar({ name = '' }) { return <span className="admin-user-avatar admin-user-avatar--lg" style={{ width: 72, height: 72, fontSize: 26 }}>{name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span>; }

@@ -6,12 +6,12 @@ export default function useObjectPreview(initialValue = null) {
   currentRef.current = preview;
 
   const setPreviewFromFile = (file) => {
+    const previous = currentRef.current;
+    if (previous && previous.startsWith('blob:')) URL.revokeObjectURL(previous);
     if (!file) {
       setPreview(initialValue);
       return;
     }
-    const previous = currentRef.current;
-    if (previous && previous.startsWith('blob:')) URL.revokeObjectURL(previous);
     setPreview(URL.createObjectURL(file));
   };
 

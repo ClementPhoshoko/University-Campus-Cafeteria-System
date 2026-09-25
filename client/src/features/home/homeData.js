@@ -1,41 +1,41 @@
-import chickenWraps from '../../assets/food/Grilled_Chicken_Wraps_and_Fresh_Salad_Bowl.png';
-import fettuccine from '../../assets/food/Creamy_Chicken_Fettuccine_with_Garlic_Bread.png';
-import paella from '../../assets/food/Vibrant_Seafood_Paella_Bowl.png';
-import fishBowl from '../../assets/food/Grilled_Fish_Rice_Bowl_with_Salsa.png';
-import teaScones from '../../assets/food/Rustic_Afternoon_Tea_with_Berry_Scones.png';
-import chickenDinner from '../../assets/food/Grilled_Chicken_Dinner_Platter.png';
-import teriyakiBowl from '../../assets/food/Glazed_Beef_Teriyaki_Rice_Bowl.png';
-import chickenWedges from '../../assets/food/Grilled_Chicken_Wrap_Platter_with_Potato_Wedges.png';
-import pennePasta from '../../assets/food/Creamy_Chicken_Penne_Pasta_Bowl.png';
-import salmonVeg from '../../assets/food/Grilled_Salmon_with_Rice_and_Roasted_Vegetables.png';
+import chickenWraps from '../../assets/food/Grilled_Chicken_Wraps_and_Fresh_Salad_Bowl.webp';
+import fettuccine from '../../assets/food/Creamy_Chicken_Fettuccine_with_Garlic_Bread.webp';
+import paella from '../../assets/food/Vibrant_Seafood_Paella_Bowl.webp';
+import fishBowl from '../../assets/food/Grilled_Fish_Rice_Bowl_with_Salsa.webp';
+import teaScones from '../../assets/food/Rustic_Afternoon_Tea_with_Berry_Scones.webp';
+import chickenDinner from '../../assets/food/Grilled_Chicken_Dinner_Platter.webp';
+import teriyakiBowl from '../../assets/food/Glazed_Beef_Teriyaki_Rice_Bowl.webp';
+import chickenWedges from '../../assets/food/Grilled_Chicken_Wrap_Platter_with_Potato_Wedges.webp';
+import pennePasta from '../../assets/food/Creamy_Chicken_Penne_Pasta_Bowl.webp';
+import salmonVeg from '../../assets/food/Grilled_Salmon_with_Rice_and_Roasted_Vegetables.webp';
 
-import imgDelivery from '../../assets/avatars/illustration_avoid_deliveries.png';
-import imgReviews from '../../assets/avatars/illustration_collect_order.png';
+import imgDelivery from '../../assets/avatars/illustration_avoid_deliveries.webp';
+import imgReviews from '../../assets/avatars/illustration_collect_order.webp';
 
-import imgBreakfast from '../../assets/cafeterias/cafeteria_breakfast.png';
-import imgEvening from '../../assets/cafeterias/campus_evening.png';
-import imgCourtyardParty from '../../assets/cafeterias/courtyard_party.png';
-import imgGrillHouse from '../../assets/cafeterias/grill_house.png';
-import imgLively from '../../assets/cafeterias/lively_courtyard.png';
-import imgDiningHall from '../../assets/cafeterias/dining_hall_buzz.png';
-import imgModernGathering from '../../assets/cafeterias/modern_gathering.png';
-import imgScienceBar from '../../assets/cafeterias/science_snack_bar.png';
-import heroPattern from '../../assets/heros/Pastel_Blue _Food_Doodle_Pattern.png';
+import imgBreakfast from '../../assets/cafeterias/cafeteria_breakfast.webp';
+import imgEvening from '../../assets/cafeterias/campus_evening.webp';
+import imgCourtyardParty from '../../assets/cafeterias/courtyard_party.webp';
+import imgGrillHouse from '../../assets/cafeterias/grill_house.webp';
+import imgLively from '../../assets/cafeterias/lively_courtyard.webp';
+import imgDiningHall from '../../assets/cafeterias/dining_hall_buzz.webp';
+import imgModernGathering from '../../assets/cafeterias/modern_gathering.webp';
+import imgScienceBar from '../../assets/cafeterias/science_snack_bar.webp';
+import heroPattern from '../../assets/heros/Pastel_Blue _Food_Doodle_Pattern.webp';
 
-import adCombo from '../../assets/home_ads/Ultimate_Combo_for_Two.png';
-import adWraps from '../../assets/home_ads/Light_Meal_Combo_with_Wraps_and_Cola.png';
-import adCokeWings from '../../assets/home_ads/Ice_Cold_Coke_Wings_Combo.png';
-import adHalal from '../../assets/home_ads/Grilled_Halal_Chicken_Feast.png';
-import adCrispy from '../../assets/home_ads/Crispy_Fried_Chicken_Feast.png';
+import adCombo from '../../assets/home_ads/Ultimate_Combo_for_Two.webp';
+import adWraps from '../../assets/home_ads/Light_Meal_Combo_with_Wraps_and_Cola.webp';
+import adCokeWings from '../../assets/home_ads/Ice_Cold_Coke_Wings_Combo.webp';
+import adHalal from '../../assets/home_ads/Grilled_Halal_Chicken_Feast.webp';
+import adCrispy from '../../assets/home_ads/Crispy_Fried_Chicken_Feast.webp';
 
-import catHalal from '../../assets/food/Grilled_Salmon_with_Rice_and_Roasted_Vegetables.png';
-import catBreakfast from '../../assets/food/Rustic_Afternoon_Tea_with_Berry_Scones.png';
-import catDrinks from '../../assets/drinks/Refreshing_Slusher_with_Ice.png';
-import catQuick from '../../assets/food/Grilled_Chicken_Wrap_Platter_with_Potato_Wedges.png';
-import catHealthy from '../../assets/food/Grilled_Chicken_Wraps_and_Fresh_Salad_Bowl.png';
-import catPasta from '../../assets/food/Creamy_Chicken_Fettuccine_with_Garlic_Bread.png';
-import catSeafood from '../../assets/food/Vibrant_Seafood_Paella_Bowl.png';
-import catStudent from '../../assets/food/Grilled_Fish_Rice_Bowl_with_Salsa.png';
+import catHalal from '../../assets/food/Grilled_Salmon_with_Rice_and_Roasted_Vegetables.webp';
+import catBreakfast from '../../assets/food/Rustic_Afternoon_Tea_with_Berry_Scones.webp';
+import catDrinks from '../../assets/drinks/Refreshing_Slusher_with_Ice.webp';
+import catQuick from '../../assets/food/Grilled_Chicken_Wrap_Platter_with_Potato_Wedges.webp';
+import catHealthy from '../../assets/food/Grilled_Chicken_Wraps_and_Fresh_Salad_Bowl.webp';
+import catPasta from '../../assets/food/Creamy_Chicken_Fettuccine_with_Garlic_Bread.webp';
+import catSeafood from '../../assets/food/Vibrant_Seafood_Paella_Bowl.webp';
+import catStudent from '../../assets/food/Grilled_Fish_Rice_Bowl_with_Salsa.webp';
 
 export const cafeterias = [
   {

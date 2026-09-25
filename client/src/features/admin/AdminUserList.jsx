@@ -7,7 +7,7 @@ import { listUsers } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useDebounce } from '../../hooks/useDebounce.js';
 import { ALL_ROLES, ROLE_FILTERS, USER_STATUS_FILTERS } from './adminMockData.js';
-import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 
 const ITEMS_PER_PAGE = 10;
 const roleMeta = ALL_ROLES.reduce((map, role) => ({ ...map, [role.id]: role }), {});

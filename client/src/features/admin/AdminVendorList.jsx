@@ -16,7 +16,7 @@ import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { createVendor, listVendorApprovals, listVendors, updateVendorApproval, uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useDebounce } from '../../hooks/useDebounce.js';
-import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import { AddVendorModal } from './VendorForms.jsx';
 

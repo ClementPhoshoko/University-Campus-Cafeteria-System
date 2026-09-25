@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
 import { sendWelcomeEmail } from '../../services/email.js';
-import cheerfulAvatar from '../../assets/avatars/Cheerful_Student_with_Green_Checkmark.png';
+import cheerfulAvatar from '../../assets/avatars/Cheerful_Student_with_Green_Checkmark.webp';
 
 function isNewUser(user) {
   if (!user?.created_at) return false;

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { IconBell, IconShoppingCart, IconChefHat, IconSun, IconMoon } from '@tabler/icons-react';
 import DesktopNav from './DesktopNav.jsx';
 import { useTheme } from '../../contexts/ThemeContext.jsx';
-import logo from '../../assets/main_logo.png';
+import logo from '../../assets/main_logo.webp';
 
 /**
  * Global application header (glass topbar).

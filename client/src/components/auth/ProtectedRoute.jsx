@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
-import connectedAvatar from '../../assets/avatars/connected_avatar.png';
-import notConnectedAvatar from '../../assets/avatars/not_connected_avatar.png';
+import connectedAvatar from '../../assets/avatars/connected_avatar.webp';
+import notConnectedAvatar from '../../assets/avatars/not_connected_avatar.webp';
 import '../../features/auth/auth.css';
 
 export default function ProtectedRoute() {

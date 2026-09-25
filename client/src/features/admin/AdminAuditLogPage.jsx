@@ -5,7 +5,7 @@ import Pagination from '../../components/ui/Pagination.jsx';
 import SkeletonTable from '../../components/ui/SkeletonTable.jsx';
 import { listAuditLogs } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
-import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 
 const RESOURCE_OPTIONS = [
   { id: '', label: 'All resources' },

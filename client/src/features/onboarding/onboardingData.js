@@ -1,6 +1,6 @@
-import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.png';
-import collectOrderImg from '../../assets/avatars/illustration_collect_order.png';
-import avoidDeliveriesImg from '../../assets/avatars/illustration_avoid_deliveries.png';
+import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.webp';
+import collectOrderImg from '../../assets/avatars/illustration_collect_order.webp';
+import avoidDeliveriesImg from '../../assets/avatars/illustration_avoid_deliveries.webp';
 
 const onboardingSlides = [
   {

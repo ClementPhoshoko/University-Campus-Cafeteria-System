@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import AuthBackground from './AuthBackground.jsx';
-import mainLogo from '../assets/main_logo.png';
+import mainLogo from '../assets/main_logo.webp';
 
 export default function AuthLayout() {
   const location = useLocation();

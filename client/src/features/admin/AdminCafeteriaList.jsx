@@ -21,7 +21,7 @@ import SmartImage from '../../components/ui/SmartImage.jsx';
 import { uploadAdminAsset } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import SkeletonCard from '../../components/ui/SkeletonCard.jsx';
-import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 import ModalProgressOverlay from './ModalProgressOverlay.jsx';
 
 const VIEW_TABS = [

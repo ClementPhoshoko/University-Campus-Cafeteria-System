@@ -18,7 +18,7 @@ import AdminBackground from '../../components/AdminBackground.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { getHealth } from '../../services/api.js';
 import { ADMIN_NAV_ITEMS } from './adminMockData.js';
-import mainLogo from '../../assets/main_logo.png';
+import mainLogo from '../../assets/main_logo.webp';
 import './admin.css';
 
 const ICON_MAP = {

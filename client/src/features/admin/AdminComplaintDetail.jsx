@@ -28,7 +28,7 @@ import {
   COMPLAINT_CATEGORIES,
   formatCurrency,
 } from './adminMockData.js';
-import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.png';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 
 const PRIORITY_TONE = {
   urgent: 'error',

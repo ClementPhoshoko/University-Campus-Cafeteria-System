@@ -9,7 +9,7 @@ import CartBackground from '../../components/CartBackground.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import OrderConfirmation from '../../components/orders/OrderConfirmation.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
-import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.png';
+import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.webp';
 import { useAuth } from '../../hooks/useAuth.js';
 import { getCart, updateCartItem, removeCartItem, createOrder } from '../../services/employeeApi.js';
 import './CartPage.css';
