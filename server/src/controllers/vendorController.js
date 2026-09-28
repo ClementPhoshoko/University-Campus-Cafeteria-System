@@ -25,7 +25,7 @@ const LOCATION_SELECT = '*, sites(id, name), buildings(id, name), collection_poi
 
 const ONBOARDING_KEY_FIELD = 'onboarding_key';
 
-const VENDOR_PUBLIC_FIELDS = 'id, name, slug, description, logo_url, corporate_catering_enabled, average_rating, rating_count, created_at';
+const VENDOR_PUBLIC_FIELDS = 'id, name, slug, description, logo_url, category, walk_time, corporate_catering_enabled, average_rating, rating_count, created_at';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -68,13 +68,20 @@ function embedCount(row, child) {
 }
 
 /** Keep only the fields the public-facing API needs on a vendor row. */
-async function pickPublicVendor(vendor) {
-  const fields = VENDOR_PUBLIC_FIELDS.split(', ').filter((f) => !f.includes(':'));
-  const out = {};
-  for (const f of fields) out[f] = vendor[f];
-  out.logo_url = await resolveAssetUrl(vendor.logo_url, { size: 'icon' });
-  return out;
-}
+  async function pickPublicVendor(vendor) {
+    const fields = VENDOR_PUBLIC_FIELDS.split(', ').filter((f) => !f.includes(':'));
+    const out = {};
+    for (const f of fields) out[f] = vendor[f];
+    out.logo_url = await resolveAssetUrl(vendor.logo_url, { size: 'icon' });
+    const locations = vendor.vendor_locations || [];
+    const activeLocation = locations.find((l) => l.is_active);
+    if (activeLocation) {
+      out.service_status = activeLocation.service_status;
+      out.estimated_prep_minutes = activeLocation.estimated_prep_minutes;
+      out.walk_time = activeLocation.walk_time || vendor.walk_time || null;
+    }
+    return out;
+  }
 
 // --- slug + idempotency -----------------------------------------------------
 
@@ -910,7 +917,7 @@ export async function listPublicVendors(req, res) {
 
     let query = db()
       .from('vendors')
-      .select(`${VENDOR_PUBLIC_FIELDS}, vendor_locations!inner(id, service_status)`, { count: 'exact' })
+      .select(`${VENDOR_PUBLIC_FIELDS}, vendor_locations!inner(id, service_status, estimated_prep_minutes)`, { count: 'exact' })
       .eq('status', 'approved')
       .eq('vendor_locations.is_active', true);
 
@@ -946,7 +953,7 @@ export async function getPublicVendor(req, res) {
 
     const { data: vendor, error } = await db()
       .from('vendors')
-      .select(VENDOR_PUBLIC_FIELDS)
+      .select(`${VENDOR_PUBLIC_FIELDS}`)
       .eq('id', vendorId)
       .eq('status', 'approved')
       .maybeSingle();
@@ -966,7 +973,7 @@ export async function getPublicVendor(req, res) {
 
     return respond(req, res, {
       success: true,
-      vendor: { ...vendor, logo_url: await resolveAssetUrl(vendor.logo_url, { size: 'card' }), locations: activeLocations },
+      vendor: { ...vendor, category: vendor.category, walk_time: vendor.walk_time, logo_url: await resolveAssetUrl(vendor.logo_url, { size: 'card' }), locations: activeLocations },
     }, { cacheControl: CACHE.publicRef });
   } catch (err) {
     return handleControllerError(res, err);

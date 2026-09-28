@@ -8,9 +8,9 @@ export default function OrderEmptyState() {
     <div className="orders-empty">
       <img src={illustration} alt="" className="orders-empty__image" loading="eager" />
       <h2 className="orders-empty__title">No orders yet</h2>
-      <p className="orders-empty__text">Start your first order from one of our campus cafeterias.</p>
-      <button type="button" className="orders-empty__btn" onClick={() => navigate('/cafeterias')}>
-        Browse Cafeterias
+      <p className="orders-empty__text">Start your first order from one of our campus vendors.</p>
+      <button type="button" className="orders-empty__btn" onClick={() => navigate('/vendors')}>
+        Browse Vendors
       </button>
     </div>
   );

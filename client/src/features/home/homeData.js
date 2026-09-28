@@ -12,14 +12,14 @@ import salmonVeg from '../../assets/food/Grilled_Salmon_with_Rice_and_Roasted_Ve
 import imgDelivery from '../../assets/avatars/illustration_avoid_deliveries.webp';
 import imgReviews from '../../assets/avatars/illustration_collect_order.webp';
 
-import imgBreakfast from '../../assets/cafeterias/cafeteria_breakfast.webp';
-import imgEvening from '../../assets/cafeterias/campus_evening.webp';
-import imgCourtyardParty from '../../assets/cafeterias/courtyard_party.webp';
-import imgGrillHouse from '../../assets/cafeterias/grill_house.webp';
-import imgLively from '../../assets/cafeterias/lively_courtyard.webp';
-import imgDiningHall from '../../assets/cafeterias/dining_hall_buzz.webp';
-import imgModernGathering from '../../assets/cafeterias/modern_gathering.webp';
-import imgScienceBar from '../../assets/cafeterias/science_snack_bar.webp';
+import imgBreakfast from '../../assets/vendors/cafeteria_breakfast.webp';
+import imgEvening from '../../assets/vendors/campus_evening.webp';
+import imgCourtyardParty from '../../assets/vendors/courtyard_party.webp';
+import imgGrillHouse from '../../assets/vendors/grill_house.webp';
+import imgLively from '../../assets/vendors/lively_courtyard.webp';
+import imgDiningHall from '../../assets/vendors/dining_hall_buzz.webp';
+import imgModernGathering from '../../assets/vendors/modern_gathering.webp';
+import imgScienceBar from '../../assets/vendors/science_snack_bar.webp';
 import heroPattern from '../../assets/heros/Pastel_Blue _Food_Doodle_Pattern.webp';
 
 import adCombo from '../../assets/home_ads/Ultimate_Combo_for_Two.webp';
@@ -37,108 +37,108 @@ import catPasta from '../../assets/food/Creamy_Chicken_Fettuccine_with_Garlic_Br
 import catSeafood from '../../assets/food/Vibrant_Seafood_Paella_Bowl.webp';
 import catStudent from '../../assets/food/Grilled_Fish_Rice_Bowl_with_Salsa.webp';
 
-export const cafeterias = [
+export const vendors = [
   {
     id: 'main-campus-cafe',
     name: 'Main Campus Cafe',
     status: 'open',
-    theme: 'blue',
-    image: imgBreakfast,
     category: 'dining',
     description: 'Your go-to spot for fresh, hearty breakfasts between meetings.',
-    walkTime: '6 min',
-    prepWindow: '10–15 min',
+    walk_time: '6 min',
+    estimated_prep_minutes: 15,
+    average_rating: 4.5,
+    rating_count: 128,
   },
   {
     id: 'library-bistro',
     name: 'Library Bistro',
     status: 'busy',
-    theme: 'coral',
-    image: imgLively,
     category: 'dining',
     description: 'Comfort classics and pasta bowls, made fresh daily.',
-    walkTime: '9 min',
-    prepWindow: '15–20 min',
+    walk_time: '9 min',
+    estimated_prep_minutes: 20,
+    average_rating: 4.3,
+    rating_count: 95,
   },
   {
     id: 'res-court-kitchen',
     name: 'Res Court Kitchen',
     status: 'open',
-    theme: 'mint',
-    image: imgEvening,
     category: 'seafood',
     description: 'Coastal-inspired bowls with a seasonal twist.',
-    walkTime: '11 min',
-    prepWindow: '10–15 min',
+    walk_time: '11 min',
+    estimated_prep_minutes: 15,
+    average_rating: 4.7,
+    rating_count: 210,
   },
   {
     id: 'science-snack-bar',
     name: 'Science Snack Bar',
     status: 'closed',
-    theme: 'blue',
-    image: imgScienceBar,
     category: 'cafe',
     description: 'Quick bites, barista coffee and study-fuel snacks.',
-    walkTime: '7 min',
-    prepWindow: '5–10 min',
+    walk_time: '7 min',
+    estimated_prep_minutes: 10,
+    average_rating: 3.8,
+    rating_count: 64,
   },
   {
     id: 'grill-house-court',
     name: 'Grill House Court',
     status: 'open',
-    theme: 'coral',
-    image: imgGrillHouse,
     category: 'dining',
     description: 'Flame-grilled favourites served in the sunny courtyard.',
-    walkTime: '8 min',
-    prepWindow: '12–18 min',
+    walk_time: '8 min',
+    estimated_prep_minutes: 18,
+    average_rating: 4.6,
+    rating_count: 175,
   },
   {
     id: 'dining-hall-central',
     name: 'Dining Hall Central',
     status: 'open',
-    theme: 'mint',
-    image: imgDiningHall,
     category: 'dining',
     description: 'The busiest hub on site — something for everyone.',
-    walkTime: '5 min',
-    prepWindow: '8–12 min',
+    walk_time: '5 min',
+    estimated_prep_minutes: 12,
+    average_rating: 4.2,
+    rating_count: 300,
   },
   {
     id: 'east-gate-gather',
     name: 'East Gate Gathering',
     status: 'open',
-    theme: 'blue',
-    image: imgModernGathering,
     category: 'cafe',
     description: 'Modern café vibes with all-day brunch and smoothies.',
-    walkTime: '12 min',
-    prepWindow: '8–14 min',
+    walk_time: '12 min',
+    estimated_prep_minutes: 14,
+    average_rating: 4.4,
+    rating_count: 88,
   },
   {
     id: 'courtyard-eats',
     name: 'Courtyard Eats',
     status: 'busy',
-    theme: 'coral',
-    image: imgCourtyardParty,
     category: 'dining',
     description: 'Open-air courtyard dining with rotating street-food stalls.',
-    walkTime: '10 min',
-    prepWindow: '12–16 min',
+    walk_time: '10 min',
+    estimated_prep_minutes: 16,
+    average_rating: 4.5,
+    rating_count: 142,
   },
 ];
 
 export const popularMeals = [
-  { id: 'chicken-wrap', name: 'Chicken Wrap & Salad', price: 'R45', vendor: 'Main Campus Cafe', image: chickenWraps, bestSeller: true, cafeteriaId: 'main-campus-cafe' },
-  { id: 'fish-bowl', name: 'Grilled Fish Rice Bowl', price: 'R52', vendor: 'Res Court Kitchen', image: fishBowl, cafeteriaId: 'res-court-kitchen' },
-  { id: 'tea-scones', name: 'Tea & Berry Scones', price: 'R28', vendor: 'East Gate Gathering', image: teaScones, cafeteriaId: 'east-gate-gather' },
-  { id: 'fettuccine', name: 'Creamy Chicken Fettuccine', price: 'R58', vendor: 'Library Bistro', image: fettuccine, bestSeller: true, cafeteriaId: 'library-bistro' },
-  { id: 'paella', name: 'Seafood Paella Bowl', price: 'R64', vendor: 'Res Court Kitchen', image: paella, bestSeller: true, cafeteriaId: 'res-court-kitchen' },
-  { id: 'chicken-dinner', name: 'Grilled Chicken Platter', price: 'R62', vendor: 'Grill House Court', image: chickenDinner, cafeteriaId: 'grill-house-court' },
-  { id: 'teriyaki-bowl', name: 'Beef Teriyaki Rice Bowl', price: 'R56', vendor: 'Dining Hall Central', image: teriyakiBowl, cafeteriaId: 'dining-hall-central' },
-  { id: 'chicken-wedges', name: 'Chicken Wrap & Wedges', price: 'R50', vendor: 'Grill House Court', image: chickenWedges, cafeteriaId: 'grill-house-court' },
-  { id: 'penne-pasta', name: 'Creamy Chicken Penne', price: 'R54', vendor: 'Library Bistro', image: pennePasta, cafeteriaId: 'library-bistro' },
-  { id: 'salmon-veg', name: 'Grilled Salmon & Veg', price: 'R68', vendor: 'Res Court Kitchen', image: salmonVeg, bestSeller: true, cafeteriaId: 'res-court-kitchen' },
+  { id: 'chicken-wrap', name: 'Chicken Wrap & Salad', price: 'R45', vendorId: 'main-campus-cafe', vendor: 'Main Campus Cafe', image: chickenWraps, bestSeller: true },
+  { id: 'fish-bowl', name: 'Grilled Fish Rice Bowl', price: 'R52', vendorId: 'res-court-kitchen', vendor: 'Res Court Kitchen', image: fishBowl },
+  { id: 'tea-scones', name: 'Tea & Berry Scones', price: 'R28', vendorId: 'east-gate-gather', vendor: 'East Gate Gathering', image: teaScones },
+  { id: 'fettuccine', name: 'Creamy Chicken Fettuccine', price: 'R58', vendorId: 'library-bistro', vendor: 'Library Bistro', image: fettuccine, bestSeller: true },
+  { id: 'paella', name: 'Seafood Paella Bowl', price: 'R64', vendorId: 'res-court-kitchen', vendor: 'Res Court Kitchen', image: paella, bestSeller: true },
+  { id: 'chicken-dinner', name: 'Grilled Chicken Platter', price: 'R62', vendorId: 'grill-house-court', vendor: 'Grill House Court', image: chickenDinner },
+  { id: 'teriyaki-bowl', name: 'Beef Teriyaki Rice Bowl', price: 'R56', vendorId: 'dining-hall-central', vendor: 'Dining Hall Central', image: teriyakiBowl },
+  { id: 'chicken-wedges', name: 'Chicken Wrap & Wedges', price: 'R50', vendorId: 'grill-house-court', vendor: 'Grill House Court', image: chickenWedges },
+  { id: 'penne-pasta', name: 'Creamy Chicken Penne', price: 'R54', vendorId: 'library-bistro', vendor: 'Library Bistro', image: pennePasta },
+  { id: 'salmon-veg', name: 'Grilled Salmon & Veg', price: 'R68', vendorId: 'res-court-kitchen', vendor: 'Res Court Kitchen', image: salmonVeg, bestSeller: true },
 ];
 
 export const deliveryImage = imgDelivery;

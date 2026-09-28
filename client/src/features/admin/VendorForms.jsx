@@ -4,8 +4,24 @@ import { useAuth } from '../../hooks/useAuth.js';
 import useObjectPreview from '../../hooks/useObjectPreview.js';
 import { useAdminLocations } from '../../hooks/useAdminLocations.js';
 import AdminDropdown from '../../components/ui/AdminDropdown.jsx';
-import { FileInput } from './AdminCafeteriaList.jsx';
 import ModalProgressOverlay from './ModalProgressOverlay.jsx';
+
+function FileInput({ label, accept = 'image/*', file, onChange, preview }) {
+  return (
+    <div className="admin-modal__image-area admin-modal__image-area--sm">
+      {preview ? (
+        <img src={preview} alt="Preview" />
+      ) : (
+        <>
+          <IconUpload size={24} stroke={1.5} className="admin-modal__image-icon" />
+          <span className="admin-modal__image-text">{label || 'Click to upload'}</span>
+          <span className="admin-modal__image-hint">JPEG, PNG or WebP</span>
+        </>
+      )}
+      <input type="file" accept={accept} onChange={(e) => { const f = e.target.files?.[0] || null; onChange(f); }} />
+    </div>
+  );
+}
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -43,6 +59,12 @@ function LocationFields({ form, setForm }) {
     { value: 'busy', label: 'Busy' },
     { value: 'temporarily_unavailable', label: 'Temporarily unavailable' },
   ];
+  const categoryOptions = [
+    { value: 'dining', label: 'Dining' },
+    { value: 'cafe', label: 'Cafe' },
+    { value: 'seafood', label: 'Seafood' },
+    { value: 'quick-bites', label: 'Quick Bites' },
+  ];
 
   return (
     <div className="admin-form-grid">
@@ -59,6 +81,7 @@ function LocationFields({ form, setForm }) {
         <AdminDropdown label="Service status" options={statusOptions} value={form.service_status} onChange={(val) => update('service_status', val)} />
       </Field>
       <Field label="Estimated prep time (minutes)"><input className="admin-input" type="number" min="1" value={form.estimated_prep_minutes} onChange={(e) => update('estimated_prep_minutes', e.target.value)} /></Field>
+      <Field label="Walk time"><input className="admin-input" value={form.walk_time} onChange={(e) => update('walk_time', e.target.value)} placeholder="e.g. 5 min" /></Field>
       <Field label="Order cutoff (minutes)"><input className="admin-input" type="number" min="0" value={form.order_cutoff_minutes} onChange={(e) => update('order_cutoff_minutes', e.target.value)} /></Field>
       <Field label="Collection instructions" full><textarea className="admin-modal__textarea" value={form.collection_instructions} onChange={(e) => update('collection_instructions', e.target.value)} placeholder="Where should customers collect their orders?" /></Field>
     </div>
@@ -84,7 +107,7 @@ function HoursFields({ hours, setHours }) {
 export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ name: '', description: '', logo_file: null, support_email: '', support_phone: '', corporate_catering_enabled: false, site_id: '', building_id: '', collection_point_id: '', service_status: 'closed', estimated_prep_minutes: '15', order_cutoff_minutes: '0', collection_instructions: '' });
+  const [form, setForm] = useState({ name: '', description: '', logo_file: null, support_email: '', support_phone: '', corporate_catering_enabled: false, site_id: '', building_id: '', collection_point_id: '', service_status: 'closed', estimated_prep_minutes: '15', order_cutoff_minutes: '0', collection_instructions: '', category: 'dining', walk_time: '' });
   const [logoPreview, setLogoPreview] = useObjectPreview(null);
   const [hours, setHours] = useState(emptyHours);
   const [creating, setCreating] = useState(false);
@@ -118,7 +141,7 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
         name: form.name.trim(), description: form.description.trim() || null, logoFile: form.logo_file,
         support_email: form.support_email.trim() || null, support_phone: form.support_phone.trim() || null,
         corporate_catering_enabled: form.corporate_catering_enabled,
-        location: { site_id: form.site_id, building_id: form.building_id, collection_point_id: form.collection_point_id || null, service_status: form.service_status, estimated_prep_minutes: Number(form.estimated_prep_minutes), order_cutoff_minutes: Number(form.order_cutoff_minutes), collection_instructions: form.collection_instructions.trim() || null, hours },
+        location: { site_id: form.site_id, building_id: form.building_id, collection_point_id: form.collection_point_id || null, service_status: form.service_status, estimated_prep_minutes: Number(form.estimated_prep_minutes), order_cutoff_minutes: Number(form.order_cutoff_minutes), collection_instructions: form.collection_instructions.trim() || null, hours, category: form.category, walk_time: form.walk_time },
       });
       onClose();
     } catch (err) { setError(err.message || 'Could not create vendor.'); setCreating(false); }
@@ -140,12 +163,13 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
             <Field label="Vendor name"><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Riverside Kitchen" /></Field>
             <Field label="Support email"><input className="admin-input" type="email" value={form.support_email} onChange={(e) => setForm({ ...form, support_email: e.target.value })} /></Field>
             <Field label="Support phone"><input className="admin-input" value={form.support_phone} onChange={(e) => setForm({ ...form, support_phone: e.target.value })} /></Field>
-            <Field label="Description" full><textarea className="admin-modal__textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} /></Field>
-            <Field label="Corporate catering" renderLabel={false}><AdminDropdown label="Corporate catering" options={[{ value: true, label: 'Enabled' }, { value: false, label: 'Disabled' }]} value={form.corporate_catering_enabled ?? ''} onChange={(val) => setForm({ ...form, corporate_catering_enabled: val })} placeholder="Select..." /></Field>
-          </div>
-          <div className="admin-modal__right">
-            <div className="admin-modal__image-area admin-modal__image-area--sm">
-              {logoPreview ? (
+<Field label="Description" full><textarea className="admin-modal__textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} /></Field>
+             <Field label="Corporate catering" renderLabel={false}><AdminDropdown label="Corporate catering" options={[{ value: true, label: 'Enabled' }, { value: false, label: 'Disabled' }]} value={form.corporate_catering_enabled ?? ''} onChange={(val) => setForm({ ...form, corporate_catering_enabled: val })} placeholder="Select..." /></Field>
+             <Field label="Category" renderLabel={false}><AdminDropdown label="Category" options={categoryOptions} value={form.category} onChange={(val) => setForm({ ...form, category: val })} placeholder="Select..." /></Field>
+           </div>
+           <div className="admin-modal__right">
+             <div className="admin-modal__image-area admin-modal__image-area--sm">
+               {logoPreview ? (
                 <img src={logoPreview} alt="Logo preview" />
               ) : (
                 <>

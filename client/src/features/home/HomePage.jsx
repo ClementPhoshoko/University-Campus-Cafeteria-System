@@ -9,6 +9,7 @@ import {
   IconArrowRight,
 } from '@tabler/icons-react';
 import { useAuth } from '../../hooks/useAuth.js';
+import { listVendors } from '../../services/employeeApi.js';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import SectionHeader from '../../components/layout/SectionHeader.jsx';
@@ -19,7 +20,7 @@ import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import androidBadge from '../../assets/android_download-PJqqAvJc.webp';
 import iosBadge from '../../assets/ios_download-Dn_KtiFi.webp';
 import HeroFoodShowcase from '../../components/hero/HeroFoodShowcase.jsx';
-import { cafeterias, popularMeals, categories, deliveryImage, reviews, reviewsImage, heroImage, heroFoods } from './homeData.js';
+import { popularMeals, categories, deliveryImage, reviews, reviewsImage, heroImage, heroFoods } from './homeData.js';
 import './home.css';
 
 function greeting() {
@@ -57,7 +58,8 @@ function ScrollIndicator({ fillRef }) {
 }
 
 export default function HomePage() {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
+  const token = session?.access_token;
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
   const cafeteria = useScrollProgress();
   const meals = useScrollProgress();
@@ -67,9 +69,26 @@ export default function HomePage() {
   const [reviewPage, setReviewPage] = useState(0);
   const [reviewAnim, setReviewAnim] = useState('entering');
   const [searchQuery, setSearchQuery] = useState('');
+  const [vendors, setVendors] = useState([]);
+  const [vendorsLoading, setVendorsLoading] = useState(true);
   const timeoutRef = useRef(null);
 
   const pageReviews = reviews.slice(reviewPage * PER_PAGE, reviewPage * PER_PAGE + PER_PAGE);
+
+  useEffect(() => {
+    let cancelled = false;
+    listVendors({ limit: 20, token })
+      .then((res) => {
+        if (!cancelled) {
+          setVendors(res.vendors || []);
+          setVendorsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setVendorsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const goToPage = useCallback((next) => {
     if (next < 0 || next >= totalPages || next === reviewPage) return;
@@ -105,8 +124,8 @@ export default function HomePage() {
               <IconSearch size={18} stroke={1.8} />
               <input
                 type="search"
-                placeholder="Search cafeterias or meals…"
-                aria-label="Search cafeterias or meals"
+                placeholder="Search vendors or meals…"
+                aria-label="Search vendors or meals"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -126,24 +145,30 @@ export default function HomePage() {
       </div>
 
       <div className="home-content">
-        <section aria-label="Our cafeterias">
-          <SectionHeader title="Our cafeterias" actionLabel="View all" actionTo="/cafeterias" />
+        <section aria-label="Our vendors">
+          <SectionHeader title="Our vendors" actionLabel="View all" actionTo="/vendors" />
           <div className="home_cafeteria-scroll" ref={cafeteria.scrollRef} onScroll={cafeteria.onScroll}>
-            {cafeterias.map((v) => (
-              <CafeteriaCard
-                key={v.id}
-                id={v.id}
-                name={v.name}
-                status={v.status}
-                category={v.category}
-                image={v.image}
-                description={v.description}
-                walkTime={v.walkTime}
-                prepWindow={v.prepWindow}
-              />
-            ))}
+            {vendorsLoading ? (
+              <div className="home_vendors-loading">Loading vendors…</div>
+            ) : (
+              vendors.map((v) => (
+                <CafeteriaCard
+                  key={v.id}
+                  id={v.id}
+                  name={v.name}
+                  status={v.service_status || 'closed'}
+                  category={v.category}
+                  image={v.logo_url}
+                  description={v.description}
+                  walkTime={v.walk_time || '—'}
+                  prepWindow={v.estimated_prep_minutes ? `${v.estimated_prep_minutes} min` : '—'}
+                  rating={v.average_rating}
+                  reviewCount={v.rating_count}
+                />
+              ))
+            )}
 
-            <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all cafeterias">
+            <Link to="/vendors" className="home_cafeteria-more" aria-label="View all vendors">
               <IconChevronRight size={26} stroke={2.2} />
             </Link>
           </div>
@@ -151,7 +176,7 @@ export default function HomePage() {
         </section>
 
         <section aria-label="Popular meals" style={{ marginTop: 'var(--space-8)' }}>
-          <SectionHeader title="Popular right now" actionLabel="View all" actionTo="/cafeterias" />
+          <SectionHeader title="Popular right now" actionLabel="View all" actionTo="/vendors" />
           <div className="home_meals-scroll" ref={meals.scrollRef} onScroll={meals.onScroll}>
             {popularMeals.map((m) => (
               <FoodCard
@@ -162,10 +187,10 @@ export default function HomePage() {
                 vendor={m.vendor}
                 image={m.image}
                 bestSeller={m.bestSeller}
-                to={`/cafeterias/${m.cafeteriaId}/menu/${m.id}`}
+                to={`/vendors/${m.vendorId}/menu/${m.id}`}
               />
             ))}
-            <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all meals">
+            <Link to="/vendors" className="home_cafeteria-more" aria-label="View all meals">
               <IconChevronRight size={26} stroke={2.2} />
             </Link>
           </div>

@@ -35,7 +35,7 @@ import {
   RECENT_ACTIVITY,
   FAILED_PAYMENTS,
   PENDING_VENDOR_APPROVALS,
-  TOP_CAFETERIAS,
+  TOP_VENDORS,
   formatCurrency,
 } from './adminMockData.js';
 
@@ -179,14 +179,14 @@ export default function AdminDashboardPage() {
   const [activeIndex, setActiveIndex] = useState(null);
   const [activityCount, setActivityCount] = useState(4);
   const [activityLoading, setActivityLoading] = useState(false);
-  const [cafeteriaCount, setCafeteriaCount] = useState(4);
-  const [cafeteriaLoading, setCafeteriaLoading] = useState(false);
+  const [vendorCount, setVendorCount] = useState(4);
+  const [vendorLoading, setVendorLoading] = useState(false);
   const [failedCount, setFailedCount] = useState(4);
   const [failedLoading, setFailedLoading] = useState(false);
   const [pendingCount, setPendingCount] = useState(4);
   const [pendingLoading, setPendingLoading] = useState(false);
   const listBottomRef = useRef(null);
-  const cafeteriaBottomRef = useRef(null);
+  const vendorBottomRef = useRef(null);
   const failedBottomRef = useRef(null);
   const pendingBottomRef = useRef(null);
 
@@ -206,13 +206,13 @@ export default function AdminDashboardPage() {
     }, 600);
   };
 
-  const handleLoadMoreCafeteria = () => {
-    if (cafeteriaCount >= TOP_CAFETERIAS.length) return;
-    setCafeteriaLoading(true);
+  const handleLoadMoreVendor = () => {
+    if (vendorCount >= TOP_VENDORS.length) return;
+    setVendorLoading(true);
     setTimeout(() => {
-      setCafeteriaCount(prev => Math.min(prev + 4, TOP_CAFETERIAS.length));
-      setCafeteriaLoading(false);
-      cafeteriaBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      setVendorCount(prev => Math.min(prev + 4, TOP_VENDORS.length));
+      setVendorLoading(false);
+      vendorBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 600);
   };
 
@@ -507,8 +507,8 @@ export default function AdminDashboardPage() {
         <div className="admin-card admin-card--wide">
           <header className="admin-card__head">
             <div>
-              <span className="admin-card__eyebrow">Cafeteria directory</span>
-              <h2 className="admin-card__title">Active cafeterias</h2>
+              <span className="admin-card__eyebrow">Vendor directory</span>
+              <h2 className="admin-card__title">Active vendors</h2>
             </div>
             <span className="admin-card__chip">Updated 2 min ago</span>
           </header>
@@ -524,23 +524,23 @@ export default function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {TOP_CAFETERIAS.slice(0, cafeteriaCount).map((vendor) => (
+                {TOP_VENDORS.slice(0, vendorCount).map((vendor) => (
                   <VendorRow key={vendor.id} vendor={vendor} />
                 ))}
               </tbody>
             </table>
-            {cafeteriaLoading && (
+            {vendorLoading && (
               <div className="admin-activity-loading">
                 <div className="skeleton skeleton--text" style={{ width: '100%', height: '20px' }} />
                 <div className="skeleton skeleton--text" style={{ width: '100%', height: '20px' }} />
               </div>
             )}
-            <div ref={cafeteriaBottomRef} />
-            {cafeteriaCount < TOP_CAFETERIAS.length && !cafeteriaLoading && (
+            <div ref={vendorBottomRef} />
+            {vendorCount < TOP_VENDORS.length && !vendorLoading && (
               <button
                 type="button"
                 className="admin-activity-load-more"
-                onClick={handleLoadMoreCafeteria}
+                onClick={handleLoadMoreVendor}
               >
                 Load more
               </button>

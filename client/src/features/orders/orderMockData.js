@@ -2,10 +2,10 @@
 // This mirrors: orders, order_items, order_status_history.
 // Swap this for API calls once the backend is ready.
 
-import { cafeterias, popularMeals } from '../home/homeData.js';
+import { vendors, popularMeals } from '../home/homeData.js';
 
-const vendorA = cafeterias[0]; // main-campus-cafe
-const vendorB = cafeterias[1]; // library-bistro
+const vendorA = vendors[0]; // main-campus-cafe
+const vendorB = vendors[1]; // library-bistro
 
 export const ORDER_STATUSES = {
   PAYMENT_PENDING: 'payment_pending',
@@ -280,7 +280,7 @@ export function getStatusHistoryForOrder(orderId) {
 }
 
 export function getVendorById(id) {
-  return cafeterias.find((c) => c.id === id);
+  return vendors.find((c) => c.id === id);
 }
 
 export function getCollectionPointName(order) {

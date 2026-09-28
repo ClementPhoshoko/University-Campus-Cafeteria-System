@@ -17,7 +17,7 @@ import {
 export const navigationItems = [
   // ── Core (everyone) ──
   { key: 'home', label: 'Home', route: '/', Icon: IconHome2 },
-  { key: 'cafeterias', label: 'Cafeterias', route: '/cafeterias', Icon: IconBuildingCommunity },
+  { key: 'vendors', label: 'Vendors', route: '/vendors', Icon: IconBuildingCommunity },
 
   // ── Role-specific: ordering flow (before Orders) ──
   {

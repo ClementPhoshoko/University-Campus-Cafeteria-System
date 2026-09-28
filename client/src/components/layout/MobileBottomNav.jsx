@@ -1,7 +1,7 @@
 import { navigationItems } from './navigationItems.jsx';
 import NavigationItem from './NavigationItem.jsx';
 
-const CORE_KEYS = ['home', 'cafeterias', 'orders', 'profile'];
+const CORE_KEYS = ['home', 'vendors', 'orders', 'profile'];
 
 /** Fixed bottom navigation for <768px viewports. Hidden on desktop via CSS. */
 export default function MobileBottomNav() {

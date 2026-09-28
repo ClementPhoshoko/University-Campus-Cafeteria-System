@@ -132,6 +132,12 @@ export function normalizeVendor(input, { partial = false } = {}) {
   const catering = boolean(input, 'corporate_catering_enabled', { dflt: !partial ? false : undefined });
   if (catering.error) errors.push(catering.error); else if (catering.value !== undefined && !catering.skip) value.corporate_catering_enabled = catering.value;
 
+  const category = text(input, 'category', { max: 50, allowEmptyToNull: true });
+  if (category.error) errors.push(category.error); else if (category.value !== undefined && !category.skip) value.category = category.value;
+
+  const walkTime = text(input, 'walk_time', { max: 50, allowEmptyToNull: true });
+  if (walkTime.error) errors.push(walkTime.error); else if (walkTime.value !== undefined && !walkTime.skip) value.walk_time = walkTime.value;
+
   if (!partial) {
     const onboardingKey = text(input, 'onboarding_key', { max: 100, allowEmptyToNull: true });
     if (onboardingKey.error) errors.push(onboardingKey.error);

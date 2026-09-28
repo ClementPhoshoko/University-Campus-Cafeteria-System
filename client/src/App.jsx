@@ -17,9 +17,6 @@ import AuthCallback from './features/auth/AuthCallback.jsx';
 import EmailConfirmation from './features/auth/EmailConfirmation.jsx';
 import PasswordRecovery from './features/auth/PasswordRecovery.jsx';
 import HomePage from './features/home/HomePage.jsx';
-import CafeteriaPage from './features/cafeteria/CafeteriaPage.jsx';
-import BrowseCafeteriaPage from './features/cafeteria/BrowseCafeteriaPage.jsx';
-import ViewFoodPage from './features/cafeteria/ViewFoodPage.jsx';
 import CartPage from './features/cart/CartPage.jsx';
 import OrdersPage from './features/orders/OrdersPage.jsx';
 import OrderDetailPage from './features/orders/OrderDetailPage.jsx';
@@ -32,8 +29,6 @@ import AdminOrderList from './features/admin/AdminOrderList.jsx';
 import AdminOrderDetail from './features/admin/AdminOrderDetail.jsx';
 import AdminUserList from './features/admin/AdminUserList.jsx';
 import AdminUserDetail from './features/admin/AdminUserDetail.jsx';
-import AdminCafeteriaList from './features/admin/AdminCafeteriaList.jsx';
-import AdminCafeteriaDetail from './features/admin/AdminCafeteriaDetail.jsx';
 import AdminReportsPage from './features/admin/AdminReportsPage.jsx';
 import AdminAuditLogPage from './features/admin/AdminAuditLogPage.jsx';
 import AdminComplaintsPage from './features/admin/AdminComplaintsPage.jsx';
@@ -102,9 +97,6 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomePage />} />
-          <Route path="/cafeterias" element={<CafeteriaPage />} />
-          <Route path="/cafeterias/:cafeteriaId" element={<BrowseCafeteriaPage />} />
-          <Route path="/cafeterias/:cafeteriaId/menu/:menuItemId" element={<ViewFoodPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/orders/:orderId" element={<OrderDetailPage />} />
@@ -119,8 +111,6 @@ export default function App() {
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/vendors" element={<AdminVendorList />} />
           <Route path="/admin/vendors/:vendorId" element={<AdminVendorDetail />} />
-          <Route path="/admin/cafeterias" element={<AdminCafeteriaList />} />
-          <Route path="/admin/cafeterias/:locationId" element={<AdminCafeteriaDetail />} />
           <Route path="/admin/users" element={<AdminUserList />} />
           <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
           <Route path="/admin/orders" element={<AdminOrderList />} />

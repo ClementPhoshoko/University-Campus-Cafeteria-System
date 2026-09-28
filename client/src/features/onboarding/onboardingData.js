@@ -13,7 +13,7 @@ const onboardingSlides = [
     id: 2,
     illustration: collectOrderImg,
     title: 'Choose your building café.',
-    description: 'Discover meals from cafeterias across your building.',
+    description: 'Discover meals from vendors across your building.',
   },
   {
     id: 3,

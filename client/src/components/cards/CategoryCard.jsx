@@ -7,7 +7,7 @@ export default function CategoryCard({ id, name, image, filterId }) {
 
   const handleClick = () => {
     if (filterId) {
-      navigate(`/cafeterias?filter=${filterId}`);
+      navigate(`/vendors?filter=${filterId}`);
     }
   };
 

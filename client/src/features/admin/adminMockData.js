@@ -62,7 +62,7 @@ export const FAILED_PAYMENTS = [
   { id: 'f8', order: '#48161', amount: 'R 89.00', reason: 'Insufficient funds', vendor: 'Main Campus Cafe' },
 ];
 
-export const TOP_CAFETERIAS = [
+export const TOP_VENDORS = [
   { id: 'a1b2c3d4-e5f6-4789-a012-b3c4d5e6f789', name: 'Main Campus Cafe', status: 'approved', service_status: 'open', orders_today: 198, average_rating: 4.6 },
   { id: 'b2c3d4e5-f6a7-4890-b123-c4d5e6f7a890', name: 'Library Bistro', status: 'approved', service_status: 'busy', orders_today: 224, average_rating: 4.8 },
   { id: 'c3d4e5f6-a7b8-4901-c234-d5e6f7a8b901', name: 'Dining Hall Central', status: 'approved', service_status: 'open', orders_today: 176, average_rating: 4.6 },
@@ -1558,7 +1558,6 @@ export const ROLE_FILTERS = [
 export const ADMIN_NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', to: '/admin', icon: 'IconChartBar' },
   { id: 'vendors', label: 'Vendors', to: '/admin/vendors', icon: 'IconBuildingStore' },
-  { id: 'cafeterias', label: 'Cafeterias', to: '/admin/cafeterias', icon: 'IconMapPin' },
   { id: 'users', label: 'Users & Roles', to: '/admin/users', icon: 'IconUsers' },
   { id: 'orders', label: 'Orders', to: '/admin/orders', icon: 'IconReceipt' },
   { id: 'reports', label: 'Reports', to: '/admin/reports', icon: 'IconFileAnalytics' },
@@ -2516,7 +2515,7 @@ export const AUDIT_RESOURCE_TYPES = [
   { id: 'vendors', label: 'Vendors' },
   { id: 'users', label: 'Users' },
   { id: 'orders', label: 'Orders' },
-  { id: 'cafeterias', label: 'Cafeterias' },
+  { id: 'vendors', label: 'Vendors' },
   { id: 'settings', label: 'Settings' },
 ];
 
@@ -2640,7 +2639,7 @@ export const AUDIT_LOGS = [
     actor_user_id: '44444444-4444-4444-4444-444444444444',
     actor_name: 'Nomvula Dube',
     actor_role: 'admin',
-    action: 'Created cafeteria',
+    action: 'Created vendor',
     action_type: 'create',
     table_name: 'public.buildings',
     resource_name: 'Eastgate Concourse',

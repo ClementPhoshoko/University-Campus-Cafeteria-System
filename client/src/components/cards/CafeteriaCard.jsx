@@ -34,7 +34,7 @@ export default function CafeteriaCard({
   reviewCount,
   location,
   variant = 'default',
-  to = '/cafeterias',
+  to = '/vendors',
 }) {
   const CategoryIcon = CATEGORY_ICONS[category] || IconToolsKitchen2;
 

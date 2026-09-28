@@ -114,9 +114,9 @@ export default function OrdersPage() {
                 <div className="orders-empty">
                   <div className="orders-empty__content">
                     <h2 className="orders-empty__title">No orders yet</h2>
-                    <p className="orders-empty__text">Start your first order from one of our campus cafeterias.</p>
-                    <button type="button" className="orders-empty__btn" onClick={() => window.location.href = '/cafeterias'}>
-                      Browse Cafeterias
+                    <p className="orders-empty__text">Start your first order from one of our campus vendors.</p>
+                    <button type="button" className="orders-empty__btn" onClick={() => window.location.href = '/vendors'}>
+                      Browse Vendors
                     </button>
                   </div>
                 </div>

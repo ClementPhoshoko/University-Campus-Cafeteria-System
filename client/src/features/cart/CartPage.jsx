@@ -128,8 +128,8 @@ export default function CartPage() {
             <img src={avoidQueuesImg} alt="" className="cart-empty__image" />
             <div className="cart-empty__content">
               <h2 className="cart-empty__title">Your cart is empty</h2>
-              <p className="cart-empty__text">Start your order and fill it with delicious items from our campus cafeterias</p>
-              <button type="button" className="cart-empty__btn" onClick={() => navigate('/cafeterias')}>
+              <p className="cart-empty__text">Start your order and fill it with delicious items from our campus vendors</p>
+              <button type="button" className="cart-empty__btn" onClick={() => navigate('/vendors')}>
                 Order Now
               </button>
             </div>
@@ -156,7 +156,7 @@ export default function CartPage() {
     <PageContainer className="cart-page-container">
       <CartBackground />
       <div className="cart-page">
-        <Breadcrumb items={[{ label: 'Cafeterias', to: '/cafeterias' }, { label: 'Your Cart' }]} />
+        <Breadcrumb items={[{ label: 'Vendors', to: '/vendors' }, { label: 'Your Cart' }]} />
 
         <div className="cart__content">
           <div className="cart__main">
@@ -186,7 +186,7 @@ export default function CartPage() {
                   <CartItem
                     key={item.id}
                     item={item}
-                    to={item.menuItem ? `/cafeterias/${cart.vendor?.id}/menu/${item.menuItem.id}` : '#'}
+                    to={item.menuItem ? `/vendors/${cart.vendor?.id}/menu/${item.menuItem.id}` : '#'}
                     onUpdateQuantity={handleUpdateQuantity}
                     onRemove={handleRemoveItem}
                   />
