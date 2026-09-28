@@ -3,6 +3,7 @@ import { useAuth } from './useAuth.js';
 import { getCache, setCache, invalidateCache, invalidateCachePattern, makeCacheKey } from '../services/cache.js';
 import {
   createBuilding,
+  createCafeteria,
   createCollectionPoint,
   createDeliveryLocation,
   createFloor,
@@ -10,15 +11,18 @@ import {
   listAllBuildings,
   listAllCollectionPoints,
   listBuildings,
+  listCafeteriasAdmin,
   listCollectionPoints,
   listDeliveryLocations,
   listFloors,
   listSites,
   updateBuilding,
+  updateCafeteria,
   updateCollectionPoint,
   updateDeliveryLocation,
   updateFloor,
   updateSite,
+  deleteCafeteria,
 } from '../services/adminApi.js';
 
 const DEFAULT_LIST_PARAMS = { page: 1, limit: 100 };
@@ -70,12 +74,15 @@ export function useAdminLocations({
   const [collectionPointPaginationByBuilding, setCollectionPointPaginationByBuilding] = useState({});
   const [deliveryLocationsByBuilding, setDeliveryLocationsByBuilding] = useState({});
   const [deliveryLocationPaginationByBuilding, setDeliveryLocationPaginationByBuilding] = useState({});
+  const [cafeterias, setCafeterias] = useState([]);
+  const [cafeteriaPagination, setCafeteriaPagination] = useState(EMPTY_PAGINATION);
 
   const [loading, setLoading] = useState({
     sites: false,
     buildings: false,
     floors: false,
     collectionPoints: false,
+    cafeterias: false,
     deliveryLocations: false,
     mutation: false,
   });
@@ -85,6 +92,7 @@ export function useAdminLocations({
     floors: null,
     collectionPoints: null,
     deliveryLocations: null,
+    cafeterias: null,
     mutation: null,
   });
 
@@ -574,6 +582,75 @@ export function useAdminLocations({
     return response;
   }), [runMutation]);
 
+  const fetchCafeteriasAdmin = useCallback(async (params = DEFAULT_LIST_PARAMS, options = {}) => {
+    const requestId = nextRequestId('cafeterias');
+    const controller = new AbortController();
+    const cacheKey = makeCacheKey('/admin/cafeterias', params);
+
+    const cached = getCache(cacheKey);
+    if (cached && !cached.isStale && mountedRef.current) {
+      setCafeterias(cached.data.cafeterias || []);
+      setCafeteriaPagination(cached.data.pagination || EMPTY_PAGINATION);
+      setLoadingKey('cafeterias', false);
+      setErrorKey('cafeterias', null);
+      const doRefresh = async () => {
+        try {
+          const fresh = await listCafeteriasAdmin(requireToken(), params, { ...options, signal: controller.signal });
+          if (requestId !== requestIdsRef.current.cafeterias || !mountedRef.current) return;
+          setCafeterias(fresh?.cafeterias || []);
+          setCafeteriaPagination(fresh?.pagination || EMPTY_PAGINATION);
+          setCache(cacheKey, fresh, 300_000);
+        } catch { /* background refresh failed */ }
+      };
+      doRefresh();
+      return cached.data;
+    }
+
+    setLoadingKey('cafeterias', true);
+    setErrorKey('cafeterias', null);
+    try {
+      const payload = await listCafeteriasAdmin(requireToken(), params, options);
+      if (!mountedRef.current) return payload;
+      setCafeterias(payload?.cafeterias || []);
+      setCafeteriaPagination(payload?.pagination || EMPTY_PAGINATION);
+      setCache(cacheKey, payload, 300_000);
+      return payload;
+    } catch (error) {
+      setErrorKey('cafeterias', getMessage(error));
+      throw error;
+    } finally {
+      setLoadingKey('cafeterias', false);
+    }
+  }, [requireToken, setErrorKey, setLoadingKey]);
+
+  const addCafeteria = useCallback((payload) => runMutation(async (authToken) => {
+    const response = await createCafeteria(authToken, payload);
+    if (mountedRef.current && response?.cafeteria) {
+      setCafeterias((prev) => upsertById(prev, response.cafeteria));
+    }
+    invalidateCachePattern('/admin/cafeterias');
+    await fetchCafeteriasAdmin();
+    return response;
+  }), [fetchCafeteriasAdmin, runMutation]);
+
+  const editCafeteria = useCallback((cafeteriaId, payload) => runMutation(async (authToken) => {
+    const response = await updateCafeteria(authToken, cafeteriaId, payload);
+    if (mountedRef.current && response?.cafeteria) {
+      setCafeterias((prev) => upsertById(prev, response.cafeteria));
+    }
+    invalidateCachePattern('/admin/cafeterias');
+    return response;
+  }), [runMutation]);
+
+  const removeCafeteria = useCallback((cafeteriaId) => runMutation(async (authToken) => {
+    const response = await deleteCafeteria(authToken, cafeteriaId);
+    if (mountedRef.current && response?.success) {
+      setCafeterias((prev) => prev.filter((c) => c.id !== cafeteriaId));
+    }
+    invalidateCachePattern('/admin/cafeterias');
+    return response;
+  }), [runMutation]);
+
   const resetBuildingCache = useCallback((siteId) => {
     setBuildingsBySite((prev) => removeKey(prev, siteId));
     setBuildingPaginationBySite((prev) => removeKey(prev, siteId));
@@ -626,6 +703,8 @@ export function useAdminLocations({
     collectionPointPaginationByBuilding,
     deliveryLocationsByBuilding,
     deliveryLocationPaginationByBuilding,
+    cafeterias,
+    cafeteriaPagination,
     allBuildings,
     allFloors,
     allCollectionPoints,
@@ -641,6 +720,7 @@ export function useAdminLocations({
     fetchFloors,
     fetchCollectionPoints,
     fetchDeliveryLocations,
+    fetchCafeteriasAdmin,
     addSite,
     editSite,
     addBuilding,
@@ -651,6 +731,9 @@ export function useAdminLocations({
     editCollectionPoint,
     addDeliveryLocation,
     editDeliveryLocation,
+    addCafeteria,
+    editCafeteria,
+    removeCafeteria,
     resetBuildingCache,
     resetBuildingChildrenCache,
   };

@@ -369,6 +369,31 @@ export function listAllCollectionPoints(token, params, options) {
   return adminRequest('/admin/all-collection-points', { token, query: params, ...options });
 }
 
+export function listCafeterias(token, params, options) {
+  return adminRequest('/cafeterias', { token, query: params, ...options });
+}
+
+export function getCafeteria(token, cafeteriaId, options) {
+  return adminRequest(`/cafeterias/${cafeteriaId}`, { token, ...options });
+}
+
+// Admin cafeteria CRUD
+export function listCafeteriasAdmin(token, params, options) {
+  return adminRequest('/admin/cafeterias', { token, query: params, ...options });
+}
+
+export function createCafeteria(token, payload, options) {
+  return adminRequest('/admin/cafeterias', { method: 'POST', token, body: payload, ...options });
+}
+
+export function updateCafeteria(token, cafeteriaId, payload, options) {
+  return adminRequest(`/admin/cafeterias/${cafeteriaId}`, { method: 'PATCH', token, body: payload, ...options });
+}
+
+export function deleteCafeteria(token, cafeteriaId, options) {
+  return adminRequest(`/admin/cafeterias/${cafeteriaId}`, { method: 'DELETE', token, ...options });
+}
+
 export function listBuildingVendors(token, buildingId, params, options) {
   return adminRequest(`/admin/buildings/${buildingId}/vendors`, { token, query: params, ...options });
 }

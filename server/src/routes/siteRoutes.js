@@ -6,6 +6,8 @@ import {
   listPublicBuildings,
   listPublicFloors,
   listPublicCollectionPoints,
+  listCafeterias,
+  getCafeteria,
 } from '../controllers/siteController.js';
 
 /**
@@ -21,5 +23,7 @@ siteRouter.get('/sites/:siteId', getPublicSite);
 siteRouter.get('/sites/:siteId/buildings', listPublicBuildings);
 siteRouter.get('/buildings/:buildingId/floors', listPublicFloors);
 siteRouter.get('/buildings/:buildingId/collection-points', listPublicCollectionPoints);
+siteRouter.get('/cafeterias', listCafeterias);
+siteRouter.get('/cafeterias/:cafeteriaId', getCafeteria);
 
 export default siteRouter;

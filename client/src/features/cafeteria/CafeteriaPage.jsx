@@ -1,41 +1,17 @@
-﻿import { useMemo, useState } from "react";
+﻿import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   IconAdjustmentsHorizontal,
   IconMap,
   IconSearch,
 } from "@tabler/icons-react";
+import { useAuth } from "../../hooks/useAuth.js";
+import { listCafeterias } from "../../services/adminApi.js";
+import { heroImage } from "../home/homeData.js";
 import PageContainer from "../../components/layout/PageContainer.jsx";
 import PageHeader from "../../components/layout/PageHeader.jsx";
 import CafeteriaCard from "../../components/cards/CafeteriaCard.jsx";
-import { cafeterias, heroImage } from "../home/homeData.js";
 import "./cafeteria.css";
-
-const DIRECTORY_FILTERS = [
-  { id: "open", label: "Open Now" },
-  { id: "popular", label: "Popular" },
-  { id: "breakfast", label: "Breakfast" },
-  { id: "lunch", label: "Lunch" },
-  { id: "meals", label: "Meals" },
-  { id: "snacks", label: "Snacks" },
-  { id: "drinks", label: "Drinks" },
-];
-
-const DIRECTORY_DETAILS = {
-  "main-campus-cafe": { category: "popular", location: "Main site · Near the atrium", rating: "4.6", reviewCount: 230 },
-  "library-bistro": { category: "lunch", location: "North site · Library level", rating: "4.8", reviewCount: 184 },
-  "res-court-kitchen": { category: "meals", location: "South site · Residence court", rating: "4.7", reviewCount: 156 },
-  "science-snack-bar": { category: "snacks", location: "North site · Science building", rating: "4.4", reviewCount: 98 },
-  "grill-house-court": { category: "lunch", location: "Main site · Courtyard", rating: "4.5", reviewCount: 212 },
-  "dining-hall-central": { category: "breakfast", location: "Main site · Central hall", rating: "4.6", reviewCount: 301 },
-  "east-gate-gather": { category: "drinks", location: "South site · East gate", rating: "4.5", reviewCount: 127 },
-  "courtyard-eats": { category: "snacks", location: "South site · Open courtyard", rating: "4.3", reviewCount: 89 },
-};
-
-const DIRECTORY_CAFETERIAS = cafeterias.map((cafeteria) => ({
-  ...cafeteria,
-  ...DIRECTORY_DETAILS[cafeteria.id],
-}));
 
 function FilterChip({ active, children, count, onClick }) {
   return (
@@ -53,16 +29,16 @@ function FilterChip({ active, children, count, onClick }) {
   );
 }
 
-function FilterChipGroup({ activeFilter, onChange }) {
+function FilterChipGroup({ activeFilter, onChange, cafeterias }) {
   const counts = useMemo(() => ({
-    open: DIRECTORY_CAFETERIAS.filter(c => c.status === 'open').length,
-    popular: DIRECTORY_CAFETERIAS.filter(c => c.category === 'popular').length,
-    breakfast: DIRECTORY_CAFETERIAS.filter(c => c.category === 'breakfast').length,
-    lunch: DIRECTORY_CAFETERIAS.filter(c => c.category === 'lunch').length,
-    meals: DIRECTORY_CAFETERIAS.filter(c => c.category === 'meals').length,
-    snacks: DIRECTORY_CAFETERIAS.filter(c => c.category === 'snacks').length,
-    drinks: DIRECTORY_CAFETERIAS.filter(c => c.category === 'drinks').length,
-  }), []);
+    open: cafeterias.filter(c => c.status === 'open').length,
+    popular: cafeterias.filter(c => c.category === 'popular').length,
+    breakfast: cafeterias.filter(c => c.category === 'breakfast').length,
+    lunch: cafeterias.filter(c => c.category === 'lunch').length,
+    meals: cafeterias.filter(c => c.category === 'meals').length,
+    snacks: cafeterias.filter(c => c.category === 'snacks').length,
+    drinks: cafeterias.filter(c => c.category === 'drinks').length,
+  }), [cafeterias]);
 
   return (
     <div className="cafeteria_filter-scroll" role="group" aria-label="Cafeteria filters">
@@ -85,13 +61,23 @@ export default function CafeteriaPage() {
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState(searchParams.get("filter") || "open");
   const [showFilters, setShowFilters] = useState(true);
+  const { session } = useAuth();
+  const [cafeterias, setCafeterias] = useState([]);
+
+  useEffect(() => {
+    const token = session?.access_token;
+    if (!token) return;
+    listCafeterias(token, { page: 1, limit: 100 })
+      .then((res) => { setCafeterias(res?.cafeterias || []); })
+      .catch(() => {});
+  }, [session]);
 
   const visibleCafeterias = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return DIRECTORY_CAFETERIAS.filter((cafeteria) => {
+    return cafeterias.filter((cafeteria) => {
       const matchesQuery = !normalizedQuery
-        || [cafeteria.name, cafeteria.description, cafeteria.location]
+        || [cafeteria.name, cafeteria.description]
           .some((value) => value.toLowerCase().includes(normalizedQuery));
       const matchesFilter = activeFilter === "open"
         ? cafeteria.status === "open"
@@ -99,7 +85,7 @@ export default function CafeteriaPage() {
 
       return matchesQuery && matchesFilter;
     });
-  }, [activeFilter, query]);
+  }, [cafeterias, activeFilter, query]);
 
   return (
     <PageContainer noPad>
@@ -135,7 +121,7 @@ export default function CafeteriaPage() {
               </button>
             </div>
             <div className={`cafeteria_filters-bar${showFilters ? " cafeteria_filters-bar--visible" : ""}`}>
-              <FilterChipGroup activeFilter={activeFilter} onChange={setActiveFilter} />
+              <FilterChipGroup activeFilter={activeFilter} onChange={setActiveFilter} cafeterias={cafeterias} />
             </div>
           </div>
           <div className="cafeteria_hero-right">

@@ -11,6 +11,7 @@ import {
   IconSearch,
   IconUpload,
   IconUsers,
+  IconShoppingBag,
 } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
 import AddressAutocomplete from '../../components/ui/AddressAutocomplete.jsx';
@@ -23,12 +24,49 @@ import { useAuth } from '../../hooks/useAuth.js';
 import SkeletonCard from '../../components/ui/SkeletonCard.jsx';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 import ModalProgressOverlay from './ModalProgressOverlay.jsx';
+import NewCafeteriaModal from './NewCafeteriaModal.jsx';
+import CafeteriaCard from '../../components/cards/CafeteriaCard.jsx';
 
 const VIEW_TABS = [
   { id: 'sites', label: 'Sites' },
   { id: 'buildings', label: 'Buildings' },
   { id: 'collection-points', label: 'Collection points' },
+  { id: 'cafeterias', label: 'Cafeterias' },
 ];
+
+function SkeletonBuildingCard() {
+  return (<div className="admin-building-card">
+    <div className="admin-building-card__media">
+      <div className="admin-building-card__placeholder"><span className="skeleton" style={{ width: 22, height: 22, borderRadius: 4 }} /></div>
+    </div>
+    <div className="admin-building-card__body">
+      <div className="admin-building-card__head"><span className="skeleton skeleton--badge" style={{ width: 60 }} /></div>
+      <div className="skeleton skeleton--title" style={{ width: '70%', marginTop: 6 }} />
+      <div className="skeleton skeleton--text" style={{ width: '50%', marginTop: 4 }} />
+    </div>
+  </div>);
+}
+
+function SkeletonPointRow() {
+  return (<li className="admin-cp-row">
+    <div className="admin-cp-row__icon"><span className="skeleton" style={{ width: 18, height: 18, borderRadius: 4 }} /></div>
+    <div className="admin-cp-row__body">
+      <div className="admin-cp-row__head"><span className="skeleton skeleton--badge" style={{ width: 100 }} /><span className="skeleton skeleton--badge" style={{ width: 50 }} /></div>
+      <div className="skeleton skeleton--text" style={{ width: '60%', marginTop: 4 }} />
+    </div>
+  </li>);
+}
+
+function SkeletonGrid({ type }) {
+  const items = Array.from({ length: 6 }, (_, i) => i);
+  if (type === 'sites') {
+    return <div className="admin-site-grid">{items.map((i) => <SkeletonCard key={i} lines={2} badges={1} />)}</div>;
+  }
+  if (type === 'cafeterias' || type === 'buildings') {
+    return <div className="admin-building-grid">{items.map((i) => <SkeletonBuildingCard key={i} />)}</div>;
+  }
+  return <ul className="admin-cp-rows">{items.map((i) => <SkeletonPointRow key={i} />)}</ul>;
+}
 
 function StatusPill({ active }) {
   return <span className={`admin-status admin-status--${active ? 'success' : 'info'}`}>{active ? 'Active' : 'Inactive'}</span>;
@@ -38,63 +76,30 @@ function SiteCard({ site }) {
   const displayAddress = site.street_address
     ? [site.street_address, site.city, site.province].filter(Boolean).join(', ')
     : site.address || 'No address recorded';
-
   return (
     <Link to={`/admin/cafeterias/${site.id}`} className="admin-site-card">
       <div className="admin-site-card__hero">
         {site.cover_image_url ? (
           <SmartImage src={site.cover_image_url} alt={site.name} className="admin-site-card__image" width={320} height={160} />
         ) : (
-          <div className="admin-site-card__placeholder">
-            <IconBuildingStore size={40} stroke={1.2} />
-          </div>
+          <div className="admin-site-card__placeholder"><IconBuildingStore size={40} stroke={1.2} /></div>
         )}
       </div>
       <div className="admin-site-card__body">
         <div className="admin-site-card__header">
           <h3 className="admin-site-card__name">{site.name}</h3>
           <span className={`admin-site-card__status${site.is_active ? ' admin-site-card__status--active' : ' admin-site-card__status--inactive'}`}>
-            <span className="admin-site-card__status-dot" />
-            {site.is_active ? 'Active' : 'Inactive'}
+            <span className="admin-site-card__status-dot" />{site.is_active ? 'Active' : 'Inactive'}
           </span>
         </div>
-        <p className="admin-site-card__address">
-          <IconMapPin size={14} stroke={1.6} />
-          {displayAddress}
-        </p>
-        {site.postal_code && (
-          <span className="admin-site-card__postal">{site.postal_code}</span>
-        )}
+        <p className="admin-site-card__address"><IconMapPin size={14} stroke={1.6} />{displayAddress}</p>
+        {site.postal_code && <span className="admin-site-card__postal">{site.postal_code}</span>}
         <div className="admin-site-card__stats">
-          <div className="admin-site-card__stat">
-            <div className="admin-site-card__stat-icon"><IconBuilding size={16} stroke={1.6} /></div>
-            <div className="admin-site-card__stat-info">
-              <span className="admin-site-card__stat-value">{site.building_count || 0}</span>
-              <span className="admin-site-card__stat-label">Buildings</span>
-            </div>
-          </div>
-          <div className="admin-site-card__stat">
-            <div className="admin-site-card__stat-icon"><IconUsers size={16} stroke={1.6} /></div>
-            <div className="admin-site-card__stat-info">
-              <span className="admin-site-card__stat-value">{site.vendor_count || 0}</span>
-              <span className="admin-site-card__stat-label">Vendors</span>
-            </div>
-          </div>
-          <div className="admin-site-card__stat">
-            <div className="admin-site-card__stat-icon"><IconClipboardCheck size={16} stroke={1.6} /></div>
-            <div className="admin-site-card__stat-info">
-              <span className="admin-site-card__stat-value">{site.collection_point_count || 0}</span>
-              <span className="admin-site-card__stat-label">Pickup points</span>
-            </div>
-          </div>
+          <div className="admin-site-card__stat"><div className="admin-site-card__stat-icon"><IconBuilding size={16} stroke={1.6} /></div><div className="admin-site-card__stat-info"><span className="admin-site-card__stat-value">{site.building_count || 0}</span><span className="admin-site-card__stat-label">Buildings</span></div></div>
+          <div className="admin-site-card__stat"><div className="admin-site-card__stat-icon"><IconUsers size={16} stroke={1.6} /></div><div className="admin-site-card__stat-info"><span className="admin-site-card__stat-value">{site.vendor_count || 0}</span><span className="admin-site-card__stat-label">Vendors</span></div></div>
+          <div className="admin-site-card__stat"><div className="admin-site-card__stat-icon"><IconClipboardCheck size={16} stroke={1.6} /></div><div className="admin-site-card__stat-info"><span className="admin-site-card__stat-value">{site.collection_point_count || 0}</span><span className="admin-site-card__stat-label">Pickup points</span></div></div>
         </div>
-        <div className="admin-site-card__footer">
-          <span className="admin-site-card__footer-label">
-            <IconClock size={14} stroke={1.6} />
-            Timezone
-          </span>
-          <span className="admin-site-card__footer-value">{site.timezone || '—'}</span>
-        </div>
+        <div className="admin-site-card__footer"><span className="admin-site-card__footer-label"><IconClock size={14} stroke={1.6} />Timezone</span><span className="admin-site-card__footer-value">{site.timezone || '—'}</span></div>
       </div>
     </Link>
   );
@@ -128,12 +133,7 @@ function CollectionPointRow({ point }) {
 }
 
 function Field({ label, children, full = false }) {
-  return (
-    <label className={`admin-modal__field${full ? ' admin-modal__field--full' : ''}`}>
-      <span>{label}</span>
-      {children}
-    </label>
-  );
+  return <label className={`admin-modal__field${full ? ' admin-modal__field--full' : ''}`}><span>{label}</span>{children}</label>;
 }
 
 const roundCoord = (value) => (value === undefined || value === null || value === '' ? value : Number(Number(value).toFixed(6)));
@@ -141,25 +141,13 @@ const roundCoord = (value) => (value === undefined || value === null || value ==
 export function FileInput({ value, onChange, accept = 'image/jpeg,image/png,image/webp' }) {
   const [fileName, setFileName] = useState('');
   const inputRef = useRef(null);
-  const handleChange = (e) => {
-    const file = e.target.files?.[0] || null;
-    setFileName(file?.name || '');
-    onChange(file);
-  };
+  const handleChange = (e) => { const file = e.target.files?.[0] || null; setFileName(file?.name || ''); onChange(file); };
   return (
     <div className="admin-file-input" onClick={() => inputRef.current?.click()}>
-      <input
-        ref={inputRef}
-        type="file"
-        accept={accept}
-        onChange={handleChange}
-        className="admin-file-input__native"
-      />
+      <input ref={inputRef} type="file" accept={accept} onChange={handleChange} className="admin-file-input__native" />
       <div className="admin-file-input__display">
         <IconUpload size={20} stroke={1.5} className="admin-file-input__icon" />
-        <span className={`admin-file-input__text${fileName ? ' admin-file-input__text--selected' : ''}`}>
-          {fileName || 'Click to upload image'}
-        </span>
+        <span className={`admin-file-input__text${fileName ? ' admin-file-input__text--selected' : ''}`}>{fileName || 'Click to upload image'}</span>
         <span className="admin-file-input__hint">JPEG, PNG or WebP</span>
       </div>
     </div>
@@ -169,143 +157,60 @@ export function FileInput({ value, onChange, accept = 'image/jpeg,image/png,imag
 export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
   const editing = !!initial;
   const [form, setForm] = useState(() => initial ? {
-    name: initial.name || '',
-    code: initial.code || '',
-    address: initial.address || '',
-    street_address: initial.street_address || '',
-    city: initial.city || '',
-    province: initial.province || '',
-    postal_code: initial.postal_code || '',
-    country: initial.country || 'ZA',
-    place_id: initial.place_id || '',
-    latitude: initial.latitude ?? '',
-    longitude: initial.longitude ?? '',
-    timezone: initial.timezone || 'Africa/Johannesburg',
-    is_active: initial.is_active ?? true,
-    cover_file: null,
+    name: initial.name || '', code: initial.code || '', address: initial.address || '',
+    street_address: initial.street_address || '', city: initial.city || '', province: initial.province || '',
+    postal_code: initial.postal_code || '', country: initial.country || 'ZA', place_id: initial.place_id || '',
+    latitude: initial.latitude ?? '', longitude: initial.longitude ?? '', timezone: initial.timezone || 'Africa/Johannesburg',
+    is_active: initial.is_active ?? true, cover_file: null,
   } : {
-    name: '',
-    code: '',
-    address: '',
-    street_address: '',
-    city: '',
-    province: '',
-    postal_code: '',
-    country: 'ZA',
-    place_id: '',
-    latitude: '',
-    longitude: '',
-    timezone: 'Africa/Johannesburg',
-    is_active: true,
-    cover_file: null,
+    name: '', code: '', address: '', street_address: '', city: '', province: '', postal_code: '',
+    country: 'ZA', place_id: '', latitude: '', longitude: '', timezone: 'Africa/Johannesburg',
+    is_active: true, cover_file: null,
   });
   const [coverPreview, setCoverPreview] = useObjectPreview(initial?.cover_image_url || null);
   const [error, setError] = useState('');
   const { session } = useAuth();
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
-
   const handleAddressSelect = (locationData) => {
     setForm((prev) => ({
       ...prev,
       address: locationData.formatted_address || prev.address,
       street_address: locationData.street_address || prev.street_address,
-      city: locationData.city || prev.city,
-      province: locationData.province || prev.province,
+      city: locationData.city || prev.city, province: locationData.province || prev.province,
       postal_code: locationData.postal_code || prev.postal_code,
-      country: locationData.country_code || prev.country,
-      place_id: locationData.place_id || prev.place_id,
-      latitude: roundCoord(locationData.latitude),
-      longitude: roundCoord(locationData.longitude),
+      country: locationData.country_code || prev.country, place_id: locationData.place_id || prev.place_id,
+      latitude: roundCoord(locationData.latitude), longitude: roundCoord(locationData.longitude),
       timezone: locationData.timezone || prev.timezone,
     }));
   };
-
   const submit = async () => {
     if (!form.name.trim()) return setError('Site name is required.');
     try {
-      await onSubmit({
-        ...form,
-        name: form.name.trim(),
-        code: form.code.trim() || null,
-        address: form.address.trim() || null,
-        street_address: form.street_address.trim() || null,
-        city: form.city.trim() || null,
-        province: form.province.trim() || null,
-        postal_code: form.postal_code.trim() || null,
-        country: form.country.trim() || null,
-        place_id: form.place_id.trim() || null,
-        latitude: form.latitude === '' ? undefined : roundCoord(Number(form.latitude)),
-        longitude: form.longitude === '' ? undefined : roundCoord(Number(form.longitude)),
-      });
+      await onSubmit({ ...form, name: form.name.trim(), code: form.code.trim() || null, address: form.address.trim() || null, street_address: form.street_address.trim() || null, city: form.city.trim() || null, province: form.province.trim() || null, postal_code: form.postal_code.trim() || null, country: form.country.trim() || null, place_id: form.place_id.trim() || null, latitude: form.latitude === '' ? undefined : roundCoord(Number(form.latitude)), longitude: form.longitude === '' ? undefined : roundCoord(Number(form.longitude)) });
       onClose();
-    } catch (err) {
-      setError(err.message || `Could not ${editing ? 'update' : 'create'} site.`);
-    }
+    } catch (err) { setError(err.message || `Could not ${editing ? 'update' : 'create'} site.`); }
   };
-
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
-
+  useEffect(() => { document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = ''; }; }, []);
   return (
     <div className="admin-modal" role="dialog" aria-modal="true">
       <div className="admin-modal__overlay" onClick={onClose} />
       <div className="admin-modal__card admin-modal__card--lg">
         <header className="admin-modal__head">
-          <div className="admin-modal__icon admin-modal__icon--info">
-            <IconPlus size={20} />
-          </div>
-          <div>
-            <h3 className="admin-modal__title">{editing ? 'Edit site' : 'Register new site'}</h3>
-            <p className="admin-modal__sub">{editing ? 'Update the site information and cover image.' : 'Add a top-level campus location to manage vendors and collection points.'}</p>
-          </div>
+          <div className="admin-modal__icon admin-modal__icon--info"><IconPlus size={20} /></div>
+          <div><h3 className="admin-modal__title">{editing ? 'Edit site' : 'Register new site'}</h3><p className="admin-modal__sub">{editing ? 'Update the site information and cover image.' : 'Add a top-level campus location to manage vendors and collection points.'}</p></div>
         </header>
         {error && <div className="vendor-form-error">{error}</div>}
         <div className="admin-modal__body">
           <div className="admin-modal__left">
-            <div className="admin-modal__row">
-              <Field label="Site name">
-                <input autoFocus className="admin-input" value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Merchant Place Riverside" />
-              </Field>
-              <Field label="Site code">
-                <input className="admin-input" value={form.code} onChange={(e) => update('code', e.target.value)} placeholder="MP-RIVERSIDE" />
-              </Field>
-            </div>
-            <Field label="Search address">
-              <AddressAutocomplete value={form.address} onChange={(val) => update('address', val)} onSelect={handleAddressSelect} token={session?.access_token} placeholder="Start typing to search..." />
-            </Field>
-            <div className="admin-modal__row">
-              <Field label="Street address">
-                <input className="admin-input" value={form.street_address} onChange={(e) => update('street_address', e.target.value)} placeholder="Auto-filled from search" />
-              </Field>
-              <Field label="City">
-                <input className="admin-input" value={form.city} onChange={(e) => update('city', e.target.value)} placeholder="Auto-filled from search" />
-              </Field>
-            </div>
-            <div className="admin-modal__row">
-              <Field label="Province">
-                <input className="admin-input" value={form.province} onChange={(e) => update('province', e.target.value)} placeholder="Auto-filled from search" />
-              </Field>
-              <Field label="Postal code">
-                <input className="admin-input" value={form.postal_code} onChange={(e) => update('postal_code', e.target.value)} placeholder="Auto-filled from search" />
-              </Field>
-            </div>
+            <div className="admin-modal__row"><Field label="Site name"><input autoFocus className="admin-input" value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Merchant Place Riverside" /></Field><Field label="Site code"><input className="admin-input" value={form.code} onChange={(e) => update('code', e.target.value)} placeholder="MP-RIVERSIDE" /></Field></div>
+            <Field label="Search address"><AddressAutocomplete value={form.address} onChange={(val) => update('address', val)} onSelect={handleAddressSelect} token={session?.access_token} placeholder="Start typing to search..." /></Field>
+            <div className="admin-modal__row"><Field label="Street address"><input className="admin-input" value={form.street_address} onChange={(e) => update('street_address', e.target.value)} placeholder="Auto-filled from search" /></Field><Field label="City"><input className="admin-input" value={form.city} onChange={(e) => update('city', e.target.value)} placeholder="Auto-filled from search" /></Field></div>
+            <div className="admin-modal__row"><Field label="Province"><input className="admin-input" value={form.province} onChange={(e) => update('province', e.target.value)} placeholder="Auto-filled from search" /></Field><Field label="Postal code"><input className="admin-input" value={form.postal_code} onChange={(e) => update('postal_code', e.target.value)} placeholder="Auto-filled from search" /></Field></div>
             <AdminDropdown label="Status" options={[{ value: true, label: 'Active' }, { value: false, label: 'Inactive' }]} value={form.is_active ?? ''} onChange={(val) => update('is_active', val)} placeholder="Select..." />
           </div>
           <div className="admin-modal__right">
             <div className="admin-modal__image-area admin-modal__image-area--sm">
-              {coverPreview ? (
-                <img src={coverPreview} alt="Cover preview" />
-              ) : (
-                <>
-                  <IconUpload size={24} stroke={1.5} className="admin-modal__image-icon" />
-                  <span className="admin-modal__image-text">Click to upload cover image</span>
-                  <span className="admin-modal__image-hint">JPEG, PNG or WebP</span>
-                </>
-              )}
+              {coverPreview ? <img src={coverPreview} alt="Cover preview" /> : <><IconUpload size={24} stroke={1.5} className="admin-modal__image-icon" /><span className="admin-modal__image-text">Click to upload cover image</span><span className="admin-modal__image-hint">JPEG, PNG or WebP</span></>}
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; update('cover_file', file); setCoverPreview(file); }} />
             </div>
           </div>
@@ -330,69 +235,100 @@ export default function AdminCafeteriaList() {
   const [submitting, setSubmitting] = useState(false);
   const itemsPerPage = 12;
   const { session } = useAuth();
-  const { sites, allBuildings, allCollectionPoints, buildingsBySite, collectionPointsByBuilding, fetchAllBuildings, fetchAllCollectionPoints, addSite, loading, errors } = useAdminLocations();
+  const { sites, cafeterias, allBuildings, allCollectionPoints, buildingsBySite, collectionPointsByBuilding, fetchAllBuildings, fetchAllCollectionPoints, fetchCafeteriasAdmin, addSite, addCafeteria, editCafeteria, removeCafeteria, loading, errors } = useAdminLocations();
   const [loaded, setLoaded] = useState(false);
   const [secondaryStarted, setSecondaryStarted] = useState(false);
-  const fetchStartedRef = useRef(false);
+  const [secondaryDataStarted, setSecondaryDataStarted] = useState(false);
 
   useEffect(() => {
-    if (loading.sites) fetchStartedRef.current = true;
-    if (!loading.sites && fetchStartedRef.current && !loaded) setLoaded(true);
-  }, [loading.sites]);
-
+    if (loading.sites) setLoaded(false);
+    if (!loading.sites && sites.length > 0) setLoaded(true);
+  }, [loading.sites, sites]);
   useEffect(() => {
     const urlPage = parseInt(searchParams.get('page')) || 1;
     if (urlPage !== currentPage) setCurrentPageState(urlPage);
   }, [searchParams]);
-
   const setPage = (value) => {
     setCurrentPageState(value);
-    setSearchParams((prev) => {
-      if (value === 1 || value === undefined) prev.delete('page');
-      else prev.set('page', String(value));
-      return prev;
-    });
+    setSearchParams((prev) => { if (value === 1 || value === undefined) prev.delete('page'); else prev.set('page', String(value)); return prev; });
   };
-
   useEffect(() => { setPage(1); }, [query, statusFilter, view]);
-
   useEffect(() => {
-    if (sites.length > 0) {
-      setSecondaryStarted(true);
-      fetchAllBuildings({ page: 1, limit: 1000 }).catch(() => {});
-      fetchAllCollectionPoints({ page: 1, limit: 1000 }).catch(() => {});
-    }
-  }, [sites.length, fetchAllBuildings, fetchAllCollectionPoints]);
+    if (sites.length > 0 && !secondaryDataStarted) { setSecondaryDataStarted(true); fetchAllBuildings({ page: 1, limit: 1000 }).catch(() => {}); fetchAllCollectionPoints({ page: 1, limit: 1000 }).catch(() => {}); }
+  }, [sites.length, fetchAllBuildings, fetchAllCollectionPoints, secondaryDataStarted]);
+  useEffect(() => {
+    if (view === 'cafeterias' && !secondaryStarted) { fetchCafeteriasAdmin({ page: 1, limit: 1000 }).catch(() => {}); setSecondaryStarted(true); }
+  }, [view]);
 
-  const buildings = useMemo(() => allBuildings.map((building) => ({ ...building, site_name: sites.find((site) => site.id === building.site_id)?.name || 'Unknown site' })), [allBuildings, sites]);
-  const collectionPoints = useMemo(() => allCollectionPoints.map((point) => { const building = buildings.find((item) => item.id === point.building_id); return { ...point, building_name: building?.name, site_name: building?.site_name }; }), [allCollectionPoints, buildings]);
-  const filteredSites = useMemo(() => sites.filter((site) => (statusFilter === 'all' || (statusFilter === 'active' ? site.is_active : !site.is_active)) && (!query || `${site.name} ${site.code || ''} ${site.address || ''} ${site.city || ''} ${site.province || ''}`.toLowerCase().includes(query.toLowerCase()))), [query, sites, statusFilter]);
-  const filteredBuildings = useMemo(() => buildings.filter((building) => (statusFilter === 'all' || (statusFilter === 'active' ? building.is_active : !building.is_active)) && (!query || `${building.name} ${building.code || ''} ${building.site_name}`.toLowerCase().includes(query.toLowerCase()))), [buildings, query, statusFilter]);
-  const filteredPoints = useMemo(() => collectionPoints.filter((point) => (!query || `${point.name} ${point.building_name || ''} ${point.site_name || ''}`.toLowerCase().includes(query.toLowerCase()))), [collectionPoints, query]);
-  const currentItems = view === 'sites' ? filteredSites : view === 'buildings' ? filteredBuildings : filteredPoints;
+  const buildings = useMemo(() => allBuildings.map((b) => ({ ...b, site_name: sites.find((s) => s.id === b.site_id)?.name || 'Unknown site' })), [allBuildings, sites]);
+  const collectionPoints = useMemo(() => allCollectionPoints.map((p) => { const b = buildings.find((i) => i.id === p.building_id); return { ...p, building_name: b?.name, site_name: b?.site_name }; }), [allCollectionPoints, buildings]);
+  const filteredSites = useMemo(() => sites.filter((s) => (statusFilter === 'all' || (statusFilter === 'active' ? s.is_active : !s.is_active)) && (!query || `${s.name} ${s.code || ''} ${s.address || ''} ${s.city || ''} ${s.province || ''}`.toLowerCase().includes(query.toLowerCase()))), [query, sites, statusFilter]);
+  const filteredBuildings = useMemo(() => buildings.filter((b) => (statusFilter === 'all' || (statusFilter === 'active' ? b.is_active : !b.is_active)) && (!query || `${b.name} ${b.code || ''} ${b.site_name}`.toLowerCase().includes(query.toLowerCase()))), [buildings, query, statusFilter]);
+  const filteredPoints = useMemo(() => collectionPoints.filter((p) => (!query || `${p.name} ${p.building_name || ''} ${p.site_name || ''}`.toLowerCase().includes(query.toLowerCase()))), [collectionPoints, query]);
+  const filteredCafeterias = useMemo(() => cafeterias.filter((c) => (statusFilter === 'all' || (statusFilter === 'active' ? c.is_active : !c.is_active)) && (!query || `${c.name} ${c.code || ''} ${c.category || ''}`.toLowerCase().includes(query.toLowerCase()))), [cafeterias, query, statusFilter]);
+  const currentItems = view === 'sites' ? filteredSites : view === 'buildings' ? filteredBuildings : view === 'cafeterias' ? filteredCafeterias : filteredPoints;
   const paginatedItems = currentItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-  const counts = { sites: sites.length, buildings: buildings.length, 'collection-points': collectionPoints.length };
-  const activeSites = sites.filter((site) => site.is_active).length;
-  const activeBuildings = buildings.filter((building) => building.is_active).length;
-  const activePoints = collectionPoints.filter((point) => point.is_active).length;
+  const counts = { sites: sites.length, buildings: buildings.length, 'collection-points': collectionPoints.length, cafeterias: cafeterias.length };
+  const activeSites = sites.filter((s) => s.is_active).length;
+  const activeBuildings = buildings.filter((b) => b.is_active).length;
+  const activePoints = collectionPoints.filter((p) => p.is_active).length;
+  const activeCafeterias = cafeterias.filter((c) => c.is_active).length;
   const handleView = (next) => { setView(next); setStatusFilter('all'); setSearchParams((prev) => { prev.set('view', next); prev.delete('page'); return prev; }); };
-  const handleCreate = async (payload) => { setSubmitting(true); try { const { cover_file: coverFile, ...sitePayload } = payload; const response = await addSite(sitePayload); if (coverFile && response.site?.id) await uploadAdminAsset(session?.access_token, 'site', response.site.id, coverFile); } finally { setSubmitting(false); } };
-  const viewError = errors.sites || (view === 'buildings' ? errors.buildings : view === 'collection-points' ? errors.collectionPoints : null);
-  const viewSkeleton = !loaded && sites.length === 0
-    ? true
-    : view === 'buildings'
-      ? allBuildings.length === 0 && (loading.buildings || !secondaryStarted)
-      : view === 'collection-points'
-        ? allCollectionPoints.length === 0 && (loading.collectionPoints || !secondaryStarted)
-        : false;
+  const handleCreateSite = async (payload) => { setSubmitting(true); try { const { cover_file: coverFile, ...sitePayload } = payload; const response = await addSite(sitePayload); if (coverFile && response.site?.id) await uploadAdminAsset(session?.access_token, 'site', response.site.id, coverFile); } finally { setSubmitting(false); } };
+  const handleCreateCafeteria = async (payload) => { setSubmitting(true); try { await addCafeteria(payload); } finally { setSubmitting(false); } };
+  const viewError = errors.sites || (view === 'buildings' ? errors.buildings : view === 'collection-points' ? errors.collectionPoints : view === 'cafeterias' ? errors.cafeterias : null);
+  const viewSkeleton = !loaded && sites.length === 0 ? true : view === 'cafeterias' ? cafeterias.length === 0 && (loading.cafeterias || !secondaryStarted) : view === 'buildings' ? allBuildings.length === 0 && (loading.buildings || !secondaryDataStarted) : view === 'collection-points' ? allCollectionPoints.length === 0 && (loading.collectionPoints || !secondaryDataStarted) : false;
 
-  return <div className="admin-orders">
-    <header className="admin-vendors__header"><div><span className="admin-card__eyebrow">Locations</span><p className="admin-vendors__sub">Register and manage the sites where food orders are placed, prepared, and collected.</p></div><div className="admin-vendors__actions"><button type="button" className="admin-action--ghost" onClick={() => setShowNew(true)}><IconPlus size={13} /> New site</button></div></header>
-    <section className="admin-cafeterias__kpis"><div className="admin-cafeterias__kpi"><div className="admin-cafeterias__kpi-icon"><IconMapPin size={24} /></div><div className="admin-cafeterias__kpi-body"><span className="admin-cafeterias__kpi-label">Active sites</span><span className="admin-cafeterias__kpi-value">{!loaded ? <span className="skeleton skeleton--kpi-value" /> : <>{activeSites} / {sites.length}</>}</span></div></div><div className="admin-cafeterias__kpi"><div className="admin-cafeterias__kpi-icon"><IconBuilding size={24} /></div><div className="admin-cafeterias__kpi-body"><span className="admin-cafeterias__kpi-label">Active buildings</span><span className="admin-cafeterias__kpi-value">{!loaded ? <span className="skeleton skeleton--kpi-value" /> : activeBuildings}</span></div></div><div className="admin-cafeterias__kpi"><div className="admin-cafeterias__kpi-icon"><IconClipboardCheck size={24} /></div><div className="admin-cafeterias__kpi-body"><span className="admin-cafeterias__kpi-label">Active collection points</span><span className="admin-cafeterias__kpi-value">{!loaded ? <span className="skeleton skeleton--kpi-value" /> : activePoints}</span></div></div><div className="admin-cafeterias__kpi"><div className="admin-cafeterias__kpi-icon"><IconClock size={24} /></div><div className="admin-cafeterias__kpi-body"><span className="admin-cafeterias__kpi-label">Loaded records</span><span className="admin-cafeterias__kpi-value">{!loaded ? <span className="skeleton skeleton--kpi-value" /> : sites.length + buildings.length + collectionPoints.length}</span></div></div></section>
-    <div className="admin-vendors__tabs" role="tablist">{VIEW_TABS.map((tab) => <button key={tab.id} type="button" role="tab" aria-selected={view === tab.id} className={`admin-vendors__tab${view === tab.id ? ' admin-vendors__tab--active' : ''}`} onClick={() => handleView(tab.id)}>{tab.id === 'sites' ? <IconMapPin size={16} /> : tab.id === 'buildings' ? <IconBuilding size={16} /> : <IconClipboardCheck size={16} />}{tab.label}<span className="admin-vendors__tab-count">{counts[tab.id]}</span></button>)}</div>
-    <div className="admin-orders__filters"><div className="admin-vendors__search admin-orders__search"><IconSearch size={16} /><input type="search" placeholder={`Search ${view}`} value={query} onChange={(e) => setQuery(e.target.value)} /></div>{view !== 'collection-points' && <div className="admin-vendors__chips"><button type="button" className={`admin-vendors__chip${statusFilter === 'all' ? ' admin-vendors__chip--active' : ''}`} onClick={() => setStatusFilter('all')}>All</button><button type="button" className={`admin-vendors__chip${statusFilter === 'active' ? ' admin-vendors__chip--active' : ''}`} onClick={() => setStatusFilter('active')}>Active</button><button type="button" className={`admin-vendors__chip${statusFilter === 'inactive' ? ' admin-vendors__chip--active' : ''}`} onClick={() => setStatusFilter('inactive')}>Inactive</button></div>}</div>
-    {viewError ? <div className="admin-empty"><h3>Could not load locations</h3><p>{viewError}</p></div> : viewSkeleton ? view === 'sites' ? <div className="admin-site-grid">{Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} lines={2} badges={1} />)}</div> : view === 'buildings' ? <div className="admin-building-grid">{Array.from({ length: 6 }, (_, i) => <div key={i} className="admin-building-card" style={{ pointerEvents: 'none' }}><div className="admin-building-card__media"><div className="admin-building-card__placeholder"><span className="skeleton" style={{ width: 22, height: 22, borderRadius: 'var(--radius-sm)' }} /></div></div><div className="admin-building-card__body"><div className="admin-building-card__head"><span className="skeleton skeleton--badge" style={{ width: 60 }} /></div><div className="skeleton skeleton--title" style={{ width: '70%', marginTop: 6 }} /><div className="skeleton skeleton--text" style={{ width: '50%', marginTop: 4 }} /></div></div>)}</div> : <ul className="admin-cp-rows">{Array.from({ length: 5 }, (_, i) => <li key={i} className="admin-cp-row" style={{ pointerEvents: 'none' }}><div className="admin-cp-row__icon"><span className="skeleton" style={{ width: 18, height: 18, borderRadius: 'var(--radius-sm)' }} /></div><div className="admin-cp-row__body"><div className="admin-cp-row__head"><span className="skeleton skeleton--badge" style={{ width: 100 }} /><span className="skeleton skeleton--badge" style={{ width: 50 }} /></div><div className="skeleton skeleton--text" style={{ width: '60%', marginTop: 4 }} /></div></li>)}</ul> : paginatedItems.length === 0 ? <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>No locations found</h3><p>Try changing your search or filters.</p></div> : view === 'sites' ? <div className="admin-site-grid">{paginatedItems.map((site) => <SiteCard key={site.id} site={site} />)}</div> : view === 'buildings' ? <div className="admin-building-grid">{paginatedItems.map((building) => <BuildingCard key={building.id} building={building} />)}</div> : <div className="admin-cp-list"><ul className="admin-cp-rows">{paginatedItems.map((point) => <CollectionPointRow key={point.id} point={point} />)}</ul></div>}
-    {currentItems.length > itemsPerPage && <Pagination currentPage={currentPage} totalPages={Math.ceil(currentItems.length / itemsPerPage)} totalItems={currentItems.length} itemsPerPage={itemsPerPage} label={view} onPageChange={setPage} />}
-    {showNew && <NewSiteModal onClose={() => setShowNew(false)} onSubmit={handleCreate} submitting={submitting} />}
-  </div>;
+  const skeletonContent = viewSkeleton ? <SkeletonGrid type={view === 'sites' ? 'sites' : 'buildings'} /> : null;
+  const errorContent = <div className="admin-empty"><h3>Could not load locations</h3><p>{viewError}</p></div>;
+  const emptyContent = paginatedItems.length === 0 && !viewError && !viewSkeleton ? <div className="admin-empty"><img src={emptyStateAvatar} alt="" className="admin-empty__avatar" /><h3>No locations found</h3><p>Try changing your search or filters.</p></div> : null;
+  let content;
+  if (!viewError && !viewSkeleton && paginatedItems.length > 0) {
+    if (view === 'sites') content = <div className="admin-site-grid">{paginatedItems.map((s) => <SiteCard key={s.id} site={s} />)}</div>;
+    else if (view === 'buildings') content = <div className="admin-building-grid">{paginatedItems.map((b) => <BuildingCard key={b.id} building={b} />)}</div>;
+    else if (view === 'cafeterias') content = <div className="admin-building-grid">{paginatedItems.map((c) => <CafeteriaCard key={c.id} {...c} variant="directory" to={`/admin/cafeterias/${c.id}`} />)}</div>;
+    else content = <ul className="admin-cp-rows">{paginatedItems.map((p) => <CollectionPointRow key={p.id} point={p} />)}</ul>;
+  }
+
+  return (
+    <div className="admin-orders">
+      <header className="admin-vendors__header">
+        <div><span className="admin-card__eyebrow">Locations</span><p className="admin-vendors__sub">Register and manage the sites, buildings, and cafeterias where food orders are placed, prepared, and collected.</p></div>
+        <div className="admin-vendors__actions">
+          <button type="button" className="admin-action--ghost" onClick={() => setShowNew(true)}><IconPlus size={13} /> {view === 'cafeterias' ? 'New cafeteria' : 'New site'}</button>
+        </div>
+      </header>
+      <section className="admin-cafeterias__kpis">
+        <div className="admin-cafeterias__kpi"><div className="admin-cafeterias__kpi-icon"><IconMapPin size={24} /></div><div className="admin-cafeterias__kpi-body"><span className="admin-cafeterias__kpi-label">Active sites</span><span className="admin-cafeterias__kpi-value">{!loaded ? <span className="skeleton skeleton--kpi-value" /> : <>{activeSites} / {sites.length}</>}</span></div></div>
+        <div className="admin-cafeterias__kpi"><div className="admin-cafeterias__kpi-icon"><IconBuilding size={24} /></div><div className="admin-cafeterias__kpi-body"><span className="admin-cafeterias__kpi-label">Active buildings</span><span className="admin-cafeterias__kpi-value">{!loaded ? <span className="skeleton skeleton--kpi-value" /> : activeBuildings}</span></div></div>
+        <div className="admin-cafeterias__kpi"><div className="admin-cafeterias__kpi-icon"><IconClipboardCheck size={24} /></div><div className="admin-cafeterias__kpi-body"><span className="admin-cafeterias__kpi-label">Active collection points</span><span className="admin-cafeterias__kpi-value">{!loaded ? <span className="skeleton skeleton--kpi-value" /> : activePoints}</span></div></div>
+        <div className="admin-cafeterias__kpi"><div className="admin-cafeterias__kpi-icon"><IconShoppingBag size={24} /></div><div className="admin-cafeterias__kpi-body"><span className="admin-cafeterias__kpi-label">Active cafeterias</span><span className="admin-cafeterias__kpi-value">{!loaded ? <span className="skeleton skeleton--kpi-value" /> : activeCafeterias}</span></div></div>
+      </section>
+      <div className="admin-vendors__tabs" role="tablist">
+        {VIEW_TABS.map((tab) => (
+          <button key={tab.id} type="button" role="tab" aria-selected={view === tab.id} className={`admin-vendors__tab${view === tab.id ? ' admin-vendors__tab--active' : ''}`} onClick={() => handleView(tab.id)}>
+            {tab.id === 'sites' ? <IconMapPin size={16} /> : tab.id === 'buildings' ? <IconBuilding size={16} /> : tab.id === 'cafeterias' ? <IconShoppingBag size={16} /> : <IconClipboardCheck size={16} />}
+            {tab.label}<span className="admin-vendors__tab-count">{counts[tab.id]}</span>
+          </button>
+        ))}
+      </div>
+      <div className="admin-orders__filters">
+        <div className="admin-vendors__search admin-orders__search"><IconSearch size={16} /><input type="search" placeholder={`Search ${view}`} value={query} onChange={(e) => setQuery(e.target.value)} /></div>
+        {view !== 'collection-points' && (
+          <div className="admin-vendors__chips">
+            <button type="button" className={`admin-vendors__chip${statusFilter === 'all' ? ' admin-vendors__chip--active' : ''}`} onClick={() => setStatusFilter('all')}>All</button>
+            <button type="button" className={`admin-vendors__chip${statusFilter === 'active' ? ' admin-vendors__chip--active' : ''}`} onClick={() => setStatusFilter('active')}>Active</button>
+            <button type="button" className={`admin-vendors__chip${statusFilter === 'inactive' ? ' admin-vendors__chip--active' : ''}`} onClick={() => setStatusFilter('inactive')}>Inactive</button>
+          </div>
+        )}
+      </div>
+      {viewError && errorContent}
+      {viewSkeleton && skeletonContent}
+      {emptyContent}
+      {content}
+      {currentItems.length > itemsPerPage && <Pagination currentPage={currentPage} totalPages={Math.ceil(currentItems.length / itemsPerPage)} totalItems={currentItems.length} itemsPerPage={itemsPerPage} label={view} onPageChange={setPage} />}
+      {showNew && view === 'cafeterias' && <NewCafeteriaModal onClose={() => setShowNew(false)} onSubmit={handleCreateCafeteria} submitting={submitting} />}
+      {showNew && view !== 'cafeterias' && <NewSiteModal onClose={() => setShowNew(false)} onSubmit={handleCreateSite} submitting={submitting} />}
+    </div>
+  );
 }

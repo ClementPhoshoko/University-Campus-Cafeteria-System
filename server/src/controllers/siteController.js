@@ -13,10 +13,12 @@ import {
   normalizeFloor,
   normalizeCollectionPoint,
   normalizeDeliveryLocation,
+  normalizeCafeteria,
   SITE_SORTS,
   BUILDING_SORTS,
   FLOOR_SORTS,
   POINT_SORTS,
+  CAFETERIA_SORTS,
 } from '../validators/siteValidators.js';
 
 const db = () => supabaseAdmin;
@@ -892,6 +894,171 @@ export async function listPublicCollectionPoints(req, res) {
       building_id: buildingId,
       collectionPoints: withFloor(data),
     }, { cacheControl: CACHE.publicRef });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public â€" cafeterias
+// ---------------------------------------------------------------------------
+
+export async function listCafeterias(req, res) {
+  try {
+    const { pageNum, limitNum, from, to } = parsePagination(req.query);
+
+    const search = String(req.query.search || '').trim();
+    const { column, ascending, error: sortError } = parseSortParam(req.query, CAFETERIA_SORTS, 'created_at');
+    if (sortError) return sendError(res, 400, 'VALIDATION_ERROR', sortError);
+
+    let query = db().from('cafeterias').select('*', { count: 'exact' }).eq('is_active', true);
+
+    if (search) query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+
+    const statusFilter = String(req.query.status || '').trim();
+    if (statusFilter && ['open', 'busy', 'closed', 'temporarily_unavailable'].includes(statusFilter)) {
+      query = query.eq('status', statusFilter);
+    }
+
+    const categoryFilter = String(req.query.category || '').trim();
+    if (categoryFilter && ['dining', 'seafood', 'cafe'].includes(categoryFilter)) {
+      query = query.eq('category', categoryFilter);
+    }
+
+    query = query.order(column, { ascending }).range(from, to);
+
+    const { data, error: dbError, count } = await query;
+    if (dbError) throw dbError;
+
+    const items = await Promise.all((data || []).map(async (cafeteria) => ({
+      ...cafeteria,
+      image_url: await resolveAssetUrl(cafeteria.image_url, { size: 'card' }),
+    })));
+
+    return respond(req, res, {
+      success: true,
+      cafeterias: items,
+      pagination: buildPagination(count, pageNum, limitNum),
+    }, { cacheControl: CACHE.publicRef });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
+}
+
+export async function getCafeteria(req, res) {
+  try {
+    const cafeteriaId = requireUuidParam(req, res, 'cafeteriaId');
+    if (!cafeteriaId) return;
+
+    const { data: cafeteria, error: dbError } = await db()
+      .from('cafeterias')
+      .select('*')
+      .eq('id', cafeteriaId)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (dbError) throw dbError;
+    if (!cafeteria) throw new ApiError(404, 'CAFETERIA_NOT_FOUND', 'Cafeteria not found');
+
+    return respond(req, res, {
+      success: true,
+      cafeteria: {
+        ...cafeteria,
+        image_url: await resolveAssetUrl(cafeteria.image_url, { size: 'hero' }),
+      },
+    }, { cacheControl: CACHE.publicRef });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Admin â€" cafeterias
+// ---------------------------------------------------------------------------
+
+export async function listCafeteriasAdmin(req, res) {
+  try {
+    const { pageNum, limitNum, from, to } = parsePagination(req.query);
+    const { search, filters, column, ascending, error } = normalizeListFilters(req, {
+      sortDefaults: 'created_at',
+      sortAllowed: CAFETERIA_SORTS,
+    });
+    if (error) return sendError(res, 400, 'VALIDATION_ERROR', error);
+
+    let query = db().from('cafeterias').select('*', { count: 'exact' });
+    if (search) query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    if (filters.is_active !== undefined) query = query.eq('is_active', filters.is_active);
+    query = query.order(column, { ascending }).range(from, to);
+
+    const { data, error: dbError, count } = await query;
+    if (dbError) throw dbError;
+
+    const items = await Promise.all((data || []).map(async (cafeteria) => ({
+      ...cafeteria,
+      image_url: await resolveAssetUrl(cafeteria.image_url, { size: 'thumb' }),
+    })));
+
+    return respond(req, res, {
+      success: true,
+      cafeterias: items,
+      pagination: buildPagination(count, pageNum, limitNum),
+    }, { cacheControl: CACHE.adminConfig });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
+}
+
+export async function createCafeteria(req, res) {
+  try {
+    const result = normalizeCafeteria(req.body);
+    if (result.errors?.length) return sendError(res, 400, 'VALIDATION_ERROR', result.errors.join('; '));
+    if (result.empty) return sendError(res, 400, 'VALIDATION_ERROR', 'No valid fields provided');
+
+    await mustExist('sites', result.value.site_id, 'SITE_NOT_FOUND', 'Site not found');
+
+    const { data, error } = await db().from('cafeterias').insert(result.value).select().single();
+    if (error) throw error;
+
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.cafeterias', recordKey: data.id, newData: data, reason: 'Cafeteria created', category: 'data' });
+    return respond(req, res, { success: true, cafeteria: data }, { status: 201 });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
+}
+
+export async function updateCafeteria(req, res) {
+  try {
+    const cafeteriaId = requireUuidParam(req, res, 'cafeteriaId');
+    if (!cafeteriaId) return;
+
+    const existing = await mustExist('cafeterias', cafeteriaId, 'CAFETERIA_NOT_FOUND', 'Cafeteria not found');
+    const result = normalizeCafeteria(req.body, { partial: true });
+    if (result.errors?.length) return sendError(res, 400, 'VALIDATION_ERROR', result.errors.join('; '));
+    if (result.empty) return sendError(res, 400, 'VALIDATION_ERROR', 'No valid fields to update');
+
+    if (result.value.site_id) await mustExist('sites', result.value.site_id, 'SITE_NOT_FOUND', 'Site not found');
+
+    const { data, error } = await db().from('cafeterias').update(result.value).eq('id', cafeteriaId).select().single();
+    if (error) throw error;
+
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.cafeterias', recordKey: cafeteriaId, oldData: existing, newData: data, reason: 'Cafeteria updated', category: 'data' });
+    return respond(req, res, { success: true, cafeteria: data });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
+}
+
+export async function deleteCafeteria(req, res) {
+  try {
+    const cafeteriaId = requireUuidParam(req, res, 'cafeteriaId');
+    if (!cafeteriaId) return;
+
+    const existing = await mustExist('cafeterias', cafeteriaId, 'CAFETERIA_NOT_FOUND', 'Cafeteria not found');
+
+    const { error } = await db().from('cafeterias').delete().eq('id', cafeteriaId);
+    if (error) throw error;
+
+    await writeAudit(req, { action: 'DELETE', tableName: 'public.cafeterias', recordKey: cafeteriaId, oldData: existing, reason: 'Cafeteria deleted', category: 'data' });
+    return respond(req, res, { success: true });
   } catch (err) {
     return handleControllerError(res, err);
   }

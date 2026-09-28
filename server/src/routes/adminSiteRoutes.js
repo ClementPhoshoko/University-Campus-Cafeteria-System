@@ -22,6 +22,11 @@ import {
   listDeliveryLocations,
   createDeliveryLocation,
   updateDeliveryLocation,
+  listCafeteriasAdmin,
+  getCafeteria,
+  createCafeteria,
+  updateCafeteria,
+  deleteCafeteria,
 } from '../controllers/siteController.js';
 
 const adminSiteRouter = Router();
@@ -57,5 +62,11 @@ adminSiteRouter.patch('/admin/collection-points/:cpId', mutations, updateCollect
 adminSiteRouter.get('/admin/buildings/:buildingId/delivery-locations', listDeliveryLocations);
 adminSiteRouter.post('/admin/buildings/:buildingId/delivery-locations', mutations, createDeliveryLocation);
 adminSiteRouter.patch('/admin/delivery-locations/:dlId', mutations, updateDeliveryLocation);
+
+adminSiteRouter.get('/admin/cafeterias', listCafeteriasAdmin);
+adminSiteRouter.post('/admin/cafeterias', mutations, createCafeteria);
+adminSiteRouter.get('/admin/cafeterias/:cafeteriaId', getCafeteria);
+adminSiteRouter.patch('/admin/cafeterias/:cafeteriaId', mutations, updateCafeteria);
+adminSiteRouter.delete('/admin/cafeterias/:cafeteriaId', mutations, deleteCafeteria);
 
 export default adminSiteRouter;

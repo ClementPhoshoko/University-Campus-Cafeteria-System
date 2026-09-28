@@ -9,6 +9,8 @@ import {
   IconArrowRight,
 } from '@tabler/icons-react';
 import { useAuth } from '../../hooks/useAuth.js';
+import { listCafeterias } from '../../services/adminApi.js';
+import { popularMeals, categories, deliveryImage, reviews, reviewsImage, heroImage, heroFoods } from './homeData.js';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import SectionHeader from '../../components/layout/SectionHeader.jsx';
@@ -19,7 +21,6 @@ import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import androidBadge from '../../assets/android_download-PJqqAvJc.webp';
 import iosBadge from '../../assets/ios_download-Dn_KtiFi.webp';
 import HeroFoodShowcase from '../../components/hero/HeroFoodShowcase.jsx';
-import { cafeterias, popularMeals, categories, deliveryImage, reviews, reviewsImage, heroImage, heroFoods } from './homeData.js';
 import './home.css';
 
 function greeting() {
@@ -57,10 +58,21 @@ function ScrollIndicator({ fillRef }) {
 }
 
 export default function HomePage() {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
   const cafeteria = useScrollProgress();
   const meals = useScrollProgress();
+  const [cafeterias, setCafeterias] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = session?.access_token;
+    if (!token) { setLoading(false); return; }
+    listCafeterias(token, { page: 1, limit: 20 })
+      .then((res) => { setCafeterias(res?.cafeterias || []); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [session]);
 
   const PER_PAGE = 3;
   const totalPages = Math.ceil(reviews.length / PER_PAGE);
@@ -136,10 +148,12 @@ export default function HomePage() {
                 name={v.name}
                 status={v.status}
                 category={v.category}
-                image={v.image}
+                image={v.image_url}
                 description={v.description}
-                walkTime={v.walkTime}
-                prepWindow={v.prepWindow}
+                walkTime={v.walk_time || '—'}
+                prepWindow={v.estimated_prep_minutes ? `${v.estimated_prep_minutes} min` : '—'}
+                rating={v.average_rating || undefined}
+                reviewCount={v.rating_count || undefined}
               />
             ))}
 

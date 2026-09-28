@@ -5,6 +5,7 @@ export const SITE_SORTS = ['name', 'code', 'created_at'];
 export const BUILDING_SORTS = ['name', 'code', 'created_at'];
 export const FLOOR_SORTS = ['name', 'level_number'];
 export const POINT_SORTS = ['name'];
+export const CAFETERIA_SORTS = ['name', 'category', 'average_rating', 'created_at'];
 
 export function isUuid(value) {
   return typeof value === 'string' && UUID_RE.test(value);
@@ -274,6 +275,73 @@ export function normalizeDeliveryLocation(input, { partial = false } = {}) {
 
   const instructions = text(input, 'instructions', { max: 1000 });
   if (instructions.error) errors.push(instructions.error); else if (instructions.value !== undefined && !instructions.skip) value.instructions = instructions.value || null;
+
+  const active = boolean(input, 'is_active');
+  if (active.error) errors.push(active.error); else if (active.value !== undefined && !active.skip) value.is_active = active.value;
+
+  if (errors.length) return { errors };
+  if (Object.keys(value).length === 0) return { value, empty: true };
+  return { value };
+}
+
+function serviceStatus(input, key, { dflt } = {}) {
+  const VALID_STATUSES = ['open', 'closed', 'busy', 'temporarily_unavailable'];
+  if (input[key] === undefined || input[key] === null) {
+    if (dflt !== undefined) return { value: dflt };
+    return { skip: true };
+  }
+  if (typeof input[key] !== 'string' || !VALID_STATUSES.includes(input[key])) {
+    return { error: `${key} must be one of: ${VALID_STATUSES.join(', ')}` };
+  }
+  return { value: input[key] };
+}
+
+function category(input, key) {
+  const VALID_CATEGORIES = ['dining', 'seafood', 'cafe'];
+  if (input[key] === undefined || input[key] === null) return { skip: true };
+  if (typeof input[key] !== 'string' || !VALID_CATEGORIES.includes(input[key])) {
+    return { error: `${key} must be one of: ${VALID_CATEGORIES.join(', ')}` };
+  }
+  return { value: input[key] };
+}
+
+export function normalizeCafeteria(input, { partial = false } = {}) {
+  const errors = [];
+  const value = {};
+
+  const name = text(input, 'name', { required: !partial });
+  if (name.error) errors.push(name.error); else if (name.value !== undefined && !name.skip) value.name = name.value;
+
+  const code = text(input, 'code', { max: 50, pattern: CODE_RE });
+  if (code.error) errors.push(code.error); else if (code.value !== undefined && !code.skip) value.code = code.value || null;
+
+  if (!partial && !input.site_id) errors.push('site_id is required');
+  const siteId = uuid(input, 'site_id', { nullable: false });
+  if (siteId.error) errors.push(siteId.error); else if (siteId.value !== undefined && !siteId.skip) value.site_id = siteId.value;
+
+  const cat = category(input, 'category');
+  if (cat.error) errors.push(cat.error); else if (cat.value !== undefined && !cat.skip) value.category = cat.value;
+
+  const description = text(input, 'description', { max: 1000 });
+  if (description.error) errors.push(description.error); else if (description.value !== undefined && !description.skip) value.description = description.value || null;
+
+  const imageUrl = text(input, 'image_url', { max: 500, allowEmptyToNull: true });
+  if (imageUrl.error) errors.push(imageUrl.error); else if (imageUrl.value !== undefined && !imageUrl.skip) value.image_url = imageUrl.value || null;
+
+  const status = serviceStatus(input, 'status', { dflt: !partial ? 'closed' : undefined });
+  if (status.error) errors.push(status.error); else if (status.value !== undefined && !status.skip) value.status = status.value;
+
+  const walkTime = text(input, 'walk_time', { max: 50 });
+  if (walkTime.error) errors.push(walkTime.error); else if (walkTime.value !== undefined && !walkTime.skip) value.walk_time = walkTime.value || null;
+
+  const prepMinutes = integer(input, 'estimated_prep_minutes');
+  if (prepMinutes.error) errors.push(prepMinutes.error); else if (prepMinutes.value !== undefined && !prepMinutes.skip) value.estimated_prep_minutes = prepMinutes.value;
+
+  const rating = numberRange(input, 'average_rating', { min: 0, max: 5 });
+  if (rating.error) errors.push(rating.error); else if (rating.value !== undefined && !rating.skip) value.average_rating = rating.value;
+
+  const reviewCount = integer(input, 'rating_count');
+  if (reviewCount.error) errors.push(reviewCount.error); else if (reviewCount.value !== undefined && !reviewCount.skip) value.rating_count = reviewCount.value;
 
   const active = boolean(input, 'is_active');
   if (active.error) errors.push(active.error); else if (active.value !== undefined && !active.skip) value.is_active = active.value;
