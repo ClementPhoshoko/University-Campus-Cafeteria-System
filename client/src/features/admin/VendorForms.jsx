@@ -45,28 +45,17 @@ function Field({ label, children, full = false, renderLabel = true }) {
 
 function VendorCategoriesField({ categories = [], onChange, additionalOptions = [] }) {
   const options = [...new Set([...VENDOR_CATEGORY_OPTIONS, ...additionalOptions])].sort((a, b) => a.localeCompare(b));
-  const toggleCategory = (category) => {
-    onChange(categories.includes(category)
-      ? categories.filter((value) => value !== category)
-      : [...categories, category]);
-  };
 
   return (
-    <div className="admin-modal__field vendor-category-field">
-      <span>Category</span>
-      <small>Select all that apply.</small>
-      <div className="vendor-category-options">
-        {options.map((category) => (
-          <label className="vendor-category-option" key={category}>
-            <input
-              type="checkbox"
-              checked={categories.includes(category)}
-              onChange={() => toggleCategory(category)}
-            />
-            <span>{category}</span>
-          </label>
-        ))}
-      </div>
+    <div className="admin-modal__field">
+      <AdminDropdown
+        label="Category"
+        options={options.map((category) => ({ value: category, label: category }))}
+        value={categories}
+        onChange={onChange}
+        placeholder="Select categories..."
+        multiSelect
+      />
     </div>
   );
 }

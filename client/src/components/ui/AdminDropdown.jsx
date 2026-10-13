@@ -28,6 +28,7 @@ export default function AdminDropdown({
   disabled = false,
   loading = false,
   error = null,
+  multiSelect = false,
   id,
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -44,7 +45,10 @@ export default function AdminDropdown({
   if (isOpen) hasOpenedRef.current = true;
   isOpenRef.current = isOpen;
 
-  const selectedOption = options.find((opt) => String(opt.value) === String(value));
+  const selectedValues = multiSelect && Array.isArray(value) ? value.map(String) : [];
+  const selectedOption = multiSelect
+    ? null
+    : options.find((opt) => String(opt.value) === String(value));
 
   const close = useCallback(() => {
     setIsOpen(false);
@@ -116,7 +120,11 @@ export default function AdminDropdown({
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         setIsOpen(true);
-        setHighlightedIndex(options.findIndex((opt) => String(opt.value) === String(value)));
+        setHighlightedIndex(options.findIndex((opt) => (
+          multiSelect
+            ? selectedValues.includes(String(opt.value))
+            : String(opt.value) === String(value)
+        )));
       }
       return;
     }
@@ -133,8 +141,7 @@ export default function AdminDropdown({
       case ' ':
         e.preventDefault();
         if (highlightedIndex >= 0 && options[highlightedIndex]) {
-          onChange(options[highlightedIndex].value);
-          close();
+          handleSelect(options[highlightedIndex].value);
         }
         break;
       case 'Tab':
@@ -146,12 +153,24 @@ export default function AdminDropdown({
   };
 
   const handleSelect = useCallback((optionValue) => {
+    if (multiSelect) {
+      const optionKey = String(optionValue);
+      const currentValues = Array.isArray(value) ? value : [];
+      onChange(currentValues.some((current) => String(current) === optionKey)
+        ? currentValues.filter((current) => String(current) !== optionKey)
+        : [...currentValues, optionValue]);
+      return;
+    }
     onChange(optionValue);
     close();
-  }, [onChange, close]);
+  }, [multiSelect, onChange, close, value]);
 
-  const displayLabel = selectedOption ? selectedOption.label : placeholder;
-  const isPlaceholder = !selectedOption;
+  const displayLabel = multiSelect
+    ? selectedValues.length === 1
+      ? options.find((option) => String(option.value) === selectedValues[0])?.label || placeholder
+      : selectedValues.length > 1 ? `${selectedValues.length} selected` : placeholder
+    : selectedOption?.label || placeholder;
+  const isPlaceholder = multiSelect ? selectedValues.length === 0 : !selectedOption;
 
   return (
     <div className={`admin-dropdown${error ? ' admin-dropdown--error' : ''}${disabled ? ' admin-dropdown--disabled' : ''}`}>
@@ -187,6 +206,7 @@ export default function AdminDropdown({
             className={`admin-dropdown__menu${isOpen ? '' : ' admin-dropdown__menu--hidden'}${isOpen && openUp ? ' admin-dropdown__menu--up' : ''}`}
             ref={menuRef}
             role="listbox"
+            aria-multiselectable={multiSelect || undefined}
             style={menuPos ? { position: 'fixed', top: menuPos.top, left: menuPos.left, width: menuPos.width } : { position: 'fixed', top: -9999, left: 0 }}
           >
             <div className="admin-dropdown__list" ref={listRef}>
@@ -197,7 +217,9 @@ export default function AdminDropdown({
                   <DropdownOption
                     key={String(option.value)}
                     option={option}
-                    isSelected={String(option.value) === String(value)}
+                    isSelected={multiSelect
+                      ? selectedValues.includes(String(option.value))
+                      : String(option.value) === String(value)}
                     isHighlighted={index === highlightedIndex}
                     onSelect={() => handleSelect(option.value)}
                     onHover={() => setHighlightedIndex(index)}
