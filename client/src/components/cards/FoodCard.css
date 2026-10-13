@@ -4,6 +4,29 @@
   height: 280px;
 }
 
+.home_meal-skeleton-media {
+  flex: 0 0 auto;
+}
+
+.home_meal-skeleton-body {
+  gap: var(--space-2);
+}
+
+.home_meal-skeleton-subtitle {
+  width: 76%;
+  height: 11px;
+}
+
+.home_meal-skeleton-price {
+  width: 54px;
+}
+
+.home_meal-skeleton-action {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full);
+}
+
 .home_meal-card-link {
   text-decoration: none;
   color: inherit;

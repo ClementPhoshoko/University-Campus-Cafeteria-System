@@ -13,8 +13,11 @@ import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import SectionHeader from '../../components/layout/SectionHeader.jsx';
 import CategoryCard from '../../components/cards/CategoryCard.jsx';
+import CategoryCardSkeleton from '../../components/cards/CategoryCardSkeleton.jsx';
 import CafeteriaCard from '../../components/cards/CafeteriaCard.jsx';
+import CafeteriaCardSkeleton from '../../components/cards/CafeteriaCardSkeleton.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
+import FoodCardSkeleton from '../../components/cards/FoodCardSkeleton.jsx';
 import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import androidBadge from '../../assets/android_download-PJqqAvJc.webp';
 import iosBadge from '../../assets/ios_download-Dn_KtiFi.webp';
@@ -225,7 +228,14 @@ export default function HomePage() {
         <section aria-label="Our cafeterias">
           <SectionHeader title="Our cafeterias" actionLabel="View all" actionTo="/cafeterias" />
           {homeLoading ? (
-            <p className="home_loading-text">Loading cafeterias…</p>
+            <>
+              <div className="home_cafeteria-scroll" role="status" aria-label="Loading cafeterias">
+                {Array.from({ length: 5 }, (_, index) => (
+                  <CafeteriaCardSkeleton key={index} />
+                ))}
+              </div>
+              <ScrollIndicator fillRef={cafeteria.fillRef} />
+            </>
           ) : homeError ? (
             <p className="home_loading-text">{homeError}</p>
           ) : (
@@ -260,7 +270,11 @@ export default function HomePage() {
         <section aria-label="Popular meals" style={{ marginTop: 'var(--space-8)' }}>
           <SectionHeader title="Popular right now" actionLabel="View all" actionTo="/cafeterias" />
           {homeLoading ? (
-            <p className="home_loading-text">Loading menu picks…</p>
+            <div className="home_meals-scroll" role="status" aria-label="Loading popular meals">
+              {Array.from({ length: 5 }, (_, index) => (
+                <FoodCardSkeleton key={index} />
+              ))}
+            </div>
           ) : (
             <div className="home_meals-scroll" ref={meals.scrollRef} onScroll={meals.onScroll}>
               {popularMeals.map((m) => (
@@ -285,9 +299,11 @@ export default function HomePage() {
         <section aria-label="Shop by category" style={{ marginTop: 'var(--space-8)' }}>
           <SectionHeader title="Shop by category" />
           <div className="home_category-scroll">
-            {categories.map((c) => (
-              <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} filterId={c.id} />
-            ))}
+            {homeLoading
+              ? Array.from({ length: 6 }, (_, index) => <CategoryCardSkeleton key={index} />)
+              : categories.map((c) => (
+                <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} filterId={c.id} />
+              ))}
           </div>
         </section>
 

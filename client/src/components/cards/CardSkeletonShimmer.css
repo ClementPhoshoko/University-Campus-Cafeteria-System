@@ -1,0 +1,22 @@
+.home_card-skeleton-shimmer {
+  background: linear-gradient(
+    100deg,
+    var(--color-border-subtle) 20%,
+    var(--color-bg-secondary) 45%,
+    var(--color-border-subtle) 70%
+  );
+  background-size: 220% 100%;
+  animation: home-card-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes home-card-skeleton-shimmer {
+  to {
+    background-position: -220% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home_card-skeleton-shimmer {
+    animation: none;
+  }
+}

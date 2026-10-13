@@ -8,6 +8,7 @@ import {
 import PageContainer from "../../components/layout/PageContainer.jsx";
 import PageHeader from "../../components/layout/PageHeader.jsx";
 import CafeteriaCard from "../../components/cards/CafeteriaCard.jsx";
+import CafeteriaCardSkeleton from "../../components/cards/CafeteriaCardSkeleton.jsx";
 import { useAuth } from '../../hooks/useAuth.js';
 import { listCafeterias } from '../../services/employeeApi.js';
 import { mapCafeteriaToCard } from '../home/homeTransform.js';
@@ -194,7 +195,7 @@ export default function CafeteriaPage() {
 
       <main className="cafeteria_page">
         <section className="cafeteria_results" aria-live="polite" aria-label="Cafeteria results">
-          <div className="cafeteria_results-heading">
+          <div className="cafeteria_results-heading" aria-live="polite">
             <span>{loading ? 'Loading' : `${visibleCafeterias.length} cafeterias`}</span>
             {query && <span className="cafeteria_results-query">for "{query}"</span>}
           </div>
@@ -202,6 +203,12 @@ export default function CafeteriaPage() {
             <div className="cafeteria_empty">
               <h2>Unable to load cafeterias</h2>
               <p>{error}</p>
+            </div>
+          ) : loading ? (
+            <div className="cafeteria_grid" role="status" aria-label="Loading cafeterias">
+              {Array.from({ length: 6 }, (_, index) => (
+                <CafeteriaCardSkeleton key={index} variant="directory" />
+              ))}
             </div>
           ) : visibleCafeterias.length > 0 ? (
             <div className="cafeteria_grid">
