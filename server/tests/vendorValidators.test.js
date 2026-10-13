@@ -55,6 +55,22 @@ test('normalizeVendor partial rejects onboarding_key on patch', () => {
   assert.equal(value.name, 'Renamed');
 });
 
+test('normalizeVendor stores unique trimmed vendor categories', () => {
+  const { value, errors } = normalizeVendor({
+    name: 'Campus Cafe',
+    categories: [' Coffee & Bakery ', 'Breakfast', 'Coffee & Bakery'],
+  });
+  assert.equal(errors, undefined);
+  assert.deepEqual(value.categories, ['Coffee & Bakery', 'Breakfast']);
+});
+
+test('normalizeVendor validates vendor categories', () => {
+  assert.ok(normalizeVendor({ categories: 'Breakfast' }, { partial: true }).errors);
+  assert.ok(normalizeVendor({ categories: [''] }, { partial: true }).errors);
+  assert.ok(normalizeVendor({ categories: ['a'.repeat(81)] }, { partial: true }).errors);
+  assert.ok(normalizeVendor({ categories: Array.from({ length: 21 }, (_, index) => `Category ${index}`) }, { partial: true }).errors);
+});
+
 test('normalizeVendorLocation requires site and building on create', () => {
   assert.ok(normalizeVendorLocation({}).errors.includes('site_id is required'));
   assert.ok(normalizeVendorLocation({ site_id: UUID }).errors.includes('building_id is required'));

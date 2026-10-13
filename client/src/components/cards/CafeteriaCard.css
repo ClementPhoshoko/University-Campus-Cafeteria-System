@@ -12,7 +12,30 @@
 }
 
 .home_vendor-card:not(.home_vendor-card--directory):not(.home_meal-card) {
+  display: flex;
+  flex-direction: column;
   height: 300px;
+}
+
+.home_vendor-card:not(.home_vendor-card--directory):not(.home_meal-card) .home_vendor-body {
+  height: auto;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: var(--space-3);
+}
+
+.home_vendor-card:not(.home_vendor-card--directory):not(.home_meal-card) .home_vendor-media {
+  height: 140px;
+  flex: 0 0 140px;
+}
+
+.home_vendor-card:not(.home_vendor-card--directory):not(.home_meal-card) .home_vendor-desc {
+  min-height: calc(1.45em * 2);
+}
+
+.home_vendor-card:not(.home_vendor-card--directory):not(.home_meal-card) .home_vendor-divider {
+  margin-top: var(--space-2);
 }
 
 .home_vendor-card:hover {
@@ -93,6 +116,7 @@
 .home_vendor-status-pill.open { color: var(--success-700); }
 .home_vendor-status-pill.busy { color: var(--warning-700); }
 .home_vendor-status-pill.closed { color: var(--error-700); }
+.home_vendor-status-pill.temporarily_unavailable { color: var(--error-700); }
 
 .home_vendor-body {
   position: relative;
@@ -120,7 +144,7 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.4em;
+  min-height: calc(1.45em * 2);
 }
 
 .home_vendor-divider {
@@ -175,6 +199,29 @@
   white-space: nowrap;
   font-size: 0.74rem;
   font-weight: var(--font-weight-medium);
+}
+
+.home_vendor-card:not(.home_vendor-card--directory):not(.home_meal-card) .home_vendor-meta {
+  align-items: flex-start;
+  gap: var(--space-1);
+  flex-direction: column;
+  justify-content: flex-start;
+  padding-top: var(--space-2);
+}
+
+.home_vendor-card:not(.home_vendor-card--directory):not(.home_meal-card) .home_vendor-meta__item:first-child {
+  width: 100%;
+}
+
+.home_vendor-card:not(.home_vendor-card--directory):not(.home_meal-card) .home_vendor-meta__item--prep-time {
+  align-self: flex-start;
+}
+
+.home_vendor-card:not(.home_vendor-card--directory):not(.home_meal-card) .home_vendor-meta__item:first-child .home_vendor-meta__copy strong {
+  display: -webkit-box;
+  white-space: normal;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .home_vendor-meta__item--prep-time .home_vendor-meta__copy strong {
@@ -239,12 +286,37 @@
   height: 24px;
 }
 
+.home_vendor-skeleton-icon {
+  display: block;
+  flex: 0 0 15px;
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+}
+
+.home_vendor-skeleton-label {
+  width: 38px;
+  height: 7px;
+  margin-bottom: 3px;
+}
+
 .home_vendor-skeleton-location {
-  width: 46%;
+  width: 122px;
+  max-width: 100%;
+  height: 9px;
 }
 
 .home_vendor-skeleton-prep {
-  width: 24%;
+  width: 56px;
+  height: 9px;
+}
+
+.home_vendor-card:not(.home_vendor-card--directory):not(.home_meal-card) .home_vendor-skeleton-body .home_vendor-meta__copy {
+  width: 100%;
+}
+
+.home_vendor-card:not(.home_vendor-card--directory):not(.home_meal-card) .home_vendor-skeleton-location {
+  width: 54%;
 }
 
 .home_vendor-skeleton-body .home_vendor-divider {

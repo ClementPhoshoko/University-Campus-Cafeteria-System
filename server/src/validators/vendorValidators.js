@@ -132,6 +132,18 @@ export function normalizeVendor(input, { partial = false } = {}) {
   const catering = boolean(input, 'corporate_catering_enabled', { dflt: !partial ? false : undefined });
   if (catering.error) errors.push(catering.error); else if (catering.value !== undefined && !catering.skip) value.corporate_catering_enabled = catering.value;
 
+  if (input.categories !== undefined) {
+    if (!Array.isArray(input.categories)) {
+      errors.push('categories must be an array of strings');
+    } else if (input.categories.length > 20 || input.categories.some((category) => typeof category !== 'string' || !category.trim() || category.trim().length > 80)) {
+      errors.push('categories must contain up to 20 non-empty strings of 80 characters or fewer');
+    } else {
+      value.categories = [...new Set(input.categories.map((category) => category.trim()))];
+    }
+  } else if (!partial) {
+    value.categories = [];
+  }
+
   if (!partial) {
     const onboardingKey = text(input, 'onboarding_key', { max: 100, allowEmptyToNull: true });
     if (onboardingKey.error) errors.push(onboardingKey.error);

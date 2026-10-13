@@ -18,8 +18,20 @@ export default function CafeteriaCardSkeleton({ variant = 'default' }) {
         {directory && <span className="home_vendor-skeleton-line home_vendor-skeleton-description home_vendor-skeleton-description--short home_card-skeleton-shimmer" />}
         <div className="home_vendor-divider" />
         <div className="home_vendor-meta">
-          <span className="home_vendor-skeleton-line home_vendor-skeleton-location home_card-skeleton-shimmer" />
-          <span className="home_vendor-skeleton-line home_vendor-skeleton-prep home_card-skeleton-shimmer" />
+          <span className="home_vendor-meta__item">
+            <span className="home_vendor-skeleton-icon home_card-skeleton-shimmer" />
+            <span className="home_vendor-meta__copy">
+              <span className="home_vendor-skeleton-line home_vendor-skeleton-label home_card-skeleton-shimmer" />
+              <span className="home_vendor-skeleton-line home_vendor-skeleton-location home_card-skeleton-shimmer" />
+            </span>
+          </span>
+          <span className="home_vendor-meta__item home_vendor-meta__item--prep-time">
+            <span className="home_vendor-skeleton-icon home_card-skeleton-shimmer" />
+            <span className="home_vendor-meta__copy">
+              <span className="home_vendor-skeleton-line home_vendor-skeleton-label home_card-skeleton-shimmer" />
+              <span className="home_vendor-skeleton-line home_vendor-skeleton-prep home_card-skeleton-shimmer" />
+            </span>
+          </span>
         </div>
       </div>
     </div>

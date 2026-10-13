@@ -22,8 +22,8 @@ import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import androidBadge from '../../assets/android_download-PJqqAvJc.webp';
 import iosBadge from '../../assets/ios_download-Dn_KtiFi.webp';
 import HeroFoodShowcase from '../../components/hero/HeroFoodShowcase.jsx';
-import { getCafeteria, getPopularMenuItems, listCafeterias, listVendorMenu } from '../../services/employeeApi.js';
-import { mapCafeteriaToCard, mapCategoryToDisplay, mapFeaturedMenuItems, mapMenuItemToMeal } from './homeTransform.js';
+import { getVendor, getPopularMenuItems, listVendors, listVendorMenu } from '../../services/employeeApi.js';
+import { mapVendorToCafeteriaCard, mapCategoryToDisplay, mapFeaturedMenuItems, mapMenuItemToMeal } from './homeTransform.js';
 import { deliveryImage, reviewsImage, heroImage, heroFoods } from './homeData.js';
 import './home.css';
 
@@ -77,20 +77,20 @@ export default function HomePage() {
   const [homeLoading, setHomeLoading] = useState(false);
   const attemptedImageRefreshes = useRef(new Set());
 
-  const refreshCafeteriaImage = async (cafeteriaId, failedImage) => {
-    const refreshKey = `${cafeteriaId}:${failedImage}`;
-    if (!cafeteriaId || attemptedImageRefreshes.current.has(refreshKey)) return;
+  const refreshCafeteriaImage = async (vendorId, failedImage) => {
+    const refreshKey = `${vendorId}:${failedImage}`;
+    if (!vendorId || attemptedImageRefreshes.current.has(refreshKey)) return;
     attemptedImageRefreshes.current.add(refreshKey);
 
     try {
-      const response = await getCafeteria(cafeteriaId, { token });
-      const image = response?.cafeteria?.cover_image_url;
+      const response = await getVendor(vendorId, { token });
+      const image = response?.vendor?.logo_url;
       if (!image || image === failedImage) return;
       setCafeterias((current) => current.map((cafeteria) => (
-        cafeteria.id === cafeteriaId ? { ...cafeteria, image } : cafeteria
+        cafeteria.id === vendorId ? { ...cafeteria, image } : cafeteria
       )));
     } catch (error) {
-      console.error(`Unable to refresh cafeteria image for site ${cafeteriaId}:`, error);
+      console.error(`Unable to refresh cafeteria image for vendor ${vendorId}:`, error);
     }
   };
 
@@ -114,15 +114,15 @@ export default function HomePage() {
       setPopularError(null);
 
       try {
-        const cafeteriasResponse = await listCafeterias({ limit: 6, token });
-        const cafeteriaList = cafeteriasResponse?.cafeterias || [];
-        const mappedCafeterias = cafeteriaList.map(mapCafeteriaToCard);
+        const cafeteriasResponse = await listVendors({ limit: 6, token });
+        const cafeteriaList = cafeteriasResponse?.vendors || [];
+        const mappedCafeterias = cafeteriaList.map(mapVendorToCafeteriaCard);
 
         const [menuResponses, popularResult] = await Promise.all([
           Promise.all(
-            cafeteriaList.map((cafeteria) => cafeteria.vendor_id
-              ? listVendorMenu(cafeteria.vendor_id, { token }).catch((error) => {
-                console.error(`Failed to load menu for vendor ${cafeteria.vendor_id}:`, error);
+            cafeteriaList.map((cafeteria) => cafeteria.id
+              ? listVendorMenu(cafeteria.id, { token }).catch((error) => {
+                console.error(`Failed to load menu for cafeteria ${cafeteria.id}:`, error);
                 return { categories: [] };
               })
               : Promise.resolve({ categories: [] }))
@@ -140,9 +140,8 @@ export default function HomePage() {
         const hasRankedItems = Array.isArray(popularResponse?.items) && popularResponse.items.length > 0;
         const popularSource = hasRankedItems ? (popularResponse.source || 'sales') : 'featured';
         const popularMeals = hasRankedItems ? popularResponse.items.map((item) => ({
-          ...mapMenuItemToMeal(item, item.vendor_name, item.vendor_id),
+          ...mapMenuItemToMeal(item, item.vendor_name),
           vendorId: item.vendor_id,
-          siteId: item.site_id,
           source: popularSource,
         })) : mapFeaturedMenuItems(menuResponses, cafeteriaList);
         if (popularResult.error && popularMeals.length === 0 && !cancelled) {
@@ -269,7 +268,6 @@ export default function HomePage() {
                   <CafeteriaCard
                     key={v.id}
                     id={v.id}
-                    siteName={v.siteName}
                     name={v.name}
                     status={v.status}
                     image={v.image}
@@ -278,7 +276,9 @@ export default function HomePage() {
                     rating={v.rating}
                     reviewCount={v.reviewCount}
                     location={v.location}
+                    locations={v.locations}
                     onImageError={refreshCafeteriaImage}
+                    to={`/cafeterias/${v.id}`}
                   />
                 ))}
 
@@ -311,10 +311,10 @@ export default function HomePage() {
                   id={m.id}
                   name={m.name}
                   price={m.price}
-                  vendor={m.vendor}
+                  cafeteriaName={m.cafeteriaName}
                   image={m.image}
                   bestSeller={m.source === 'sales' && index < 3}
-                  to={`/cafeterias/${m.siteId}/menu/${m.id}?vendorId=${m.vendorId}`}
+                  to={`/cafeterias/${m.vendorId}/menu/${m.id}`}
                 />
               ))}
               <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all meals">

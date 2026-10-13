@@ -10,8 +10,8 @@ import PageHeader from "../../components/layout/PageHeader.jsx";
 import CafeteriaCard from "../../components/cards/CafeteriaCard.jsx";
 import CafeteriaCardSkeleton from "../../components/cards/CafeteriaCardSkeleton.jsx";
 import { useAuth } from '../../hooks/useAuth.js';
-import { listCafeterias } from '../../services/employeeApi.js';
-import { mapCafeteriaToCard } from '../home/homeTransform.js';
+import { listVendors } from '../../services/employeeApi.js';
+import { mapVendorToCafeteriaCard } from '../home/homeTransform.js';
 import { heroImage } from "../home/homeData.js";
 import "./cafeteria.css";
 
@@ -84,22 +84,22 @@ export default function CafeteriaPage() {
       setError(null);
 
       try {
-        const firstPage = await listCafeterias({ page: 1, limit: 100, token });
+        const firstPage = await listVendors({ page: 1, limit: 100, token });
         const totalPages = Math.max(1, Number(firstPage?.pagination?.totalPages) || 1);
         const remainingPages = await Promise.all(
-          Array.from({ length: totalPages - 1 }, (_, index) => listCafeterias({
+          Array.from({ length: totalPages - 1 }, (_, index) => listVendors({
             page: index + 2,
             limit: 100,
             token,
           }))
         );
         const cafeteriaList = [
-          ...(firstPage?.cafeterias || []),
-          ...remainingPages.flatMap((response) => response?.cafeterias || []),
+          ...(firstPage?.vendors || []),
+          ...remainingPages.flatMap((response) => response?.vendors || []),
         ];
 
         if (!cancelled) {
-          setCafeterias(cafeteriaList.map(mapCafeteriaToCard));
+          setCafeterias(cafeteriaList.map(mapVendorToCafeteriaCard));
         }
       } catch (err) {
         if (!cancelled) {
@@ -126,16 +126,10 @@ export default function CafeteriaPage() {
     const normalizedQuery = query.trim().toLowerCase();
 
     return cafeterias.filter((cafeteria) => {
-      const location = cafeteria.location || {};
       const matchesQuery = !normalizedQuery || [
         cafeteria.name,
         cafeteria.description,
-        location.streetAddress,
-        location.address,
-        location.city,
-        location.province,
-        location.postalCode,
-        location.siteName,
+        ...cafeteria.locations.flatMap((item) => [item.site_name, item.building_name]),
       ].some((value) => String(value || '').toLowerCase().includes(normalizedQuery));
       const matchesFilter = activeFilter === 'all'
         ? true

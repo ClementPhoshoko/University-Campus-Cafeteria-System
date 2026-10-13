@@ -11,11 +11,11 @@ const STATUS_LABELS = {
   open: 'Open',
   busy: 'Busy',
   closed: 'Closed',
+  temporarily_unavailable: 'Temporarily unavailable',
 };
 
 export default function CafeteriaCard({
   id,
-  siteName,
   name,
   status,
   image,
@@ -24,22 +24,22 @@ export default function CafeteriaCard({
   rating,
   reviewCount,
   location,
+  locations = [],
   onImageError,
   variant = 'default',
   to = '/cafeterias',
 }) {
-  const locationLabel = typeof location === 'string'
-    ? location
-    : [location?.city, location?.province].filter(Boolean).join(', ')
-      || location?.streetAddress
-      || location?.address
-      || location?.siteName
-      || '';
+  const selectedLocation = location || locations[0] || null;
+  const locationLabel = [selectedLocation?.site_name, selectedLocation?.building_name].filter(Boolean).join(' · ');
+  const visiblePrepWindow = prepWindow
+    || (Number(selectedLocation?.estimated_prep_minutes) > 0
+      ? `${selectedLocation.estimated_prep_minutes} min`
+      : null);
 
   return (
     <Link
       to={to}
-      className={`home_vendor-card${status === 'closed' ? ' home_closed' : ''}${variant === 'directory' ? ' home_vendor-card--directory' : ''}`}
+      className={`home_vendor-card${status === 'closed' || status === 'temporarily_unavailable' ? ' home_closed' : ''}${variant === 'directory' ? ' home_vendor-card--directory' : ''}`}
     >
       <div className="home_vendor-media">
         <SmartImage
@@ -52,7 +52,7 @@ export default function CafeteriaCard({
         <span className={`home_vendor-status-pill ${status}`}>
           {STATUS_LABELS[status]}
         </span>
-        {status === 'closed' && (
+        {(status === 'closed' || status === 'temporarily_unavailable') && (
           <span className="home_vendor-closed-badge" aria-hidden="true">
             <IconPlugX size={24} stroke={1.8} />
           </span>
@@ -60,8 +60,8 @@ export default function CafeteriaCard({
       </div>
 
       <div className="home_vendor-body">
-        <h3>{siteName || name}</h3>
-        {description && <p className="home_vendor-desc">{description}</p>}
+        <h3>{name}</h3>
+        <p className="home_vendor-desc">{description}</p>
         {Number(rating) > 0 && (
           <div className="home_vendor-directory-meta">
             <span className="home_vendor-rating" aria-label={`${rating} out of 5 stars`}>
@@ -71,23 +71,20 @@ export default function CafeteriaCard({
         )}
         <div className="home_vendor-divider" />
         <div className="home_vendor-meta">
-          {locationLabel && (
-            <span className="home_vendor-meta__item">
-              <IconMapPin size={15} stroke={1.8} />
-              <span className="home_vendor-meta__copy">
-                <small>Location</small>
-                <strong title={locationLabel}>{locationLabel}</strong>
-              </span>
+          <span className="home_vendor-meta__item">
+            <IconMapPin size={15} stroke={1.8} />
+            <span className="home_vendor-meta__copy">
+              <small>Location</small>
+              <strong title={locationLabel}>{locationLabel || 'Location not set'}</strong>
             </span>
-          )}
-          {prepWindow && (
-            <span className="home_vendor-meta__item home_vendor-meta__item--prep-time" aria-label={`Estimated prep time: ${prepWindow}`}>
-              <IconClock size={15} stroke={1.8} />
-              <span className="home_vendor-meta__copy">
-                <strong>{prepWindow}</strong>
-              </span>
+          </span>
+          <span className="home_vendor-meta__item home_vendor-meta__item--prep-time" aria-label={visiblePrepWindow ? `Estimated prep time: ${visiblePrepWindow}` : 'Prep time not set'}>
+            <IconClock size={15} stroke={1.8} />
+            <span className="home_vendor-meta__copy">
+              <small>Prep time</small>
+              <strong>{visiblePrepWindow || 'Not set'}</strong>
             </span>
-          )}
+          </span>
         </div>
       </div>
     </Link>

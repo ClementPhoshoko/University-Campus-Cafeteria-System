@@ -17,9 +17,9 @@ import {
 } from '../controllers/cartController.js';
 
 /**
- * Employee-facing vendor and cafeteria reads.
- * Cafeteria results include active sites; vendor summaries use only approved vendors
- * with at least one active location.
+ * Employee-facing cafeteria browsing is vendor-based: each approved vendor is a
+ * cafeteria and its active vendor_locations describe where it operates.
+ * The legacy /cafeterias endpoints remain available for site-based compatibility.
  */
 const vendorRouter = Router();
 

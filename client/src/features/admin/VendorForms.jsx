@@ -8,6 +8,32 @@ import { FileInput } from './AdminCafeteriaList.jsx';
 import ModalProgressOverlay from './ModalProgressOverlay.jsx';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const VENDOR_CATEGORY_OPTIONS = [
+  'Asian',
+  'Breakfast',
+  'Breakfast & Brunch',
+  'Coffee & Bakery',
+  'Coffee',
+  'Drinks',
+  'Dinner',
+  'Grain Bowls',
+  'Groceries',
+  'Healthy',
+  'Hot Meals',
+  'Italian',
+  'Japanese',
+  'Lunch',
+  'Meals',
+  'Noodles',
+  'Pizza',
+  'Quick Bites',
+  'Salads',
+  'Seafood',
+  'Snacks',
+  'Smoothies',
+  'Sushi',
+  'Wraps',
+];
 
 function emptyHours() {
   return DAYS.map((_, day_of_week) => ({ day_of_week, is_closed: day_of_week === 0 || day_of_week === 6, opens_at: '07:00', closes_at: '17:00' }));
@@ -15,6 +41,34 @@ function emptyHours() {
 
 function Field({ label, children, full = false, renderLabel = true }) {
   return <label className={`admin-modal__field${full ? ' admin-modal__field--full' : ''}`}>{renderLabel && <span>{label}</span>}{children}</label>;
+}
+
+function VendorCategoriesField({ categories = [], onChange, additionalOptions = [] }) {
+  const options = [...new Set([...VENDOR_CATEGORY_OPTIONS, ...additionalOptions])].sort((a, b) => a.localeCompare(b));
+  const toggleCategory = (category) => {
+    onChange(categories.includes(category)
+      ? categories.filter((value) => value !== category)
+      : [...categories, category]);
+  };
+
+  return (
+    <div className="admin-modal__field vendor-category-field">
+      <span>Category</span>
+      <small>Select all that apply.</small>
+      <div className="vendor-category-options">
+        {options.map((category) => (
+          <label className="vendor-category-option" key={category}>
+            <input
+              type="checkbox"
+              checked={categories.includes(category)}
+              onChange={() => toggleCategory(category)}
+            />
+            <span>{category}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function LocationFields({ form, setForm }) {
@@ -84,7 +138,7 @@ function HoursFields({ hours, setHours }) {
 export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ name: '', description: '', logo_file: null, support_email: '', support_phone: '', corporate_catering_enabled: false, site_id: '', building_id: '', collection_point_id: '', service_status: 'closed', estimated_prep_minutes: '15', order_cutoff_minutes: '0', collection_instructions: '' });
+  const [form, setForm] = useState({ name: '', description: '', logo_file: null, support_email: '', support_phone: '', corporate_catering_enabled: false, categories: [], site_id: '', building_id: '', collection_point_id: '', service_status: 'closed', estimated_prep_minutes: '15', order_cutoff_minutes: '0', collection_instructions: '' });
   const [logoPreview, setLogoPreview] = useObjectPreview(null);
   const [hours, setHours] = useState(emptyHours);
   const [creating, setCreating] = useState(false);
@@ -118,6 +172,7 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
         name: form.name.trim(), description: form.description.trim() || null, logoFile: form.logo_file,
         support_email: form.support_email.trim() || null, support_phone: form.support_phone.trim() || null,
         corporate_catering_enabled: form.corporate_catering_enabled,
+        categories: form.categories,
         location: { site_id: form.site_id, building_id: form.building_id, collection_point_id: form.collection_point_id || null, service_status: form.service_status, estimated_prep_minutes: Number(form.estimated_prep_minutes), order_cutoff_minutes: Number(form.order_cutoff_minutes), collection_instructions: form.collection_instructions.trim() || null, hours },
       });
       onClose();
@@ -141,7 +196,10 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
             <Field label="Support email"><input className="admin-input" type="email" value={form.support_email} onChange={(e) => setForm({ ...form, support_email: e.target.value })} /></Field>
             <Field label="Support phone"><input className="admin-input" value={form.support_phone} onChange={(e) => setForm({ ...form, support_phone: e.target.value })} /></Field>
             <Field label="Description" full><textarea className="admin-modal__textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} /></Field>
-            <Field label="Corporate catering" renderLabel={false}><AdminDropdown label="Corporate catering" options={[{ value: true, label: 'Enabled' }, { value: false, label: 'Disabled' }]} value={form.corporate_catering_enabled ?? ''} onChange={(val) => setForm({ ...form, corporate_catering_enabled: val })} placeholder="Select..." /></Field>
+            <div className="vendor-profile-option-group">
+              <Field label="Corporate catering" renderLabel={false}><AdminDropdown label="Corporate catering" options={[{ value: true, label: 'Enabled' }, { value: false, label: 'Disabled' }]} value={form.corporate_catering_enabled ?? ''} onChange={(val) => setForm({ ...form, corporate_catering_enabled: val })} placeholder="Select..." /></Field>
+              <VendorCategoriesField categories={form.categories} onChange={(categories) => setForm({ ...form, categories })} />
+            </div>
           </div>
           <div className="admin-modal__right">
             <div className="admin-modal__image-area admin-modal__image-area--sm">
@@ -177,7 +235,7 @@ export function AddVendorModal({ onClose, onSubmit, submitting = false }) {
 }
 
 export function VendorProfileModal({ vendor, onClose, onSubmit, submitting = false }) {
-  const [form, setForm] = useState({ name: vendor.name || '', description: vendor.description || '', logo_url: vendor.logo_url || '', logo_file: null, support_email: vendor.support_email || '', support_phone: vendor.support_phone || '', corporate_catering_enabled: !!vendor.corporate_catering_enabled });
+  const [form, setForm] = useState({ name: vendor.name || '', description: vendor.description || '', logo_url: vendor.logo_url || '', logo_file: null, support_email: vendor.support_email || '', support_phone: vendor.support_phone || '', corporate_catering_enabled: !!vendor.corporate_catering_enabled, categories: Array.isArray(vendor.categories) ? vendor.categories : [] });
   const [logoPreview, setLogoPreview] = useObjectPreview(vendor.logo_url || null);
   return (
     <div className="admin-modal" role="dialog" aria-modal="true">
@@ -192,7 +250,14 @@ export function VendorProfileModal({ vendor, onClose, onSubmit, submitting = fal
             <Field label="Support email"><input className="admin-input" type="email" value={form.support_email} onChange={(e) => setForm({ ...form, support_email: e.target.value })} /></Field>
             <Field label="Support phone"><input className="admin-input" value={form.support_phone} onChange={(e) => setForm({ ...form, support_phone: e.target.value })} /></Field>
             <Field label="Description" full><textarea className="admin-modal__textarea" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
-            <Field label="Corporate catering" renderLabel={false}><AdminDropdown label="Corporate catering" options={[{ value: true, label: 'Enabled' }, { value: false, label: 'Disabled' }]} value={form.corporate_catering_enabled ?? ''} onChange={(val) => setForm({ ...form, corporate_catering_enabled: val })} placeholder="Select..." /></Field>
+            <div className="vendor-profile-option-group">
+              <Field label="Corporate catering" renderLabel={false}><AdminDropdown label="Corporate catering" options={[{ value: true, label: 'Enabled' }, { value: false, label: 'Disabled' }]} value={form.corporate_catering_enabled ?? ''} onChange={(val) => setForm({ ...form, corporate_catering_enabled: val })} placeholder="Select..." /></Field>
+              <VendorCategoriesField
+                categories={form.categories}
+                additionalOptions={vendor.categories || []}
+                onChange={(categories) => setForm({ ...form, categories })}
+              />
+            </div>
           </div>
           <div className="admin-modal__right">
             <div className="admin-modal__image-area admin-modal__image-area--sm">

@@ -9,7 +9,7 @@ import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import ViewFoodBackground from '../../components/ViewFoodBackground.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
-import { getMenuItem, getCafeteria, getVendor, addToCart } from '../../services/employeeApi.js';
+import { getMenuItem, getVendor, addToCart } from '../../services/employeeApi.js';
 import './ViewFoodPage.css';
 
 function formatPrice(price) {
@@ -41,12 +41,12 @@ export default function ViewFoodPage() {
     setItemLoading(true);
     setItemError(null);
 
-    getCafeteria(cafeteriaId, { token }).then(async (cafeteriaRes) => {
-      const cafeteriaData = cafeteriaRes?.cafeteria || null;
+    getVendor(requestedVendorId || cafeteriaId, { token }).then(async (cafeteriaRes) => {
+      const cafeteriaData = cafeteriaRes?.vendor || null;
       if (cancelled) return;
-      const selectedVendorId = requestedVendorId || cafeteriaData?.vendor_id;
+      const selectedVendorId = requestedVendorId || cafeteriaData?.id;
       if (!selectedVendorId) throw new Error('Cafeteria vendor is unavailable');
-      const vendorRes = requestedVendorId
+      const vendorRes = requestedVendorId && requestedVendorId !== cafeteriaData?.id
         ? await getVendor(requestedVendorId, { token })
         : null;
       if (cancelled) return;

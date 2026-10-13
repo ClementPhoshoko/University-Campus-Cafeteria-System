@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getLocationServiceStatus, getSiteServiceStatus } from '../src/utils/vendorAvailability.js';
+import { getLocationServiceStatus, getSiteServiceStatus, getVendorServiceStatus } from '../src/utils/vendorAvailability.js';
 
 const siteTimezone = { timezone: 'Africa/Johannesburg' };
 
@@ -57,4 +57,17 @@ test('site availability uses open first, then busy, and handles overnight hours'
 test('missing service statuses do not default to open', () => {
   assert.equal(getLocationServiceStatus({ is_active: true }), 'closed');
   assert.equal(getSiteServiceStatus([]), 'closed');
+});
+
+test('vendor status aggregates the saved admin location statuses without applying hours', () => {
+  const locations = [
+    { service_status: 'closed' },
+    { service_status: 'busy' },
+    { service_status: 'open' },
+  ];
+
+  assert.equal(getVendorServiceStatus(locations), 'open');
+  assert.equal(getVendorServiceStatus(locations.slice(0, 2)), 'busy');
+  assert.equal(getVendorServiceStatus([{ service_status: 'temporarily_unavailable' }]), 'temporarily_unavailable');
+  assert.equal(getVendorServiceStatus([]), 'closed');
 });

@@ -245,7 +245,6 @@
 
 .home_vendor-card--directory .home_vendor-desc {
   -webkit-line-clamp: 2;
-  min-height: 0;
 }
 
 .home_vendor-card--directory .home_vendor-divider {

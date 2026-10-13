@@ -69,3 +69,11 @@ export function getSiteServiceStatus(locations, now = new Date()) {
   if (statuses.includes('busy')) return 'busy';
   return 'closed';
 }
+
+export function getVendorServiceStatus(locations) {
+  const statuses = locations.map((location) => String(location?.service_status || '').toLowerCase());
+  if (statuses.includes('open')) return 'open';
+  if (statuses.includes('busy')) return 'busy';
+  if (statuses.includes('temporarily_unavailable') && !statuses.includes('closed')) return 'temporarily_unavailable';
+  return 'closed';
+}

@@ -174,6 +174,7 @@ create table if not exists public.vendors (
   support_email text,
   support_phone text,
   corporate_catering_enabled boolean not null default false,
+  categories text[] not null default '{}',
   average_rating numeric(3,2) not null default 0 check (average_rating between 0 and 5),
   rating_count integer not null default 0 check (rating_count >= 0),
   approved_at timestamptz,

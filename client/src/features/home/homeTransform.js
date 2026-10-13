@@ -1,7 +1,8 @@
 export function normalizeVendorStatus(status) {
   const value = String(status || '').toLowerCase();
 
-  if (value === 'temporarily_unavailable' || value === 'closed') return 'closed';
+  if (value === 'temporarily_unavailable') return 'temporarily_unavailable';
+  if (value === 'closed') return 'closed';
   if (value === 'open') return 'open';
   if (value === 'busy') return 'busy';
   return 'closed';
@@ -13,43 +14,35 @@ export function formatPrice(value) {
   return Number.isFinite(raw) ? `R${raw.toFixed(2)}` : null;
 }
 
-export function mapCafeteriaToCard(cafeteria) {
-  const sourceLocation = cafeteria?.location || {};
-  const status = normalizeVendorStatus(sourceLocation.service_status);
-  const prepMinutes = Number(sourceLocation.estimated_prep_minutes ?? Number.NaN);
-
+export function mapVendorToCafeteriaCard(vendor) {
+  const locations = Array.isArray(vendor?.locations) ? vendor.locations : [];
+  const location = vendor?.location || locations[0] || null;
+  const prepMinutes = Number(
+    location
+      ? location.estimated_prep_minutes
+      : vendor?.estimated_prep_minutes ?? Number.NaN,
+  );
   return {
-    id: cafeteria?.id,
-    vendorId: cafeteria?.vendor_id,
-    siteName: cafeteria?.site_name || cafeteria?.name || '',
-    name: cafeteria?.name || '',
-    status,
-    image: cafeteria?.cover_image_url || '',
-    description: typeof cafeteria?.description === 'string' ? cafeteria.description.trim() : '',
+    id: vendor?.id,
+    name: vendor?.name || '',
+    status: normalizeVendorStatus(location?.service_status || vendor?.service_status),
+    image: vendor?.logo_url || '',
+    description: typeof vendor?.description === 'string' ? vendor.description.trim() : '',
     prepWindow: Number.isFinite(prepMinutes) && prepMinutes > 0 ? `${prepMinutes} min` : null,
-    location: {
-      siteId: sourceLocation.site_id || cafeteria?.id || null,
-      siteName: sourceLocation.site_name || cafeteria?.site_name || cafeteria?.name || null,
-      streetAddress: sourceLocation.street_address || null,
-      address: sourceLocation.address || cafeteria?.address || null,
-      city: sourceLocation.city || null,
-      province: sourceLocation.province || null,
-      postalCode: sourceLocation.postal_code || null,
-      country: sourceLocation.country || null,
-    },
-    rating: Number(cafeteria?.average_rating) > 0 ? Number(cafeteria.average_rating).toFixed(1) : null,
-    reviewCount: Number(cafeteria?.rating_count || 0),
+    location,
+    locations,
+    rating: Number(vendor?.average_rating) > 0 ? Number(vendor.average_rating).toFixed(1) : null,
+    reviewCount: Number(vendor?.rating_count || 0),
   };
 }
 
-export function mapMenuItemToMeal(item, vendorName, vendorId) {
+export function mapMenuItemToMeal(item, cafeteriaName) {
   return {
     id: item?.id,
     name: item?.name || '',
     price: formatPrice(item?.base_price ?? item?.price),
-    vendor: vendorName || '',
+    cafeteriaName: cafeteriaName || '',
     image: item?.image_url || '',
-    cafeteriaId: vendorId,
   };
 }
 
@@ -58,17 +51,16 @@ export function mapFeaturedMenuItems(menuResponses, cafeterias, limit = 8) {
 
   menuResponses.forEach((response, index) => {
     const cafeteria = cafeterias[index];
-    const vendorId = cafeteria?.vendor_id;
+    const vendorId = cafeteria?.id;
     if (!vendorId) return;
 
     const vendorItems = byVendor.get(vendorId) || new Map();
-    const vendorName = response?.vendor?.name || cafeteria.name || '';
+    const cafeteriaName = response?.vendor?.name || cafeteria.name || '';
     for (const item of (response?.categories || []).flatMap((category) => category?.items || [])) {
       if (!item?.id || vendorItems.has(item.id)) continue;
       vendorItems.set(item.id, {
-        ...mapMenuItemToMeal(item, vendorName, vendorId),
+        ...mapMenuItemToMeal(item, cafeteriaName),
         vendorId,
-        siteId: cafeteria.id,
         source: 'featured',
       });
     }

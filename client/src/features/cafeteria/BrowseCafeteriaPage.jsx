@@ -10,7 +10,7 @@ import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import BrowseCafeteriaBackground from '../../components/BrowseCafeteriaBackground.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
-import { listVendorMenu, getCafeteria, addToCart } from '../../services/employeeApi.js';
+import { listVendorMenu, getVendor, addToCart } from '../../services/employeeApi.js';
 import './browse-cafeteria.css';
 
 const REVIEWS_PER_PAGE = 5;
@@ -221,13 +221,11 @@ export default function BrowseCafeteriaPage() {
     setMenuLoading(true);
     setMenuError(null);
 
-    Promise.all([
-      getCafeteria(cafeteriaId, { token }),
-    ]).then(async ([cafeteriaRes]) => {
+    getVendor(cafeteriaId, { token }).then(async (cafeteriaRes) => {
       if (cancelled) return;
-      const cafeteriaData = cafeteriaRes?.cafeteria || null;
-      const menuRes = cafeteriaData?.vendor_id
-        ? await listVendorMenu(cafeteriaData.vendor_id, { token })
+      const cafeteriaData = cafeteriaRes?.vendor || null;
+      const menuRes = cafeteriaData?.id
+        ? await listVendorMenu(cafeteriaData.id, { token })
         : { categories: [] };
       if (cancelled) return;
       setVendor(cafeteriaData);
@@ -290,18 +288,18 @@ export default function BrowseCafeteriaPage() {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   };
 
-  const location = vendor?.location;
   const cafeteria = vendor
     ? {
         id: vendor.id,
         name: vendor.name,
         description: vendor.description,
-        image: vendor.cover_image_url,
-        status: location?.service_status || 'open',
+        image: vendor.logo_url,
+        status: vendor.service_status || 'closed',
         walkTime: '6 min',
-        prepWindow: location?.estimated_prep_minutes ? `${location.estimated_prep_minutes} min` : '15 min',
+        prepWindow: vendor.estimated_prep_minutes ? `${vendor.estimated_prep_minutes} min` : '15 min',
+        locations: vendor.locations || [],
       }
-    : { id: cafeteriaId, name: 'Loading...', description: '', image: null, status: 'open', walkTime: '—', prepWindow: '—' };
+    : { id: cafeteriaId, name: 'Loading...', description: '', image: null, status: 'open', walkTime: '—', prepWindow: '—', locations: [] };
 
   return (
     <PageContainer className="browse_cafeteria-page-container">
@@ -327,6 +325,18 @@ export default function BrowseCafeteriaPage() {
             </div>
             <h1>{cafeteria.name}</h1>
             <p className="browse_cafeteria-description">{cafeteria.description}</p>
+            {cafeteria.locations.length > 0 && (
+              <p className="browse_cafeteria-description">
+                Available at: {cafeteria.locations.map((item) => {
+                  const place = [item.site_name, item.building_name].filter(Boolean).join(' · ');
+                  const details = [
+                    item.service_status,
+                    item.estimated_prep_minutes ? `${item.estimated_prep_minutes} min prep` : null,
+                  ].filter(Boolean).join(', ');
+                  return details ? `${place} (${details})` : place;
+                }).join(', ')}
+              </p>
+            )}
             <div className="browse_cafeteria-meta">
               <span><IconMapPin size={15} /> {cafeteria.walkTime} walk</span>
               <span><IconClock size={15} /> {cafeteria.prepWindow}</span>

@@ -1560,10 +1560,11 @@ paths:
 
   '/cafeterias':
     get:
+      deprecated: true
       tags:
         - Vendors
-      summary: List active employee cafeterias
-      description: 'Employee-facing list of active cafeteria locations. Each result represents one active vendor location and includes its vendor, site, building, collection point, status, hours, and menu-owner ID.'
+      summary: Legacy site-based cafeteria list
+      description: 'Deprecated site-centric response retained for compatibility. Employee cafeteria listings should use /vendors, which returns one cafeteria vendor with its active locations.'
       operationId: listPublicCafeterias
       security:
         - bearerAuth: []
@@ -1602,10 +1603,11 @@ paths:
 
   '/cafeterias/{cafeteriaId}':
     get:
+      deprecated: true
       tags:
         - Vendors
-      summary: Get an employee cafeteria
-      description: Returns one active cafeteria location with its vendor and location context.
+      summary: Legacy site-based cafeteria detail
+      description: 'Deprecated site-centric response retained for compatibility. Employee cafeteria detail should use /vendors/{vendorId}.'
       operationId: getPublicCafeteria
       security:
         - bearerAuth: []
@@ -1637,8 +1639,8 @@ paths:
     get:
       tags:
         - Vendors
-      summary: List approved vendors
-      description: 'Employee-facing list of vendors with status=approved that operate at least one active location. Served from a public, 60-second cache.'
+      summary: List employee cafeterias
+      description: 'Employee-facing list of approved cafeteria vendors, one per vendor, with all active site/building locations, aggregate service status, and prep estimate.'
       operationId: listPublicVendors
       security:
         - bearerAuth: []
@@ -3012,6 +3014,11 @@ components:
           nullable: true
         corporate_catering_enabled:
           type: boolean
+        categories:
+          type: array
+          items:
+            type: string
+          description: Vendor-level category tags, separate from menu categories.
         average_rating:
           type: number
           nullable: true
@@ -3028,8 +3035,20 @@ components:
         location_count:
           type: integer
           description: Number of locations (list responses)
+        service_status:
+          type: string
+          enum: [open, busy, closed, temporarily_unavailable]
+          description: Saved service status for the first active location.
+        estimated_prep_minutes:
+          type: integer
+          nullable: true
+          description: Prep estimate for the first active location.
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/VendorLocation'
         location:
-          $ref: '#/components/schemas/VendorLocationSummary'
+          $ref: '#/components/schemas/VendorLocation'
         created_at:
           type: string
           format: date-time
@@ -3075,6 +3094,10 @@ components:
           nullable: true
         corporate_catering_enabled:
           type: boolean
+        categories:
+          type: array
+          items:
+            type: string
         average_rating:
           type: number
           nullable: true
@@ -3105,6 +3128,11 @@ components:
           type: string
         corporate_catering_enabled:
           type: boolean
+        categories:
+          type: array
+          items:
+            type: string
+          maxItems: 20
         onboarding_key:
           type: string
           description: Client-generated idempotency key. Ignored on patch.

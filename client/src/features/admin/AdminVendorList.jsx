@@ -32,6 +32,23 @@ function StatusPill({ status }) {
   return <span className={`admin-status admin-status--${status}`}>{status}</span>;
 }
 
+function VendorLocationSummary({ location, locationCount }) {
+  if (!location) return <span>{locationCount || 0} location(s)</span>;
+
+  const label = [location.site_name, location.building_name].filter(Boolean).join(' · ') || 'Location name unavailable';
+  const serviceStatus = String(location.service_status || 'unknown').replaceAll('_', ' ');
+  const prepTime = Number(location.estimated_prep_minutes) > 0
+    ? `${location.estimated_prep_minutes} min`
+    : 'not set';
+
+  return (
+    <span className="admin-vendors__location-summary">
+      <span>{label}</span>
+      <small>Service: {serviceStatus} · Prep: {prepTime}</small>
+    </span>
+  );
+}
+
 function ApprovalModal({ vendor, mode, onConfirm, onCancel }) {
   const [reason, setReason] = useState('');
   const [creating, setCreating] = useState(false);
@@ -517,9 +534,7 @@ export default function AdminVendorList() {
                         </div>
                       </td>
                       <td>
-                        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
-                           {vendor.location?.site_name || `${vendor.location_count || 0} location(s)`}
-                        </span>
+                        <VendorLocationSummary location={vendor.location} locationCount={vendor.location_count} />
                       </td>
                       <td>
                         <span className="admin-vendors__revenue">—</span>
@@ -633,9 +648,7 @@ export default function AdminVendorList() {
                           </div>
                         </td>
                         <td>
-                          <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>
-                             {vendor.location?.site_name || `${vendor.location_count || 0} location(s)`}
-                          </span>
+                          <VendorLocationSummary location={vendor.location} locationCount={vendor.location_count} />
                         </td>
                         <td>
                           <span style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)' }}>

@@ -7,6 +7,7 @@ export default function FoodCard({
   id,
   name,
   price,
+  cafeteriaName,
   vendor,
   image,
   bestSeller,
@@ -88,7 +89,7 @@ export default function FoodCard({
 
       <div className="home_vendor-body">
         <h3>{name}</h3>
-        <p className="home_vendor-subtitle">{vendor}</p>
+        <p className="home_vendor-subtitle">{cafeteriaName || vendor}</p>
         <div className="home_vendor-divider" />
         <div className="home_meal-footer">
           {price && <span className="home_meal-price">{price}</span>}

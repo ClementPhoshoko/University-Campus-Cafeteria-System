@@ -23,11 +23,11 @@ import {
 
 const db = () => supabaseAdmin;
 
-const LOCATION_SELECT = '*, sites(id, name), buildings(id, name), collection_points(id, name), operating_hours(*)';
+const LOCATION_SELECT = '*, sites(id, name, timezone), buildings(id, name), collection_points(id, name), operating_hours(*)';
 
 const ONBOARDING_KEY_FIELD = 'onboarding_key';
 
-const VENDOR_PUBLIC_FIELDS = 'id, name, slug, description, logo_url, corporate_catering_enabled, average_rating, rating_count, created_at';
+const VENDOR_PUBLIC_FIELDS = 'id, name, slug, description, logo_url, corporate_catering_enabled, categories, average_rating, rating_count, created_at';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -292,12 +292,34 @@ export async function listVendors(req, res) {
     const { data, error, count } = await query;
     if (error) throw error;
 
-    const items = await Promise.all((data || []).map(async (vendor) => ({
-      ...vendor,
-      logo_url: await resolveAssetUrl(vendor.logo_url, { size: 'icon' }),
-      location_count: countMap ? (countMap.get(vendor.id) || 0) : embedCount(vendor, 'vendor_locations'),
-      vendor_locations: undefined,
-    })));
+    const vendors = data || [];
+    const vendorIds = vendors.map((vendor) => vendor.id);
+    const { data: rawLocations, error: locationsError } = vendorIds.length
+      ? await db()
+        .from('vendor_locations')
+        .select(LOCATION_SELECT)
+        .in('vendor_id', vendorIds)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+      : { data: [], error: null };
+    if (locationsError) throw locationsError;
+
+    const locationsByVendor = new Map(vendorIds.map((vendorId) => [vendorId, []]));
+    for (const rawLocation of rawLocations || []) {
+      locationsByVendor.get(rawLocation.vendor_id)?.push(transformLocation(rawLocation));
+    }
+
+    const items = await Promise.all(vendors.map(async (vendor) => {
+      const locations = locationsByVendor.get(vendor.id) || [];
+      return {
+        ...vendor,
+        logo_url: await resolveAssetUrl(vendor.logo_url, { size: 'icon' }),
+        location: locations[0] || null,
+        locations,
+        location_count: countMap ? (countMap.get(vendor.id) || 0) : embedCount(vendor, 'vendor_locations'),
+        vendor_locations: undefined,
+      };
+    }));
 
     return respond(req, res, {
       success: true,
@@ -316,7 +338,7 @@ export async function listApprovals(req, res) {
 
     let query = db()
       .from('vendors')
-      .select('*, vendor_locations(sites(id, name), buildings(id, name), collection_points(id, name), service_status, is_active)', { count: 'exact' })
+      .select('*, vendor_locations(id, sites(id, name), buildings(id, name), collection_points(id, name), service_status, estimated_prep_minutes, order_cutoff_minutes, collection_instructions, is_active, created_at)', { count: 'exact' })
       .eq('status', 'pending');
 
     if (search) query = query.or(`name.ilike.%${search}%,slug.ilike.%${search}%,description.ilike.%${search}%`);
@@ -326,14 +348,10 @@ export async function listApprovals(req, res) {
     if (error) throw error;
 
     const items = await Promise.all((data || []).map(async (vendor) => {
-      const locations = (vendor.vendor_locations || []).map((l) => ({
-        id: l.id,
-        service_status: l.service_status,
-        is_active: l.is_active,
-        site_name: l.sites?.name ?? null,
-        building_name: l.buildings?.name ?? null,
-        collection_point_name: l.collection_points?.name ?? null,
-      }));
+      const locations = (vendor.vendor_locations || [])
+        .map((location) => transformLocation(location))
+        .sort((a, b) => Number(b.is_active) - Number(a.is_active)
+          || String(a.created_at || '').localeCompare(String(b.created_at || '')));
       return {
         ...vendor,
         logo_url: await resolveAssetUrl(vendor.logo_url, { size: 'icon' }),
@@ -912,7 +930,7 @@ export async function listPublicVendors(req, res) {
 
     let query = db()
       .from('vendors')
-      .select(`${VENDOR_PUBLIC_FIELDS}, vendor_locations!inner(id, service_status)`, { count: 'exact' })
+      .select(`${VENDOR_PUBLIC_FIELDS}, vendor_locations!inner(id)`, { count: 'exact' })
       .eq('status', 'approved')
       .eq('vendor_locations.is_active', true);
 
@@ -926,16 +944,41 @@ export async function listPublicVendors(req, res) {
     const { data, error, count } = await query;
     if (error) throw error;
 
-    const items = await Promise.all((data || []).map(async (vendor) => ({
-      ...(await pickPublicVendor(vendor)),
-      location_count: (vendor.vendor_locations || []).length,
-    })));
+    const vendors = data || [];
+    const vendorIds = vendors.map((vendor) => vendor.id);
+    const { data: rawLocations, error: locationsError } = vendorIds.length
+      ? await db()
+        .from('vendor_locations')
+        .select(LOCATION_SELECT)
+        .in('vendor_id', vendorIds)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+      : { data: [], error: null };
+    if (locationsError) throw locationsError;
+
+    const locationsByVendor = new Map(vendorIds.map((vendorId) => [vendorId, []]));
+    for (const location of rawLocations || []) {
+      locationsByVendor.get(location.vendor_id)?.push(location);
+    }
+
+    const items = await Promise.all(vendors.map(async (vendor) => {
+      const locations = (locationsByVendor.get(vendor.id) || []).map(transformLocation);
+      const location = locations[0] || null;
+      return {
+        ...(await pickPublicVendor(vendor)),
+        service_status: location?.service_status || 'closed',
+        estimated_prep_minutes: location?.estimated_prep_minutes ?? null,
+        location_count: locations.length,
+        location,
+        locations,
+      };
+    }));
 
     return respond(req, res, {
       success: true,
       vendors: items,
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.publicRef });
+    }, { cacheControl: CACHE.publicOperational });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -1089,13 +1132,23 @@ export async function getPublicVendor(req, res) {
       .order('created_at', { ascending: true });
     if (locError) throw locError;
 
-    const activeLocations = (locations || []).map(transformLocation);
+    const rawLocations = locations || [];
+    const activeLocations = rawLocations.map(transformLocation);
     if (!activeLocations.length) throw new ApiError(404, 'VENDOR_NOT_FOUND', 'Vendor not found');
+    const location = activeLocations[0];
 
     return respond(req, res, {
       success: true,
-      vendor: { ...vendor, logo_url: await resolveAssetUrl(vendor.logo_url, { size: 'card' }), locations: activeLocations },
-    }, { cacheControl: CACHE.publicRef });
+      vendor: {
+        ...vendor,
+        logo_url: await resolveAssetUrl(vendor.logo_url, { size: 'card' }),
+        service_status: location.service_status || 'closed',
+        estimated_prep_minutes: location.estimated_prep_minutes ?? null,
+        location_count: activeLocations.length,
+        location,
+        locations: activeLocations,
+      },
+    }, { cacheControl: CACHE.publicOperational });
   } catch (err) {
     return handleControllerError(res, err);
   }
