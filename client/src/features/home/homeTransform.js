@@ -53,6 +53,45 @@ export function mapMenuItemToMeal(item, vendorName, vendorId) {
   };
 }
 
+export function mapFeaturedMenuItems(menuResponses, cafeterias, limit = 8) {
+  const byVendor = new Map();
+
+  menuResponses.forEach((response, index) => {
+    const cafeteria = cafeterias[index];
+    const vendorId = cafeteria?.vendor_id;
+    if (!vendorId) return;
+
+    const vendorItems = byVendor.get(vendorId) || new Map();
+    const vendorName = response?.vendor?.name || cafeteria.name || '';
+    for (const item of (response?.categories || []).flatMap((category) => category?.items || [])) {
+      if (!item?.id || vendorItems.has(item.id)) continue;
+      vendorItems.set(item.id, {
+        ...mapMenuItemToMeal(item, vendorName, vendorId),
+        vendorId,
+        siteId: cafeteria.id,
+        source: 'featured',
+      });
+    }
+    byVendor.set(vendorId, vendorItems);
+  });
+
+  const vendorGroups = [...byVendor.values()].map((items) => [...items.values()]);
+  const featured = [];
+  for (let index = 0; featured.length < limit; index += 1) {
+    let added = false;
+    for (const items of vendorGroups) {
+      if (items[index]) {
+        featured.push(items[index]);
+        added = true;
+        if (featured.length === limit) break;
+      }
+    }
+    if (!added) break;
+  }
+
+  return featured;
+}
+
 export function mapCategoryToDisplay(category) {
   const items = category?.items || [];
   return {

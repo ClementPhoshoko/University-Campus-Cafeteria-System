@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mapCafeteriaToCard, mapMenuItemToMeal, normalizeVendorStatus } from './homeTransform.js';
+import { mapCafeteriaToCard, mapFeaturedMenuItems, mapMenuItemToMeal, normalizeVendorStatus } from './homeTransform.js';
 
 test('mapCafeteriaToCard preserves the location ID and vendor ID separately', () => {
   const output = mapCafeteriaToCard({
@@ -135,4 +135,30 @@ test('mapMenuItemToMeal normalizes a menu item into a food card payload', () => 
   assert.equal(output.vendor, 'Main Campus Cafe');
   assert.equal(output.price, 'R45.00');
   assert.equal(output.cafeteriaId, 'vendor-1');
+});
+
+test('mapFeaturedMenuItems interleaves cafeteria menus and avoids duplicate vendor items', () => {
+  const meals = mapFeaturedMenuItems([
+    {
+      vendor: { name: 'Alpha Kitchen' },
+      categories: [{ items: [{ id: 'a1', name: 'Alpha one' }, { id: 'a2', name: 'Alpha two' }] }],
+    },
+    {
+      vendor: { name: 'Beta Kitchen' },
+      categories: [{ items: [{ id: 'b1', name: 'Beta one' }] }],
+    },
+    {
+      vendor: { name: 'Alpha Kitchen' },
+      categories: [{ items: [{ id: 'a1', name: 'Duplicate Alpha one' }, { id: 'a3', name: 'Alpha three' }] }],
+    },
+  ], [
+    { id: 'site-a', vendor_id: 'vendor-a', name: 'Alpha Cafeteria' },
+    { id: 'site-b', vendor_id: 'vendor-b', name: 'Beta Cafeteria' },
+    { id: 'site-a2', vendor_id: 'vendor-a', name: 'Alpha Cafeteria 2' },
+  ]);
+
+  assert.deepEqual(meals.map((meal) => meal.id), ['a1', 'b1', 'a2', 'a3']);
+  assert.equal(meals[0].vendor, 'Alpha Kitchen');
+  assert.equal(meals[0].siteId, 'site-a');
+  assert.ok(meals.every((meal) => meal.source === 'featured'));
 });

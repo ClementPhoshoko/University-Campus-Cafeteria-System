@@ -907,6 +907,10 @@ create index if not exists idx_orders_user_created on public.orders(user_id, cre
 create index if not exists idx_orders_vendor_status_time on public.orders(vendor_id, status, collection_slot_id, created_at desc);
 create index if not exists idx_orders_location_slot on public.orders(vendor_location_id, collection_slot_id, status);
 create index if not exists idx_orders_order_number on public.orders(order_number);
+create index if not exists idx_orders_completed_at_popular
+  on public.orders(completed_at desc) where status = 'completed' and completed_at is not null;
+create index if not exists idx_orders_collected_at_popular
+  on public.orders(collected_at desc) where status = 'collected' and collected_at is not null;
 create index if not exists idx_order_items_order on public.order_items(order_id);
 create index if not exists idx_status_history_order on public.order_status_history(order_id, changed_at desc);
 create index if not exists idx_payments_order_status on public.payments(order_id, status);

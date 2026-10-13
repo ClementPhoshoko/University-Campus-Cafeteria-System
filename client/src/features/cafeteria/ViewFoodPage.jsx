@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { IconClock, IconCheck, IconPlus, IconFlame, IconLeaf, IconInfoCircle } from '@tabler/icons-react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
@@ -9,7 +9,7 @@ import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import ViewFoodBackground from '../../components/ViewFoodBackground.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
-import { getMenuItem, getCafeteria, addToCart } from '../../services/employeeApi.js';
+import { getMenuItem, getCafeteria, getVendor, addToCart } from '../../services/employeeApi.js';
 import './ViewFoodPage.css';
 
 function formatPrice(price) {
@@ -19,6 +19,8 @@ function formatPrice(price) {
 
 export default function ViewFoodPage() {
   const { cafeteriaId, menuItemId } = useParams();
+  const [searchParams] = useSearchParams();
+  const requestedVendorId = searchParams.get('vendorId');
   const { session } = useAuth();
   const token = session?.access_token;
 
@@ -42,10 +44,18 @@ export default function ViewFoodPage() {
     getCafeteria(cafeteriaId, { token }).then(async (cafeteriaRes) => {
       const cafeteriaData = cafeteriaRes?.cafeteria || null;
       if (cancelled) return;
-      setVendor(cafeteriaData);
+      const selectedVendorId = requestedVendorId || cafeteriaData?.vendor_id;
+      if (!selectedVendorId) throw new Error('Cafeteria vendor is unavailable');
+      const vendorRes = requestedVendorId
+        ? await getVendor(requestedVendorId, { token })
+        : null;
+      if (cancelled) return;
+      setVendor({
+        ...cafeteriaData,
+        name: vendorRes?.vendor?.name || cafeteriaData?.name,
+      });
       setVendorReady(true);
-      if (!cafeteriaData?.vendor_id) throw new Error('Cafeteria vendor is unavailable');
-      const itemRes = await getMenuItem(cafeteriaData.vendor_id, menuItemId, { token });
+      const itemRes = await getMenuItem(selectedVendorId, menuItemId, { token });
       if (cancelled) return;
       setMenuItem(itemRes?.menuItem || null);
       setItemError(null);
@@ -58,7 +68,7 @@ export default function ViewFoodPage() {
     });
 
     return () => { cancelled = true; };
-  }, [cafeteriaId, menuItemId, token]);
+  }, [cafeteriaId, menuItemId, requestedVendorId, token]);
 
   const calculateTotal = () => {
     if (!menuItem) return 'R0.00';

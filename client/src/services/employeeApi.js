@@ -22,6 +22,10 @@ export function getVendorHours(vendorId, { token, signal } = {}) {
   return apiRequest(`/vendors/${vendorId}/hours`, { token, signal });
 }
 
+export function getPopularMenuItems({ token, signal } = {}) {
+  return apiRequest('/popular-menu-items', { token, signal });
+}
+
 // ─── Menu ───────────────────────────────────────────────────────────
 
 export function listVendorMenu(vendorId, { token, signal } = {}) {

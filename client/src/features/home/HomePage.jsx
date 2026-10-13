@@ -22,8 +22,8 @@ import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import androidBadge from '../../assets/android_download-PJqqAvJc.webp';
 import iosBadge from '../../assets/ios_download-Dn_KtiFi.webp';
 import HeroFoodShowcase from '../../components/hero/HeroFoodShowcase.jsx';
-import { getCafeteria, listCafeterias, listVendorMenu } from '../../services/employeeApi.js';
-import { mapCafeteriaToCard, mapMenuItemToMeal, mapCategoryToDisplay } from './homeTransform.js';
+import { getCafeteria, getPopularMenuItems, listCafeterias, listVendorMenu } from '../../services/employeeApi.js';
+import { mapCafeteriaToCard, mapCategoryToDisplay, mapFeaturedMenuItems, mapMenuItemToMeal } from './homeTransform.js';
 import { deliveryImage, reviewsImage, heroImage, heroFoods } from './homeData.js';
 import './home.css';
 
@@ -70,8 +70,10 @@ export default function HomePage() {
 
   const [cafeterias, setCafeterias] = useState([]);
   const [popularMeals, setPopularMeals] = useState([]);
+  const [popularSource, setPopularSource] = useState('sales');
   const [categories, setCategories] = useState([]);
   const [homeError, setHomeError] = useState(null);
+  const [popularError, setPopularError] = useState(null);
   const [homeLoading, setHomeLoading] = useState(false);
   const attemptedImageRefreshes = useRef(new Set());
 
@@ -96,9 +98,11 @@ export default function HomePage() {
     if (!token) {
       setCafeterias([]);
       setPopularMeals([]);
+      setPopularSource('sales');
       setCategories([]);
       setHomeLoading(false);
       setHomeError(null);
+      setPopularError(null);
       return undefined;
     }
 
@@ -107,26 +111,43 @@ export default function HomePage() {
     const loadHome = async () => {
       setHomeLoading(true);
       setHomeError(null);
+      setPopularError(null);
 
       try {
         const cafeteriasResponse = await listCafeterias({ limit: 6, token });
         const cafeteriaList = cafeteriasResponse?.cafeterias || [];
         const mappedCafeterias = cafeteriaList.map(mapCafeteriaToCard);
 
-        const menuResponses = await Promise.all(
-          cafeteriaList.map((cafeteria) => cafeteria.vendor_id
-            ? listVendorMenu(cafeteria.vendor_id, { token }).catch(() => ({ categories: [] }))
-            : Promise.resolve({ categories: [] }))
-        );
+        const [menuResponses, popularResult] = await Promise.all([
+          Promise.all(
+            cafeteriaList.map((cafeteria) => cafeteria.vendor_id
+              ? listVendorMenu(cafeteria.vendor_id, { token }).catch((error) => {
+                console.error(`Failed to load menu for vendor ${cafeteria.vendor_id}:`, error);
+                return { categories: [] };
+              })
+              : Promise.resolve({ categories: [] }))
+          ),
+          getPopularMenuItems({ token }).then(
+            (response) => ({ response, error: null }),
+            (error) => {
+              console.error('Failed to load popular menu items:', error);
+              return { response: null, error };
+            },
+          ),
+        ]);
 
-        const flattenedMeals = menuResponses.flatMap((response, index) => {
-          const cafeteria = cafeteriaList[index];
-          const categoriesList = response?.categories || [];
-
-          return categoriesList.flatMap((category) => (category.items || []).map((item) =>
-            mapMenuItemToMeal(item, cafeteria?.name, cafeteria?.id)
-          ));
-        });
+        const popularResponse = popularResult.response;
+        const hasRankedItems = Array.isArray(popularResponse?.items) && popularResponse.items.length > 0;
+        const popularSource = hasRankedItems ? (popularResponse.source || 'sales') : 'featured';
+        const popularMeals = hasRankedItems ? popularResponse.items.map((item) => ({
+          ...mapMenuItemToMeal(item, item.vendor_name, item.vendor_id),
+          vendorId: item.vendor_id,
+          siteId: item.site_id,
+          source: popularSource,
+        })) : mapFeaturedMenuItems(menuResponses, cafeteriaList);
+        if (popularResult.error && popularMeals.length === 0 && !cancelled) {
+          setPopularError('Unable to load popular meals right now.');
+        }
 
         const mappedCategories = menuResponses.flatMap((response) => (response?.categories || [])).reduce((acc, category) => {
           const name = category?.name || 'Other';
@@ -138,7 +159,8 @@ export default function HomePage() {
 
         if (!cancelled) {
           setCafeterias(mappedCafeterias);
-          setPopularMeals(flattenedMeals.slice(0, 8));
+          setPopularMeals(popularMeals);
+          setPopularSource(popularSource);
           setCategories(mappedCategories.slice(0, 8));
         }
       } catch (error) {
@@ -146,7 +168,9 @@ export default function HomePage() {
           setHomeError(error?.message || 'Unable to load the home feed right now.');
           setCafeterias([]);
           setPopularMeals([]);
+          setPopularSource('sales');
           setCategories([]);
+          setPopularError(null);
         }
       } finally {
         if (!cancelled) setHomeLoading(false);
@@ -267,25 +291,30 @@ export default function HomePage() {
           )}
         </section>
 
-        <section aria-label="Popular meals" style={{ marginTop: 'var(--space-8)' }}>
-          <SectionHeader title="Popular right now" actionLabel="View all" actionTo="/cafeterias" />
+        <section aria-label={popularSource === 'featured' ? 'Featured meals' : 'Popular meals'} style={{ marginTop: 'var(--space-8)' }}>
+          <SectionHeader title={popularSource === 'featured' ? 'Featured meals' : 'Popular right now'} actionLabel="View all" actionTo="/cafeterias" />
           {homeLoading ? (
             <div className="home_meals-scroll" role="status" aria-label="Loading popular meals">
               {Array.from({ length: 5 }, (_, index) => (
                 <FoodCardSkeleton key={index} />
               ))}
             </div>
+          ) : popularError ? (
+            <p className="home_loading-text">{popularError}</p>
+          ) : popularMeals.length === 0 ? (
+            <p className="home_loading-text">No available meals right now. Please check back soon.</p>
           ) : (
             <div className="home_meals-scroll" ref={meals.scrollRef} onScroll={meals.onScroll}>
-              {popularMeals.map((m) => (
+              {popularMeals.map((m, index) => (
                 <FoodCard
-                  key={`${m.cafeteriaId}-${m.id}`}
+                  key={`${m.vendorId}-${m.id}`}
                   id={m.id}
                   name={m.name}
                   price={m.price}
                   vendor={m.vendor}
                   image={m.image}
-                  to={`/cafeterias/${m.cafeteriaId}/menu/${m.id}`}
+                  bestSeller={m.source === 'sales' && index < 3}
+                  to={`/cafeterias/${m.siteId}/menu/${m.id}?vendorId=${m.vendorId}`}
                 />
               ))}
               <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all meals">

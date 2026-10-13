@@ -2,6 +2,7 @@ import { supabaseAdmin, getPublicAssetUrl } from '../config/supabase.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { respond, CACHE } from '../utils/http.js';
 import { resolveAssetUrl } from '../utils/assetUrl.js';
+import { rankFeaturedMenuItems, rankPopularMenuItems } from '../utils/popularMenuItems.js';
 import { isUuid } from '../validators/vendorValidators.js';
 
 const db = () => supabaseAdmin;
@@ -27,6 +28,179 @@ async function assertApprovedVendor(vendorId) {
   if (error) throw error;
   if (!data) throw new ApiError(404, 'VENDOR_NOT_FOUND', 'Vendor not found');
   return data;
+}
+
+async function listRecentOrderItems(status, timestampColumn, since) {
+  const pageSize = 1000;
+  const rows = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await db()
+      .from('order_items')
+      .select(`menu_item_id, quantity, orders!inner(id, ${timestampColumn})`)
+      .eq('orders.status', status)
+      .gte(`orders.${timestampColumn}`, since)
+      .not('menu_item_id', 'is', null)
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+
+    rows.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+
+  return rows;
+}
+
+async function listAvailableMenuItems(vendorIds) {
+  const pageSize = 1000;
+  const rows = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await db()
+      .from('menu_items')
+      .select('id, vendor_id, category_id, name, description, image_url, base_price, currency, prep_minutes, status, created_at, menu_categories(name)')
+      .in('vendor_id', vendorIds)
+      .eq('is_active', true)
+      .in('status', ['available', 'limited'])
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+
+    rows.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+
+  return rows;
+}
+
+export async function listPopularMenuItems(req, res) {
+  try {
+    const windowDays = 30;
+    const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString();
+    const [completedItems, collectedItems] = await Promise.all([
+      listRecentOrderItems('completed', 'completed_at', since),
+      listRecentOrderItems('collected', 'collected_at', since),
+    ]);
+    const salesByItem = new Map();
+
+    for (const row of [...completedItems, ...collectedItems]) {
+      const itemId = row.menu_item_id;
+      if (!itemId) continue;
+      const sale = salesByItem.get(itemId) || { quantity: 0, orderIds: new Set() };
+      sale.quantity += Number(row.quantity) || 0;
+      if (row.orders?.id) sale.orderIds.add(row.orders.id);
+      salesByItem.set(itemId, sale);
+    }
+
+    const { data: locations, error: locationError } = await db()
+      .from('vendor_locations')
+      .select('vendor_id, site_id, created_at, sites!inner(id, name, is_active)')
+      .eq('is_active', true)
+      .eq('sites.is_active', true)
+      .order('created_at', { ascending: true });
+    if (locationError) throw locationError;
+
+    const activeVendorIds = [...new Set((locations || []).map((location) => location.vendor_id))];
+    if (!activeVendorIds.length) {
+      return respond(req, res, { success: true, window_days: windowDays, items: [] }, { cacheControl: CACHE.publicMenu });
+    }
+
+    const { data: vendors, error: vendorError } = await db()
+      .from('vendors')
+      .select('id, name')
+      .eq('status', 'approved')
+      .in('id', activeVendorIds);
+    if (vendorError) throw vendorError;
+    const vendorMap = new Map((vendors || []).map((vendor) => [vendor.id, vendor]));
+    const siteByVendor = new Map();
+    for (const location of locations || []) {
+      if (vendorMap.has(location.vendor_id) && !siteByVendor.has(location.vendor_id)) {
+        const site = Array.isArray(location.sites) ? location.sites[0] : location.sites;
+        siteByVendor.set(location.vendor_id, site ? { id: site.id, name: site.name } : null);
+      }
+    }
+
+    const eligibleVendorIds = [...siteByVendor.keys()];
+    if (!eligibleVendorIds.length) {
+      return respond(req, res, {
+        success: true,
+        window_days: windowDays,
+        source: 'featured',
+        items: [],
+      }, { cacheControl: CACHE.publicMenu });
+    }
+
+    let menuItems = [];
+    if (salesByItem.size) {
+      const itemIds = [...salesByItem.keys()];
+      const itemChunks = [];
+      for (let index = 0; index < itemIds.length; index += 100) {
+        itemChunks.push(itemIds.slice(index, index + 100));
+      }
+
+      const itemResults = await Promise.all(itemChunks.map((chunk) => db()
+        .from('menu_items')
+        .select('id, vendor_id, category_id, name, description, image_url, base_price, currency, prep_minutes, status, created_at, menu_categories(name)')
+        .in('id', chunk)
+        .in('vendor_id', eligibleVendorIds)
+        .eq('is_active', true)
+        .in('status', ['available', 'limited'])));
+      for (const result of itemResults) {
+        if (result.error) throw result.error;
+        menuItems.push(...(result.data || []));
+      }
+    }
+
+    const source = menuItems.length ? 'sales' : 'featured';
+    if (source === 'featured') {
+      menuItems = await listAvailableMenuItems(eligibleVendorIds);
+    }
+
+    const candidates = menuItems
+      .filter((item) => vendorMap.has(item.vendor_id) && siteByVendor.get(item.vendor_id))
+      .map((item) => {
+        const sales = salesByItem.get(item.id);
+        const vendor = vendorMap.get(item.vendor_id);
+        const site = siteByVendor.get(item.vendor_id);
+        const category = Array.isArray(item.menu_categories) ? item.menu_categories[0] : item.menu_categories;
+        return {
+          id: item.id,
+          vendor_id: item.vendor_id,
+          vendor_name: vendor.name,
+          site_id: site.id,
+          site_name: site.name,
+          category_id: item.category_id,
+          category_name: category?.name || null,
+          name: item.name,
+          description: item.description,
+          image_url: item.image_url,
+          base_price: item.base_price,
+          currency: item.currency,
+          prep_minutes: item.prep_minutes,
+          status: item.status,
+          quantity_ordered: sales?.quantity || 0,
+          order_count: sales?.orderIds.size || 0,
+          created_at: item.created_at,
+        };
+      });
+    const ranked = source === 'sales'
+      ? rankPopularMenuItems(candidates)
+      : rankFeaturedMenuItems(candidates);
+
+    const items = await Promise.all(ranked.map(async (item) => ({
+      ...item,
+      image_url: await resolveAssetUrl(item.image_url, { size: 'thumb' }),
+    })));
+
+    return respond(req, res, {
+      success: true,
+      window_days: windowDays,
+      source,
+      items,
+    }, { cacheControl: CACHE.publicMenu });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
 }
 
 // ---------------------------------------------------------------------------
