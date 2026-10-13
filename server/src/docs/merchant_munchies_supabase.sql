@@ -97,6 +97,7 @@ create table if not exists public.sites (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
   code text unique,
+  description text,
   address text,
   latitude numeric(9,6),
   longitude numeric(9,6),

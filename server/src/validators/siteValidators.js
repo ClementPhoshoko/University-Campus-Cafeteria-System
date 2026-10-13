@@ -129,6 +129,9 @@ export function normalizeSite(input, { partial = false } = {}) {
   const address = text(input, 'address', { max: 500 });
   if (address.error) errors.push(address.error); else if (address.value !== undefined && !address.skip) value.address = address.value || null;
 
+  const description = text(input, 'description', { max: 1000, allowEmptyToNull: true });
+  if (description.error) errors.push(description.error); else if (description.value !== undefined && !description.skip) value.description = description.value || null;
+
   const coverImage = text(input, 'cover_image_url', { max: 500, allowEmptyToNull: true });
   if (coverImage.error) errors.push(coverImage.error); else if (coverImage.value !== undefined && !coverImage.skip) value.cover_image_url = coverImage.value || null;
 

@@ -91,7 +91,7 @@ export default function FoodCard({
         <p className="home_vendor-subtitle">{vendor}</p>
         <div className="home_vendor-divider" />
         <div className="home_meal-footer">
-          <span className="home_meal-price">{price}</span>
+          {price && <span className="home_meal-price">{price}</span>}
           <button type="button" className="home_add-btn" aria-label={`Add ${name} to cart`}>
             <IconPlus size={18} stroke={2.2} />
           </button>

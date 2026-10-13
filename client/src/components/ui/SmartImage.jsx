@@ -12,10 +12,16 @@ export default function SmartImage({
   height,
   eager = false,
   style,
+  onError,
   ...rest
 }) {
   const [failed, setFailed] = useState(false);
   const [current, setCurrent] = useState(src || '');
+
+  const handleError = (event) => {
+    setFailed(true);
+    onError?.(event);
+  };
 
   useEffect(() => {
     setCurrent(src || '');
@@ -36,7 +42,7 @@ export default function SmartImage({
       loading={eager ? 'eager' : 'lazy'}
       decoding="async"
       fetchPriority={eager ? 'high' : 'auto'}
-      onError={() => setFailed(true)}
+      onError={handleError}
       style={style}
       {...rest}
     />

@@ -40,6 +40,8 @@ export const CACHE = {
   adminOps: 'private, max-age=5, must-revalidate',
   // Public — CDN-shareable; infrequently changing reference data
   publicRef: 'public, max-age=300, must-revalidate',
+  // Public — operational status and imagery need faster refresh after admin updates
+  publicOperational: 'public, max-age=10, must-revalidate',
   // Public — menus change a few times per day
   publicMenu: 'public, max-age=300, must-revalidate',
   // Employee — user-specific reads (cart, favorites, orders)

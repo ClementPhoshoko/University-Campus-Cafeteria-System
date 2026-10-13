@@ -171,6 +171,7 @@ export function BuildingModal({ initial = {}, onClose, onSubmit, submitting }) {
 export const siteFields = [
   { key: 'name', label: 'Site name' },
   { key: 'code', label: 'Site code' },
+  { key: 'description', label: 'Description', type: 'textarea', full: true },
   { key: 'address', label: 'Search address', type: 'address', full: true },
   { key: 'street_address', label: 'Street address' },
   { key: 'city', label: 'City' },

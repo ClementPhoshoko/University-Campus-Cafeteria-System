@@ -83,11 +83,22 @@ export default function CafeteriaPage() {
       setError(null);
 
       try {
-        const response = await listCafeterias({ limit: 20, token });
-        const cafeteriaList = response?.cafeterias || [];
+        const firstPage = await listCafeterias({ page: 1, limit: 100, token });
+        const totalPages = Math.max(1, Number(firstPage?.pagination?.totalPages) || 1);
+        const remainingPages = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, index) => listCafeterias({
+            page: index + 2,
+            limit: 100,
+            token,
+          }))
+        );
+        const cafeteriaList = [
+          ...(firstPage?.cafeterias || []),
+          ...remainingPages.flatMap((response) => response?.cafeterias || []),
+        ];
 
         if (!cancelled) {
-          setCafeterias(cafeteriaList.map((cafeteria, index) => mapCafeteriaToCard(cafeteria, index)));
+          setCafeterias(cafeteriaList.map(mapCafeteriaToCard));
         }
       } catch (err) {
         if (!cancelled) {
@@ -114,7 +125,17 @@ export default function CafeteriaPage() {
     const normalizedQuery = query.trim().toLowerCase();
 
     return cafeterias.filter((cafeteria) => {
-      const matchesQuery = !normalizedQuery || [cafeteria.name, cafeteria.description, cafeteria.location].some((value) => String(value).toLowerCase().includes(normalizedQuery));
+      const location = cafeteria.location || {};
+      const matchesQuery = !normalizedQuery || [
+        cafeteria.name,
+        cafeteria.description,
+        location.streetAddress,
+        location.address,
+        location.city,
+        location.province,
+        location.postalCode,
+        location.siteName,
+      ].some((value) => String(value || '').toLowerCase().includes(normalizedQuery));
       const matchesFilter = activeFilter === 'all'
         ? true
         : activeFilter === 'open'

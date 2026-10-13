@@ -4,6 +4,8 @@ import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/err
 import { writeAudit } from '../utils/audit.js';
 import { respond, CACHE } from '../utils/http.js';
 import { resolveAssetUrl } from '../utils/assetUrl.js';
+import { getSiteServiceStatus } from '../utils/vendorAvailability.js';
+import { getCafeteriaDescription } from '../utils/cafeteriaDescription.js';
 import { sendEmail } from '../services/email/sendEmail.js';
 import vendorDecisionEmail from '../services/email/templates/vendorDecision.js';
 import {
@@ -941,12 +943,11 @@ export async function listPublicVendors(req, res) {
 
 function toPublicCafeteria(site, locations, vendors) {
   const vendorIds = [...new Set(locations.map((location) => location.vendor_id))];
-  const serviceStatus = locations.some((location) => location.service_status === 'open')
-    ? 'open'
-    : locations[0]?.service_status || 'closed';
-  const prepMinutes = locations.length
-    ? Math.min(...locations.map((location) => Number(location.estimated_prep_minutes || 15)))
-    : null;
+  const serviceStatus = getSiteServiceStatus(locations);
+  const prepTimes = locations
+    .map((location) => Number(location.estimated_prep_minutes))
+    .filter((minutes) => Number.isFinite(minutes) && minutes > 0);
+  const prepMinutes = prepTimes.length ? Math.min(...prepTimes) : null;
   const ratingCount = vendors.reduce((sum, vendor) => sum + Number(vendor.rating_count || 0), 0);
   const ratingTotal = vendors.reduce((sum, vendor) => sum + (Number(vendor.average_rating || 0) * Number(vendor.rating_count || 0)), 0);
   return {
@@ -954,7 +955,7 @@ function toPublicCafeteria(site, locations, vendors) {
     name: site.name,
     site_name: site.name,
     slug: site.code || site.id,
-    description: site.address || '',
+    description: getCafeteriaDescription(site, vendors),
     address: site.address || null,
     cover_image_url: site.cover_image_url || null,
     vendor_id: vendorIds[0] || null,
@@ -969,19 +970,38 @@ function toPublicCafeteria(site, locations, vendors) {
       city: site.city,
       province: site.province,
       postal_code: site.postal_code,
+      country: site.country,
       service_status: serviceStatus,
       estimated_prep_minutes: Number.isFinite(prepMinutes) ? prepMinutes : null,
     },
   };
 }
 
+async function resolveCafeteriaCoverImage(cafeteria) {
+  try {
+    return {
+      ...cafeteria,
+      cover_image_url: await resolveAssetUrl(cafeteria.cover_image_url, { size: 'card' }),
+    };
+  } catch (error) {
+    console.error(`[Vendor] Failed to resolve cover image for site ${cafeteria.id}:`, error.message);
+    return { ...cafeteria, cover_image_url: null };
+  }
+}
+
 export async function listPublicCafeterias(req, res) {
   try {
     const { pageNum, limitNum, from, to } = parsePagination(req.query);
     const search = String(req.query.search || '').trim();
+    let siteId;
+    if (req.query.site_id !== undefined && req.query.site_id !== '') {
+      if (!isUuid(req.query.site_id)) return sendError(res, 400, 'INVALID_UUID', 'Invalid site_id');
+      siteId = req.query.site_id;
+    }
+
     const { data: locations, error: locationsError } = await db()
       .from('vendor_locations')
-      .select('site_id, vendor_id, service_status, estimated_prep_minutes')
+      .select('site_id, vendor_id, service_status, is_active, estimated_prep_minutes, operating_hours(day_of_week, opens_at, closes_at, is_closed), sites(timezone)')
       .eq('is_active', true);
     if (locationsError) throw locationsError;
 
@@ -992,13 +1012,14 @@ export async function listPublicCafeterias(req, res) {
     if (vendorsError) throw vendorsError;
     const vendorMap = new Map((vendors || []).map((vendor) => [vendor.id, vendor]));
     const approvedLocations = (locations || []).filter((location) => vendorMap.has(location.vendor_id));
-    let query = db().from('sites').select('id, name, code, address, street_address, city, province, postal_code, country, place_id, latitude, longitude, timezone, cover_image_url', { count: 'exact' }).eq('is_active', true);
 
-    if (req.query.site_id !== undefined && req.query.site_id !== '') {
-      if (!isUuid(req.query.site_id)) return sendError(res, 400, 'INVALID_UUID', 'Invalid site_id');
-      query = query.eq('id', req.query.site_id);
-    }
-    if (search) query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%,address.ilike.%${search}%`);
+    let query = db()
+      .from('sites')
+      .select('id, name, code, description, address, street_address, city, province, postal_code, country, place_id, latitude, longitude, timezone, cover_image_url', { count: 'exact' })
+      .eq('is_active', true);
+
+    if (siteId) query = query.eq('id', siteId);
+    if (search) query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%,description.ilike.%${search}%,address.ilike.%${search}%`);
     query = query.order('created_at', { ascending: true }).range(from, to);
 
     const { data, error, count } = await query;
@@ -1007,16 +1028,14 @@ export async function listPublicCafeterias(req, res) {
     const cafeterias = await Promise.all((data || []).map(async (site) => {
       const siteLocations = approvedLocations.filter((location) => location.site_id === site.id);
       const siteVendors = [...new Map(siteLocations.map((location) => [location.vendor_id, vendorMap.get(location.vendor_id)])).values()];
-      const cafeteria = toPublicCafeteria(site, siteLocations, siteVendors);
-      cafeteria.cover_image_url = await resolveAssetUrl(cafeteria.cover_image_url, { size: 'card' });
-      return cafeteria;
+      return resolveCafeteriaCoverImage(toPublicCafeteria(site, siteLocations, siteVendors));
     }));
 
     return respond(req, res, {
       success: true,
       cafeterias,
       pagination: buildPagination(count, pageNum, limitNum),
-    }, { cacheControl: CACHE.publicRef });
+    }, { cacheControl: CACHE.publicOperational });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -1027,19 +1046,22 @@ export async function getPublicCafeteria(req, res) {
     const cafeteriaId = requireUuidParam(req, res, 'cafeteriaId');
     if (!cafeteriaId) return;
 
-    const { data: site, error } = await db().from('sites').select('id, name, code, address, street_address, city, province, postal_code, country, place_id, latitude, longitude, timezone, cover_image_url').eq('id', cafeteriaId).eq('is_active', true).maybeSingle();
+    const { data: site, error } = await db().from('sites').select('id, name, code, description, address, street_address, city, province, postal_code, country, place_id, latitude, longitude, timezone, cover_image_url').eq('id', cafeteriaId).eq('is_active', true).maybeSingle();
     if (error) throw error;
     if (!site) throw new ApiError(404, 'CAFETERIA_NOT_FOUND', 'Cafeteria not found');
-    const { data: locations, error: locationsError } = await db().from('vendor_locations').select('site_id, vendor_id, service_status, estimated_prep_minutes').eq('site_id', cafeteriaId).eq('is_active', true);
+    const { data: locations, error: locationsError } = await db()
+      .from('vendor_locations')
+      .select('site_id, vendor_id, service_status, is_active, estimated_prep_minutes, operating_hours(day_of_week, opens_at, closes_at, is_closed), sites(timezone)')
+      .eq('site_id', cafeteriaId)
+      .eq('is_active', true);
     if (locationsError) throw locationsError;
     const vendorIds = [...new Set((locations || []).map((location) => location.vendor_id))];
     const { data: vendors, error: vendorsError } = vendorIds.length ? await db().from('vendors').select(VENDOR_PUBLIC_FIELDS).eq('status', 'approved').in('id', vendorIds) : { data: [], error: null };
     if (vendorsError) throw vendorsError;
     const vendorMap = new Map((vendors || []).map((vendor) => [vendor.id, vendor]));
     const approvedLocations = (locations || []).filter((location) => vendorMap.has(location.vendor_id));
-    const cafeteria = toPublicCafeteria(site, approvedLocations, [...vendorMap.values()]);
-    cafeteria.cover_image_url = await resolveAssetUrl(cafeteria.cover_image_url, { size: 'card' });
-    return respond(req, res, { success: true, cafeteria }, { cacheControl: CACHE.publicRef });
+    const cafeteria = await resolveCafeteriaCoverImage(toPublicCafeteria(site, approvedLocations, [...vendorMap.values()]));
+    return respond(req, res, { success: true, cafeteria }, { cacheControl: CACHE.publicOperational });
   } catch (err) {
     return handleControllerError(res, err);
   }

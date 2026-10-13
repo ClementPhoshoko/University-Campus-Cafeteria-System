@@ -52,6 +52,7 @@ test('normalizeSite validates a valid payload', () => {
   const { value, errors } = normalizeSite({
     name: 'Merchant Place',
     code: 'MP-1',
+    description: 'Fresh dining options for campus visitors.',
     address: '1 Campus Drive',
     latitude: -26.2041,
     longitude: 28.0473,
@@ -60,6 +61,7 @@ test('normalizeSite validates a valid payload', () => {
   assert.equal(errors, undefined);
   assert.equal(value.name, 'Merchant Place');
   assert.equal(value.code, 'MP-1');
+  assert.equal(value.description, 'Fresh dining options for campus visitors.');
   assert.equal(value.timezone, 'Africa/Johannesburg');
 });
 
@@ -75,6 +77,11 @@ test('normalizeSite trims and coerces empty optionals to null', () => {
   assert.equal(value.name, 'Site');
   assert.equal(value.code, null);
   assert.equal(value.address, null);
+});
+
+test('normalizeSite trims and clears an optional description', () => {
+  assert.equal(normalizeSite({ name: 'Site', description: '  A dining destination.  ' }).value.description, 'A dining destination.');
+  assert.equal(normalizeSite({ name: 'Site', description: '' }).value.description, null);
 });
 
 test('normalizeSite partial allows empty update', () => {

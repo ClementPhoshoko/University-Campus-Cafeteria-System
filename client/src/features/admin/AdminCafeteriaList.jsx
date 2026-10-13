@@ -171,6 +171,7 @@ export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
   const [form, setForm] = useState(() => initial ? {
     name: initial.name || '',
     code: initial.code || '',
+    description: initial.description || '',
     address: initial.address || '',
     street_address: initial.street_address || '',
     city: initial.city || '',
@@ -186,6 +187,7 @@ export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
   } : {
     name: '',
     code: '',
+    description: '',
     address: '',
     street_address: '',
     city: '',
@@ -227,6 +229,7 @@ export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
         ...form,
         name: form.name.trim(),
         code: form.code.trim() || null,
+        description: form.description.trim() || null,
         address: form.address.trim() || null,
         street_address: form.street_address.trim() || null,
         city: form.city.trim() || null,
@@ -274,6 +277,9 @@ export function NewSiteModal({ initial, onClose, onSubmit, submitting }) {
                 <input className="admin-input" value={form.code} onChange={(e) => update('code', e.target.value)} placeholder="MP-RIVERSIDE" />
               </Field>
             </div>
+            <Field label="Description" full>
+              <textarea className="admin-modal__textarea" rows={3} maxLength={1000} value={form.description} onChange={(e) => update('description', e.target.value)} placeholder="Describe the food and dining options available at this site." />
+            </Field>
             <Field label="Search address">
               <AddressAutocomplete value={form.address} onChange={(val) => update('address', val)} onSelect={handleAddressSelect} token={session?.access_token} placeholder="Start typing to search..." />
             </Field>

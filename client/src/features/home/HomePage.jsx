@@ -19,7 +19,7 @@ import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import androidBadge from '../../assets/android_download-PJqqAvJc.webp';
 import iosBadge from '../../assets/ios_download-Dn_KtiFi.webp';
 import HeroFoodShowcase from '../../components/hero/HeroFoodShowcase.jsx';
-import { listCafeterias, listVendorMenu } from '../../services/employeeApi.js';
+import { getCafeteria, listCafeterias, listVendorMenu } from '../../services/employeeApi.js';
 import { mapCafeteriaToCard, mapMenuItemToMeal, mapCategoryToDisplay } from './homeTransform.js';
 import { deliveryImage, reviewsImage, heroImage, heroFoods } from './homeData.js';
 import './home.css';
@@ -70,6 +70,24 @@ export default function HomePage() {
   const [categories, setCategories] = useState([]);
   const [homeError, setHomeError] = useState(null);
   const [homeLoading, setHomeLoading] = useState(false);
+  const attemptedImageRefreshes = useRef(new Set());
+
+  const refreshCafeteriaImage = async (cafeteriaId, failedImage) => {
+    const refreshKey = `${cafeteriaId}:${failedImage}`;
+    if (!cafeteriaId || attemptedImageRefreshes.current.has(refreshKey)) return;
+    attemptedImageRefreshes.current.add(refreshKey);
+
+    try {
+      const response = await getCafeteria(cafeteriaId, { token });
+      const image = response?.cafeteria?.cover_image_url;
+      if (!image || image === failedImage) return;
+      setCafeterias((current) => current.map((cafeteria) => (
+        cafeteria.id === cafeteriaId ? { ...cafeteria, image } : cafeteria
+      )));
+    } catch (error) {
+      console.error(`Unable to refresh cafeteria image for site ${cafeteriaId}:`, error);
+    }
+  };
 
   useEffect(() => {
     if (!token) {
@@ -90,7 +108,7 @@ export default function HomePage() {
       try {
         const cafeteriasResponse = await listCafeterias({ limit: 6, token });
         const cafeteriaList = cafeteriasResponse?.cafeterias || [];
-        const mappedCafeterias = cafeteriaList.map((cafeteria, index) => mapCafeteriaToCard(cafeteria, index));
+        const mappedCafeterias = cafeteriaList.map(mapCafeteriaToCard);
 
         const menuResponses = await Promise.all(
           cafeteriaList.map((cafeteria) => cafeteria.vendor_id
@@ -102,8 +120,8 @@ export default function HomePage() {
           const cafeteria = cafeteriaList[index];
           const categoriesList = response?.categories || [];
 
-          return categoriesList.flatMap((category) => (category.items || []).map((item, itemIndex) =>
-            mapMenuItemToMeal(item, cafeteria?.name || 'Campus cafeteria', cafeteria?.id, itemIndex + index)
+          return categoriesList.flatMap((category) => (category.items || []).map((item) =>
+            mapMenuItemToMeal(item, cafeteria?.name, cafeteria?.id)
           ));
         });
 
@@ -220,14 +238,13 @@ export default function HomePage() {
                     siteName={v.siteName}
                     name={v.name}
                     status={v.status}
-                    category={v.category}
                     image={v.image}
                     description={v.description}
-                    walkTime={v.walkTime}
                     prepWindow={v.prepWindow}
                     rating={v.rating}
                     reviewCount={v.reviewCount}
                     location={v.location}
+                    onImageError={refreshCafeteriaImage}
                   />
                 ))}
 
@@ -254,7 +271,6 @@ export default function HomePage() {
                   price={m.price}
                   vendor={m.vendor}
                   image={m.image}
-                  bestSeller={m.bestSeller}
                   to={`/cafeterias/${m.cafeteriaId}/menu/${m.id}`}
                 />
               ))}
@@ -369,4 +385,3 @@ export default function HomePage() {
     </PageContainer>
   );
 }
-

@@ -16,8 +16,9 @@ import {
 } from '../controllers/cartController.js';
 
 /**
- * Employee-facing Vendor reads (tag: Vendors).
- * Only `status = approved` vendors with at least one active location are exposed.
+ * Employee-facing vendor and cafeteria reads.
+ * Cafeteria results include active sites; vendor summaries use only approved vendors
+ * with at least one active location.
  */
 const vendorRouter = Router();
 

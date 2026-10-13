@@ -13,5 +13,6 @@ export const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
 export function getPublicAssetUrl(path) {
   if (!path || /^https?:\/\//i.test(path)) return path;
   if (!SUPABASE_URL) return path;
-  return `${SUPABASE_URL}/storage/v1/object/public/vendor-assets/${encodeURIComponent(path)}`;
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+  return `${SUPABASE_URL}/storage/v1/object/public/vendor-assets/${encodedPath}`;
 }
