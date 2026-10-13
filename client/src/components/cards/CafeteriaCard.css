@@ -11,6 +11,10 @@
   transition: all var(--transition-smooth);
 }
 
+.home_vendor-card:not(.home_vendor-card--directory):not(.home_meal-card) {
+  height: 300px;
+}
+
 .home_vendor-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--elevation-card-hover);
