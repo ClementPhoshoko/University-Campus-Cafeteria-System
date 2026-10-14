@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   IconAdjustmentsHorizontal,
@@ -13,6 +13,8 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { listVendors } from '../../services/employeeApi.js';
 import { mapVendorToCafeteriaCard } from '../home/homeTransform.js';
 import { heroImage } from "../home/homeData.js";
+import { CACHE_TTL } from '../../services/cache.js';
+import { useFetch } from '../../hooks/useFetch.js';
 import "./cafeteria.css";
 
 const DIRECTORY_FILTERS = [
@@ -65,56 +67,38 @@ export default function CafeteriaPage() {
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState(searchParams.get("filter") || "all");
   const [showFilters, setShowFilters] = useState(true);
-  const [cafeterias, setCafeterias] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const loadDirectory = useCallback(async ({ signal }) => {
+    const firstPage = await listVendors({ page: 1, limit: 100, token, signal, cache: 'no-cache' });
+    const totalPages = Math.max(1, Number(firstPage?.pagination?.totalPages) || 1);
+    const remainingPages = await Promise.all(
+      Array.from({ length: totalPages - 1 }, (_, index) => listVendors({
+        page: index + 2,
+        limit: 100,
+        token,
+        signal,
+        cache: 'no-cache',
+      }))
+    );
+    const cafeteriaList = [
+      ...(firstPage?.vendors || []),
+      ...remainingPages.flatMap((response) => response?.vendors || []),
+    ];
 
-  useEffect(() => {
-    if (!token) {
-      setCafeterias([]);
-      setLoading(false);
-      setError(null);
-      return undefined;
-    }
-
-    let cancelled = false;
-
-    const loadDirectory = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const firstPage = await listVendors({ page: 1, limit: 100, token });
-        const totalPages = Math.max(1, Number(firstPage?.pagination?.totalPages) || 1);
-        const remainingPages = await Promise.all(
-          Array.from({ length: totalPages - 1 }, (_, index) => listVendors({
-            page: index + 2,
-            limit: 100,
-            token,
-          }))
-        );
-        const cafeteriaList = [
-          ...(firstPage?.vendors || []),
-          ...remainingPages.flatMap((response) => response?.vendors || []),
-        ];
-
-        if (!cancelled) {
-          setCafeterias(cafeteriaList.map(mapVendorToCafeteriaCard));
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err?.message || 'Unable to load cafeterias.');
-          setCafeterias([]);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    loadDirectory();
-
-    return () => { cancelled = true; };
+    return cafeteriaList.map(mapVendorToCafeteriaCard);
   }, [token]);
+  const directory = useFetch(loadDirectory, {
+    cacheKey: 'employee:vendor-directory',
+    enabled: Boolean(token),
+    staleTime: CACHE_TTL.employeeVendorDirectory,
+  });
+  const cafeterias = token ? directory.data || [] : [];
+  const loading = Boolean(token) && directory.isLoading && !directory.data;
+  const error = directory.error && !directory.data
+    ? directory.error?.message || 'Unable to load cafeterias.'
+    : null;
+  const refreshError = directory.error && directory.data
+    ? 'Could not refresh cafeteria information. Showing the last loaded data.'
+    : null;
 
   const counts = useMemo(() => ({
     all: cafeterias.length,
@@ -189,6 +173,7 @@ export default function CafeteriaPage() {
 
       <main className="cafeteria_page">
         <section className="cafeteria_results" aria-live="polite" aria-label="Cafeteria results">
+          {refreshError && <p role="status">{refreshError}</p>}
           <div className="cafeteria_results-heading" aria-live="polite">
             <span>{loading ? 'Loading' : `${visibleCafeterias.length} cafeterias`}</span>
             {query && <span className="cafeteria_results-query">for "{query}"</span>}

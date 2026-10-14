@@ -50,6 +50,7 @@ export async function apiRequest(path, {
   headers = {},
   signal,
   timeoutMs = DEFAULT_TIMEOUT_MS,
+  cache = 'default',
 } = {}) {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
@@ -63,6 +64,7 @@ export async function apiRequest(path, {
   try {
     const response = await fetch(buildUrl(path, query), {
       method,
+      cache,
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),

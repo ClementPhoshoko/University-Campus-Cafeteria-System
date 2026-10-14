@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IconClock, IconMapPin, IconStar, IconStarFilled, IconX, IconCheck } from '@tabler/icons-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
@@ -11,6 +11,8 @@ import BrowseCafeteriaBackground from '../../components/BrowseCafeteriaBackgroun
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { listVendorMenu, getVendor, addToCart } from '../../services/employeeApi.js';
+import { CACHE_TTL } from '../../services/cache.js';
+import { useFetch } from '../../hooks/useFetch.js';
 import './browse-cafeteria.css';
 
 const REVIEWS_PER_PAGE = 5;
@@ -197,52 +199,43 @@ export default function BrowseCafeteriaPage() {
   const { session } = useAuth();
   const token = session?.access_token;
 
-  const [vendor, setVendor] = useState(null);
-  const [categories, setCategories] = useState([]);
-  const [menuLoading, setMenuLoading] = useState(false);
-  const [menuError, setMenuError] = useState(null);
-  const [headerReady, setHeaderReady] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
   const [addedItems, setAddedItems] = useState([]);
   const [selectedRating, setSelectedRating] = useState(null);
   const [showAddReview, setShowAddReview] = useState(false);
 
   const isReviewsView = searchParams.get('view') === 'reviews';
+  const loadVendorCatalog = useCallback(async ({ signal }) => {
+    const cafeteriaRes = await getVendor(cafeteriaId, { token, signal, cache: 'no-cache' });
+    const vendor = cafeteriaRes?.vendor || null;
+    const menuRes = vendor?.id
+      ? await listVendorMenu(vendor.id, { token, signal, cache: 'no-cache' })
+      : { categories: [] };
+    return { vendor, categories: menuRes?.categories || [] };
+  }, [cafeteriaId, token]);
+  const vendorCatalog = useFetch(loadVendorCatalog, {
+    cacheKey: cafeteriaId ? `employee:vendor-detail:${cafeteriaId}` : null,
+    enabled: Boolean(token && cafeteriaId),
+    staleTime: CACHE_TTL.employeeVendorDetail,
+  });
+  const catalog = token && cafeteriaId ? vendorCatalog.data : null;
+  const vendor = catalog?.vendor || null;
+  const categories = catalog?.categories || [];
+  const menuLoading = Boolean(token && cafeteriaId) && vendorCatalog.isLoading && !catalog;
+  const menuError = vendorCatalog.error && !catalog
+    ? vendorCatalog.error?.message || 'Failed to load menu'
+    : null;
+  const catalogRefreshError = vendorCatalog.error && catalog
+    ? 'Could not refresh this cafeteria. Showing the last loaded information.'
+    : null;
+  const headerReady = Boolean(catalog || menuError);
   const rating = vendor?.average_rating ? Number(vendor.average_rating) : 0;
   const totalReviews = Number(vendor?.rating_count || 0);
   const hasOrdered = false;
 
   useEffect(() => {
-    if (!token || !cafeteriaId) return;
-    let cancelled = false;
-    setVendor(null);
-    setCategories([]);
-    setHeaderReady(false);
-    setMenuLoading(true);
-    setMenuError(null);
-
-    getVendor(cafeteriaId, { token }).then(async (cafeteriaRes) => {
-      if (cancelled) return;
-      const cafeteriaData = cafeteriaRes?.vendor || null;
-      const menuRes = cafeteriaData?.id
-        ? await listVendorMenu(cafeteriaData.id, { token })
-        : { categories: [] };
-      if (cancelled) return;
-      setVendor(cafeteriaData);
-      setHeaderReady(true);
-      const cats = menuRes?.categories || [];
-      setCategories(cats);
-      if (cats.length) setActiveCategory('All');
-      setMenuError(null);
-    }).catch((err) => {
-      if (cancelled) return;
-      setMenuError(err?.message || 'Failed to load menu');
-    }).finally(() => {
-      if (!cancelled) { setMenuLoading(false); setHeaderReady(true); }
-    });
-
-    return () => { cancelled = true; };
-  }, [cafeteriaId, token]);
+    if (categories.length) setActiveCategory('All');
+  }, [cafeteriaId, categories]);
 
   const allItems = useMemo(() => {
     return categories.flatMap((cat) => cat.items || []);
@@ -377,6 +370,11 @@ export default function BrowseCafeteriaPage() {
               </div>
               <span className="browse_cafeteria-item-count">{visibleItems.length} items</span>
             </div>
+            {catalogRefreshError && (
+              <div className="browse_cafeteria-empty" role="status">
+                <p>{catalogRefreshError}</p>
+              </div>
+            )}
             {menuLoading ? (
               <div className="browse_cafeteria-empty">
                 <p>Loading menu...</p>

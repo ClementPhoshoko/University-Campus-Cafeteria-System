@@ -14,7 +14,7 @@ export function useFetch(fetchFn, {
   const [data, setData] = useState(() => {
     if (resolvedCacheKey) {
       const cached = getCache(resolvedCacheKey);
-      if (cached && !cached.isStale) return cached.data;
+      if (cached) return cached.data;
     }
     return null;
   });
@@ -31,13 +31,7 @@ export function useFetch(fetchFn, {
 
   const execute = useCallback(async (overrideSignal) => {
     if (!enabled) return;
-
-    const requestId = ++currentRequestId;
-    const controller = new AbortController();
-    abortRef.current = controller;
-
     const cached = resolvedCacheKey ? getCache(resolvedCacheKey) : null;
-    const isStale = !cached || (Date.now() - cached.timestamp > staleTime);
 
     if (cached && !cached.isStale) {
       if (mountedRef.current) {
@@ -47,6 +41,12 @@ export function useFetch(fetchFn, {
       }
       return cached.data;
     }
+
+    if (abortRef.current) return;
+
+    const requestId = ++currentRequestId.current;
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     if (cached && cached.isStale) {
       if (mountedRef.current) {
@@ -58,7 +58,8 @@ export function useFetch(fetchFn, {
     }
 
     try {
-      const result = await fetchFn({ signal: controller.signal });
+      const signal = overrideSignal || controller.signal;
+      const result = await fetchFn({ signal });
       const transformed = transform ? transform(result) : result;
 
       if (!mountedRef.current || requestId !== currentRequestId.current) return transformed;
@@ -74,14 +75,14 @@ export function useFetch(fetchFn, {
       }
       return transformed;
     } catch (err) {
-      if (err?.name === 'AbortError') return data;
+      if (controller.signal.aborted || err?.name === 'AbortError') return;
 
       if (!mountedRef.current || requestId !== currentRequestId.current) return;
       setState('error');
       setError(err);
       return undefined;
     } finally {
-      abortRef.current = null;
+      if (abortRef.current === controller) abortRef.current = null;
     }
   }, [fetchFn, resolvedCacheKey, enabled, staleTime, transform]);
 
@@ -89,9 +90,27 @@ export function useFetch(fetchFn, {
     if (!enabled) return;
     execute();
     return () => {
-      if (abortRef.current) abortRef.current.abort();
+      if (abortRef.current) {
+        abortRef.current.abort();
+        abortRef.current = null;
+      }
     };
   }, [execute, enabled]);
+
+  useEffect(() => {
+    if (!enabled || !resolvedCacheKey) return undefined;
+    const revalidateIfStale = () => {
+      if (document.visibilityState !== 'visible') return;
+      const cached = getCache(resolvedCacheKey);
+      if (!cached || cached.isStale) execute();
+    };
+    window.addEventListener('focus', revalidateIfStale);
+    document.addEventListener('visibilitychange', revalidateIfStale);
+    return () => {
+      window.removeEventListener('focus', revalidateIfStale);
+      document.removeEventListener('visibilitychange', revalidateIfStale);
+    };
+  }, [enabled, execute, resolvedCacheKey]);
 
   const invalidate = useCallback(() => {
     if (resolvedCacheKey) {

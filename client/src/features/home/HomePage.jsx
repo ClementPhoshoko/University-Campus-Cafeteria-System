@@ -23,6 +23,8 @@ import androidBadge from '../../assets/android_download-PJqqAvJc.webp';
 import iosBadge from '../../assets/ios_download-Dn_KtiFi.webp';
 import HeroFoodShowcase from '../../components/hero/HeroFoodShowcase.jsx';
 import { getVendor, getPopularMenuItems, listVendors, listVendorMenu } from '../../services/employeeApi.js';
+import { CACHE_TTL } from '../../services/cache.js';
+import { useFetch } from '../../hooks/useFetch.js';
 import { mapVendorToCafeteriaCard, mapCategoryToDisplay, mapFeaturedMenuItems, mapMenuItemToMeal } from './homeTransform.js';
 import { deliveryImage, reviewsImage, heroImage, heroFoods } from './homeData.js';
 import './home.css';
@@ -68,14 +70,79 @@ export default function HomePage() {
   const meals = useScrollProgress();
   const token = session?.access_token;
 
-  const [cafeterias, setCafeterias] = useState([]);
-  const [popularMeals, setPopularMeals] = useState([]);
-  const [popularSource, setPopularSource] = useState('sales');
-  const [categories, setCategories] = useState([]);
-  const [homeError, setHomeError] = useState(null);
-  const [popularError, setPopularError] = useState(null);
-  const [homeLoading, setHomeLoading] = useState(false);
   const attemptedImageRefreshes = useRef(new Set());
+  const loadHome = useCallback(async ({ signal }) => {
+    const cafeteriasResponse = await listVendors({
+      limit: 6,
+      token,
+      signal,
+      cache: 'no-cache',
+    });
+    const cafeteriaList = cafeteriasResponse?.vendors || [];
+    const mappedCafeterias = cafeteriaList.map(mapVendorToCafeteriaCard);
+
+    const [menuResponses, popularResult] = await Promise.all([
+      Promise.all(
+        cafeteriaList.map((cafeteria) => cafeteria.id
+          ? listVendorMenu(cafeteria.id, { token, signal, cache: 'no-cache' }).catch((error) => {
+            console.error(`Failed to load menu for cafeteria ${cafeteria.id}:`, error);
+            return { categories: [] };
+          })
+          : Promise.resolve({ categories: [] }))
+      ),
+      getPopularMenuItems({ token, signal, cache: 'no-cache' }).then(
+        (response) => ({ response, error: null }),
+        (error) => {
+          console.error('Failed to load popular menu items:', error);
+          return { response: null, error };
+        },
+      ),
+    ]);
+
+    const popularResponse = popularResult.response;
+    const hasRankedItems = Array.isArray(popularResponse?.items) && popularResponse.items.length > 0;
+    const popularSource = hasRankedItems ? (popularResponse.source || 'sales') : 'featured';
+    const popularMeals = hasRankedItems ? popularResponse.items.map((item) => ({
+      ...mapMenuItemToMeal(item, item.vendor_name),
+      vendorId: item.vendor_id,
+      source: popularSource,
+    })) : mapFeaturedMenuItems(menuResponses, cafeteriaList);
+    const mappedCategories = menuResponses.flatMap((response) => (response?.categories || [])).reduce((acc, category) => {
+      const name = category?.name || 'Other';
+      if (!acc.some((item) => item.name === name)) {
+        acc.push(mapCategoryToDisplay(category));
+      }
+      return acc;
+    }, []);
+
+    return {
+      cafeterias: mappedCafeterias,
+      popularMeals,
+      popularSource,
+      categories: mappedCategories.slice(0, 8),
+      popularError: popularResult.error && popularMeals.length === 0
+        ? 'Unable to load popular meals right now.'
+        : null,
+    };
+  }, [token]);
+  const homeFeed = useFetch(loadHome, {
+    cacheKey: 'employee:home-feed',
+    enabled: Boolean(token),
+    staleTime: CACHE_TTL.employeeHomeFeed,
+  });
+  const feed = token ? homeFeed.data : null;
+  const cafeterias = feed?.cafeterias || [];
+  const popularMeals = feed?.popularMeals || [];
+  const popularSource = feed?.popularSource || 'sales';
+  const categories = feed?.categories || [];
+  const homeError = homeFeed.error && !feed
+    ? homeFeed.error?.message || 'Unable to load the home feed right now.'
+    : null;
+  const homeRefreshError = homeFeed.error && feed
+    ? 'Could not refresh cafeteria information. Showing the last loaded data.'
+    : null;
+  const popularError = feed?.popularError || null;
+  const homeLoading = Boolean(token) && homeFeed.isLoading && !feed;
 
   const refreshCafeteriaImage = async (vendorId, failedImage) => {
     const refreshKey = `${vendorId}:${failedImage}`;
@@ -83,105 +150,19 @@ export default function HomePage() {
     attemptedImageRefreshes.current.add(refreshKey);
 
     try {
-      const response = await getVendor(vendorId, { token });
+      const response = await getVendor(vendorId, { token, cache: 'no-cache' });
       const image = response?.vendor?.logo_url;
       if (!image || image === failedImage) return;
-      setCafeterias((current) => current.map((cafeteria) => (
-        cafeteria.id === vendorId ? { ...cafeteria, image } : cafeteria
-      )));
+      homeFeed.mutate((current) => current && ({
+        ...current,
+        cafeterias: current.cafeterias.map((cafeteria) => (
+          cafeteria.id === vendorId ? { ...cafeteria, image } : cafeteria
+        )),
+      }));
     } catch (error) {
       console.error(`Unable to refresh cafeteria image for vendor ${vendorId}:`, error);
     }
   };
-
-  useEffect(() => {
-    if (!token) {
-      setCafeterias([]);
-      setPopularMeals([]);
-      setPopularSource('sales');
-      setCategories([]);
-      setHomeLoading(false);
-      setHomeError(null);
-      setPopularError(null);
-      return undefined;
-    }
-
-    let cancelled = false;
-
-    const loadHome = async () => {
-      setHomeLoading(true);
-      setHomeError(null);
-      setPopularError(null);
-
-      try {
-        const cafeteriasResponse = await listVendors({ limit: 6, token });
-        const cafeteriaList = cafeteriasResponse?.vendors || [];
-        const mappedCafeterias = cafeteriaList.map(mapVendorToCafeteriaCard);
-
-        const [menuResponses, popularResult] = await Promise.all([
-          Promise.all(
-            cafeteriaList.map((cafeteria) => cafeteria.id
-              ? listVendorMenu(cafeteria.id, { token }).catch((error) => {
-                console.error(`Failed to load menu for cafeteria ${cafeteria.id}:`, error);
-                return { categories: [] };
-              })
-              : Promise.resolve({ categories: [] }))
-          ),
-          getPopularMenuItems({ token }).then(
-            (response) => ({ response, error: null }),
-            (error) => {
-              console.error('Failed to load popular menu items:', error);
-              return { response: null, error };
-            },
-          ),
-        ]);
-
-        const popularResponse = popularResult.response;
-        const hasRankedItems = Array.isArray(popularResponse?.items) && popularResponse.items.length > 0;
-        const popularSource = hasRankedItems ? (popularResponse.source || 'sales') : 'featured';
-        const popularMeals = hasRankedItems ? popularResponse.items.map((item) => ({
-          ...mapMenuItemToMeal(item, item.vendor_name),
-          vendorId: item.vendor_id,
-          source: popularSource,
-        })) : mapFeaturedMenuItems(menuResponses, cafeteriaList);
-        if (popularResult.error && popularMeals.length === 0 && !cancelled) {
-          setPopularError('Unable to load popular meals right now.');
-        }
-
-        const mappedCategories = menuResponses.flatMap((response) => (response?.categories || [])).reduce((acc, category) => {
-          const name = category?.name || 'Other';
-          if (!acc.some((item) => item.name === name)) {
-            acc.push(mapCategoryToDisplay(category));
-          }
-          return acc;
-        }, []);
-
-        if (!cancelled) {
-          setCafeterias(mappedCafeterias);
-          setPopularMeals(popularMeals);
-          setPopularSource(popularSource);
-          setCategories(mappedCategories.slice(0, 8));
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setHomeError(error?.message || 'Unable to load the home feed right now.');
-          setCafeterias([]);
-          setPopularMeals([]);
-          setPopularSource('sales');
-          setCategories([]);
-          setPopularError(null);
-        }
-      } finally {
-        if (!cancelled) setHomeLoading(false);
-      }
-    };
-
-    loadHome();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
 
   const PER_PAGE = 3;
   const homeReviews = [];
@@ -248,6 +229,7 @@ export default function HomePage() {
       </div>
 
       <div className="home-content">
+        {homeRefreshError && <p className="home_loading-text" role="status">{homeRefreshError}</p>}
         <section aria-label="Our cafeterias">
           <SectionHeader title="Our cafeterias" actionLabel="View all" actionTo="/cafeterias" />
           {homeLoading ? (

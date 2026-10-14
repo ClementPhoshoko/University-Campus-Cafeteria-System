@@ -2,26 +2,26 @@ import { apiRequest } from './api.js';
 
 // ─── Vendor Browsing ────────────────────────────────────────────────
 
-export function listVendors({ page, limit, site_id, search, token, signal } = {}) {
-  return apiRequest('/vendors', { query: { page, limit, site_id, search }, token, signal });
+export function listVendors({ page, limit, site_id, search, token, signal, cache } = {}) {
+  return apiRequest('/vendors', { query: { page, limit, site_id, search }, token, signal, cache });
 }
 
-export function getVendor(vendorId, { token, signal } = {}) {
-  return apiRequest(`/vendors/${vendorId}`, { token, signal });
+export function getVendor(vendorId, { token, signal, cache } = {}) {
+  return apiRequest(`/vendors/${vendorId}`, { token, signal, cache });
 }
 
 export function getVendorHours(vendorId, { token, signal } = {}) {
   return apiRequest(`/vendors/${vendorId}/hours`, { token, signal });
 }
 
-export function getPopularMenuItems({ token, signal } = {}) {
-  return apiRequest('/popular-menu-items', { token, signal });
+export function getPopularMenuItems({ token, signal, cache } = {}) {
+  return apiRequest('/popular-menu-items', { token, signal, cache });
 }
 
 // ─── Menu ───────────────────────────────────────────────────────────
 
-export function listVendorMenu(vendorId, { token, signal } = {}) {
-  return apiRequest(`/vendors/${vendorId}/menu`, { token, signal });
+export function listVendorMenu(vendorId, { token, signal, cache } = {}) {
+  return apiRequest(`/vendors/${vendorId}/menu`, { token, signal, cache });
 }
 
 export function getMenuItem(vendorId, itemId, { token, signal } = {}) {

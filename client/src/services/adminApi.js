@@ -1,3 +1,5 @@
+import { invalidateEmployeeCatalogCache } from './cache.js';
+
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 const DEFAULT_TIMEOUT_MS = 15000;
@@ -47,6 +49,25 @@ function getErrorMessage(payload, fallback) {
   if (payload?.error?.message) return payload.error.message;
   if (typeof payload === 'string' && payload.trim()) return payload;
   return fallback;
+}
+
+function affectsEmployeeCatalog(path, body) {
+  const segments = path.split('?')[0].split('/').filter(Boolean);
+  if (segments[0] !== 'admin') return false;
+
+  if (segments[1] === 'vendors') {
+    if (segments.length === 2) return true;
+    if (['orders', 'approvals'].includes(segments[2])) return false;
+    return segments.length === 3
+      || ['approval', 'locations', 'categories', 'menu-items'].includes(segments[3]);
+  }
+
+  if (['vendor-locations', 'menu-items', 'menu-categories', 'sites', 'buildings'].includes(segments[1])) {
+    return true;
+  }
+
+  return segments[1] === 'assets'
+    && ['vendor', 'menu_item', 'site', 'building'].includes(body?.entityType);
 }
 
 export async function adminRequest(path, {
@@ -101,6 +122,10 @@ export async function adminRequest(path, {
         details: payload?.error?.details,
         payload,
       });
+    }
+
+    if (method.toUpperCase() !== 'GET' && affectsEmployeeCatalog(path, body)) {
+      invalidateEmployeeCatalogCache();
     }
 
     return payload;
