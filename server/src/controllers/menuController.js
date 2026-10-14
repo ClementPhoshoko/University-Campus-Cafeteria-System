@@ -102,7 +102,7 @@ export async function listPopularMenuItems(req, res) {
 
     const activeVendorIds = [...new Set((locations || []).map((location) => location.vendor_id))];
     if (!activeVendorIds.length) {
-      return respond(req, res, { success: true, window_days: windowDays, items: [] }, { cacheControl: CACHE.publicMenu });
+      return respond(req, res, { success: true, window_days: windowDays, items: [] }, { cacheControl: CACHE.publicOperational });
     }
 
     const { data: vendors, error: vendorError } = await db()
@@ -127,7 +127,7 @@ export async function listPopularMenuItems(req, res) {
         window_days: windowDays,
         source: 'featured',
         items: [],
-      }, { cacheControl: CACHE.publicMenu });
+      }, { cacheControl: CACHE.publicOperational });
     }
 
     let menuItems = [];
@@ -197,7 +197,7 @@ export async function listPopularMenuItems(req, res) {
       window_days: windowDays,
       source,
       items,
-    }, { cacheControl: CACHE.publicMenu });
+    }, { cacheControl: CACHE.publicOperational });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -269,7 +269,7 @@ export async function listVendorMenu(req, res) {
         success: true,
         vendor: { id: vendor.id, name: vendor.name },
         categories: [],
-      }, { cacheControl: CACHE.publicMenu });
+      }, { cacheControl: CACHE.publicOperational });
     }
 
     const itemIds = menuItems.map((i) => i.id);
@@ -323,7 +323,7 @@ export async function listVendorMenu(req, res) {
       success: true,
       vendor: { id: vendor.id, name: vendor.name },
       categories: allCategories,
-    }, { cacheControl: CACHE.publicMenu });
+    }, { cacheControl: CACHE.publicOperational });
   } catch (err) {
     return handleControllerError(res, err);
   }

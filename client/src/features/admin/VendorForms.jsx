@@ -373,7 +373,20 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
   const [imagePreview, setImagePreview] = useObjectPreview(item?.image_url || null);
   const editing = !!item;
 
-  const categoryOptions = [{ value: '', label: 'No category' }, ...categories.map((c) => ({ value: c.id, label: c.name }))];
+  const activeCategories = categories.filter((category) => (
+    category.is_active || category.id === item?.category_id
+  ));
+  const selectedCategory = categories.find((category) => category.id === item?.category_id);
+  const categoryOptions = [
+    { value: '', label: 'No menu category' },
+    ...activeCategories.map((category) => ({
+      value: category.id,
+      label: `${category.name}${category.is_active ? '' : ' (inactive)'}`,
+    })),
+    ...(item?.category_id && !selectedCategory && item.menu_categories?.name
+      ? [{ value: item.category_id, label: `${item.menu_categories.name} (unavailable)` }]
+      : []),
+  ];
   const statusOptions = [
     { value: 'available', label: 'Available' },
     { value: 'limited', label: 'Limited' },
@@ -407,8 +420,8 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
           <div className="admin-modal__left">
             <div className="admin-modal__row">
               <Field label="Item name"><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Classic Chicken Wrap" /></Field>
-              <Field label="Category" renderLabel={false}>
-                <AdminDropdown label="Category" options={categoryOptions} value={form.category_id} onChange={(val) => setForm({ ...form, category_id: val })} />
+              <Field label="Menu category" renderLabel={false}>
+                <AdminDropdown label="Menu category" options={categoryOptions} value={form.category_id} onChange={(val) => setForm({ ...form, category_id: val })} placeholder="Select a menu category..." />
               </Field>
             </div>
             <div className="admin-modal__row">
@@ -466,7 +479,7 @@ export function CategoryModal({ category, onClose, onSubmit, submitting = false 
           <div><h3 className="admin-modal__title">{editing ? 'Edit category' : 'Add category'}</h3><p className="admin-modal__sub">{editing ? 'Update the category name and sort order.' : 'Create a new menu category for this vendor.'}</p></div>
         </header>
         <div className="admin-form-grid">
-          <Field label="Category name" full><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Mains, Drinks, Desserts" /></Field>
+          <Field label="Menu category name" full><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Mains, Drinks, Desserts" /></Field>
           <Field label="Sort order"><input className="admin-input" type="number" min="0" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: e.target.value })} /></Field>
         </div>
         <footer className="admin-modal__foot">

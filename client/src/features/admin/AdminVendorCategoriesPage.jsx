@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
-import { IconCheck, IconEdit, IconPlus, IconX } from '@tabler/icons-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { IconCheck, IconEdit, IconPhoto, IconPlus, IconUpload, IconX } from '@tabler/icons-react';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 import { useAuth } from '../../hooks/useAuth.js';
+import useObjectPreview from '../../hooks/useObjectPreview.js';
 import {
   createVendorCategoryCatalogEntry,
   listVendorCategoryCatalog,
@@ -46,6 +47,8 @@ export default function AdminVendorCategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [imagePreview, setImagePreview] = useObjectPreview(null);
+  const imageInputRef = useRef(null);
   const [loading, setLoading] = useState(Boolean(token));
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState('');
@@ -72,6 +75,8 @@ export default function AdminVendorCategoriesPage() {
 
   const startEdit = (category) => {
     setEditing(category);
+    setImagePreview(null);
+    if (imageInputRef.current) imageInputRef.current.value = '';
     setForm({
       name: category.name,
       imageFile: null,
@@ -85,6 +90,8 @@ export default function AdminVendorCategoriesPage() {
   const resetForm = () => {
     setEditing(null);
     setForm(emptyForm);
+    setImagePreview(null);
+    if (imageInputRef.current) imageInputRef.current.value = '';
     setError('');
     setSuccess('');
   };
@@ -156,50 +163,77 @@ export default function AdminVendorCategoriesPage() {
             </button>
           )}
         </header>
-        <div className="admin-vendor-categories__fields">
-          <label className="admin-modal__field">
-            <span>Category name</span>
-            <input
-              className="admin-input"
-              value={form.name}
-              maxLength={80}
-              required
-              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-            />
-          </label>
-          <label className="admin-modal__field">
-            <span>Home image</span>
-            <input
-              className="admin-input admin-vendor-categories__file"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/avif,image/tiff,image/gif"
-              required={!editing}
-              onChange={(event) => setForm((current) => ({ ...current, imageFile: event.target.files?.[0] || null }))}
-            />
-          </label>
-          <label className="admin-modal__field">
-            <span>Display order</span>
-            <input
-              className="admin-input"
-              type="number"
-              step="1"
-              value={form.sort_order}
-              onChange={(event) => setForm((current) => ({ ...current, sort_order: Number(event.target.value) }))}
-            />
-          </label>
-          {editing && (
-            <label className="admin-vendor-categories__active">
+        <div className="admin-vendor-categories__form-grid">
+          <div className="admin-vendor-categories__form-fields">
+            <label className="admin-modal__field">
+              <span>Category name</span>
               <input
-                type="checkbox"
-                checked={form.is_active}
-                onChange={(event) => setForm((current) => ({ ...current, is_active: event.target.checked }))}
+                className="admin-input"
+                value={form.name}
+                maxLength={80}
+                required
+                placeholder="e.g. Coffee & tea"
+                onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
               />
-              Visible to customers and vendors
             </label>
-          )}
+            <label className="admin-modal__field admin-vendor-categories__order-field">
+              <span>Display order</span>
+              <input
+                className="admin-input"
+                type="number"
+                step="1"
+                value={form.sort_order}
+                onChange={(event) => setForm((current) => ({ ...current, sort_order: Number(event.target.value) }))}
+              />
+              <span className="admin-vendor-categories__field-hint">Lower numbers appear first.</span>
+            </label>
+            {editing && (
+              <label className="admin-vendor-categories__active">
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(event) => setForm((current) => ({ ...current, is_active: event.target.checked }))}
+                />
+                Visible to customers and vendors
+              </label>
+            )}
+          </div>
+          <div className="admin-modal__field admin-vendor-categories__image-field">
+            <span>Home image</span>
+            <label className={`admin-vendor-categories__upload${imagePreview || editing?.image_url ? ' admin-vendor-categories__upload--has-image' : ''}`}>
+              <input
+                ref={imageInputRef}
+                className="admin-vendor-categories__upload-input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif,image/tiff,image/gif"
+                required={!editing}
+                onChange={(event) => {
+                  const imageFile = event.target.files?.[0] || null;
+                  setForm((current) => ({ ...current, imageFile }));
+                  setImagePreview(imageFile);
+                }}
+              />
+              <span className="admin-vendor-categories__upload-preview">
+                {imagePreview || editing?.image_url ? (
+                  <img src={imagePreview || editing.image_url} alt="" />
+                ) : (
+                  <IconPhoto size={24} stroke={1.5} />
+                )}
+              </span>
+              <span className="admin-vendor-categories__upload-copy">
+                <strong>{form.imageFile?.name || (editing?.image_url ? 'Current category image' : 'Choose an image')}</strong>
+                <span>{form.imageFile ? 'Selected for upload' : 'Add an image shown on the customer Home page.'}</span>
+                <span className="admin-vendor-categories__upload-hint">JPEG, PNG, WebP, AVIF, TIFF or still GIF · 32–6,000 px per side · Max 7 MB</span>
+              </span>
+              <span className="admin-vendor-categories__choose-file">
+                <IconUpload size={15} stroke={1.8} />
+                Choose file
+              </span>
+            </label>
+          </div>
         </div>
         <footer className="admin-vendor-categories__form-footer">
-          <button type="submit" className="admin-action admin-action--approve" disabled={saving || !form.name.trim()}>
+          <button type="submit" className="admin-action admin-action--approve admin-vendor-categories__submit" disabled={saving || !form.name.trim()}>
             {editing ? <IconCheck size={16} /> : <IconPlus size={16} />}
             {saving ? 'Saving…' : editing ? 'Save category' : 'Add category'}
           </button>

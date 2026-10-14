@@ -263,6 +263,7 @@ export default function AdminVendorDetail() {
     setActionLoading(true);
     try {
       const { logo_file: logoFile, ...vendorPayload } = payload;
+      delete vendorPayload.logo_url;
       await updateVendor(token, vendorId, vendorPayload);
       if (logoFile) await uploadAdminAsset(token, 'vendor', vendorId, logoFile);
       const refreshed = await adminRequest(`/admin/vendors/${vendorId}`, { token });

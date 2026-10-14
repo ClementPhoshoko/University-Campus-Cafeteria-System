@@ -71,55 +71,69 @@ export default function HomePage() {
   const token = session?.access_token;
 
   const attemptedImageRefreshes = useRef(new Set());
-  const loadHome = useCallback(async ({ signal }) => {
+  const loadCafeterias = useCallback(async ({ signal }) => {
     const cafeteriasResponse = await listVendors({
       limit: 6,
       token,
       signal,
       cache: 'no-cache',
     });
-    const cafeteriaList = cafeteriasResponse?.vendors || [];
-    const mappedCafeterias = cafeteriaList.map(mapVendorToCafeteriaCard);
-
-    const [menuResponses, popularResult] = await Promise.all([
-      Promise.all(
-        cafeteriaList.map((cafeteria) => cafeteria.id
-          ? listVendorMenu(cafeteria.id, { token, signal, cache: 'no-cache' }).catch((error) => {
-            console.error(`Failed to load menu for cafeteria ${cafeteria.id}:`, error);
-            return { categories: [] };
-          })
-          : Promise.resolve({ categories: [] }))
-      ),
-      getPopularMenuItems({ token, signal, cache: 'no-cache' }).then(
-        (response) => ({ response, error: null }),
-        (error) => {
-          console.error('Failed to load popular menu items:', error);
-          return { response: null, error };
-        },
-      ),
-    ]);
-
-    const popularResponse = popularResult.response;
-    const hasRankedItems = Array.isArray(popularResponse?.items) && popularResponse.items.length > 0;
-    const popularSource = hasRankedItems ? (popularResponse.source || 'sales') : 'featured';
-    const popularMeals = hasRankedItems ? popularResponse.items.map((item) => ({
-      ...mapMenuItemToMeal(item, item.vendor_name),
-      vendorId: item.vendor_id,
-      source: popularSource,
-    })) : mapFeaturedMenuItems(menuResponses, cafeteriaList);
     return {
-      cafeterias: mappedCafeterias,
+      cafeterias: (cafeteriasResponse?.vendors || []).map(mapVendorToCafeteriaCard),
+    };
+  }, [token]);
+  const cafeteriaFeed = useFetch(loadCafeterias, {
+    cacheKey: 'employee:home-cafeterias',
+    enabled: Boolean(token),
+    staleTime: CACHE_TTL.employeeVendorDirectory,
+  });
+  const cafeteriaList = cafeteriaFeed.data?.cafeterias || [];
+
+  const loadMeals = useCallback(async ({ signal }) => {
+    let popularResponse = null;
+    let popularError = null;
+    try {
+      popularResponse = await getPopularMenuItems({ token, signal, cache: 'no-cache' });
+    } catch (error) {
+      console.error('Failed to load popular menu items:', error);
+      popularError = error;
+    }
+
+    const hasRankedItems = Array.isArray(popularResponse?.items) && popularResponse.items.length > 0;
+    if (hasRankedItems) {
+      const popularSource = popularResponse.source || 'sales';
+      return {
+        popularMeals: popularResponse.items.map((item) => ({
+          ...mapMenuItemToMeal(item, item.vendor_name),
+          vendorId: item.vendor_id,
+          source: popularSource,
+        })),
+        popularSource,
+        popularError: null,
+      };
+    }
+
+    const menuResponses = await Promise.all(
+      cafeteriaList.map((cafeteria) => cafeteria.id
+        ? listVendorMenu(cafeteria.id, { token, signal, cache: 'no-cache' }).catch((error) => {
+          console.error(`Failed to load menu for cafeteria ${cafeteria.id}:`, error);
+          return { categories: [] };
+        })
+        : Promise.resolve({ categories: [] }))
+    );
+    const popularMeals = mapFeaturedMenuItems(menuResponses, cafeteriaList);
+    return {
       popularMeals,
-      popularSource,
-      popularError: popularResult.error && popularMeals.length === 0
+      popularSource: 'featured',
+      popularError: popularError && popularMeals.length === 0
         ? 'Unable to load popular meals right now.'
         : null,
     };
-  }, [token]);
-  const homeFeed = useFetch(loadHome, {
-    cacheKey: 'employee:home-feed',
-    enabled: Boolean(token),
-    staleTime: CACHE_TTL.employeeHomeFeed,
+  }, [cafeteriaList, token]);
+  const mealsFeed = useFetch(loadMeals, {
+    cacheKey: 'employee:home-meals',
+    enabled: Boolean(token) && cafeteriaFeed.data !== null,
+    staleTime: CACHE_TTL.employeeHomeMeals,
   });
   const loadCategories = useCallback(async ({ signal }) => {
     const response = await listVendorCategoryCatalog({ token, signal, cache: 'no-cache' });
@@ -134,23 +148,28 @@ export default function HomePage() {
     enabled: Boolean(token),
     staleTime: CACHE_TTL.employeeVendorCategories,
   });
-  const feed = token ? homeFeed.data : null;
-  const cafeterias = feed?.cafeterias || [];
-  const popularMeals = feed?.popularMeals || [];
-  const popularSource = feed?.popularSource || 'sales';
+  const cafeterias = token ? cafeteriaList : [];
+  const popularMeals = token ? mealsFeed.data?.popularMeals || [] : [];
+  const popularSource = mealsFeed.data?.popularSource || 'sales';
   const categories = token ? categoryFeed.data || [] : [];
   const categoryLoading = Boolean(token) && categoryFeed.isLoading && !categoryFeed.data;
   const categoryError = categoryFeed.error && !categoryFeed.data
     ? categoryFeed.error?.message || 'Unable to load categories.'
     : null;
-  const homeError = homeFeed.error && !feed
-    ? homeFeed.error?.message || 'Unable to load the home feed right now.'
+  const homeError = cafeteriaFeed.error && !cafeteriaFeed.data
+    ? cafeteriaFeed.error?.message || 'Unable to load the home feed right now.'
     : null;
-  const homeRefreshError = homeFeed.error && feed
+  const homeRefreshError = cafeteriaFeed.error && cafeteriaFeed.data
     ? 'Could not refresh cafeteria information. Showing the last loaded data.'
     : null;
-  const popularError = feed?.popularError || null;
-  const homeLoading = Boolean(token) && homeFeed.isLoading && !feed;
+  const popularError = mealsFeed.data?.popularError || (mealsFeed.error
+    ? mealsFeed.error?.message || 'Unable to load popular meals right now.'
+    : null);
+  const homeLoading = Boolean(token) && cafeteriaFeed.isLoading && !cafeteriaFeed.data;
+  const mealsLoading = Boolean(token) && (
+    homeLoading
+    || (cafeteriaFeed.data !== null && mealsFeed.isLoading && !mealsFeed.data)
+  );
 
   const refreshCafeteriaImage = async (vendorId, failedImage) => {
     const refreshKey = `${vendorId}:${failedImage}`;
@@ -161,7 +180,7 @@ export default function HomePage() {
       const response = await getVendor(vendorId, { token, cache: 'no-cache' });
       const image = response?.vendor?.logo_url;
       if (!image || image === failedImage) return;
-      homeFeed.mutate((current) => current && ({
+      cafeteriaFeed.mutate((current) => current && ({
         ...current,
         cafeterias: current.cafeterias.map((cafeteria) => (
           cafeteria.id === vendorId ? { ...cafeteria, image } : cafeteria
@@ -283,7 +302,7 @@ export default function HomePage() {
 
         <section aria-label={popularSource === 'featured' ? 'Featured meals' : 'Popular meals'} style={{ marginTop: 'var(--space-8)' }}>
           <SectionHeader title={popularSource === 'featured' ? 'Featured meals' : 'Popular right now'} actionLabel="View all" actionTo="/cafeterias" />
-          {homeLoading ? (
+          {mealsLoading ? (
             <div className="home_meals-scroll" role="status" aria-label="Loading popular meals">
               {Array.from({ length: 5 }, (_, index) => (
                 <FoodCardSkeleton key={index} />
@@ -322,9 +341,11 @@ export default function HomePage() {
               ? Array.from({ length: 6 }, (_, index) => <CategoryCardSkeleton key={index} />)
               : categoryError
                 ? <p className="home_loading-text" role="alert">{categoryError}</p>
-                : categories.map((c) => (
-                  <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} filterId={c.name} />
-                ))}
+                : categories.length
+                  ? categories.map((c) => (
+                    <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} filterId={c.name} />
+                  ))
+                  : <p className="home_loading-text">Categories appear here when they’re assigned to a vendor.</p>}
           </div>
         </section>
 

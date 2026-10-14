@@ -44,7 +44,7 @@ export async function listPublicVendorCategories(req, res) {
     const categories = await Promise.all((data || [])
       .filter((category) => Number(category.vendor_category_assignments?.[0]?.count || 0) > 0)
       .map(withImageUrl));
-    return respond(req, res, { success: true, categories }, { cacheControl: CACHE.publicRef });
+    return respond(req, res, { success: true, categories }, { cacheControl: CACHE.publicOperational });
   } catch (error) {
     return handleError(res, error);
   }
