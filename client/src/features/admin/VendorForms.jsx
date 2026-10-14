@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCheck, IconPlus, IconUpload, IconX } from '@tabler/icons-react';
+import Skeleton from '../../components/ui/Skeleton.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { listVendorCategoryCatalog } from '../../services/adminApi.js';
 import useObjectPreview from '../../hooks/useObjectPreview.js';
@@ -7,6 +8,7 @@ import { useAdminLocations } from '../../hooks/useAdminLocations.js';
 import AdminDropdown from '../../components/ui/AdminDropdown.jsx';
 import { FileInput } from './AdminCafeteriaList.jsx';
 import ModalProgressOverlay from './ModalProgressOverlay.jsx';
+import './vendor-categories.css';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 function emptyHours() {
@@ -21,19 +23,27 @@ function VendorCategoriesField({ categories = [], onChange }) {
   const { session } = useAuth();
   const token = session?.access_token;
   const [options, setOptions] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(token));
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!token) return;
     let active = true;
     setLoading(true);
+    setError('');
     listVendorCategoryCatalog(token)
       .then((response) => {
         if (active) setOptions(response?.categories || []);
       })
       .catch((loadError) => {
-        if (active) setError(loadError?.message || 'Could not load vendor categories.');
+        const message = loadError?.message?.trim();
+        if (active) {
+          setError(
+            message && !/<(?:!doctype|html|head|body)\b/i.test(message)
+              ? message
+              : 'Could not load categories. Check that the Admin API is available.',
+          );
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -55,15 +65,25 @@ function VendorCategoriesField({ categories = [], onChange }) {
 
   return (
     <div className="admin-modal__field">
-      <AdminDropdown
-        label="Category"
-        options={categoryOptions}
-        value={categories}
-        onChange={onChange}
-        placeholder="Select categories..."
-        loading={loading}
-        multiSelect
-      />
+      {loading ? (
+        <div className="admin-vendor-categories-field__loading" role="status">
+          <span>Category</span>
+          <div className="admin-vendor-categories-field__skeleton">
+            <Skeleton className="skeleton--text" style={{ width: '44%', height: 12 }} />
+            <Skeleton className="skeleton--text" style={{ width: 14, height: 14 }} />
+          </div>
+          <span className="admin-vendor-categories-field__loading-label">Loading categories…</span>
+        </div>
+      ) : (
+        <AdminDropdown
+          label="Category"
+          options={categoryOptions}
+          value={categories}
+          onChange={onChange}
+          placeholder="Select categories..."
+          multiSelect
+        />
+      )}
       {error && <span className="admin-form-error" role="alert">{error}</span>}
     </div>
   );

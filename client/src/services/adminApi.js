@@ -47,7 +47,7 @@ async function parseResponse(response) {
 
 function getErrorMessage(payload, fallback) {
   if (payload?.error?.message) return payload.error.message;
-  if (typeof payload === 'string' && payload.trim()) return payload;
+  if (typeof payload === 'string' && payload.trim() && !/^\s*<(?:!doctype|html)\b/i.test(payload)) return payload;
   return fallback;
 }
 
@@ -117,9 +117,15 @@ export async function adminRequest(path, {
     const payload = await parseResponse(response);
 
     if (!response.ok) {
-      throw new AdminApiError(getErrorMessage(payload, 'Admin API request failed'), {
+      const isHtmlNotFound = response.status === 404
+        && typeof payload === 'string'
+        && /^\s*<(?:!doctype|html)\b/i.test(payload);
+      const message = isHtmlNotFound
+        ? 'The configured API server does not have this route yet. Restart or deploy the updated server.'
+        : getErrorMessage(payload, 'Admin API request failed');
+      throw new AdminApiError(message, {
         status: response.status,
-        code: payload?.error?.code || 'REQUEST_FAILED',
+        code: isHtmlNotFound ? 'ROUTE_NOT_FOUND' : payload?.error?.code || 'REQUEST_FAILED',
         details: payload?.error?.details,
         payload,
       });

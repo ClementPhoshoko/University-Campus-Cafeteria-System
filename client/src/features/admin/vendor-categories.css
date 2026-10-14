@@ -104,6 +104,10 @@
   border-top: 1px solid var(--color-border-subtle);
 }
 
+.admin-vendor-categories__skeleton-list {
+  display: grid;
+}
+
 .admin-vendor-categories__image {
   flex: 0 0 72px;
   width: 72px;
@@ -111,6 +115,12 @@
   border-radius: var(--radius-sm);
   object-fit: cover;
   background: var(--color-surface-subtle);
+}
+
+.admin-vendor-categories__skeleton-image {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 56px;
 }
 
 .admin-vendor-categories__details {
@@ -129,6 +139,17 @@
 .admin-vendor-categories__details span {
   color: var(--color-text-secondary);
   font-size: 0.76rem;
+}
+
+.admin-vendor-categories__skeleton-details {
+  display: grid;
+  flex: 1;
+  gap: var(--space-2);
+}
+
+.admin-vendor-categories__skeleton-actions {
+  display: flex;
+  gap: var(--space-2);
 }
 
 .admin-vendor-categories__actions {
@@ -163,6 +184,34 @@
   color: var(--color-status-error);
 }
 
+.admin-vendor-categories-field__loading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-vendor-categories-field__loading > span:first-child {
+  font-size: 0.78rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.admin-vendor-categories-field__skeleton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xs);
+  background: var(--glass-bg);
+}
+
+.admin-vendor-categories-field__loading-label {
+  color: var(--color-text-tertiary);
+  font-size: 0.7rem;
+}
+
 @media (max-width: 640px) {
   .admin-vendor-categories__fields {
     grid-template-columns: minmax(0, 1fr);
@@ -176,5 +225,9 @@
   .admin-vendor-categories__actions {
     width: 100%;
     padding-left: calc(72px + var(--space-3));
+  }
+
+  .admin-vendor-categories__skeleton-actions {
+    display: none;
   }
 }

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { IconCheck, IconEdit, IconPlus, IconX } from '@tabler/icons-react';
 import SmartImage from '../../components/ui/SmartImage.jsx';
+import Skeleton from '../../components/ui/Skeleton.jsx';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 import { useAuth } from '../../hooks/useAuth.js';
 import {
   createVendorCategoryCatalogEntry,
@@ -13,10 +15,29 @@ import './vendor-categories.css';
 const emptyForm = { name: '', imageFile: null, sort_order: 0, is_active: true };
 
 function getCategoryErrorMessage(error, fallback) {
-  if (error?.status === 404) {
-    return 'The category API is not available on the server yet. Deploy the updated API and apply the shared categories migration.';
-  }
-  return error?.message || fallback;
+  const message = error?.message?.trim();
+  if (!message || /<(?:!doctype|html|head|body)\b/i.test(message)) return fallback;
+  return message;
+}
+
+function CategoryListSkeleton() {
+  return (
+    <div className="admin-vendor-categories__skeleton-list" role="status" aria-label="Loading categories">
+      {Array.from({ length: 3 }, (_, index) => (
+        <div className="admin-vendor-categories__row" key={index}>
+          <Skeleton className="admin-vendor-categories__skeleton-image" />
+          <div className="admin-vendor-categories__skeleton-details">
+            <Skeleton className="skeleton--text" style={{ width: '34%', height: 14 }} />
+            <Skeleton className="skeleton--text" style={{ width: '52%', height: 11 }} />
+          </div>
+          <div className="admin-vendor-categories__skeleton-actions">
+            <Skeleton className="skeleton--text" style={{ width: 54, height: 30 }} />
+            <Skeleton className="skeleton--text" style={{ width: 54, height: 30 }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function AdminVendorCategoriesPage() {
@@ -25,7 +46,7 @@ export default function AdminVendorCategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(token));
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
@@ -117,7 +138,6 @@ export default function AdminVendorCategoriesPage() {
       <header className="admin-vendors__header admin-vendor-categories__header">
         <div>
           <span className="admin-card__eyebrow">Customer catalog</span>
-          <h1 className="admin-vendors__title">Vendor categories</h1>
           <p className="admin-vendors__sub">Manage shared categories, their Home-page images, and which categories vendors can select.</p>
         </div>
       </header>
@@ -194,10 +214,14 @@ export default function AdminVendorCategoriesPage() {
             <span className="admin-card__eyebrow">Customer catalog</span>
             <h2 className="admin-card__title admin-vendor-categories__section-title">Managed categories</h2>
           </div>
-          {!loadError && <span className="admin-vendor-categories__count">{categories.length} categories</span>}
+          {loading ? (
+            <Skeleton className="skeleton--text" style={{ width: 76, height: 12 }} />
+          ) : !loadError ? (
+            <span className="admin-vendor-categories__count">{categories.length} categories</span>
+          ) : null}
         </header>
         {loading ? (
-          <p className="admin-vendor-categories__message" role="status">Loading categories…</p>
+          <CategoryListSkeleton />
         ) : loadError ? (
           <div className="admin-vendor-categories__load-error" role="alert">
             <p>{loadError}</p>
@@ -232,9 +256,11 @@ export default function AdminVendorCategoriesPage() {
             </article>
           ))
         ) : (
-          <p className="admin-vendor-categories__message">
-            No shared categories yet. Add one above to make it available in vendor forms and Home.
-          </p>
+          <div className="admin-empty">
+            <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
+            <h3>No categories yet</h3>
+            <p>Add a category above to make it available in vendor forms and on Home.</p>
+          </div>
         )}
       </section>
     </section>
