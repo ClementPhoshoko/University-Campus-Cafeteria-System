@@ -22,11 +22,11 @@ import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import androidBadge from '../../assets/android_download-PJqqAvJc.webp';
 import iosBadge from '../../assets/ios_download-Dn_KtiFi.webp';
 import HeroFoodShowcase from '../../components/hero/HeroFoodShowcase.jsx';
-import { getVendor, getPopularMenuItems, listVendors, listVendorMenu } from '../../services/employeeApi.js';
+import { getVendor, getPopularMenuItems, listVendors, listVendorMenu, listVendorCategoryCatalog } from '../../services/employeeApi.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import { useFetch } from '../../hooks/useFetch.js';
-import { mapVendorToCafeteriaCard, mapCategoryToDisplay, mapFeaturedMenuItems, mapMenuItemToMeal } from './homeTransform.js';
-import { deliveryImage, reviewsImage, heroImage, heroFoods, categories as categoryImageFallbacks } from './homeData.js';
+import { mapVendorToCafeteriaCard, mapFeaturedMenuItems, mapMenuItemToMeal } from './homeTransform.js';
+import { deliveryImage, reviewsImage, heroImage, heroFoods } from './homeData.js';
 import './home.css';
 
 function greeting() {
@@ -107,24 +107,10 @@ export default function HomePage() {
       vendorId: item.vendor_id,
       source: popularSource,
     })) : mapFeaturedMenuItems(menuResponses, cafeteriaList);
-    const mappedCategories = menuResponses.flatMap((response) => (response?.categories || [])).reduce((acc, category) => {
-      const name = category?.name || 'Other';
-      if (!acc.some((item) => item.name === name)) {
-        const matchingFallback = categoryImageFallbacks.find(
-          (item) => item.name.toLowerCase() === name.trim().toLowerCase(),
-        );
-        const fallback = matchingFallback?.image
-          || categoryImageFallbacks[acc.length % categoryImageFallbacks.length]?.image;
-        acc.push(mapCategoryToDisplay(category, fallback));
-      }
-      return acc;
-    }, []);
-
     return {
       cafeterias: mappedCafeterias,
       popularMeals,
       popularSource,
-      categories: mappedCategories.slice(0, 8),
       popularError: popularResult.error && popularMeals.length === 0
         ? 'Unable to load popular meals right now.'
         : null,
@@ -135,11 +121,28 @@ export default function HomePage() {
     enabled: Boolean(token),
     staleTime: CACHE_TTL.employeeHomeFeed,
   });
+  const loadCategories = useCallback(async ({ signal }) => {
+    const response = await listVendorCategoryCatalog({ token, signal, cache: 'no-cache' });
+    return (response?.categories || []).map((category) => ({
+      id: category.id,
+      name: category.name,
+      image: category.image_url || '',
+    }));
+  }, [token]);
+  const categoryFeed = useFetch(loadCategories, {
+    cacheKey: 'employee:vendor-categories',
+    enabled: Boolean(token),
+    staleTime: CACHE_TTL.employeeVendorCategories,
+  });
   const feed = token ? homeFeed.data : null;
   const cafeterias = feed?.cafeterias || [];
   const popularMeals = feed?.popularMeals || [];
   const popularSource = feed?.popularSource || 'sales';
-  const categories = feed?.categories || [];
+  const categories = token ? categoryFeed.data || [] : [];
+  const categoryLoading = Boolean(token) && categoryFeed.isLoading && !categoryFeed.data;
+  const categoryError = categoryFeed.error && !categoryFeed.data
+    ? categoryFeed.error?.message || 'Unable to load categories.'
+    : null;
   const homeError = homeFeed.error && !feed
     ? homeFeed.error?.message || 'Unable to load the home feed right now.'
     : null;
@@ -315,11 +318,13 @@ export default function HomePage() {
         <section aria-label="Shop by category" style={{ marginTop: 'var(--space-8)' }}>
           <SectionHeader title="Shop by category" />
           <div className="home_category-scroll">
-            {homeLoading
+            {categoryLoading
               ? Array.from({ length: 6 }, (_, index) => <CategoryCardSkeleton key={index} />)
-              : categories.map((c) => (
-                <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} filterId={c.id} />
-              ))}
+              : categoryError
+                ? <p className="home_loading-text" role="alert">{categoryError}</p>
+                : categories.map((c) => (
+                  <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} filterId={c.name} />
+                ))}
           </div>
         </section>
 

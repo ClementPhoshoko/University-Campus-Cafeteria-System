@@ -7,6 +7,7 @@ import {
   getPublicVendor,
   getPublicVendorHours,
 } from '../controllers/vendorController.js';
+import { listPublicVendorCategories } from '../controllers/vendorCategoryController.js';
 import {
   listPopularMenuItems,
   listVendorMenu,
@@ -26,6 +27,7 @@ const vendorRouter = Router();
 vendorRouter.use(authenticate);
 
 vendorRouter.get('/popular-menu-items', listPopularMenuItems);
+vendorRouter.get('/vendor-categories', listPublicVendorCategories);
 vendorRouter.get('/cafeterias', listPublicCafeterias);
 vendorRouter.get('/cafeterias/:cafeteriaId', getPublicCafeteria);
 vendorRouter.get('/vendors', listPublicVendors);

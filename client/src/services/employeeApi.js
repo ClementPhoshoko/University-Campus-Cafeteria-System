@@ -18,6 +18,10 @@ export function getPopularMenuItems({ token, signal, cache } = {}) {
   return apiRequest('/popular-menu-items', { token, signal, cache });
 }
 
+export function listVendorCategoryCatalog({ token, signal, cache } = {}) {
+  return apiRequest('/vendor-categories', { token, signal, cache });
+}
+
 // ─── Menu ───────────────────────────────────────────────────────────
 
 export function listVendorMenu(vendorId, { token, signal, cache } = {}) {

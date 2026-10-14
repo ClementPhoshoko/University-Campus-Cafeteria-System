@@ -29,12 +29,21 @@ import {
   refundVendorOrder,
   addOrderNote,
 } from '../controllers/vendorController.js';
+import {
+  createVendorCategoryCatalogEntry,
+  listAdminVendorCategories,
+  updateVendorCategoryCatalogEntry,
+} from '../controllers/vendorCategoryController.js';
 
 const adminVendorRouter = Router();
 
 adminVendorRouter.use(authenticate, requireRole('admin'));
 
 const mutations = rateLimit({ windowMs: 60 * 1000, max: 30 });
+
+adminVendorRouter.get('/admin/vendor-categories', listAdminVendorCategories);
+adminVendorRouter.post('/admin/vendor-categories', mutations, createVendorCategoryCatalogEntry);
+adminVendorRouter.patch('/admin/vendor-categories/:categoryId', mutations, updateVendorCategoryCatalogEntry);
 
 adminVendorRouter.get('/admin/vendors', listVendors);
 adminVendorRouter.post('/admin/vendors', mutations, createVendor);

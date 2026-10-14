@@ -28,6 +28,7 @@ export function mapVendorToCafeteriaCard(vendor) {
     status: normalizeVendorStatus(location?.service_status || vendor?.service_status),
     image: vendor?.logo_url || '',
     description: typeof vendor?.description === 'string' ? vendor.description.trim() : '',
+    categories: Array.isArray(vendor?.categories) ? vendor.categories : [],
     prepWindow: Number.isFinite(prepMinutes) && prepMinutes > 0 ? `${prepMinutes} min` : null,
     location,
     locations,
@@ -82,14 +83,4 @@ export function mapFeaturedMenuItems(menuResponses, cafeterias, limit = 8) {
   }
 
   return featured;
-}
-
-export function mapCategoryToDisplay(category, fallbackImage = '') {
-  const items = category?.items || [];
-  const image = items.find((item) => item?.image || item?.image_url);
-  return {
-    id: category?.id || category?.name || '',
-    name: category?.name || '',
-    image: image?.image || image?.image_url || fallbackImage,
-  };
 }

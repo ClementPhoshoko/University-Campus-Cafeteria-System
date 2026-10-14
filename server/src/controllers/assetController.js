@@ -14,14 +14,16 @@ const MIN_DIMENSION = 32;
 const MASTER_MAX_EDGE = 1600;
 const MASTER_WEBP_QUALITY = 82;
 const FORMATS = new Set(['jpeg', 'png', 'webp', 'avif', 'tiff', 'gif']);
-const ENTITY_TABLES = { vendor: 'vendors', site: 'sites', building: 'buildings', menu_item: 'menu_items' };
-const ENTITY_FIELDS = { vendor: 'logo_url', site: 'cover_image_url', building: 'cover_image_url', menu_item: 'image_url' };
+const ENTITY_TABLES = { vendor: 'vendors', site: 'sites', building: 'buildings', menu_item: 'menu_items', vendor_category: 'vendor_category_catalog' };
+const ENTITY_FIELDS = { vendor: 'logo_url', site: 'cover_image_url', building: 'cover_image_url', menu_item: 'image_url', vendor_category: 'image_url' };
+const ENTITY_STORAGE_PATHS = { vendor: 'vendors', site: 'sites', building: 'buildings', menu_item: 'menu_items', vendor_category: 'vendor_categories' };
 
 export async function uploadAdminAsset(req, res) {
   try {
     const { entityType, entityId, contentType, data } = req.body || {};
     const table = ENTITY_TABLES[entityType];
     const field = ENTITY_FIELDS[entityType];
+    const storagePath = ENTITY_STORAGE_PATHS[entityType];
     if (!table || !field || !entityId || typeof data !== 'string') {
       return sendError(res, 400, 'VALIDATION_ERROR', 'entityType, entityId and base64 data are required');
     }
@@ -70,7 +72,7 @@ export async function uploadAdminAsset(req, res) {
     if (!entity) return sendError(res, 404, `${entityType.toUpperCase()}_NOT_FOUND`, `${entityType} not found`);
 
     const previousPath = entity?.[field] || null;
-    const path = `${entityType}s/${entityId}/${crypto.randomUUID()}.webp`;
+    const path = `${storagePath}/${entityId}/${crypto.randomUUID()}.webp`;
     const { error: uploadError } = await supabaseAdmin.storage.from(BUCKET).upload(path, master, { contentType: 'image/webp', upsert: false });
     if (uploadError) throw uploadError;
 
@@ -78,7 +80,7 @@ export async function uploadAdminAsset(req, res) {
     if (updateError) throw updateError;
 
     // Remove the superseded object so replaced uploads don't orphan storage files.
-    if (previousPath && previousPath !== path && previousPath.startsWith(`${entityType}s/`)) {
+    if (previousPath && previousPath !== path && previousPath.startsWith(`${storagePath}/`)) {
       await supabaseAdmin.storage.from(BUCKET).remove([previousPath]).catch(() => {});
     }
 

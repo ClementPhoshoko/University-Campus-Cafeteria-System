@@ -17,6 +17,7 @@ export const CACHE_TTL = {
   employeeVendorDirectory: 15_000,
   employeeVendorDetail: 15_000,
   employeeMenu: 60_000,
+  employeeVendorCategories: 300_000,
 };
 
 export function makeCacheKey(endpoint, params = {}) {

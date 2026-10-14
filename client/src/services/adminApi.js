@@ -65,9 +65,10 @@ function affectsEmployeeCatalog(path, body) {
   if (['vendor-locations', 'menu-items', 'menu-categories', 'sites', 'buildings'].includes(segments[1])) {
     return true;
   }
+  if (segments[1] === 'vendor-categories') return true;
 
   return segments[1] === 'assets'
-    && ['vendor', 'menu_item', 'site', 'building'].includes(body?.entityType);
+    && ['vendor', 'menu_item', 'site', 'building', 'vendor_category'].includes(body?.entityType);
 }
 
 export async function adminRequest(path, {
@@ -312,6 +313,18 @@ export function updateVendorCategory(token, categoryId, payload, options) {
 
 export function deleteVendorCategory(token, categoryId, options) {
   return adminRequest(`/admin/menu-categories/${categoryId}`, { method: 'DELETE', token, ...options });
+}
+
+export function listVendorCategoryCatalog(token, options) {
+  return adminRequest('/admin/vendor-categories', { token, ...options });
+}
+
+export function createVendorCategoryCatalogEntry(token, payload, options) {
+  return adminRequest('/admin/vendor-categories', { method: 'POST', token, body: payload, ...options });
+}
+
+export function updateVendorCategoryCatalogEntry(token, categoryId, payload, options) {
+  return adminRequest(`/admin/vendor-categories/${categoryId}`, { method: 'PATCH', token, body: payload, ...options });
 }
 
 export function listMenuItems(token, vendorId, params, options) {

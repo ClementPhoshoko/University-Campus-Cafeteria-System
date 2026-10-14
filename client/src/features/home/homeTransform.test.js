@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mapVendorToCafeteriaCard, mapFeaturedMenuItems, mapMenuItemToMeal, mapCategoryToDisplay, normalizeVendorStatus } from './homeTransform.js';
+import { mapVendorToCafeteriaCard, mapFeaturedMenuItems, mapMenuItemToMeal, normalizeVendorStatus } from './homeTransform.js';
 
 test('maps one cafeteria card from a vendor and retains all active locations', () => {
   const output = mapVendorToCafeteriaCard({
@@ -12,6 +12,7 @@ test('maps one cafeteria card from a vendor and retains all active locations', (
     estimated_prep_minutes: 18,
     average_rating: 4.7,
     rating_count: 12,
+    categories: ['Breakfast', 'Coffee'],
     locations: [
       {
         id: 'location-1',
@@ -31,6 +32,7 @@ test('maps one cafeteria card from a vendor and retains all active locations', (
   assert.equal(output.prepWindow, '18 min');
   assert.equal(output.rating, '4.7');
   assert.equal(output.locations.length, 2);
+  assert.deepEqual(output.categories, ['Breakfast', 'Coffee']);
   assert.equal(output.location.id, 'location-1');
   assert.equal(output.location.site_name, 'Merchant Place');
 });
@@ -102,28 +104,6 @@ test('mapMenuItemToMeal normalizes a menu item into a food card payload', () => 
   assert.equal(output.id, 'item-1');
   assert.equal(output.cafeteriaName, 'Main Campus Cafe');
   assert.equal(output.price, 'R45.00');
-});
-
-test('mapCategoryToDisplay uses the first available image in the category', () => {
-  const output = mapCategoryToDisplay({
-    id: 'category-1',
-    name: 'Lunch',
-    items: [
-      { id: 'item-1', image_url: null },
-      { id: 'item-2', image_url: 'https://example.com/lunch.png' },
-    ],
-  });
-
-  assert.equal(output.image, 'https://example.com/lunch.png');
-});
-
-test('mapCategoryToDisplay uses a local fallback image when menu items have no images', () => {
-  const output = mapCategoryToDisplay(
-    { id: 'category-1', name: 'Lunch', items: [{ id: 'item-1', image_url: null }] },
-    '/assets/lunch.webp',
-  );
-
-  assert.equal(output.image, '/assets/lunch.webp');
 });
 
 test('mapFeaturedMenuItems interleaves cafeteria menus and avoids duplicate vendor items', () => {

@@ -9,15 +9,6 @@ import adCokeWings from '../../assets/home_ads/Ice_Cold_Coke_Wings_Combo.webp';
 import adHalal from '../../assets/home_ads/Grilled_Halal_Chicken_Feast.webp';
 import adCrispy from '../../assets/home_ads/Crispy_Fried_Chicken_Feast.webp';
 
-import catHalal from '../../assets/food/Grilled_Salmon_with_Rice_and_Roasted_Vegetables.webp';
-import catBreakfast from '../../assets/food/Rustic_Afternoon_Tea_with_Berry_Scones.webp';
-import catDrinks from '../../assets/drinks/Refreshing_Slusher_with_Ice.webp';
-import catQuick from '../../assets/food/Grilled_Chicken_Wrap_Platter_with_Potato_Wedges.webp';
-import catHealthy from '../../assets/food/Grilled_Chicken_Wraps_and_Fresh_Salad_Bowl.webp';
-import catPasta from '../../assets/food/Creamy_Chicken_Fettuccine_with_Garlic_Bread.webp';
-import catSeafood from '../../assets/food/Vibrant_Seafood_Paella_Bowl.webp';
-import catStudent from '../../assets/food/Grilled_Fish_Rice_Bowl_with_Salsa.webp';
-
 export const deliveryImage = imgDelivery;
 export const reviewsImage = imgReviews;
 export const heroImage = heroPattern;
@@ -28,17 +19,6 @@ export const heroFoods = [
   { id: 'ad-coke-wings', image: adCokeWings },
   { id: 'ad-halal', image: adHalal },
   { id: 'ad-crispy', image: adCrispy },
-];
-
-export const categories = [
-  { id: 'halal', name: 'Halal', image: catHalal },
-  { id: 'breakfast', name: 'Breakfast', image: catBreakfast },
-  { id: 'drinks', name: 'Drinks', image: catDrinks },
-  { id: 'quick-bites', name: 'Quick Bites', image: catQuick },
-  { id: 'healthy', name: 'Healthy', image: catHealthy },
-  { id: 'pasta', name: 'Pasta', image: catPasta },
-  { id: 'seafood', name: 'Seafood', image: catSeafood },
-  { id: 'team-faves', name: 'Team Faves', image: catStudent },
 ];
 
 const REVIEW_ACCENTS = ['#0A8CFF', '#6366F1', '#10B981', '#F59E0B'];

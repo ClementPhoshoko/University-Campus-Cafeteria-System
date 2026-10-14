@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { IconArrowLeft, IconArrowRight, IconCheck, IconPlus, IconUpload, IconX } from '@tabler/icons-react';
 import { useAuth } from '../../hooks/useAuth.js';
+import { listVendorCategoryCatalog } from '../../services/adminApi.js';
 import useObjectPreview from '../../hooks/useObjectPreview.js';
 import { useAdminLocations } from '../../hooks/useAdminLocations.js';
 import AdminDropdown from '../../components/ui/AdminDropdown.jsx';
@@ -8,33 +9,6 @@ import { FileInput } from './AdminCafeteriaList.jsx';
 import ModalProgressOverlay from './ModalProgressOverlay.jsx';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const VENDOR_CATEGORY_OPTIONS = [
-  'Asian',
-  'Breakfast',
-  'Breakfast & Brunch',
-  'Coffee & Bakery',
-  'Coffee',
-  'Drinks',
-  'Dinner',
-  'Grain Bowls',
-  'Groceries',
-  'Healthy',
-  'Hot Meals',
-  'Italian',
-  'Japanese',
-  'Lunch',
-  'Meals',
-  'Noodles',
-  'Pizza',
-  'Quick Bites',
-  'Salads',
-  'Seafood',
-  'Snacks',
-  'Smoothies',
-  'Sushi',
-  'Wraps',
-];
-
 function emptyHours() {
   return DAYS.map((_, day_of_week) => ({ day_of_week, is_closed: day_of_week === 0 || day_of_week === 6, opens_at: '07:00', closes_at: '17:00' }));
 }
@@ -43,19 +17,54 @@ function Field({ label, children, full = false, renderLabel = true }) {
   return <label className={`admin-modal__field${full ? ' admin-modal__field--full' : ''}`}>{renderLabel && <span>{label}</span>}{children}</label>;
 }
 
-function VendorCategoriesField({ categories = [], onChange, additionalOptions = [] }) {
-  const options = [...new Set([...VENDOR_CATEGORY_OPTIONS, ...additionalOptions])].sort((a, b) => a.localeCompare(b));
+function VendorCategoriesField({ categories = [], onChange }) {
+  const { session } = useAuth();
+  const token = session?.access_token;
+  const [options, setOptions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    setLoading(true);
+    listVendorCategoryCatalog(token)
+      .then((response) => {
+        if (active) setOptions(response?.categories || []);
+      })
+      .catch((loadError) => {
+        if (active) setError(loadError?.message || 'Could not load vendor categories.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, [token]);
+
+  const knownNames = options.map((category) => category.name);
+  const missingNames = categories.filter((name) => !knownNames.includes(name));
+  const categoryOptions = [
+    ...options
+      .filter((category) => category.is_active || categories.includes(category.name))
+      .map((category) => ({
+      value: category.name,
+      label: `${category.name}${category.is_active ? '' : ' (inactive)'}`,
+      })),
+    ...missingNames.map((name) => ({ value: name, label: `${name} (not in catalog)` })),
+  ];
 
   return (
     <div className="admin-modal__field">
       <AdminDropdown
         label="Category"
-        options={options.map((category) => ({ value: category, label: category }))}
+        options={categoryOptions}
         value={categories}
         onChange={onChange}
         placeholder="Select categories..."
+        loading={loading}
         multiSelect
       />
+      {error && <span className="admin-form-error" role="alert">{error}</span>}
     </div>
   );
 }
@@ -243,7 +252,6 @@ export function VendorProfileModal({ vendor, onClose, onSubmit, submitting = fal
               <Field label="Corporate catering" renderLabel={false}><AdminDropdown label="Corporate catering" options={[{ value: true, label: 'Enabled' }, { value: false, label: 'Disabled' }]} value={form.corporate_catering_enabled ?? ''} onChange={(val) => setForm({ ...form, corporate_catering_enabled: val })} placeholder="Select..." /></Field>
               <VendorCategoriesField
                 categories={form.categories}
-                additionalOptions={vendor.categories || []}
                 onChange={(categories) => setForm({ ...form, categories })}
               />
             </div>

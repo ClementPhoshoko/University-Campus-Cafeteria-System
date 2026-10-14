@@ -64,6 +64,29 @@ async function mustExist(table, id, notFoundCode, notFoundMessage) {
   return data;
 }
 
+async function resolveVendorCategories(categories) {
+  if (categories === undefined) return null;
+  const names = [...new Map(categories
+    .map((category) => category.trim())
+    .map((name) => [name.toLowerCase(), name])).values()];
+  if (!names.length) return { names: [], ids: [] };
+
+  const { data, error } = await db()
+    .from('vendor_category_catalog')
+    .select('id, name')
+    .in('name', names);
+  if (error) throw error;
+
+  const byName = new Map((data || []).map((category) => [category.name.toLowerCase(), category]));
+  const resolved = names.map((name) => byName.get(name.toLowerCase()));
+  if (resolved.some((category) => !category)) {
+    throw new ApiError(400, 'INVALID_VENDOR_CATEGORY', 'Select categories from the managed category list');
+  }
+  return {
+    names: resolved.map((category) => category.name),
+  };
+}
+
 /** PostgREST to-many counts return JSON strings; coerce and flatten. */
 function embedCount(row, child) {
   return Number(row[child]?.[0]?.count ?? 0);
@@ -425,6 +448,8 @@ export async function createVendor(req, res) {
     }
 
     const payload = { ...result.value };
+    const categories = await resolveVendorCategories(payload.categories);
+    if (categories) payload.categories = categories.names;
 
     // Idempotency: dedupe on a client-generated onboarding_key.
     if (payload.onboarding_key) {
@@ -471,7 +496,11 @@ export async function updateVendor(req, res) {
     if (result.errors?.length) return sendValidation(res, result.errors);
     if (result.empty) return sendError(res, 400, 'VALIDATION_ERROR', 'No valid fields to update');
 
-    const { data, error } = await db().from('vendors').update(result.value).eq('id', vendorId).select().single();
+    const payload = { ...result.value };
+    const categories = await resolveVendorCategories(payload.categories);
+    if (categories) payload.categories = categories.names;
+
+    const { data, error } = await db().from('vendors').update(payload).eq('id', vendorId).select().single();
     if (error) throw error;
 
     await writeAudit(req, { action: 'UPDATE', tableName: 'public.vendors', recordKey: vendorId, oldData: existing, newData: data, reason: 'Vendor profile updated', category: 'config' });

@@ -1635,6 +1635,29 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  '/vendor-categories':
+    get:
+      tags: [Vendors]
+      summary: List active shared vendor categories
+      description: Returns customer-facing vendor categories with their centrally managed images.
+      operationId: listPublicVendorCategories
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Categories retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  categories:
+                    type: array
+                    items: { $ref: '#/components/schemas/VendorCategory' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   '/vendors':
     get:
       tags:
@@ -1754,6 +1777,73 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+
+  '/admin/vendor-categories':
+    get:
+      tags: [Administration]
+      summary: List managed vendor categories
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Managed categories retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  categories:
+                    type: array
+                    items: { $ref: '#/components/schemas/VendorCategory' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Administration]
+      summary: Create a shared vendor category
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 80 }
+                sort_order: { type: integer, default: 0 }
+                is_active: { type: boolean, default: true }
+      responses:
+        '201': { description: Category created }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  '/admin/vendor-categories/{categoryId}':
+    patch:
+      tags: [Administration]
+      summary: Update a shared vendor category
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 80 }
+                sort_order: { type: integer }
+                is_active: { type: boolean }
+      responses:
+        '200': { description: Category updated }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   '/admin/vendors':
     get:
@@ -2172,7 +2262,7 @@ paths:
   '/admin/assets':
     post:
       tags: [Admin Assets]
-      summary: Upload a site, building, or vendor image
+      summary: Upload an image for a site, building, vendor, menu item, or shared vendor category
       security: [{ bearerAuth: [] }]
       requestBody:
         required: true
@@ -2182,9 +2272,9 @@ paths:
               type: object
               required: [entityType, entityId, contentType, data]
               properties:
-                entityType: { type: string, enum: [vendor, site, building] }
+                entityType: { type: string, enum: [vendor, site, building, menu_item, vendor_category] }
                 entityId: { type: string, format: uuid }
-                contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+                contentType: { type: string, enum: [image/jpeg, image/png, image/webp, image/avif, image/tiff, image/gif] }
                 data: { type: string, description: Base64 encoded image, format: byte }
       responses:
         '200': { description: Asset uploaded }
@@ -2982,6 +3072,18 @@ components:
         location:
           $ref: '#/components/schemas/VendorLocation'
 
+    VendorCategory:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        image_url: { type: string, nullable: true }
+        sort_order: { type: integer }
+        is_active: { type: boolean }
+        assigned_vendor_count: { type: integer }
+
     Vendor:
       type: object
       required:
@@ -3018,7 +3120,7 @@ components:
           type: array
           items:
             type: string
-          description: Vendor-level category tags, separate from menu categories.
+          description: Selected names from the centrally managed vendor category catalog; separate from vendor menu categories.
         average_rating:
           type: number
           nullable: true
@@ -3133,6 +3235,7 @@ components:
           items:
             type: string
           maxItems: 20
+          description: Names selected from the managed vendor category catalog.
         onboarding_key:
           type: string
           description: Client-generated idempotency key. Ignored on patch.

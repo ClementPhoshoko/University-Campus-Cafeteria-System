@@ -1558,6 +1558,7 @@ export const ROLE_FILTERS = [
 export const ADMIN_NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', to: '/admin', icon: 'IconChartBar' },
   { id: 'vendors', label: 'Vendors', to: '/admin/vendors', icon: 'IconBuildingStore' },
+  { id: 'vendor-categories', label: 'Categories', to: '/admin/vendor-categories', icon: 'IconTag' },
   { id: 'cafeterias', label: 'Cafeterias', to: '/admin/cafeterias', icon: 'IconMapPin' },
   { id: 'users', label: 'Users & Roles', to: '/admin/users', icon: 'IconUsers' },
   { id: 'orders', label: 'Orders', to: '/admin/orders', icon: 'IconReceipt' },

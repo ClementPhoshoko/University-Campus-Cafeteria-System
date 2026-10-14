@@ -63,9 +63,10 @@ function FilterChipGroup({ activeFilter, onChange, counts }) {
 export default function CafeteriaPage() {
   const { session } = useAuth();
   const token = session?.access_token;
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState(searchParams.get("filter") || "all");
+  const selectedCategory = searchParams.get("category") || '';
   const [showFilters, setShowFilters] = useState(true);
   const loadDirectory = useCallback(async ({ signal }) => {
     const firstPage = await listVendors({ page: 1, limit: 100, token, signal, cache: 'no-cache' });
@@ -120,10 +121,12 @@ export default function CafeteriaPage() {
         : activeFilter === 'open'
           ? cafeteria.status === 'open'
           : true;
+      const matchesCategory = !selectedCategory
+        || cafeteria.categories.some((category) => category.toLowerCase() === selectedCategory.toLowerCase());
 
-      return matchesQuery && matchesFilter;
+      return matchesQuery && matchesFilter && matchesCategory;
     });
-  }, [activeFilter, cafeterias, query]);
+  }, [activeFilter, cafeterias, query, selectedCategory]);
 
   return (
     <PageContainer noPad>
@@ -177,6 +180,7 @@ export default function CafeteriaPage() {
           <div className="cafeteria_results-heading" aria-live="polite">
             <span>{loading ? 'Loading' : `${visibleCafeterias.length} cafeterias`}</span>
             {query && <span className="cafeteria_results-query">for "{query}"</span>}
+            {selectedCategory && <span className="cafeteria_results-query">in {selectedCategory}</span>}
           </div>
           {error ? (
             <div className="cafeteria_empty">
@@ -199,7 +203,7 @@ export default function CafeteriaPage() {
             <div className="cafeteria_empty">
               <h2>No cafeterias found</h2>
               <p>Try changing your search or filters.</p>
-              <button type="button" className="cafeteria_clear-button" onClick={() => { setQuery(""); setActiveFilter("all"); }}>
+              <button type="button" className="cafeteria_clear-button" onClick={() => { setQuery(""); setActiveFilter("all"); setSearchParams({}); }}>
                 Clear filters
               </button>
             </div>

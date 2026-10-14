@@ -28,6 +28,7 @@ import AdminLayout from './features/admin/AdminLayout.jsx';
 import AdminDashboardPage from './features/admin/AdminDashboardPage.jsx';
 import AdminVendorList from './features/admin/AdminVendorList.jsx';
 import AdminVendorDetail from './features/admin/AdminVendorDetail.jsx';
+import AdminVendorCategoriesPage from './features/admin/AdminVendorCategoriesPage.jsx';
 import AdminOrderList from './features/admin/AdminOrderList.jsx';
 import AdminOrderDetail from './features/admin/AdminOrderDetail.jsx';
 import AdminUserList from './features/admin/AdminUserList.jsx';
@@ -119,6 +120,7 @@ export default function App() {
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/vendors" element={<AdminVendorList />} />
           <Route path="/admin/vendors/:vendorId" element={<AdminVendorDetail />} />
+          <Route path="/admin/vendor-categories" element={<AdminVendorCategoriesPage />} />
           <Route path="/admin/cafeterias" element={<AdminCafeteriaList />} />
           <Route path="/admin/cafeterias/:locationId" element={<AdminCafeteriaDetail />} />
           <Route path="/admin/users" element={<AdminUserList />} />
