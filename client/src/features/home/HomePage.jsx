@@ -26,7 +26,7 @@ import { getVendor, getPopularMenuItems, listVendors, listVendorMenu } from '../
 import { CACHE_TTL } from '../../services/cache.js';
 import { useFetch } from '../../hooks/useFetch.js';
 import { mapVendorToCafeteriaCard, mapCategoryToDisplay, mapFeaturedMenuItems, mapMenuItemToMeal } from './homeTransform.js';
-import { deliveryImage, reviewsImage, heroImage, heroFoods } from './homeData.js';
+import { deliveryImage, reviewsImage, heroImage, heroFoods, categories as categoryImageFallbacks } from './homeData.js';
 import './home.css';
 
 function greeting() {
@@ -110,7 +110,12 @@ export default function HomePage() {
     const mappedCategories = menuResponses.flatMap((response) => (response?.categories || [])).reduce((acc, category) => {
       const name = category?.name || 'Other';
       if (!acc.some((item) => item.name === name)) {
-        acc.push(mapCategoryToDisplay(category));
+        const matchingFallback = categoryImageFallbacks.find(
+          (item) => item.name.toLowerCase() === name.trim().toLowerCase(),
+        );
+        const fallback = matchingFallback?.image
+          || categoryImageFallbacks[acc.length % categoryImageFallbacks.length]?.image;
+        acc.push(mapCategoryToDisplay(category, fallback));
       }
       return acc;
     }, []);

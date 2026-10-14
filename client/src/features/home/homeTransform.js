@@ -84,11 +84,12 @@ export function mapFeaturedMenuItems(menuResponses, cafeterias, limit = 8) {
   return featured;
 }
 
-export function mapCategoryToDisplay(category) {
+export function mapCategoryToDisplay(category, fallbackImage = '') {
   const items = category?.items || [];
+  const image = items.find((item) => item?.image || item?.image_url);
   return {
     id: category?.id || category?.name || '',
     name: category?.name || '',
-    image: items[0]?.image || items[0]?.image_url || '',
+    image: image?.image || image?.image_url || fallbackImage,
   };
 }
