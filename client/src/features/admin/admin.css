@@ -3476,6 +3476,33 @@
   line-height: 1.45;
 }
 
+.vd-slot-manager__note {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-left: 3px solid var(--color-action-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-default);
+  color: var(--color-text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.vd-slot-manager__note strong {
+  color: var(--color-text-primary);
+}
+
+.vd-slot-manager__note ul {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-2) 0;
+  padding-left: 1.2rem;
+}
+
+.vd-slot-manager__note p {
+  margin: 0;
+  color: var(--color-text-tertiary);
+}
+
 .vd-slot-manager__error {
   color: var(--color-status-error);
 }

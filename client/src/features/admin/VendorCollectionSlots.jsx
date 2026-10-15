@@ -78,9 +78,16 @@ export default function VendorCollectionSlots({ location, token }) {
     >
       <summary className="vd-slot-manager__summary">Manage collection times</summary>
       <div className="vd-slot-manager__body">
-        <p className="vd-slot-manager__hint">
-          Slots are generated daily from this location’s operating hours in {siteTimezone}: 30-minute windows, 10 orders per slot, for the next 7 days. Customer availability updates as orders reserve capacity. You can pause or resume individual slots below.
-        </p>
+        <aside className="vd-slot-manager__note" aria-label="How collection slots work">
+          <strong>How automatic collection slots work</strong>
+          <ul>
+            <li>Every day, the system creates 30-minute slots from this location’s operating hours in {siteTimezone}, keeping the next 7 days available.</li>
+            <li>Each slot starts with capacity for 10 orders. A successful checkout reserves one place; full or paused slots are unavailable to customers.</li>
+            <li>Change this location’s operating hours to adjust future slots. Unreserved slots outside the updated hours are removed; slots with reservations are kept but paused.</li>
+            <li>Use Pause or Resume below for a one-off change. No daily slot creation is needed.</li>
+          </ul>
+          <p>For deployment: the API scheduler must be running and migration 016 must be applied.</p>
+        </aside>
 
         {error && <p className="vd-slot-manager__error" role="alert">{error}</p>}
         {loading ? (
