@@ -4,7 +4,7 @@ import { requireRole } from '../middleware/auth.js';
 import { listAuditLogs } from '../controllers/auditController.js';
 
 const router = Router();
-router.use(authenticate, requireRole('admin'));
+router.use('/admin', authenticate, requireRole('admin'));
 router.get('/admin/audit-logs', listAuditLogs);
 
 export default router;

@@ -6,7 +6,7 @@ import { autocomplete, resolve } from '../controllers/geocodeController.js';
 
 const geocodeRouter = Router();
 
-geocodeRouter.use(authenticate, requireRole('admin'));
+geocodeRouter.use('/admin', authenticate, requireRole('admin'));
 
 // Rate limit geocoding requests (60/minute per user)
 const geocodeRateLimit = rateLimit({ windowMs: 60 * 1000, max: 60 });

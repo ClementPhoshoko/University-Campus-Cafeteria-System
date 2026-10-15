@@ -10,4 +10,5 @@ autoExport();
 function autoExport() {
   if (!process.env.PORT) process.env.PORT = '4000';
   if (!process.env.NODE_ENV) process.env.NODE_ENV = 'development';
+  if (!process.env.PAYMENT_MODE && process.env.NODE_ENV !== 'production') process.env.PAYMENT_MODE = 'mock';
 }

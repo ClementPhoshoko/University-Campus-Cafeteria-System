@@ -2028,6 +2028,10 @@ AUTH_*
 
 Never commit secrets.
 
+### Development checkout simulator
+
+The local server defaults `PAYMENT_MODE` to `mock` outside production. Checkout then shows a sandbox payment screen with options to simulate success or a decline; it does not collect card details or move money. Only a successful outcome sends the order to the vendor queue. Set `PAYMENT_MODE=disabled` to turn off checkout until a real provider is configured. The simulator is disabled whenever `NODE_ENV=production`, even if `PAYMENT_MODE=mock` is set. Apply `server/src/docs/migrations/018_mock_payment_checkout.sql` to the Supabase database before using the simulator.
+
 The React client must never receive the Supabase service-role key or other privileged backend credentials.
 
 ---

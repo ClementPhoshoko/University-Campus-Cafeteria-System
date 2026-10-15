@@ -98,6 +98,16 @@ export function createOrder({ cartId, vendorId, vendorLocationId, collectionSlot
   });
 }
 
+export function processMockPayment(orderId, outcome, { token, signal } = {}) {
+  return apiRequest(`/orders/${orderId}/mock-payment`, {
+    method: 'POST', body: { outcome }, token, signal,
+  }).then((response) => {
+    invalidateCachePattern('employee:orders:');
+    invalidateCachePattern('employee:order:');
+    return response;
+  });
+}
+
 export function listMyOrders({ page, limit, status, token, signal } = {}) {
   return apiRequest('/orders', { query: { page, limit, status }, token, signal });
 }

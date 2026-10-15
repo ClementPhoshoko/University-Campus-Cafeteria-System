@@ -6,12 +6,13 @@ import CartGroup from './CartGroup.jsx';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import CartBackground from '../../components/CartBackground.jsx';
 import OrderConfirmation from '../../components/orders/OrderConfirmation.jsx';
+import MockPaymentPanel from './MockPaymentPanel.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
 import '../../components/cards/CardSkeletonShimmer.css';
 import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.webp';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFetch } from '../../hooks/useFetch.js';
-import { getCart, updateCartItem, removeCartItem, createOrder } from '../../services/employeeApi.js';
+import { getCart, updateCartItem, removeCartItem, createOrder, processMockPayment } from '../../services/employeeApi.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import './CartPage.css';
 
@@ -52,6 +53,8 @@ export default function CartPage() {
   const [isCartUpdating, setIsCartUpdating] = useState(false);
   const [orderStatus, setOrderStatus] = useState(null);
   const [createdOrder, setCreatedOrder] = useState(null);
+  const [paymentBusy, setPaymentBusy] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -222,16 +225,40 @@ export default function CartPage() {
       setCreatedOrder({
         id: res?.order?.id || null,
         collectionCode: res?.order?.collectionCode || null,
+        reference: res?.order?.order_reference || 'New order',
+        total: res?.order?.total,
+        currency: res?.order?.currency || 'ZAR',
       });
       cartFeed.mutate((current) => current?.carts
         ? { ...current, carts: current.carts.filter((entry) => entry.id !== cart.id) }
         : current);
-      setOrderStatus('success');
+      setOrderStatus('payment');
       return null;
     } catch (err) {
       const message = err?.message || 'Could not place your order. Please try again.';
       setOrderStatus(null);
       return message;
+    }
+  };
+
+  const handleMockPayment = async (outcome) => {
+    if (!token || !createdOrder?.id || paymentBusy) return;
+    setPaymentBusy(true);
+    setPaymentError('');
+    try {
+      await processMockPayment(createdOrder.id, outcome, { token });
+      if (outcome === 'succeeded') {
+        setOrderStatus('success');
+      } else if (outcome === 'failed') {
+        setPaymentError('Test payment declined. No money was taken. You can retry or cancel this order.');
+      } else {
+        setOrderStatus(null);
+        navigate('/orders');
+      }
+    } catch (err) {
+      setPaymentError(err?.message || 'Could not process the test payment. Please try again.');
+    } finally {
+      setPaymentBusy(false);
     }
   };
 
@@ -249,6 +276,20 @@ export default function CartPage() {
         collectionCode={createdOrder?.collectionCode}
         onContinue={handleCloseOrderStatus}
       />
+    );
+  }
+
+  if (orderStatus === 'payment') {
+    return (
+      <PageContainer className="cart-page-container">
+        <MockPaymentPanel
+          order={createdOrder}
+          busy={paymentBusy}
+          error={paymentError}
+          onPay={handleMockPayment}
+          onCancel={() => handleMockPayment('cancelled')}
+        />
+      </PageContainer>
     );
   }
 

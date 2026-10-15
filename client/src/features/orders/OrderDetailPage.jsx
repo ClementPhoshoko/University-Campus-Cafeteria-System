@@ -9,10 +9,11 @@ import OrderItemList from '../../components/orders/OrderItemList.jsx';
 import OrderSummary from '../../components/orders/OrderSummary.jsx';
 import CollectionCode from '../../components/orders/CollectionCode.jsx';
 import OrderActions from '../../components/orders/OrderActions.jsx';
+import MockPaymentPanel from '../cart/MockPaymentPanel.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFetch } from '../../hooks/useFetch.js';
 import { CACHE_TTL, invalidateCache } from '../../services/cache.js';
-import { getMyOrder, cancelMyOrder, reorderOrder, rateOrder } from '../../services/employeeApi.js';
+import { getMyOrder, cancelMyOrder, reorderOrder, rateOrder, processMockPayment } from '../../services/employeeApi.js';
 import './orders.css';
 
 const REFRESHABLE_ORDER_STATUSES = new Set([
@@ -77,6 +78,8 @@ export default function OrderDetailPage() {
   const userId = session?.user?.id;
   const hasSession = Boolean(token && userId);
   const [actionError, setActionError] = useState('');
+  const [paymentError, setPaymentError] = useState('');
+  const [paymentBusy, setPaymentBusy] = useState(false);
   const previousStatus = useRef(null);
   const loadOrder = useCallback(({ signal }) => getMyOrder(orderId, { token, signal }), [orderId, token]);
   const transformOrder = useCallback((response) => ({
@@ -151,6 +154,26 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleMockPayment = async (outcome) => {
+    if (!token || !order?.id || paymentBusy) return;
+    setPaymentBusy(true);
+    setPaymentError('');
+    try {
+      await processMockPayment(order.id, outcome, { token });
+      if (outcome === 'succeeded') {
+        await refreshOrder();
+      } else if (outcome === 'failed') {
+        setPaymentError('Test payment declined. No money was taken. You can retry or cancel this order.');
+      } else {
+        navigate('/orders');
+      }
+    } catch (error) {
+      setPaymentError(error.message || 'Could not process the test payment. Please try again.');
+    } finally {
+      setPaymentBusy(false);
+    }
+  };
+
   if (!hasSession) {
     return (
       <PageContainer className="orders-page-container">
@@ -195,7 +218,25 @@ export default function OrderDetailPage() {
   }
 
   const vendor = order.vendor;
-  const showCode = ['ready_for_collection', 'collected', 'completed'].includes(order.status);
+  const showCode = [
+    'payment_confirmed', 'received_by_vendor', 'accepted', 'preparing',
+    'ready_for_collection', 'collected', 'completed',
+  ].includes(order.status);
+
+  if (order.status === 'payment_pending') {
+    return (
+      <PageContainer className="order-detail-container">
+        <OrderDetailBackground />
+        <MockPaymentPanel
+          order={{ reference: order.order_reference, total: order.total, currency: order.currency || 'ZAR' }}
+          busy={paymentBusy}
+          error={paymentError}
+          onPay={handleMockPayment}
+          onCancel={() => handleMockPayment('cancelled')}
+        />
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer className="order-detail-container">

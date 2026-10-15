@@ -26,7 +26,7 @@ import {
 
 const adminSiteRouter = Router();
 
-adminSiteRouter.use(authenticate, requireRole('admin'));
+adminSiteRouter.use('/admin', authenticate, requireRole('admin'));
 
 // Admin mutations are throttled per-user; reads are not.
 const mutations = rateLimit({ windowMs: 60 * 1000, max: 30 });

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/authenticate.js';
 import {
   createOrder,
+  processMockPayment,
   listMyOrders,
   getMyOrder,
   cancelMyOrder,
@@ -14,6 +15,7 @@ const orderRouter = Router();
 orderRouter.use(authenticate);
 
 orderRouter.post('/orders', createOrder);
+orderRouter.post('/orders/:orderId/mock-payment', processMockPayment);
 orderRouter.get('/orders', listMyOrders);
 orderRouter.get('/orders/:orderId', getMyOrder);
 orderRouter.post('/orders/:orderId/cancel', cancelMyOrder);

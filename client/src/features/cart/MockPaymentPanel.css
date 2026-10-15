@@ -1,0 +1,69 @@
+.mock-payment-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6, 24px) var(--screen-padding, 20px);
+  background: var(--color-page-bg, transparent);
+}
+
+.mock-payment {
+  width: min(100%, 480px);
+  padding: clamp(24px, 5vw, 40px);
+  color: var(--color-text-primary);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl, 24px);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+.mock-payment__mode {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 8px;
+  color: var(--color-text-secondary);
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.mock-payment__mode span,
+.mock-payment__method-badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--color-success, #16834a);
+  background: var(--color-success-soft, rgba(22, 131, 74, .12));
+  font-size: .65rem;
+  letter-spacing: .04em;
+}
+
+.mock-payment h1 { margin: 0; font-size: clamp(1.6rem, 5vw, 2rem); letter-spacing: -.04em; }
+.mock-payment__intro { margin: 10px 0 24px; color: var(--color-text-secondary); line-height: 1.55; }
+.mock-payment__summary { display: grid; gap: 14px; padding: 18px 0; border-top: 1px solid var(--color-border-subtle); border-bottom: 1px solid var(--color-border-subtle); }
+.mock-payment__summary div { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.mock-payment__summary span { color: var(--color-text-secondary); font-size: .9rem; }
+.mock-payment__summary strong { text-align: right; overflow-wrap: anywhere; }
+.mock-payment__summary .mock-payment__total { font-size: 1.2rem; }
+.mock-payment__method { display: flex; align-items: center; gap: 12px; margin: 18px 0 22px; padding: 14px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); }
+.mock-payment__method-icon { color: var(--color-primary, #2563eb); font-size: 1.3rem; }
+.mock-payment__method div { display: grid; gap: 3px; flex: 1; }
+.mock-payment__method div span { color: var(--color-text-secondary); font-size: .78rem; }
+.mock-payment__method-badge { color: var(--color-text-secondary); background: var(--color-surface-subtle); }
+.mock-payment__processing { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; padding: 13px 14px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-surface-subtle); }
+.mock-payment__processing > span:last-child { display: grid; gap: 3px; }
+.mock-payment__processing strong { font-size: .88rem; }
+.mock-payment__processing small { color: var(--color-text-secondary); font-size: .76rem; }
+.mock-payment__spinner { width: 20px; height: 20px; flex: 0 0 20px; border: 2px solid var(--color-border-subtle); border-top-color: var(--color-primary, #2563eb); border-radius: 50%; animation: mock-payment-spin .75s linear infinite; }
+@keyframes mock-payment-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .mock-payment__spinner { animation-duration: 2s; } }
+.mock-payment .primary-btn { width: 100%; justify-content: center; }
+.mock-payment__decline, .mock-payment__cancel { display: block; width: 100%; border: 0; background: transparent; color: var(--color-text-secondary); cursor: pointer; font: inherit; }
+.mock-payment__decline { margin-top: 14px; font-size: .88rem; text-decoration: underline; text-underline-offset: 3px; }
+.mock-payment__cancel { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--color-border-subtle); font-size: .9rem; }
+.mock-payment__decline:disabled, .mock-payment__cancel:disabled { opacity: .55; cursor: wait; }
+.mock-payment__error { margin: 0 0 14px; padding: 11px 12px; border-radius: var(--radius-sm); color: var(--color-danger, #b42318); background: var(--color-danger-soft, rgba(180, 35, 24, .1)); font-size: .88rem; }
+.mock-payment__footnote { margin: 20px 0 0; color: var(--color-text-muted, var(--color-text-secondary)); font-size: .72rem; text-align: center; }
+
+@media (max-width: 480px) { .mock-payment { padding: 24px 20px; } }

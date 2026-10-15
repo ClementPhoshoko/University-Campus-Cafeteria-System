@@ -10,6 +10,7 @@ import { calculateServiceFee } from '../utils/feeCalculator.js';
 import { expireCartIfExpired } from '../services/cartExpiry.js';
 import { resolveUnitPrice } from '../utils/pricing.js';
 import { generateOrderReference } from '../utils/orderReference.js';
+import { isMockPaymentEnabled } from '../services/paymentMode.js';
 
 const db = () => supabaseAdmin;
 
@@ -50,6 +51,9 @@ const RATEABLE_STATUSES = ['completed', 'collected'];
 
 export async function createOrder(req, res) {
   try {
+    if (!isMockPaymentEnabled()) {
+      throw new ApiError(503, 'PAYMENT_UNAVAILABLE', 'Checkout payments are not configured. Please try again later.');
+    }
     const userId = req.user.id;
     const { cartId, vendorId, vendorLocationId, collectionSlotId, items: rawItems, notes } = req.body || {};
 
@@ -219,7 +223,7 @@ export async function createOrder(req, res) {
         amount: total,
         currency: 'ZAR',
       });
-    if (payError) console.error('Failed to create payment record:', payError);
+    if (payError) throw payError;
 
     await writeAudit(req, {
       action: 'INSERT',
@@ -242,6 +246,78 @@ export async function createOrder(req, res) {
         collectionCode,
       },
     }, { status: 201 });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// POST /orders/:orderId/mock-payment — Development-only payment simulator
+// ---------------------------------------------------------------------------
+
+export async function processMockPayment(req, res) {
+  try {
+    if (!isMockPaymentEnabled()) {
+      throw new ApiError(404, 'NOT_FOUND', 'This payment option is not available.');
+    }
+    const orderId = requireUuidParam(req, res, 'orderId');
+    if (!orderId) return;
+    const { outcome } = req.body || {};
+    if (!['succeeded', 'failed', 'cancelled'].includes(outcome)) {
+      throw new ApiError(400, 'INVALID_PAYMENT_OUTCOME', 'Choose a valid test payment outcome.');
+    }
+
+    const { data: result, error } = await db().rpc('process_mock_payment', {
+      p_order_id: orderId,
+      p_user_id: req.user.id,
+      p_outcome: outcome,
+    });
+    if (error) throw error;
+    if (!result?.success) {
+      const errors = {
+        ORDER_NOT_FOUND: [404, 'ORDER_NOT_FOUND', 'Order not found.'],
+        ORDER_NOT_PAYABLE: [409, 'ORDER_NOT_PAYABLE', 'This order can no longer be paid.'],
+        PAYMENT_NOT_FOUND: [409, 'PAYMENT_NOT_FOUND', 'The payment record is unavailable.'],
+        INVALID_PAYMENT_OUTCOME: [400, 'INVALID_PAYMENT_OUTCOME', 'Choose a valid test payment outcome.'],
+      };
+      const [status, code, message] = errors[result?.code] || [409, 'PAYMENT_FAILED', 'The test payment could not be processed.'];
+      throw new ApiError(status, code, message);
+    }
+
+    const order = result.order;
+    if (!result.idempotent && outcome !== 'failed') {
+      const historyStatuses = outcome === 'succeeded' ? ['submitted', 'payment_confirmed'] : ['cancelled'];
+      const historyRows = await Promise.all(historyStatuses.map(async (status) => {
+        const { data: historyRow } = await db().from('order_status_history')
+          .select('id').eq('order_id', orderId).eq('new_status', status)
+          .is('changed_by', null).order('changed_at', { ascending: false }).limit(1).maybeSingle();
+        return historyRow;
+      }));
+      await Promise.all(historyRows.filter(Boolean).map((historyRow) => db().from('order_status_history').update({
+            changed_by: req.user.id,
+            reason: outcome === 'succeeded' ? 'mock_payment_succeeded' : 'mock_payment_cancelled',
+          }).eq('id', historyRow.id)));
+    }
+
+    await Promise.all([
+      writeAudit(req, {
+        action: 'UPDATE', tableName: 'public.payments', recordKey: orderId,
+        newData: { status: outcome, provider: 'mock' },
+        reason: `Development mock payment ${outcome}`, category: 'lifecycle',
+      }),
+      writeAudit(req, {
+        action: 'UPDATE', tableName: 'public.orders', recordKey: orderId,
+        newData: { status: order.status, payment_status: order.payment_status },
+        reason: `Development mock payment ${outcome}`, category: 'lifecycle',
+      }),
+    ]);
+
+    const { collection_reference_hash, collection_reference_last4, ...safeOrder } = order;
+    return respond(req, res, {
+      success: true,
+      outcome,
+      order: { id: safeOrder.id, order_reference: safeOrder.order_reference, status: safeOrder.status, payment_status: safeOrder.payment_status, total: safeOrder.total, currency: safeOrder.currency },
+    });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -339,7 +415,10 @@ export async function getMyOrder(req, res) {
     const vendor = vendors
       ? { ...vendors, logo_url: await resolveAssetUrl(vendors.logo_url, { size: 'icon' }) }
       : null;
-    const collectionCodeVisible = ['ready_for_collection', 'collected', 'completed'].includes(order.status);
+    const collectionCodeVisible = [
+      'payment_confirmed', 'received_by_vendor', 'accepted', 'preparing',
+      'ready_for_collection', 'collected', 'completed',
+    ].includes(order.status);
     delete orderRest.collection_reference_hash;
     if (!collectionCodeVisible) orderRest.collection_reference_last4 = null;
     return respond(req, res, {

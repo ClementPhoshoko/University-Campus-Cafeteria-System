@@ -11,8 +11,10 @@ import {
 
 const adminRouter = Router();
 
-// All admin routes require authentication + admin role
-adminRouter.use(authenticate, requireRole('admin'));
+// Keep the role guard within the admin namespace. This router shares the
+// /api/v1 mount point with employee endpoints; unmatched employee routes must
+// not fall through and be reported as admin-only.
+adminRouter.use('/admin', authenticate, requireRole('admin'));
 
 adminRouter.get('/admin/users', listUsers);
 adminRouter.get('/admin/users/:userId/roles', getUserRoles);

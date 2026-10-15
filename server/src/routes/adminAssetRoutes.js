@@ -4,7 +4,7 @@ import { requireRole } from '../middleware/auth.js';
 import { uploadAdminAsset } from '../controllers/assetController.js';
 
 const router = Router();
-router.use(authenticate, requireRole('admin'));
+router.use('/admin', authenticate, requireRole('admin'));
 router.post('/admin/assets', uploadAdminAsset);
 
 export default router;
