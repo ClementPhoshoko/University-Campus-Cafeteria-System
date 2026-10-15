@@ -1872,7 +1872,7 @@
 .admin-tag {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 12px;
   height: 24px;
   padding: 0 10px;
   border-radius: var(--radius-full);
@@ -3025,6 +3025,88 @@
   min-width: 0;
 }
 
+/* Vendor detail overview: keep the redesigned layout local to this page. */
+.vd-metrics--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.vd-metrics--single .vd-metric {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.vd-overview {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.8fr);
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.vd-overview__rating {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
+  padding-right: var(--space-5);
+  border-right: 1px solid var(--color-border-subtle);
+}
+
+.vd-overview__score,
+.vd-overview__rating-meta,
+.vd-overview__hours-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.vd-overview__value {
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.vd-overview__rating-meta {
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+}
+
+.vd-overview__hours {
+  min-width: 0;
+}
+
+.vd-overview__hours-head {
+  margin-bottom: var(--space-2);
+}
+
+.vd-overview__prep {
+  margin: 3px 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+}
+
+.vd-hours--overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--space-5);
+}
+
+.vd-hours--overview .vd-hours__day {
+  display: grid;
+  grid-template-columns: 40px max-content;
+  justify-content: start;
+  gap: 12px;
+  font-size: 0.78rem;
+}
+
+.vd-hours--overview .vd-hours__label {
+  width: auto;
+}
+
 .vd-metric__icon {
   display: grid;
   place-items: center;
@@ -3945,6 +4027,26 @@
 }
 
 @media (max-width: 768px) {
+  .vd-overview {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .vd-overview__rating {
+    padding: 0 0 var(--space-4);
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  .vd-hours--overview {
+    grid-template-columns: 1fr;
+  }
+
+  .vd-metrics--single .vd-metric {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .vd-hero {
     flex-direction: column;
     align-items: stretch;

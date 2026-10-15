@@ -57,12 +57,13 @@ const LOCATION_STATUS_META = {
 
 function formatOperatingHours(hours) {
   if (!hours || hours.length === 0) return null;
+  const formatTime = (value) => String(value || '').slice(0, 5);
   const byDay = {};
   hours.forEach((h) => { byDay[h.day_of_week] = h; });
   return DAY_LABELS.map((label, i) => {
     const h = byDay[i];
     const closed = !h || h.is_closed;
-    return { label, time: closed ? null : `${h.opens_at}\u2009\u2013\u2009${h.closes_at}`, closed };
+    return { label, time: closed ? null : `${formatTime(h.opens_at)}\u2009\u2013\u2009${formatTime(h.closes_at)}`, closed };
   });
 }
 
@@ -398,7 +399,7 @@ export default function AdminVendorDetail() {
             <span className="skeleton" style={{ width: 80, height: 34, borderRadius: 'var(--radius-xs)' }} />
           </div>
         </div>
-        <div className="vd-metrics">
+        <div className="vd-metrics vd-metrics--single">
           <div className="vd-metric">
             <div className="skeleton" style={{ width: '62%', height: 12, borderRadius: 4 }} />
             <div className="skeleton" style={{ width: '46%', height: 20, borderRadius: 4, marginTop: 10 }} />
@@ -531,29 +532,7 @@ export default function AdminVendorDetail() {
 
       {/* ── Metrics ── */}
       {!vendor.isPending && (
-        <div className="vd-metrics">
-          <div className="vd-metric">
-            <div className="vd-metric__head">
-              <div className="vd-metric__icon vd-metric__icon--warning">
-                <IconStarFilled size={15} stroke={0} />
-              </div>
-              <span className="vd-metric__label">Average rating</span>
-              <span className={`vd-metric__pill vd-metric__pill--${ratingGrade.tone}`}>{ratingGrade.label}</span>
-            </div>
-            <div className="vd-metric__main">
-              <span className="vd-metric__value">{rating.toFixed(1)}</span>
-              <span className="vd-metric__value-max">/ 5</span>
-              <span className="vd-metric__stars" role="img" aria-label={`Rated ${rating.toFixed(1)} out of 5`}>
-                <span className="vd-metric__stars-track">
-                  {[...Array(5)].map((_, i) => <IconStarFilled key={i} size={14} stroke={0} />)}
-                </span>
-                <span className="vd-metric__stars-fill" style={{ width: `${ratingPct}%` }} aria-hidden="true">
-                  {[...Array(5)].map((_, i) => <IconStarFilled key={i} size={14} stroke={0} />)}
-                </span>
-              </span>
-            </div>
-            <span className="vd-metric__footnote">{vendor.rating_count || 0} reviews</span>
-          </div>
+        <div className="vd-metrics vd-metrics--single">
           <div className="vd-metric">
             <div className="vd-metric__head">
               <div className="vd-metric__icon vd-metric__icon--info">
@@ -579,6 +558,43 @@ export default function AdminVendorDetail() {
             <span className="vd-metric__footnote">Configured locations</span>
           </div>
         </div>
+      )}
+
+      {!vendor.isPending && (
+        <section className="vd-panel vd-overview">
+          <div className="vd-overview__rating">
+            <h3 className="vd-panel__heading">Average rating</h3>
+            <div className="vd-overview__score">
+              <span className="vd-overview__value">{rating.toFixed(1)}</span>
+              <span className="vd-metric__value-max">/ 5</span>
+              <span className="vd-metric__stars" role="img" aria-label={`Rated ${rating.toFixed(1)} out of 5`}>
+                <span className="vd-metric__stars-track">{[...Array(5)].map((_, i) => <IconStarFilled key={i} size={15} stroke={0} />)}</span>
+                <span className="vd-metric__stars-fill" style={{ width: `${ratingPct}%` }} aria-hidden="true">{[...Array(5)].map((_, i) => <IconStarFilled key={i} size={15} stroke={0} />)}</span>
+              </span>
+            </div>
+            <div className="vd-overview__rating-meta">
+              <span className={`vd-metric__pill vd-metric__pill--${ratingGrade.tone}`}>{ratingGrade.label}</span>
+              <span>{vendor.rating_count || 0} reviews</span>
+            </div>
+          </div>
+          <div className="vd-overview__hours">
+            <div className="vd-overview__hours-head">
+              <div className="vd-info__icon"><IconClock size={15} stroke={1.8} /></div>
+              <div>
+                <h3 className="vd-panel__heading">Operating hours</h3>
+                <p className="vd-overview__prep">Estimated prep time: {vendor.estimated_prep_minutes || 0} min</p>
+              </div>
+            </div>
+            {hours ? (
+              <div className="vd-hours vd-hours--overview">
+                {DAY_LABELS.map((label, i) => {
+                  const day = hours[i];
+                  return <div key={i} className={`vd-hours__day${day.closed ? ' vd-hours__day--closed' : ''}`}><span className="vd-hours__label">{label}</span><span className="vd-hours__time">{day.closed ? 'Closed' : day.time}</span></div>;
+                })}
+              </div>
+            ) : <span className="vd-info__value">Not set</span>}
+          </div>
+        </section>
       )}
 
       {/* ── Pending Checklist ── */}
@@ -637,29 +653,6 @@ export default function AdminVendorDetail() {
                   <div className="vd-info__field">
                     <span className="vd-info__label">Location</span>
                     <span className="vd-info__value">{vendor.vendor_location_name}</span>
-                  </div>
-                </div>
-
-                <div className="vd-info__row vd-info__row--block">
-                  <div className="vd-info__icon"><IconClock size={15} stroke={1.8} /></div>
-                  <div className="vd-info__field">
-                    <span className="vd-info__label">Operating hours</span>
-                    {hours ? (
-                      <div className="vd-hours">
-                        {DAY_LABELS.map((label, i) => {
-                          const day = hours[i];
-                          return (
-                            <div key={i} className={`vd-hours__day${day.closed ? ' vd-hours__day--closed' : ''}`}>
-                              <span className="vd-hours__label">{label}</span>
-                              <span className="vd-hours__time">{day.closed ? 'Closed' : day.time}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <span className="vd-info__value">Not set</span>
-                    )}
-                    <span className="vd-info__muted">Est. prep time: {vendor.estimated_prep_minutes || 0} min</span>
                   </div>
                 </div>
 
