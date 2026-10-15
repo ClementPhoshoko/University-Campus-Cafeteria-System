@@ -148,6 +148,7 @@ function transformLocation(loc) {
   return {
     ...rest,
     site_name: sites?.name ?? null,
+    site_timezone: sites?.timezone ?? null,
     building_name: buildings?.name ?? null,
     collection_point_name: collection_points?.name ?? null,
     hours: (operating_hours || []).sort((a, b) => a.day_of_week - b.day_of_week),
@@ -676,6 +677,54 @@ export async function updateVendorLocation(req, res) {
 
     await writeAudit(req, { action: 'UPDATE', tableName: 'public.vendor_locations', recordKey: locationId, oldData: existing, newData: fullWithHours, reason: 'Location updated', category: 'data' });
     return respond(req, res, { success: true, vendorLocation: fullWithHours, hours: fullWithHours.hours || [] });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
+}
+
+export async function listVendorCollectionSlots(req, res) {
+  try {
+    const locationId = requireUuidParam(req, res, 'locationId');
+    if (!locationId) return;
+    await mustExist('vendor_locations', locationId, 'VENDOR_LOCATION_NOT_FOUND', 'Vendor location not found');
+
+    const { data, error } = await db()
+      .from('collection_slots')
+      .select('id, vendor_location_id, starts_at, ends_at, capacity, reserved_count, paused, created_at')
+      .eq('vendor_location_id', locationId)
+      .order('starts_at', { ascending: true });
+    if (error) throw error;
+    return respond(req, res, { success: true, collectionSlots: data || [] });
+  } catch (err) {
+    return handleControllerError(res, err);
+  }
+}
+
+export async function updateVendorCollectionSlot(req, res) {
+  try {
+    const slotId = requireUuidParam(req, res, 'slotId');
+    if (!slotId) return;
+    const existing = await mustExist('collection_slots', slotId, 'COLLECTION_SLOT_NOT_FOUND', 'Collection slot not found');
+    const { paused } = req.body || {};
+    if (typeof paused !== 'boolean') return sendValidation(res, ['paused must be true or false']);
+
+    const { data, error } = await db()
+      .from('collection_slots')
+      .update({ paused })
+      .eq('id', slotId)
+      .select('id, vendor_location_id, starts_at, ends_at, capacity, reserved_count, paused, created_at')
+      .single();
+    if (error) throw error;
+    await writeAudit(req, {
+      action: 'UPDATE',
+      tableName: 'public.collection_slots',
+      recordKey: slotId,
+      oldData: { paused: existing.paused },
+      newData: { paused: data.paused },
+      reason: paused ? 'Collection slot paused' : 'Collection slot resumed',
+      category: 'data',
+    });
+    return respond(req, res, { success: true, collectionSlot: data });
   } catch (err) {
     return handleControllerError(res, err);
   }

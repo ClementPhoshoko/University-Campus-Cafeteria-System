@@ -2421,6 +2421,60 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+
+  '/admin/vendor-locations/{locationId}/collection-slots':
+    get:
+      tags:
+        - Admin Vendors
+      summary: List collection slots for a vendor location
+      description: Automatically generated once daily from the location's operating hours using 30-minute windows with capacity for 10 orders, maintained for the next seven local calendar days.
+      operationId: listAdminVendorCollectionSlots
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Automatically generated collection slots, including paused and ended slots
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/admin/collection-slots/{slotId}':
+    patch:
+      tags:
+        - Admin Vendors
+      summary: Pause or resume a collection slot
+      operationId: updateAdminVendorCollectionSlot
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: slotId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paused
+              properties:
+                paused:
+                  type: boolean
+      responses:
+        '200':
+          description: Collection slot state updated
+        '400':
+          description: Invalid slot state
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':

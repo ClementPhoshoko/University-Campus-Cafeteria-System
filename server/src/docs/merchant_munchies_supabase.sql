@@ -365,6 +365,7 @@ create table if not exists public.collection_slots (
   capacity integer not null check (capacity > 0),
   reserved_count integer not null default 0 check (reserved_count >= 0),
   paused boolean not null default false,
+  auto_generated boolean not null default false,
   created_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   check (ends_at > starts_at),

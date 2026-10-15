@@ -12,6 +12,8 @@ import {
   createVendorOrder,
   createVendorLocation,
   updateVendorLocation,
+  listVendorCollectionSlots,
+  updateVendorCollectionSlot,
   addVendorUser,
   removeVendorUser,
   listBuildingVendors,
@@ -66,6 +68,8 @@ adminVendorRouter.patch('/admin/vendors/:vendorId/approval', mutations, updateVe
 
 adminVendorRouter.post('/admin/vendors/:vendorId/locations', mutations, createVendorLocation);
 adminVendorRouter.patch('/admin/vendor-locations/:locationId', mutations, updateVendorLocation);
+adminVendorRouter.get('/admin/vendor-locations/:locationId/collection-slots', listVendorCollectionSlots);
+adminVendorRouter.patch('/admin/collection-slots/:slotId', mutations, updateVendorCollectionSlot);
 
 adminVendorRouter.post('/admin/vendors/:vendorId/users', mutations, addVendorUser);
 adminVendorRouter.delete('/admin/vendors/:vendorId/users/:userId', mutations, removeVendorUser);

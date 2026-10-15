@@ -28,6 +28,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 import { StaffModal, VendorLocationModal, VendorProfileModal, MenuItemModal, CategoryModal } from './VendorForms.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
+import VendorCollectionSlots from './VendorCollectionSlots.jsx';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const ITEM_NAME_MAX = 21;
@@ -705,13 +706,16 @@ export default function AdminVendorDetail() {
                   <div className="vd-locations">
                     {vendor.locations.slice(0, locationsVisibleCount).map((location) => (
                       <div className="vd-locations__row" key={location.id}>
-                        <div className="vd-locations__info">
-                          <span className="vd-locations__name">
-                            {[location.site_name, location.building_name, location.collection_point_name].filter(Boolean).join(' \u00b7 ')}
-                          </span>
-                          <span className="vd-locations__meta">
-                            {location.service_status}{' \u00b7 '}{location.estimated_prep_minutes || '\u2014'} min prep
-                          </span>
+                        <div className="vd-locations__main">
+                          <div className="vd-locations__info">
+                            <span className="vd-locations__name">
+                              {[location.site_name, location.building_name, location.collection_point_name].filter(Boolean).join(' \u00b7 ')}
+                            </span>
+                            <span className="vd-locations__meta">
+                              {location.service_status}{' \u00b7 '}{location.estimated_prep_minutes || '\u2014'} min prep
+                            </span>
+                          </div>
+                          <VendorCollectionSlots location={location} token={token} />
                         </div>
                         <div className="vd-locations__actions">
                           <StatusPill status={location.service_status} />

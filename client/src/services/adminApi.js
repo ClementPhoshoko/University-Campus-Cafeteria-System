@@ -288,6 +288,22 @@ export function updateVendorLocation(token, locationId, payload, options) {
   });
 }
 
+export function listVendorCollectionSlots(token, locationId, options) {
+  return adminRequest(`/admin/vendor-locations/${locationId}/collection-slots`, {
+    token,
+    ...options,
+  });
+}
+
+export function updateVendorCollectionSlot(token, slotId, payload, options) {
+  return adminRequest(`/admin/collection-slots/${slotId}`, {
+    method: 'PATCH',
+    token,
+    body: payload,
+    ...options,
+  });
+}
+
 export function addVendorUser(token, vendorId, payload, options) {
   return adminRequest(`/admin/vendors/${vendorId}/users`, {
     method: 'POST',
