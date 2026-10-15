@@ -16,7 +16,7 @@ export const CACHE_TTL = {
   employeeHomeMeals: 15_000,
   employeeVendorDirectory: 15_000,
   employeeVendorDetail: 15_000,
-  employeeMenu: 60_000,
+  employeeMenu: 15_000,
   employeeVendorCategories: 15_000,
 };
 

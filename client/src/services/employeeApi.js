@@ -6,8 +6,8 @@ export function listVendors({ page, limit, site_id, search, token, signal, cache
   return apiRequest('/vendors', { query: { page, limit, site_id, search }, token, signal, cache });
 }
 
-export function getVendor(vendorId, { token, signal, cache } = {}) {
-  return apiRequest(`/vendors/${vendorId}`, { token, signal, cache });
+export function getVendor(vendorId, { token, signal, cache, refreshImages = false } = {}) {
+  return apiRequest(`/vendors/${vendorId}`, { query: { refresh_images: refreshImages ? 'true' : undefined }, token, signal, cache });
 }
 
 export function getVendorHours(vendorId, { token, signal } = {}) {

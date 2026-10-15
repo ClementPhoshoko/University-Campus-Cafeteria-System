@@ -7,17 +7,37 @@ import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import ReviewStats from '../../components/reviews/ReviewStats.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
+import Skeleton from '../../components/ui/Skeleton.jsx';
 import BrowseCafeteriaBackground from '../../components/BrowseCafeteriaBackground.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { listVendorMenu, getVendor, addToCart } from '../../services/employeeApi.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import { useFetch } from '../../hooks/useFetch.js';
+import '../../components/cards/CardSkeletonShimmer.css';
 import './browse-cafeteria.css';
 
 const REVIEWS_PER_PAGE = 5;
+const EMPTY_CATEGORIES = [];
 
 const RATING_BREAKDOWN = { 5: 142, 4: 58, 3: 22, 2: 6, 1: 2 };
+
+function MenuItemSkeleton() {
+  return (
+    <div className="browse_cafeteria-menu-skeleton" aria-hidden="true">
+      <Skeleton className="browse_cafeteria-menu-skeleton__image home_card-skeleton-shimmer" />
+      <div className="browse_cafeteria-menu-skeleton__content">
+        <Skeleton className="browse_cafeteria-menu-skeleton__title home_card-skeleton-shimmer" />
+        <Skeleton className="browse_cafeteria-menu-skeleton__description home_card-skeleton-shimmer" />
+        <Skeleton className="browse_cafeteria-menu-skeleton__description browse_cafeteria-menu-skeleton__description--short home_card-skeleton-shimmer" />
+        <span className="browse_cafeteria-menu-skeleton__footer">
+          <Skeleton className="browse_cafeteria-menu-skeleton__price home_card-skeleton-shimmer" />
+          <Skeleton className="browse_cafeteria-menu-skeleton__action home_card-skeleton-shimmer" />
+        </span>
+      </div>
+    </div>
+  );
+}
 
 function formatPrice(price) {
   const num = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.]/g, '')) : price;
@@ -203,39 +223,58 @@ export default function BrowseCafeteriaPage() {
   const [addedItems, setAddedItems] = useState([]);
   const [selectedRating, setSelectedRating] = useState(null);
   const [showAddReview, setShowAddReview] = useState(false);
+  const attemptedImageRefreshes = useRef(new Set());
 
   const isReviewsView = searchParams.get('view') === 'reviews';
-  const loadVendorCatalog = useCallback(async ({ signal }) => {
+  const loadVendor = useCallback(async ({ signal }) => {
     const cafeteriaRes = await getVendor(cafeteriaId, { token, signal, cache: 'no-cache' });
-    const vendor = cafeteriaRes?.vendor || null;
-    const menuRes = vendor?.id
-      ? await listVendorMenu(vendor.id, { token, signal, cache: 'no-cache' })
-      : { categories: [] };
-    return { vendor, categories: menuRes?.categories || [] };
+    return cafeteriaRes?.vendor || null;
   }, [cafeteriaId, token]);
-  const vendorCatalog = useFetch(loadVendorCatalog, {
+  const vendorFeed = useFetch(loadVendor, {
     cacheKey: cafeteriaId ? `employee:vendor-detail:${cafeteriaId}` : null,
     enabled: Boolean(token && cafeteriaId),
     staleTime: CACHE_TTL.employeeVendorDetail,
   });
-  const catalog = token && cafeteriaId ? vendorCatalog.data : null;
-  const vendor = catalog?.vendor || null;
-  const categories = catalog?.categories || [];
-  const menuLoading = Boolean(token && cafeteriaId) && vendorCatalog.isLoading && !catalog;
-  const menuError = vendorCatalog.error && !catalog
-    ? vendorCatalog.error?.message || 'Failed to load menu'
+  const loadMenu = useCallback(async ({ signal }) => {
+    const menuRes = await listVendorMenu(cafeteriaId, { token, signal, cache: 'no-cache' });
+    return { vendorId: cafeteriaId, categories: menuRes?.categories || [] };
+  }, [cafeteriaId, token]);
+  const menuFeed = useFetch(loadMenu, {
+    cacheKey: cafeteriaId ? `employee:menu:${cafeteriaId}` : null,
+    enabled: Boolean(token && cafeteriaId),
+    staleTime: CACHE_TTL.employeeMenu,
+  });
+  const vendor = token && cafeteriaId && vendorFeed.data?.id === cafeteriaId
+    ? vendorFeed.data
     : null;
-  const catalogRefreshError = vendorCatalog.error && catalog
-    ? 'Could not refresh this cafeteria. Showing the last loaded information.'
+  const menuCatalog = token && cafeteriaId && menuFeed.data?.vendorId === cafeteriaId
+    ? menuFeed.data
     : null;
-  const headerReady = Boolean(catalog || menuError);
+  const categories = menuCatalog?.categories || EMPTY_CATEGORIES;
+  const vendorLoading = Boolean(token && cafeteriaId) && vendorFeed.isLoading && !vendor;
+  const menuLoading = Boolean(token && cafeteriaId) && menuFeed.isLoading && !menuCatalog;
+  const vendorError = vendorFeed.error && !vendor
+    ? vendorFeed.error?.message || 'Unable to load cafeteria details.'
+    : null;
+  const menuError = menuFeed.error && !menuCatalog
+    ? menuFeed.error?.message || 'Failed to load menu'
+    : null;
+  const catalogRefreshError = (vendorFeed.error && vendor) || (menuFeed.error && menuCatalog)
+    ? 'Could not refresh the latest cafeteria information. Showing the last loaded information.'
+    : null;
   const rating = vendor?.average_rating ? Number(vendor.average_rating) : 0;
   const totalReviews = Number(vendor?.rating_count || 0);
   const hasOrdered = false;
 
   useEffect(() => {
-    if (categories.length) setActiveCategory('All');
-  }, [cafeteriaId, categories]);
+    setActiveCategory('All');
+  }, [cafeteriaId]);
+
+  useEffect(() => {
+    if (activeCategory !== 'All' && menuCatalog && !categories.some((category) => category.name === activeCategory)) {
+      setActiveCategory('All');
+    }
+  }, [activeCategory, categories, menuCatalog]);
 
   const allItems = useMemo(() => {
     return categories.flatMap((cat) => cat.items || []);
@@ -267,6 +306,55 @@ export default function BrowseCafeteriaPage() {
       setTimeout(() => setAddedItems((current) => current.filter((id) => id !== itemId)), 2000);
     } catch (err) {
       console.error('Failed to add to cart:', err);
+    }
+  };
+
+  const refreshVendorImage = async (failedImage) => {
+    const refreshKey = `vendor:${cafeteriaId}`;
+    if (!cafeteriaId || attemptedImageRefreshes.current.has(refreshKey)) return;
+    attemptedImageRefreshes.current.add(refreshKey);
+
+    try {
+      const response = await getVendor(cafeteriaId, { token, cache: 'no-cache', refreshImages: true });
+      const image = response?.vendor?.logo_url;
+      if (!image || image === failedImage) {
+        console.error(`Unable to refresh cafeteria image for vendor ${cafeteriaId}: no new image URL was returned.`);
+        return;
+      }
+      vendorFeed.mutate((current) => current?.id === cafeteriaId ? { ...current, logo_url: image } : current);
+    } catch (error) {
+      console.error(`Unable to refresh cafeteria image for vendor ${cafeteriaId}:`, error);
+    }
+  };
+
+  const refreshMenuItemImage = async (itemId, vendorId, failedImage) => {
+    const refreshKey = `menu:${vendorId}:${itemId}`;
+    if (!itemId || vendorId !== cafeteriaId || attemptedImageRefreshes.current.has(refreshKey)) return;
+    attemptedImageRefreshes.current.add(refreshKey);
+
+    try {
+      const response = await listVendorMenu(vendorId, { token, cache: 'no-cache', refreshImages: true });
+      const freshItem = response?.categories
+        ?.flatMap((category) => category.items || [])
+        .find((item) => item.id === itemId);
+      if (!freshItem?.image_url || freshItem.image_url === failedImage) {
+        console.error(`Unable to refresh menu image for item ${itemId}: no new image URL was returned.`);
+        return;
+      }
+      menuFeed.mutate((current) => {
+        if (!current || current.vendorId !== vendorId) return current;
+        return {
+          ...current,
+          categories: current.categories.map((category) => ({
+            ...category,
+            items: category.items.map((item) => (
+              item.id === itemId ? { ...item, image_url: freshItem.image_url } : item
+            )),
+          })),
+        };
+      });
+    } catch (error) {
+      console.error(`Unable to refresh menu image for item ${itemId}:`, error);
     }
   };
 
@@ -307,17 +395,40 @@ export default function BrowseCafeteriaPage() {
 
         <header className="browse_cafeteria-header">
           <div className="browse_cafeteria-header-image">
-            <SmartImage src={cafeteria.image} alt={cafeteria.name} eager width={220} height={180} />
+            <SmartImage
+              src={cafeteria.image}
+              alt={cafeteria.name}
+              eager
+              width={220}
+              height={180}
+              onError={vendor ? () => refreshVendorImage(cafeteria.image) : undefined}
+            />
           </div>
           <div className="browse_cafeteria-header-content">
-            <div className="browse_cafeteria-heading-line">
-              <span className={`browse_cafeteria-status browse_cafeteria-status--${cafeteria.status}`}>
-                <span aria-hidden="true" />
-                {cafeteria.status === 'busy' ? 'Busy right now' : cafeteria.status === 'closed' ? 'Closed' : 'Open now'}
-              </span>
-            </div>
-            <h1>{cafeteria.name}</h1>
-            <p className="browse_cafeteria-description">{cafeteria.description}</p>
+            {vendor ? (
+              <>
+                <div className="browse_cafeteria-heading-line">
+                  <span className={`browse_cafeteria-status browse_cafeteria-status--${cafeteria.status}`}>
+                    <span aria-hidden="true" />
+                    {cafeteria.status === 'busy' ? 'Busy right now' : cafeteria.status === 'closed' ? 'Closed' : 'Open now'}
+                  </span>
+                </div>
+                <h1>{cafeteria.name}</h1>
+                <p className="browse_cafeteria-description">{cafeteria.description}</p>
+              </>
+            ) : vendorLoading ? (
+              <div className="browse_cafeteria-header-skeleton" role="status" aria-label="Loading cafeteria details">
+                <Skeleton className="browse_cafeteria-header-skeleton__status home_card-skeleton-shimmer" />
+                <Skeleton className="browse_cafeteria-header-skeleton__title home_card-skeleton-shimmer" />
+                <Skeleton className="browse_cafeteria-header-skeleton__description home_card-skeleton-shimmer" />
+                <Skeleton className="browse_cafeteria-header-skeleton__description browse_cafeteria-header-skeleton__description--short home_card-skeleton-shimmer" />
+              </div>
+            ) : (
+              <>
+                <h1>Cafeteria unavailable</h1>
+                <p className="browse_cafeteria-load-error" role="alert">{vendorError || 'Unable to load cafeteria details.'}</p>
+              </>
+            )}
             {cafeteria.locations.length > 0 && (
               <p className="browse_cafeteria-description">
                 Available at: {cafeteria.locations.map((item) => {
@@ -330,13 +441,13 @@ export default function BrowseCafeteriaPage() {
                 }).join(', ')}
               </p>
             )}
-            <div className="browse_cafeteria-meta">
+            {vendor && <div className="browse_cafeteria-meta">
               <span><IconMapPin size={15} /> {cafeteria.walkTime} walk</span>
               <span><IconClock size={15} /> {cafeteria.prepWindow}</span>
               <button type="button" className="browse_cafeteria-reviews-link" onClick={showReviews}>
                 <IconStar size={15} /> {rating} <small>{totalReviews} reviews</small>
               </button>
-            </div>
+            </div>}
           </div>
         </header>
 
@@ -376,8 +487,8 @@ export default function BrowseCafeteriaPage() {
               </div>
             )}
             {menuLoading ? (
-              <div className="browse_cafeteria-empty">
-                <p>Loading menu...</p>
+              <div className="browse_cafeteria-item-list browse_cafeteria-menu-skeleton-list" role="status" aria-label="Loading menu items" aria-busy="true">
+                {Array.from({ length: 4 }, (_, index) => <MenuItemSkeleton key={index} />)}
               </div>
             ) : menuError ? (
               <div className="browse_cafeteria-empty">
@@ -393,6 +504,8 @@ export default function BrowseCafeteriaPage() {
                     name={item.name}
                     price={formatPrice(item.base_price)}
                     image={item.image_url}
+                    vendorId={cafeteriaId}
+                    onImageError={refreshMenuItemImage}
                     description={item.description}
                     status={item.status}
                     prepMinutes={item.prep_minutes}
