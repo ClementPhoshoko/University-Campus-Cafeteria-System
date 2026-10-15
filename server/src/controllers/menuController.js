@@ -338,6 +338,7 @@ export async function listVendorMenu(req, res) {
 
 export async function getMenuItem(req, res) {
   try {
+    const refreshImages = req.query.refresh_images === 'true';
     const vendorId = requireUuidParam(req, res, 'vendorId');
     if (!vendorId) return;
     const itemId = requireUuidParam(req, res, 'itemId');
@@ -405,7 +406,7 @@ export async function getMenuItem(req, res) {
         id: item.id,
         name: item.name,
         description: item.description,
-        image_url: await resolveAssetUrl(item.image_url, { size: 'hero' }),
+        image_url: await resolveAssetUrl(item.image_url, { size: 'hero', refresh: refreshImages }),
         base_price: item.base_price,
         prep_minutes: item.prep_minutes,
         status: item.status,

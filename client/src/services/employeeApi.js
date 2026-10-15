@@ -28,8 +28,13 @@ export function listVendorMenu(vendorId, { token, signal, cache, refreshImages =
   return apiRequest(`/vendors/${vendorId}/menu`, { query: { refresh_images: refreshImages ? 'true' : undefined }, token, signal, cache });
 }
 
-export function getMenuItem(vendorId, itemId, { token, signal } = {}) {
-  return apiRequest(`/vendors/${vendorId}/menu/${itemId}`, { token, signal });
+export function getMenuItem(vendorId, itemId, { token, signal, cache, refreshImages = false } = {}) {
+  return apiRequest(`/vendors/${vendorId}/menu/${itemId}`, {
+    query: { refresh_images: refreshImages ? 'true' : undefined },
+    token,
+    signal,
+    cache,
+  });
 }
 
 // ─── Cart ───────────────────────────────────────────────────────────

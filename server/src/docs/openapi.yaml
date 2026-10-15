@@ -1798,6 +1798,91 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  '/vendors/{vendorId}/menu/{itemId}':
+    get:
+      tags: [Menus]
+      summary: Get a menu item
+      description: Returns an active menu item with its dietary tags, allergens, and configured option groups.
+      operationId: getMenuItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: refresh_images
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Reissue the signed menu-item image URL after an image load failure.
+      responses:
+        '200':
+          description: Menu item retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  menuItem:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      name: { type: string }
+                      description: { type: string, nullable: true }
+                      image_url: { type: string, nullable: true }
+                      base_price: { type: number }
+                      prep_minutes: { type: integer, nullable: true }
+                      status: { type: string }
+                      ingredients:
+                        type: array
+                        items: { type: string }
+                      portion_description: { type: string, nullable: true }
+                      dietary_tags:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            name: { type: string }
+                      allergens:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name: { type: string }
+                            vendor_notice: { type: string, nullable: true }
+                      option_groups:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            name: { type: string }
+                            selection_type: { type: string, enum: [single, multiple] }
+                            is_required: { type: boolean }
+                            min_select: { type: integer }
+                            max_select: { type: integer }
+                            options:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  id: { type: string, format: uuid }
+                                  name: { type: string }
+                                  price_delta: { type: number }
+                                  max_quantity: { type: integer }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   '/admin/vendor-categories':
     get:
       tags: [Administration]
