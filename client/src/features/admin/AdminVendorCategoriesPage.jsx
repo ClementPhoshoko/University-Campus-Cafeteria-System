@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { IconCheck, IconEdit, IconPhoto, IconPlus, IconUpload, IconX } from '@tabler/icons-react';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
+import Pagination from '../../components/ui/Pagination.jsx';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 import { useAuth } from '../../hooks/useAuth.js';
 import useObjectPreview from '../../hooks/useObjectPreview.js';
@@ -14,6 +15,7 @@ import {
 import './vendor-categories.css';
 
 const emptyForm = { name: '', imageFile: null, sort_order: 0, is_active: true };
+const CATEGORIES_PER_PAGE = 8;
 
 function getCategoryErrorMessage(error, fallback) {
   const message = error?.message?.trim();
@@ -49,6 +51,8 @@ export default function AdminVendorCategoriesPage() {
   const [form, setForm] = useState(emptyForm);
   const [imagePreview, setImagePreview] = useObjectPreview(null);
   const imageInputRef = useRef(null);
+  const categoryListRef = useRef(null);
+  const [categoryPage, setCategoryPage] = useState(1);
   const [loading, setLoading] = useState(Boolean(token));
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState('');
@@ -118,6 +122,7 @@ export default function AdminVendorCategoriesPage() {
       if (form.imageFile && categoryId) {
         await uploadAdminAsset(token, 'vendor_category', categoryId, form.imageFile);
       }
+      if (!editing) setCategoryPage(1);
       setSuccess(editing ? 'Category updated.' : 'Category created.');
       resetForm();
     } catch (saveError) {
@@ -139,6 +144,23 @@ export default function AdminVendorCategoriesPage() {
       setError(getCategoryErrorMessage(updateError, 'Unable to update category visibility.'));
     }
   };
+
+  const totalCategoryPages = Math.max(1, Math.ceil(categories.length / CATEGORIES_PER_PAGE));
+  const paginatedCategories = categories.slice(
+    (categoryPage - 1) * CATEGORIES_PER_PAGE,
+    categoryPage * CATEGORIES_PER_PAGE,
+  );
+
+  const changeCategoryPage = (page) => {
+    setCategoryPage(page);
+    categoryListRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (categoryPage > totalCategoryPages) {
+      setCategoryPage(totalCategoryPages);
+    }
+  }, [categoryPage, totalCategoryPages]);
 
   return (
     <section className="admin-vendor-categories">
@@ -264,31 +286,49 @@ export default function AdminVendorCategoriesPage() {
             </button>
           </div>
         ) : categories.length ? (
-          categories.map((category) => (
-            <article className="admin-vendor-categories__row" key={category.id}>
-              <SmartImage
-                src={category.image_url}
-                alt=""
-                className="admin-vendor-categories__image"
-                width={92}
-                height={72}
-              />
-              <div className="admin-vendor-categories__details">
-                <strong>{category.name}</strong>
-                <span>
-                  {category.is_active ? 'Visible' : 'Hidden'} · {category.assigned_vendor_count || 0} vendors · Order {category.sort_order}
-                </span>
-              </div>
-              <div className="admin-vendor-categories__actions">
-                <button type="button" className="admin-action admin-action--ghost" onClick={() => startEdit(category)}>
-                  <IconEdit size={16} /> Edit
-                </button>
-                <button type="button" className="admin-action admin-action--ghost" onClick={() => toggleActive(category)}>
-                  {category.is_active ? 'Hide' : 'Show'}
-                </button>
-              </div>
-            </article>
-          ))
+          <>
+            <div
+              className="admin-table-wrap admin-vendor-categories__scroll"
+              ref={categoryListRef}
+              role="region"
+              aria-label="Managed vendor categories"
+              tabIndex={0}
+            >
+              {paginatedCategories.map((category) => (
+                <article className="admin-vendor-categories__row" key={category.id}>
+                  <SmartImage
+                    src={category.image_url}
+                    alt=""
+                    className="admin-vendor-categories__image"
+                    width={92}
+                    height={72}
+                  />
+                  <div className="admin-vendor-categories__details">
+                    <strong>{category.name}</strong>
+                    <span>
+                      {category.is_active ? 'Visible' : 'Hidden'} · {category.assigned_vendor_count || 0} vendors · Order {category.sort_order}
+                    </span>
+                  </div>
+                  <div className="admin-vendor-categories__actions">
+                    <button type="button" className="admin-action admin-action--ghost" onClick={() => startEdit(category)}>
+                      <IconEdit size={16} /> Edit
+                    </button>
+                    <button type="button" className="admin-action admin-action--ghost" onClick={() => toggleActive(category)}>
+                      {category.is_active ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <Pagination
+              currentPage={categoryPage}
+              totalPages={totalCategoryPages}
+              totalItems={categories.length}
+              itemsPerPage={CATEGORIES_PER_PAGE}
+              label="categories"
+              onPageChange={changeCategoryPage}
+            />
+          </>
         ) : (
           <div className="admin-empty">
             <img src={emptyStateAvatar} alt="" className="admin-empty__avatar" />
