@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { IconChevronLeft, IconMapPin, IconClock, IconCreditCard } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
@@ -11,6 +11,15 @@ import OrderActions from '../../components/orders/OrderActions.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { getMyOrder, cancelMyOrder, reorderOrder, rateOrder } from '../../services/employeeApi.js';
 import './orders.css';
+
+const REFRESHABLE_ORDER_STATUSES = new Set([
+  'payment_pending',
+  'submitted',
+  'payment_confirmed',
+  'received_by_vendor',
+  'accepted',
+  'preparing',
+]);
 
 function formatOrderDate(isoString) {
   if (!isoString) return '';
@@ -30,7 +39,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchOrder = async () => {
+  const fetchOrder = useCallback(async () => {
     if (!token || !orderId) return;
     try {
       const res = await getMyOrder(orderId, { token });
@@ -38,14 +47,25 @@ export default function OrderDetailPage() {
     } catch (err) {
       console.error('Failed to fetch order:', err);
     }
-  };
+  }, [orderId, token]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     fetchOrder().finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [orderId, token]);
+  }, [fetchOrder]);
+
+  useEffect(() => {
+    if (!REFRESHABLE_ORDER_STATUSES.has(order?.status)) return undefined;
+    const interval = window.setInterval(fetchOrder, 15_000);
+    const refreshOnFocus = () => fetchOrder();
+    window.addEventListener('focus', refreshOnFocus);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshOnFocus);
+    };
+  }, [fetchOrder, order?.status]);
 
   const handleCancel = async (id, reason) => {
     if (!token) return;
@@ -83,7 +103,7 @@ export default function OrderDetailPage() {
   }
 
   const vendor = order.vendor;
-  const showCode = ['preparing', 'ready_for_collection', 'collected', 'completed'].includes(order.status);
+  const showCode = ['ready_for_collection', 'collected', 'completed'].includes(order.status);
 
   return (
     <PageContainer className="order-detail-container">

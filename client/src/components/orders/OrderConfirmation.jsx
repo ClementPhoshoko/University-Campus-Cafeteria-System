@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import PrimaryButton from '../PrimaryButton.jsx';
+import CollectionCode from './CollectionCode.jsx';
 import successImg from '../../assets/avatars/Cheerful_Student_with_Green_Checkmark.webp';
 
-export default function OrderConfirmation({ orderId, onContinue }) {
+export default function OrderConfirmation({ orderId, collectionCode, onContinue }) {
   const navigate = useNavigate();
 
   const handleTrack = () => {
@@ -23,8 +24,9 @@ export default function OrderConfirmation({ orderId, onContinue }) {
         Your order has been received and is being prepared.
       </p>
       <p className="order-confirmation__hint">
-        Use your collection code when the order is ready.
+        Keep this code ready to show when your order is ready.
       </p>
+      <CollectionCode order={{ collectionCode }} />
       <div className="order-confirmation__actions">
         <PrimaryButton onClick={handleTrack}>
           Track Order

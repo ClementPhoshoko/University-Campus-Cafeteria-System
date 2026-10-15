@@ -32,7 +32,11 @@ export default function OrderCard({ order, showVendor = true }) {
           {showVendor && <h3 className="order-card__vendor">{vendorName}</h3>}
         </div>
         <div className="order-card__meta">
-          <span>Order code #{order.order_number}</span>
+          {order.collectionCode ? (
+            <span>Collection code <strong className="order-card__collection-code">{order.collectionCode}</strong></span>
+          ) : (
+            <span>Order code #{order.order_number}</span>
+          )}
           <span>{formatOrderDate(order.created_at)}</span>
           <span>{formatOrderTime(order.created_at)}</span>
         </div>

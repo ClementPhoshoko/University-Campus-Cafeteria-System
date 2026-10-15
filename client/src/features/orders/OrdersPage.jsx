@@ -50,12 +50,8 @@ function OrdersAside() {
           <h3 className="orders-code-reminder__title">Collection Code</h3>
         </div>
         <p className="orders-code-reminder__text">
-          When your order is ready, you'll receive a 4-digit code. Show it at the collection point to pick up your food.
+          Each order has its own 4-character collection code. Find it on the confirmation screen and in order details when the order is ready. Show it at the collection point.
         </p>
-        <div className="orders-code-reminder__example">
-          <span className="orders-code-reminder__code">8X2P</span>
-          <span className="orders-code-reminder__label">Example code</span>
-        </div>
       </div>
 
       <div className="orders-info-card">
@@ -67,7 +63,7 @@ function OrdersAside() {
           <li>Place your order and choose a collection slot</li>
           <li>Wait for the vendor to prepare your food</li>
           <li>Head to the collection point when ready</li>
-          <li>Show your 4-digit code to collect</li>
+          <li>Show your 4-character code to collect</li>
         </ol>
       </div>
 

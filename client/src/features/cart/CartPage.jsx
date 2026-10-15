@@ -51,7 +51,7 @@ export default function CartPage() {
   const [actionError, setActionError] = useState('');
   const [isCartUpdating, setIsCartUpdating] = useState(false);
   const [orderStatus, setOrderStatus] = useState(null);
-  const [createdOrderId, setCreatedOrderId] = useState(null);
+  const [createdOrder, setCreatedOrder] = useState(null);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -219,7 +219,10 @@ export default function CartPage() {
         collectionSlotId: selectedSlot,
         notes: orderNotes || null,
       }, { token });
-      setCreatedOrderId(res?.order?.id || null);
+      setCreatedOrder({
+        id: res?.order?.id || null,
+        collectionCode: res?.order?.collectionCode || null,
+      });
       cartFeed.mutate((current) => current?.carts
         ? { ...current, carts: current.carts.filter((entry) => entry.id !== cart.id) }
         : current);
@@ -242,7 +245,8 @@ export default function CartPage() {
   if (orderStatus === 'success') {
     return (
       <OrderConfirmation
-        orderId={createdOrderId}
+        orderId={createdOrder?.id}
+        collectionCode={createdOrder?.collectionCode}
         onContinue={handleCloseOrderStatus}
       />
     );

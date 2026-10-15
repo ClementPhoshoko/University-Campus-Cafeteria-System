@@ -32,7 +32,8 @@ function sendValidation(res, errors) {
 }
 
 function generateCollectionCode() {
-  return crypto.randomBytes(2).toString('hex').toUpperCase();
+  const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  return Array.from({ length: 4 }, () => alphabet[crypto.randomInt(alphabet.length)]).join('');
 }
 
 function hashCollectionCode(code) {
@@ -224,10 +225,14 @@ export async function createOrder(req, res) {
       category: 'lifecycle',
     });
 
+    const orderResponse = { ...order };
+    delete orderResponse.collection_reference_hash;
+    delete orderResponse.collection_reference_last4;
+
     return respond(req, res, {
       success: true,
       order: {
-        ...order,
+        ...orderResponse,
         items: orderItemRows,
         collectionCode,
       },
@@ -249,7 +254,7 @@ export async function listMyOrders(req, res) {
 
     let query = db()
       .from('orders')
-      .select('*, vendors(name, logo_url)', { count: 'exact' })
+      .select('id, order_number, status, total, created_at, collection_reference_last4, vendors(name, logo_url)', { count: 'exact' })
       .eq('user_id', userId);
 
     if (statusFilter === 'active') {
@@ -266,9 +271,15 @@ export async function listMyOrders(req, res) {
     if (error) throw error;
 
     const orders = await Promise.all((data || []).map(async (o) => {
-      const { vendors, ...rest } = o;
+      const { vendors, collection_reference_last4, ...rest } = o;
       const logo = vendors?.logo_url || null;
-      return { ...rest, vendorName: vendors?.name || null, vendorLogo: logo ? await resolveAssetUrl(logo, { size: 'icon' }) : null };
+      const collectionCodeVisible = ['ready_for_collection', 'collected', 'completed'].includes(o.status);
+      return {
+        ...rest,
+        collectionCode: collectionCodeVisible ? collection_reference_last4 : null,
+        vendorName: vendors?.name || null,
+        vendorLogo: logo ? await resolveAssetUrl(logo, { size: 'icon' }) : null,
+      };
     }));
 
     return respond(req, res, {
@@ -317,6 +328,9 @@ export async function getMyOrder(req, res) {
     const vendor = vendors
       ? { ...vendors, logo_url: await resolveAssetUrl(vendors.logo_url, { size: 'icon' }) }
       : null;
+    const collectionCodeVisible = ['ready_for_collection', 'collected', 'completed'].includes(order.status);
+    delete orderRest.collection_reference_hash;
+    if (!collectionCodeVisible) orderRest.collection_reference_last4 = null;
     return respond(req, res, {
       success: true,
       order: {

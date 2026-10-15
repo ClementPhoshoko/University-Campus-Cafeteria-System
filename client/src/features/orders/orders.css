@@ -163,28 +163,6 @@
   line-height: 1.5;
 }
 
-.orders-code-reminder__example {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-subtle);
-}
-
-.orders-code-reminder__code {
-  font-size: 1.4rem;
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.15em;
-  color: var(--color-text-primary);
-  font-family: var(--font-primary);
-}
-
-.orders-code-reminder__label {
-  font-size: 0.72rem;
-  color: var(--color-text-tertiary);
-}
-
 /* ── Info card ── */
 
 .orders-info-card {
@@ -322,6 +300,12 @@
   gap: var(--space-3);
   color: var(--color-text-tertiary);
   font-size: 0.78rem;
+}
+
+.order-card__collection-code {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
 }
 
 .order-card__items {
@@ -1001,6 +985,11 @@
   margin: var(--space-3) 0 0;
   color: var(--color-text-tertiary);
   font-size: 0.8rem;
+}
+
+.order-confirmation .collection-code {
+  width: min(100%, 320px);
+  margin-top: var(--space-4);
 }
 
 .order-confirmation__actions {
