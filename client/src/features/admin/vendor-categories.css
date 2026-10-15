@@ -23,6 +23,61 @@
   font-size: 1rem;
 }
 
+.admin-vendor-categories__form-toggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-vendor-categories__form-toggle-copy {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  min-width: 0;
+}
+
+.admin-vendor-categories__form-summary {
+  color: var(--color-text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.admin-vendor-categories__form-chevron {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.admin-vendor-categories__form-toggle:hover .admin-vendor-categories__form-chevron,
+.admin-vendor-categories__form-toggle:focus-visible .admin-vendor-categories__form-chevron {
+  color: var(--color-action-primary);
+}
+
+.admin-vendor-categories__form-chevron--open {
+  transform: rotate(180deg);
+}
+
+.admin-vendor-categories__form-toggle:focus-visible {
+  outline: 2px solid var(--color-action-primary);
+  outline-offset: 4px;
+  border-radius: var(--radius-xs);
+}
+
+.admin-vendor-categories__form--collapsed .admin-card__head {
+  margin-bottom: 0;
+}
+
 .admin-vendor-categories__form-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
@@ -349,6 +404,12 @@
 }
 
 @media (max-width: 640px) {
+  .admin-vendor-categories__form-toggle-copy {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
   .admin-vendor-categories__form-grid {
     grid-template-columns: minmax(0, 1fr);
   }

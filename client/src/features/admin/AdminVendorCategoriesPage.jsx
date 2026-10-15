@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { IconCheck, IconEdit, IconPhoto, IconPlus, IconUpload, IconX } from '@tabler/icons-react';
+import { IconCheck, IconChevronDown, IconEdit, IconPhoto, IconPlus, IconUpload, IconX } from '@tabler/icons-react';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
@@ -48,6 +48,7 @@ export default function AdminVendorCategoriesPage() {
   const token = session?.access_token;
   const [categories, setCategories] = useState([]);
   const [editing, setEditing] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [imagePreview, setImagePreview] = useObjectPreview(null);
   const imageInputRef = useRef(null);
@@ -79,6 +80,7 @@ export default function AdminVendorCategoriesPage() {
 
   const startEdit = (category) => {
     setEditing(category);
+    setFormOpen(true);
     setImagePreview(null);
     if (imageInputRef.current) imageInputRef.current.value = '';
     setForm({
@@ -170,93 +172,111 @@ export default function AdminVendorCategoriesPage() {
         </div>
       </header>
 
-      <form className="admin-card admin-vendor-categories__form" onSubmit={submit}>
+      <form className={`admin-card admin-vendor-categories__form${formOpen ? '' : ' admin-vendor-categories__form--collapsed'}`} onSubmit={submit}>
         <header className="admin-card__head admin-card__head--inline">
-          <div>
-            <span className="admin-card__eyebrow">{editing ? 'Update catalog' : 'Catalog setup'}</span>
-            <h2 className="admin-card__title admin-vendor-categories__section-title">
-              {editing ? 'Edit category' : 'Add category'}
-            </h2>
-          </div>
+          <button
+            type="button"
+            className="admin-vendor-categories__form-toggle"
+            aria-expanded={formOpen}
+            onClick={() => setFormOpen((open) => !open)}
+          >
+            <span className="admin-vendor-categories__form-toggle-copy">
+              <span className="admin-card__title admin-vendor-categories__section-title" role="heading" aria-level="2">
+                {editing ? 'Edit category' : 'Add category'}
+              </span>
+              <span className="admin-vendor-categories__form-summary">
+                {editing ? 'Update this category’s details and image.' : 'Create a category for the customer catalog.'}
+              </span>
+            </span>
+            <IconChevronDown
+              className={`admin-vendor-categories__form-chevron${formOpen ? ' admin-vendor-categories__form-chevron--open' : ''}`}
+              size={19}
+              stroke={1.8}
+              aria-hidden="true"
+            />
+          </button>
           {editing && (
             <button type="button" className="admin-action admin-action--ghost" onClick={resetForm}>
               <IconX size={16} /> Cancel
             </button>
           )}
         </header>
-        <div className="admin-vendor-categories__form-grid">
-          <div className="admin-vendor-categories__form-fields">
-            <label className="admin-modal__field">
-              <span>Category name</span>
-              <input
-                className="admin-input"
-                value={form.name}
-                maxLength={80}
-                required
-                placeholder="e.g. Coffee & tea"
-                onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-              />
-            </label>
-            <label className="admin-modal__field admin-vendor-categories__order-field">
-              <span>Display order</span>
-              <input
-                className="admin-input"
-                type="number"
-                step="1"
-                value={form.sort_order}
-                onChange={(event) => setForm((current) => ({ ...current, sort_order: Number(event.target.value) }))}
-              />
-              <span className="admin-vendor-categories__field-hint">Lower numbers appear first.</span>
-            </label>
+        {formOpen && (
+          <div>
+            <div className="admin-vendor-categories__form-grid">
+              <div className="admin-vendor-categories__form-fields">
+                <label className="admin-modal__field">
+                  <span>Category name</span>
+                  <input
+                    className="admin-input"
+                    value={form.name}
+                    maxLength={80}
+                    required
+                    placeholder="e.g. Coffee & tea"
+                    onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+                  />
+                </label>
+                <label className="admin-modal__field admin-vendor-categories__order-field">
+                  <span>Display order</span>
+                  <input
+                    className="admin-input"
+                    type="number"
+                    step="1"
+                    value={form.sort_order}
+                    onChange={(event) => setForm((current) => ({ ...current, sort_order: Number(event.target.value) }))}
+                  />
+                  <span className="admin-vendor-categories__field-hint">Lower numbers appear first.</span>
+                </label>
+              </div>
+              <div className="admin-modal__field admin-vendor-categories__image-field">
+                <span>Home image</span>
+                <label className={`admin-vendor-categories__upload${imagePreview || editing?.image_url ? ' admin-vendor-categories__upload--has-image' : ''}`}>
+                  <input
+                    ref={imageInputRef}
+                    className="admin-vendor-categories__upload-input"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif,image/tiff,image/gif"
+                    required={!editing}
+                    onChange={(event) => {
+                      const imageFile = event.target.files?.[0] || null;
+                      setForm((current) => ({ ...current, imageFile }));
+                      setImagePreview(imageFile);
+                    }}
+                  />
+                  <span className="admin-vendor-categories__upload-preview">
+                    {imagePreview || editing?.image_url ? (
+                      <img src={imagePreview || editing.image_url} alt="" />
+                    ) : (
+                      <IconPhoto size={24} stroke={1.5} />
+                    )}
+                  </span>
+                  <span className="admin-vendor-categories__upload-copy">
+                    <strong>{form.imageFile?.name || (editing?.image_url ? 'Current category image' : 'Choose an image')}</strong>
+                    <span>{form.imageFile ? 'Selected for upload' : 'Add an image shown on the customer Home page.'}</span>
+                    <span className="admin-vendor-categories__upload-hint">JPEG, PNG, WebP, AVIF, TIFF or still GIF · 32–6,000 px per side · Max 7 MB</span>
+                  </span>
+                  <span className="admin-vendor-categories__choose-file">
+                    <IconUpload size={15} stroke={1.8} />
+                    Choose file
+                  </span>
+                </label>
+              </div>
+            </div>
+            <footer className="admin-vendor-categories__form-footer">
+              <button type="submit" className="admin-action admin-action--approve admin-vendor-categories__submit" disabled={saving || !form.name.trim()}>
+                {editing ? <IconCheck size={16} /> : <IconPlus size={16} />}
+                {saving ? 'Saving…' : editing ? 'Save category' : 'Add category'}
+              </button>
+              {error && <p className="admin-vendor-categories__error" role="alert">{error}</p>}
+              {success && <p className="admin-vendor-categories__success" role="status">{success}</p>}
+            </footer>
           </div>
-          <div className="admin-modal__field admin-vendor-categories__image-field">
-            <span>Home image</span>
-            <label className={`admin-vendor-categories__upload${imagePreview || editing?.image_url ? ' admin-vendor-categories__upload--has-image' : ''}`}>
-              <input
-                ref={imageInputRef}
-                className="admin-vendor-categories__upload-input"
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/avif,image/tiff,image/gif"
-                required={!editing}
-                onChange={(event) => {
-                  const imageFile = event.target.files?.[0] || null;
-                  setForm((current) => ({ ...current, imageFile }));
-                  setImagePreview(imageFile);
-                }}
-              />
-              <span className="admin-vendor-categories__upload-preview">
-                {imagePreview || editing?.image_url ? (
-                  <img src={imagePreview || editing.image_url} alt="" />
-                ) : (
-                  <IconPhoto size={24} stroke={1.5} />
-                )}
-              </span>
-              <span className="admin-vendor-categories__upload-copy">
-                <strong>{form.imageFile?.name || (editing?.image_url ? 'Current category image' : 'Choose an image')}</strong>
-                <span>{form.imageFile ? 'Selected for upload' : 'Add an image shown on the customer Home page.'}</span>
-                <span className="admin-vendor-categories__upload-hint">JPEG, PNG, WebP, AVIF, TIFF or still GIF · 32–6,000 px per side · Max 7 MB</span>
-              </span>
-              <span className="admin-vendor-categories__choose-file">
-                <IconUpload size={15} stroke={1.8} />
-                Choose file
-              </span>
-            </label>
-          </div>
-        </div>
-        <footer className="admin-vendor-categories__form-footer">
-          <button type="submit" className="admin-action admin-action--approve admin-vendor-categories__submit" disabled={saving || !form.name.trim()}>
-            {editing ? <IconCheck size={16} /> : <IconPlus size={16} />}
-            {saving ? 'Saving…' : editing ? 'Save category' : 'Add category'}
-          </button>
-          {error && <p className="admin-vendor-categories__error" role="alert">{error}</p>}
-          {success && <p className="admin-vendor-categories__success" role="status">{success}</p>}
-        </footer>
+        )}
       </form>
 
       <section className="admin-card admin-vendor-categories__list">
         <header className="admin-card__head admin-card__head--inline">
           <div>
-            <span className="admin-card__eyebrow">Customer catalog</span>
             <h2 className="admin-card__title admin-vendor-categories__section-title">Managed categories</h2>
           </div>
           {loading ? (
