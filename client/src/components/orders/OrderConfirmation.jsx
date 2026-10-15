@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import PrimaryButton from '../PrimaryButton.jsx';
 import successImg from '../../assets/avatars/Cheerful_Student_with_Green_Checkmark.webp';
 
 export default function OrderConfirmation({ orderId, onContinue }) {
@@ -25,12 +26,12 @@ export default function OrderConfirmation({ orderId, onContinue }) {
         Use your collection code when the order is ready.
       </p>
       <div className="order-confirmation__actions">
-        <button type="button" className="order-confirmation__btn order-confirmation__btn--primary" onClick={handleTrack}>
+        <PrimaryButton onClick={handleTrack}>
           Track Order
-        </button>
-        <button type="button" className="order-confirmation__btn order-confirmation__btn--secondary" onClick={handleHome}>
+        </PrimaryButton>
+        <PrimaryButton onClick={handleHome}>
           Back to Home
-        </button>
+        </PrimaryButton>
       </div>
     </div>
   );

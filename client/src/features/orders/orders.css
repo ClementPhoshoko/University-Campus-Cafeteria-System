@@ -1011,39 +1011,8 @@
   margin-top: var(--space-8);
 }
 
-.order-confirmation__btn {
+.order-confirmation__actions .primary-btn {
   min-width: 160px;
-  height: 48px;
-  padding: 0 var(--space-5);
-  border: none;
-  border-radius: var(--radius-lg);
-  font-family: var(--font-primary);
-  font-size: 0.88rem;
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: background var(--transition-fast), transform var(--transition-fast);
-}
-
-.order-confirmation__btn--primary {
-  background: var(--color-action-primary);
-  color: var(--color-action-primary-text);
-}
-
-.order-confirmation__btn--primary:hover {
-  background: var(--color-action-primary-hover);
-}
-
-.order-confirmation__btn--secondary {
-  background: var(--color-surface-raised);
-  color: var(--color-text-primary);
-}
-
-.order-confirmation__btn--secondary:hover {
-  background: var(--color-surface-subtle);
-}
-
-.order-confirmation__btn:active {
-  transform: scale(0.97);
 }
 
 /* ── Responsive ── */
@@ -1072,8 +1041,7 @@
 @media (prefers-reduced-motion: reduce) {
   .order-card,
   .orders-filter-chip,
-  .order-actions__btn,
-  .order-confirmation__btn {
+  .order-actions__btn {
     transition: none;
   }
 }
