@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth.js';
 import SplashScreen from './features/auth/SplashScreen.jsx';
@@ -72,10 +72,16 @@ export default function App() {
   const { user, profile, initialized } = useAuth();
   const [phase, setPhase] = useState('splash');
 
+  useEffect(() => {
+    if (isOnboardingCompleted(profile)) {
+      localStorage.setItem('onboarding_completed', 'true');
+    }
+  }, [profile]);
+
   const shouldShowOnboarding = useMemo(() => {
     if (!initialized) return false;
     if (phase !== 'home') return false;
-    if (user && isOnboardingCompleted(profile)) return false;
+    if (isOnboardingCompleted(profile) || localStorage.getItem('onboarding_completed') === 'true') return false;
     return true;
   }, [initialized, phase, user, profile]);
 

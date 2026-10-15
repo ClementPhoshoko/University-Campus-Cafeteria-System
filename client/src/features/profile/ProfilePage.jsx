@@ -477,7 +477,22 @@ function ProfileTagGroup({ label, values, warning = false }) {
   );
 }
 
-function SecuritySection({ user }) {
+function SecuritySection({ signOut }) {
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState('');
+
+  const handleSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    setSignOutError('');
+    try {
+      await signOut();
+    } catch (error) {
+      setSignOutError(error?.message || 'Could not sign out. Please try again.');
+      setIsSigningOut(false);
+    }
+  };
+
   return (
     <section className="profile_section">
       <div className="profile_card">
@@ -495,8 +510,9 @@ function SecuritySection({ user }) {
           <h3 className="profile_card-title">Active sessions</h3>
         </div>
         <p className="profile_section-note">You are currently signed in on this device.</p>
-        <button type="button" className="profile_btn profile_btn--danger">
-          Sign out of this device
+        {signOutError && <p className="profile_section-note" role="alert">{signOutError}</p>}
+        <button type="button" className="profile_btn profile_btn--danger" onClick={handleSignOut} disabled={isSigningOut}>
+          {isSigningOut ? 'Signing out…' : 'Sign out of this device'}
         </button>
       </div>
     </section>
@@ -512,7 +528,7 @@ const SECTION_MAP = {
 };
 
 export default function ProfilePage() {
-  const { profile, user } = useAuth();
+  const { profile, user, signOut } = useAuth();
   const { roles, loading } = useRoles();
   const [active, setActive] = useState('overview');
   const [displayProfile, setDisplayProfile] = useState(profile);
@@ -547,7 +563,7 @@ export default function ProfilePage() {
               <div className="profile_loading-bar profile_loading-bar--short" />
             </div>
           ) : (
-            <ActiveSection profile={displayProfile} roles={roles} user={user} onSave={saveProfile} />
+            <ActiveSection profile={displayProfile} roles={roles} user={user} onSave={saveProfile} signOut={signOut} />
           )}
         </main>
       </div>

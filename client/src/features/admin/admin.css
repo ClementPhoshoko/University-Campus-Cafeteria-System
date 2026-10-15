@@ -214,6 +214,18 @@
   transform: scale(0.95);
 }
 
+.admin-sidebar__logout:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.admin-sidebar__logout-error {
+  margin: 8px 14px 0;
+  color: var(--error-500);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
 /* ── Main area ── */
 
 .admin-main {

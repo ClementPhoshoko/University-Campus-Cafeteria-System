@@ -56,6 +56,20 @@ export default function AdminLayout() {
   const { profile, user, signOut } = useAuth();
   const location = useLocation();
   const [healthStatus, setHealthStatus] = useState('loading');
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState('');
+
+  const handleSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    setSignOutError('');
+    try {
+      await signOut();
+    } catch (error) {
+      setSignOutError(error?.message || 'Could not sign out. Please try again.');
+      setIsSigningOut(false);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -128,12 +142,15 @@ export default function AdminLayout() {
           <button
             type="button"
             className="admin-sidebar__logout"
-            onClick={signOut}
+            onClick={handleSignOut}
             aria-label="Sign out"
+            title={isSigningOut ? 'Signing out…' : 'Sign out'}
+            disabled={isSigningOut}
           >
             <IconLogout size={16} stroke={1.8} />
           </button>
         </div>
+        {signOutError && <p className="admin-sidebar__logout-error" role="alert">{signOutError}</p>}
       </aside>
 
       <main className="admin-main">
