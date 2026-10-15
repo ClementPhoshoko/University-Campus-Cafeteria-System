@@ -268,6 +268,10 @@ export default function CartPage() {
                   <div className="cart-skeleton__details">
                     <Skeleton className="skeleton--text home_card-skeleton-shimmer" style={{ width: '48%', height: 16 }} />
                     <Skeleton className="skeleton--text home_card-skeleton-shimmer" style={{ width: '70%', height: 12 }} />
+                    <div className="cart-skeleton__instructions" aria-hidden="true">
+                      <Skeleton className="skeleton--text home_card-skeleton-shimmer" style={{ width: 104, height: 10 }} />
+                      <Skeleton className="skeleton--text home_card-skeleton-shimmer" style={{ width: '84%', height: 13 }} />
+                    </div>
                     <Skeleton className="skeleton--text home_card-skeleton-shimmer" style={{ width: '26%', height: 16 }} />
                   </div>
                 </div>

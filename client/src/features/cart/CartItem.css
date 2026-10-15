@@ -179,9 +179,16 @@
 }
 
 .cart-item__instructions {
-  font-size: 0.78rem;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-subtle);
+  font-size: 0.8rem;
+  line-height: 1.5;
   font-style: italic;
   color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .cart-item__price {

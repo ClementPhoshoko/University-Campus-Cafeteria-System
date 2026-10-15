@@ -5,7 +5,9 @@ import SmartImage from '../../components/ui/SmartImage.jsx';
 import './CartItem.css';
 
 export default function CartItem({ item, onUpdateQuantity, onRemove, onImageError, to }) {
-  const { menuItem, quantity, unitPriceSnapshot, selectedOptions, specialInstructions } = item;
+  const { menuItem, quantity, unitPriceSnapshot, selectedOptions } = item;
+  const rawInstructions = item.specialInstructions ?? item.special_instructions;
+  const instructions = typeof rawInstructions === 'string' ? rawInstructions.trim() : '';
 
   const formatPrice = (price) => {
     const numPrice = typeof price === 'string'
@@ -111,9 +113,10 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, onImageErro
           </div>
         )}
 
-        {specialInstructions && (
+        {instructions && (
           <div className="cart-item__section">
-            <span className="cart-item__instructions">{specialInstructions}</span>
+            <span className="cart-item__section-label">Special instructions</span>
+            <p className="cart-item__instructions">{instructions}</p>
           </div>
         )}
 
