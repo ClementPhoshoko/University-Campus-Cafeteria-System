@@ -85,7 +85,6 @@ export default function AdminVendorCategoriesPage() {
       name: category.name,
       imageFile: null,
       sort_order: category.sort_order || 0,
-      is_active: category.is_active,
     });
     setError('');
     setSuccess('');
@@ -113,7 +112,7 @@ export default function AdminVendorCategoriesPage() {
       const payload = {
         name: form.name.trim(),
         sort_order: Number(form.sort_order),
-        is_active: Boolean(form.is_active),
+        ...(editing ? {} : { is_active: Boolean(form.is_active) }),
       };
       const response = editing
         ? await updateVendorCategoryCatalogEntry(token, editing.id, payload)
@@ -209,16 +208,6 @@ export default function AdminVendorCategoriesPage() {
               />
               <span className="admin-vendor-categories__field-hint">Lower numbers appear first.</span>
             </label>
-            {editing && (
-              <label className="admin-vendor-categories__active">
-                <input
-                  type="checkbox"
-                  checked={form.is_active}
-                  onChange={(event) => setForm((current) => ({ ...current, is_active: event.target.checked }))}
-                />
-                Visible to customers and vendors
-              </label>
-            )}
           </div>
           <div className="admin-modal__field admin-vendor-categories__image-field">
             <span>Home image</span>

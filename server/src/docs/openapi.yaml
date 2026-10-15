@@ -1639,7 +1639,7 @@ paths:
     get:
       tags: [Vendors]
       summary: List active shared vendor categories
-      description: Returns customer-facing vendor categories with their centrally managed images.
+      description: Returns all active customer-facing vendor categories, including categories not yet assigned to a vendor, with their centrally managed images.
       operationId: listPublicVendorCategories
       security:
         - bearerAuth: []

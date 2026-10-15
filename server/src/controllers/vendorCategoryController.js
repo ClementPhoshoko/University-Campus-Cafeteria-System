@@ -35,15 +35,13 @@ export async function listPublicVendorCategories(req, res) {
   try {
     const { data, error } = await db()
       .from('vendor_category_catalog')
-      .select('id, name, slug, image_url, sort_order, vendor_category_assignments(count)')
+      .select('id, name, slug, image_url, sort_order')
       .eq('is_active', true)
       .order('sort_order')
       .order('name');
     if (error) throw error;
 
-    const categories = await Promise.all((data || [])
-      .filter((category) => Number(category.vendor_category_assignments?.[0]?.count || 0) > 0)
-      .map(withImageUrl));
+    const categories = await Promise.all((data || []).map(withImageUrl));
     return respond(req, res, { success: true, categories }, { cacheControl: CACHE.publicOperational });
   } catch (error) {
     return handleError(res, error);

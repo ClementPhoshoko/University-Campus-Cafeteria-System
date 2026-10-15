@@ -257,49 +257,52 @@ export default function HomePage() {
 
       <div className="home-content">
         {homeRefreshError && <p className="home_loading-text" role="status">{homeRefreshError}</p>}
-        <section aria-label="Our cafeterias">
-          <SectionHeader title="Our cafeterias" actionLabel="View all" actionTo="/cafeterias" />
-          {homeLoading ? (
-            <>
-              <div className="home_cafeteria-scroll" role="status" aria-label="Loading cafeterias">
-                {Array.from({ length: 5 }, (_, index) => (
-                  <CafeteriaCardSkeleton key={index} />
-                ))}
-              </div>
-              <ScrollIndicator fillRef={cafeteria.fillRef} />
-            </>
-          ) : homeError ? (
-            <p className="home_loading-text">{homeError}</p>
-          ) : (
-            <>
-              <div className="home_cafeteria-scroll" ref={cafeteria.scrollRef} onScroll={cafeteria.onScroll}>
-                {cafeterias.map((v) => (
-                  <CafeteriaCard
-                    key={v.id}
-                    id={v.id}
-                    name={v.name}
-                    status={v.status}
-                    image={v.image}
-                    description={v.description}
-                    prepWindow={v.prepWindow}
-                    rating={v.rating}
-                    reviewCount={v.reviewCount}
-                    location={v.location}
-                    locations={v.locations}
-                    onImageError={refreshCafeteriaImage}
-                    to={`/cafeterias/${v.id}`}
-                  />
-                ))}
+        {(homeLoading || homeError || cafeterias.length > 0) && (
+          <section aria-label="Our cafeterias">
+            <SectionHeader title="Our cafeterias" actionLabel="View all" actionTo="/cafeterias" />
+            {homeLoading ? (
+              <>
+                <div className="home_cafeteria-scroll" role="status" aria-label="Loading cafeterias">
+                  {Array.from({ length: 5 }, (_, index) => (
+                    <CafeteriaCardSkeleton key={index} />
+                  ))}
+                </div>
+                <ScrollIndicator fillRef={cafeteria.fillRef} />
+              </>
+            ) : homeError ? (
+              <p className="home_loading-text">{homeError}</p>
+            ) : (
+              <>
+                <div className="home_cafeteria-scroll" ref={cafeteria.scrollRef} onScroll={cafeteria.onScroll}>
+                  {cafeterias.map((v) => (
+                    <CafeteriaCard
+                      key={v.id}
+                      id={v.id}
+                      name={v.name}
+                      status={v.status}
+                      image={v.image}
+                      description={v.description}
+                      prepWindow={v.prepWindow}
+                      rating={v.rating}
+                      reviewCount={v.reviewCount}
+                      location={v.location}
+                      locations={v.locations}
+                      onImageError={refreshCafeteriaImage}
+                      to={`/cafeterias/${v.id}`}
+                    />
+                  ))}
 
-                <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all cafeterias">
-                  <IconChevronRight size={26} stroke={2.2} />
-                </Link>
-              </div>
-              <ScrollIndicator fillRef={cafeteria.fillRef} />
-            </>
-          )}
-        </section>
+                  <Link to="/cafeterias" className="home_cafeteria-more" aria-label="View all cafeterias">
+                    <IconChevronRight size={26} stroke={2.2} />
+                  </Link>
+                </div>
+                <ScrollIndicator fillRef={cafeteria.fillRef} />
+              </>
+            )}
+          </section>
+        )}
 
+        {(mealsLoading || popularError || popularMeals.length > 0) && (
         <section aria-label={popularSource === 'featured' ? 'Featured meals' : 'Popular meals'} style={{ marginTop: 'var(--space-8)' }}>
           <SectionHeader title={popularSource === 'featured' ? 'Featured meals' : 'Popular right now'} actionLabel="View all" actionTo="/cafeterias" />
           {mealsLoading ? (
@@ -310,8 +313,6 @@ export default function HomePage() {
             </div>
           ) : popularError ? (
             <p className="home_loading-text">{popularError}</p>
-          ) : popularMeals.length === 0 ? (
-            <p className="home_loading-text">No available meals right now. Please check back soon.</p>
           ) : (
             <div className="home_meals-scroll" ref={meals.scrollRef} onScroll={meals.onScroll}>
               {popularMeals.map((m, index) => (
@@ -333,7 +334,9 @@ export default function HomePage() {
           )}
           {!homeLoading && <ScrollIndicator fillRef={meals.fillRef} />}
         </section>
+        )}
 
+        {(categoryLoading || categoryError || categories.length > 0) && (
         <section aria-label="Shop by category" style={{ marginTop: 'var(--space-8)' }}>
           <SectionHeader title="Shop by category" />
           <div className="home_category-scroll">
@@ -341,13 +344,12 @@ export default function HomePage() {
               ? Array.from({ length: 6 }, (_, index) => <CategoryCardSkeleton key={index} />)
               : categoryError
                 ? <p className="home_loading-text" role="alert">{categoryError}</p>
-                : categories.length
-                  ? categories.map((c) => (
-                    <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} filterId={c.name} />
-                  ))
-                  : <p className="home_loading-text">Categories appear here when they’re assigned to a vendor.</p>}
+                : categories.map((c) => (
+                  <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} filterId={c.name} />
+                ))}
           </div>
         </section>
+        )}
 
         <section className="home_delivery" aria-label="Why order with us">
           <div className="home_delivery-content">
