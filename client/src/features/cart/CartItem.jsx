@@ -13,7 +13,10 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, to }) {
     return `R${numPrice.toFixed(2)}`;
   };
 
-  const optionsTotal = selectedOptions.reduce((sum, opt) => sum + opt.priceDelta, 0);
+  const optionsTotal = selectedOptions.reduce(
+    (sum, opt) => sum + opt.priceDelta * (opt.quantity || 1),
+    0,
+  );
   const lineTotal = (unitPriceSnapshot + optionsTotal) * quantity;
 
   return (
@@ -57,8 +60,11 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, to }) {
               {selectedOptions.map((opt) => (
                 <span key={opt.id} className="cart-item__option">
                   {opt.name}
+                  {opt.quantity > 1 && <span> × {opt.quantity}</span>}
                   {opt.priceDelta > 0 && (
-                    <span className="cart-item__option-price">+{formatPrice(opt.priceDelta)}</span>
+                    <span className="cart-item__option-price">
+                      +{formatPrice(opt.priceDelta * (opt.quantity || 1))}
+                    </span>
                   )}
                 </span>
               ))}

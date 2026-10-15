@@ -77,10 +77,10 @@ export function listCollectionSlots(vendorLocationId, { token, signal } = {}) {
 
 // ─── Orders ─────────────────────────────────────────────────────────
 
-export function createOrder({ vendorId, vendorLocationId, collectionSlotId, items, notes }, { token, signal } = {}) {
+export function createOrder({ vendorId, vendorLocationId, collectionSlotId, notes }, { token, signal } = {}) {
   return apiRequest('/orders', {
     method: 'POST',
-    body: { vendorId, vendorLocationId, collectionSlotId, items, notes },
+    body: { vendorId, vendorLocationId, collectionSlotId, notes },
     token,
     signal,
   });

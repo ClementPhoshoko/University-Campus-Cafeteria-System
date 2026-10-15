@@ -8,14 +8,14 @@ function OrderItemRow({ item }) {
         <h4 className="order-item__name">{item.item_name_snapshot}</h4>
         {customizations.length > 0 && (
           <p className="order-item__customizations">
-            {customizations.map((c) => c.name).join(', ')}
+            {customizations.map((c) => `${c.name}${c.quantity > 1 ? ` × ${c.quantity}` : ''}`).join(', ')}
           </p>
         )}
         {item.special_instructions && (
           <p className="order-item__instructions">“{item.special_instructions}”</p>
         )}
       </div>
-      <span className="order-item__price">R {item.line_total.toFixed(2)}</span>
+      <span className="order-item__price">R {Number(item.line_total || 0).toFixed(2)}</span>
     </div>
   );
 }

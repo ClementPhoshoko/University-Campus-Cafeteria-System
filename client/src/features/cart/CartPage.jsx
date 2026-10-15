@@ -9,6 +9,7 @@ import CartBackground from '../../components/CartBackground.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import OrderConfirmation from '../../components/orders/OrderConfirmation.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
+import Skeleton from '../../components/ui/Skeleton.jsx';
 import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.webp';
 import { useAuth } from '../../hooks/useAuth.js';
 import { getCart, updateCartItem, removeCartItem, createOrder } from '../../services/employeeApi.js';
@@ -21,23 +22,42 @@ export default function CartPage() {
 
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [orderStatus, setOrderStatus] = useState(null);
   const [createdOrderId, setCreatedOrderId] = useState(null);
+  const [now, setNow] = useState(Date.now());
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      setLoadError('Please sign in again to view your cart.');
+      return undefined;
+    }
     let cancelled = false;
     setLoading(true);
+    setLoadError('');
     getCart({ token })
       .then((res) => {
-        if (!cancelled) setCart(res?.cart || null);
+        if (!cancelled) {
+          setCart(res?.cart || null);
+          setActionError('');
+        }
       })
-      .catch(() => {})
+      .catch((error) => {
+        if (!cancelled) setLoadError(error?.message || 'Could not load your cart. Please try again.');
+      })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [token]);
+  }, [token, reloadKey]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const subtotal = cart?.subtotal || 0;
   const serviceFee = cart?.serviceFee || 0;
@@ -50,20 +70,22 @@ export default function CartPage() {
       return;
     }
     try {
+      setActionError('');
       const res = await updateCartItem(itemId, { quantity: newQuantity }, { token });
       if (res?.cart) setCart((prev) => prev ? { ...prev, ...res.cart } : prev);
     } catch (err) {
-      console.error('Failed to update cart item:', err);
+      setActionError(err?.message || 'Could not update this cart item. Please try again.');
     }
   };
 
   const handleRemoveItem = async (itemId) => {
     if (!token) return;
     try {
+      setActionError('');
       const res = await removeCartItem(itemId, { token });
       if (res?.cart) setCart((prev) => prev ? { ...prev, ...res.cart } : prev);
     } catch (err) {
-      console.error('Failed to remove cart item:', err);
+      setActionError(err?.message || 'Could not remove this cart item. Please try again.');
     }
   };
 
@@ -73,19 +95,27 @@ export default function CartPage() {
 
   const handlePlaceOrder = async () => {
     if (!token || !selectedSlot || !cart) return;
+    if (cart.expiresAt && new Date(cart.expiresAt).getTime() <= Date.now()) {
+      setActionError('Your cart has expired. Refresh the cart and add your items again.');
+      return;
+    }
+    if (specialInstructions.length > 1000) {
+      setActionError('Order notes must be 1000 characters or fewer.');
+      return;
+    }
+    setActionError('');
     setOrderStatus('loading');
     try {
       const res = await createOrder({
         vendorId: cart.vendor?.id,
         vendorLocationId: cart.vendorLocationId,
         collectionSlotId: selectedSlot,
-        items: [],
         notes: specialInstructions || null,
       }, { token });
       setCreatedOrderId(res?.order?.id || null);
       setOrderStatus('success');
     } catch (err) {
-      console.error('Failed to place order:', err);
+      setActionError(err?.message || 'Could not place your order. Please try again.');
       setOrderStatus(null);
     }
   };
@@ -112,7 +142,46 @@ export default function CartPage() {
       <PageContainer className="cart-page-container">
         <CartBackground />
         <div className="cart-page">
-          <p style={{ color: 'var(--color-text-secondary)' }}>Loading cart...</p>
+          <Breadcrumb items={[{ label: 'Your Cart' }]} />
+          <div className="cart__content cart__content--skeleton" aria-label="Loading cart">
+            <div className="cart__main">
+              <div className="cart-skeleton__vendor">
+                <Skeleton className="cart-skeleton__avatar" />
+                <Skeleton className="skeleton--text" style={{ width: '38%', height: 20 }} />
+              </div>
+              {[0, 1].map((item) => (
+                <div className="cart-skeleton__item" key={item} aria-hidden="true">
+                  <Skeleton className="cart-skeleton__image" />
+                  <div className="cart-skeleton__details">
+                    <Skeleton className="skeleton--text" style={{ width: '48%', height: 16 }} />
+                    <Skeleton className="skeleton--text" style={{ width: '70%', height: 12 }} />
+                    <Skeleton className="skeleton--text" style={{ width: '26%', height: 16 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Skeleton className="cart-skeleton__summary" />
+          </div>
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (loadError && !cart) {
+    return (
+      <PageContainer className="cart-page-container">
+        <CartBackground />
+        <div className="cart-page">
+          <Breadcrumb items={[{ label: 'Your Cart' }]} />
+          <div className="cart-load-error" role="alert">
+            <h2>Could not load your cart</h2>
+            <p>{loadError}</p>
+            {token && (
+              <button type="button" onClick={() => setReloadKey((key) => key + 1)}>
+                Try again
+              </button>
+            )}
+          </div>
         </div>
       </PageContainer>
     );
@@ -144,13 +213,13 @@ export default function CartPage() {
 
   const formatExpiry = () => {
     if (!cart.expiresAt) return '';
-    const now = new Date();
-    const diff = new Date(cart.expiresAt) - now;
+    const diff = new Date(cart.expiresAt).getTime() - now;
     if (diff <= 0) return 'Expired';
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     return `${hours}h ${minutes}m`;
   };
+  const isExpired = Boolean(cart.expiresAt && new Date(cart.expiresAt).getTime() <= now);
 
   return (
     <PageContainer className="cart-page-container">
@@ -160,6 +229,8 @@ export default function CartPage() {
 
         <div className="cart__content">
           <div className="cart__main">
+            {actionError && <p className="cart-action-error" role="alert">{actionError}</p>}
+            {loadError && <p className="cart-refresh-error" role="status">Cart refresh failed. Showing the last available cart.</p>}
             <div className="cart__header">
               <div className="cart__vendor">
                 {vendorImage && (
@@ -202,6 +273,7 @@ export default function CartPage() {
                 id="cart-special-instructions"
                 className="cart__special-input"
                 placeholder="Any special requests or notes for your order..."
+                maxLength={1000}
                 value={specialInstructions}
                 onChange={(e) => {
                   setSpecialInstructions(e.target.value);
@@ -222,6 +294,7 @@ export default function CartPage() {
               slots={cart.collectionSlots || []}
               itemCount={cart.itemCount || 0}
               onPlaceOrder={handlePlaceOrder}
+              disabled={isExpired || orderStatus === 'loading'}
             />
           </div>
         </div>

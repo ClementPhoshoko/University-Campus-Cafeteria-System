@@ -1325,6 +1325,7 @@ function mapOrder(row) {
     delivery_fee: Number(row.delivery_fee || 0),
     discount: Number(row.discount || 0),
     total: Number(row.total || 0),
+    notes: row.notes || null,
     order_type: row.order_type,
     cancellation_reason: row.cancellation_reason,
     rejection_reason: row.rejection_reason,

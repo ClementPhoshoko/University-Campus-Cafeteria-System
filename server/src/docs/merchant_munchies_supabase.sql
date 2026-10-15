@@ -392,8 +392,7 @@ create table if not exists public.cart_items (
   unit_price_snapshot numeric(12,2) not null check (unit_price_snapshot >= 0),
   special_instructions text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (cart_id, menu_item_id)
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.cart_item_options (
@@ -426,6 +425,7 @@ create table if not exists public.orders (
   delivery_fee numeric(12,2) not null default 0 check (delivery_fee >= 0),
   discount numeric(12,2) not null default 0 check (discount >= 0),
   total numeric(12,2) not null default 0 check (total >= 0),
+  notes text,
   idempotency_key text not null,
   cancellation_reason text,
   rejection_reason text,

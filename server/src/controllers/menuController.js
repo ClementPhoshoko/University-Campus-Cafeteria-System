@@ -367,7 +367,7 @@ export async function getMenuItem(req, res) {
         .eq('menu_item_id', itemId),
       db()
         .from('menu_item_option_groups')
-        .select('option_groups(id, name, selection_type, is_required, min_select, max_select, options(id, name, price_delta, max_quantity, is_active))')
+        .select('option_groups(id, name, selection_type, is_required, min_select, max_select, is_active, options(id, name, price_delta, max_quantity, is_active))')
         .eq('menu_item_id', itemId)
         .order('sort_order'),
     ]);
@@ -383,7 +383,7 @@ export async function getMenuItem(req, res) {
       vendor_notice: a.vendor_notice,
     })).filter((a) => a.name);
 
-    const option_groups = (optionResult.data || []).map((g) => ({
+    const option_groups = (optionResult.data || []).filter((g) => g.option_groups?.is_active).map((g) => ({
       id: g.option_groups?.id,
       name: g.option_groups?.name,
       selection_type: g.option_groups?.selection_type,

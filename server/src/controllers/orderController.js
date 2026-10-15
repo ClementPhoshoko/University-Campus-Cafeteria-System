@@ -6,6 +6,7 @@ import { respond, CACHE } from '../utils/http.js';
 import { parsePagination, buildPagination } from '../utils/pagination.js';
 import { isUuid } from '../validators/vendorValidators.js';
 import { writeAudit } from '../utils/audit.js';
+import { calculateServiceFee } from '../utils/feeCalculator.js';
 
 const db = () => supabaseAdmin;
 
@@ -51,6 +52,13 @@ export async function createOrder(req, res) {
     if (!vendorId || !isUuid(vendorId)) return sendValidation(res, ['vendorId is required']);
     if (!vendorLocationId || !isUuid(vendorLocationId)) return sendValidation(res, ['vendorLocationId is required']);
     if (!collectionSlotId || !isUuid(collectionSlotId)) return sendValidation(res, ['collectionSlotId is required']);
+    if (rawItems !== undefined && (!Array.isArray(rawItems) || rawItems.length > 0)) {
+      return sendValidation(res, ['Order items must be read from your active cart']);
+    }
+    if (notes !== undefined && notes !== null && (typeof notes !== 'string' || notes.length > 1000)) {
+      return sendValidation(res, ['notes must be text no longer than 1000 characters']);
+    }
+    const orderNotes = typeof notes === 'string' && notes.trim() ? notes.trim() : null;
 
     const { data: vendor, error: vError } = await db()
       .from('vendors').select('id, name').eq('id', vendorId).eq('status', 'approved').maybeSingle();
@@ -78,44 +86,50 @@ export async function createOrder(req, res) {
     if (slot.paused) throw new ApiError(400, 'SLOT_PAUSED', 'Collection slot is paused');
     if (slot.reserved_count >= slot.capacity) throw new ApiError(400, 'SLOT_FULL', 'Collection slot is full');
 
-    let cartItems = rawItems;
-
-    if (!rawItems || !rawItems.length) {
-      const { data: cart, error: cError } = await db()
+    const { data: cart, error: cError } = await db()
+      .from('carts')
+      .select('id, vendor_id, vendor_location_id, expires_at')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (cError) throw cError;
+    if (!cart) throw new ApiError(400, 'EMPTY_CART', 'No active cart to order');
+    if (new Date(cart.expires_at) <= new Date()) {
+      const { error: expireError } = await db()
         .from('carts')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .maybeSingle();
-      if (cError) throw cError;
-
-      if (cart) {
-        const { data: ci, error: ciError } = await db()
-          .from('cart_items')
-          .select('*, menu_items(base_price, name, description, status), cart_item_options(option_id, quantity, price_delta_snapshot, options(name))')
-          .eq('cart_id', cart.id);
-        if (ciError) throw ciError;
-
-        cartItems = (ci || []).map((item) => ({
-          menuItemId: item.menu_item_id,
-          quantity: item.quantity,
-          unitPrice: item.menu_items?.base_price || item.unit_price_snapshot,
-          name: item.menu_items?.name || 'Unknown item',
-          description: item.menu_items?.description,
-          options: (item.cart_item_options || []).map((o) => ({
-            optionId: o.option_id,
-            name: o.options?.name,
-            priceDelta: o.price_delta_snapshot,
-            quantity: o.quantity,
-          })),
-          specialInstructions: item.special_instructions,
-        }));
-
-        await db().from('carts').update({ status: 'converted', updated_at: new Date().toISOString() }).eq('id', cart.id);
-      }
+        .update({ status: 'expired', updated_at: new Date().toISOString() })
+        .eq('id', cart.id)
+        .eq('status', 'active');
+      if (expireError) throw expireError;
+      throw new ApiError(410, 'CART_EXPIRED', 'Your cart has expired. Add the items again to start a new cart.');
+    }
+    if (cart.vendor_id !== vendorId || cart.vendor_location_id !== vendorLocationId) {
+      throw new ApiError(400, 'CART_MISMATCH', 'The active cart does not match the selected vendor location');
     }
 
-    if (!cartItems || !cartItems.length) throw new ApiError(400, 'EMPTY_CART', 'No items to order');
+    const { data: ci, error: ciError } = await db()
+      .from('cart_items')
+      .select('*, menu_items(base_price, name, description, status), cart_item_options(option_id, quantity, price_delta_snapshot, options(name))')
+      .eq('cart_id', cart.id);
+    if (ciError) throw ciError;
+    if (!ci?.length) throw new ApiError(400, 'EMPTY_CART', 'No items to order');
+    const cartItems = ci.map((item) => ({
+      menuItemId: item.menu_item_id,
+      quantity: item.quantity,
+      unitPrice: Number(item.unit_price_snapshot),
+      name: item.menu_items?.name || 'Unknown item',
+      description: item.menu_items?.description,
+      status: item.menu_items?.status,
+      options: (item.cart_item_options || []).map((option) => ({
+        optionId: option.option_id,
+        name: option.options?.name,
+        priceDelta: Number(option.price_delta_snapshot),
+        quantity: Number(option.quantity),
+      })),
+      specialInstructions: item.special_instructions,
+    }));
+    const unavailableItem = cartItems.find((item) => !['available', 'limited'].includes(item.status));
+    if (unavailableItem) throw new ApiError(400, 'ITEM_UNAVAILABLE', `${unavailableItem.name} is no longer available`);
 
     let subtotal = 0;
     const orderItems = cartItems.map((item) => {
@@ -130,13 +144,17 @@ export async function createOrder(req, res) {
         unit_price_snapshot: unitPrice,
         quantity: item.quantity,
         line_total: lineTotal,
-        customization_snapshot: (item.options || []).map((o) => ({ name: o.name, price_delta: o.priceDelta })),
+        customization_snapshot: (item.options || []).map((o) => ({
+          name: o.name,
+          price_delta: o.priceDelta,
+          quantity: o.quantity,
+        })),
         dietary_snapshot: [],
         special_instructions: item.specialInstructions || null,
       };
     });
 
-    const serviceFee = Math.round(subtotal * 0.05 * 100) / 100;
+    const serviceFee = await calculateServiceFee(subtotal, { siteId: location.site_id, vendorLocationId });
     const total = subtotal + serviceFee;
     const idempotencyKey = crypto.randomUUID();
     const collectionCode = generateCollectionCode();
@@ -159,6 +177,7 @@ export async function createOrder(req, res) {
         subtotal,
         service_fee: serviceFee,
         total,
+        notes: orderNotes,
         idempotency_key: idempotencyKey,
         collection_reference_hash: collectionHash,
         collection_reference_last4: collectionCode,
@@ -170,6 +189,13 @@ export async function createOrder(req, res) {
     const orderItemRows = orderItems.map((item) => ({ ...item, order_id: order.id }));
     const { error: oiError } = await db().from('order_items').insert(orderItemRows);
     if (oiError) throw oiError;
+
+    const { error: cartUpdateError } = await db()
+      .from('carts')
+      .update({ status: 'converted', updated_at: new Date().toISOString() })
+      .eq('id', cart.id)
+      .eq('status', 'active');
+    if (cartUpdateError) throw cartUpdateError;
 
     const { error: slotError } = await db().rpc('reserve_collection_slot', { p_slot_id: collectionSlotId });
     if (slotError) console.error('Failed to reserve slot:', slotError);

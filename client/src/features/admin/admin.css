@@ -4112,6 +4112,26 @@
   color: var(--color-text-primary);
 }
 
+.admin-order-note {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.admin-order-note strong {
+  color: var(--color-text-primary);
+}
+
+.admin-order-note p {
+  margin: var(--space-1) 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .admin-order-totals {
   margin-top: var(--space-3);
   padding-top: var(--space-3);

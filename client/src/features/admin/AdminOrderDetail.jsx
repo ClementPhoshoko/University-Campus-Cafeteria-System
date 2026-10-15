@@ -300,6 +300,13 @@ export default function AdminOrderDetail() {
               {(!order.items || order.items.length === 0) && <li className="admin-order-item"><span className="admin-order-item__name" style={{ color: 'var(--color-text-tertiary)' }}>No item details available</span></li>}
             </ul>
 
+            {order.notes && (
+              <div className="admin-order-note">
+                <strong>Customer order notes</strong>
+                <p>{order.notes}</p>
+              </div>
+            )}
+
             <div className="admin-order-totals">
               <div className="admin-order-total-row">
                 <span>Subtotal</span>

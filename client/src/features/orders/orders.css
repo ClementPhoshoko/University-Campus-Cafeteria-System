@@ -706,6 +706,15 @@
   letter-spacing: 0.06em;
 }
 
+.order-detail__notes {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* ── Collection details rows ── */
 
 .order-detail__detail-rows {

@@ -1,9 +1,10 @@
 import { supabaseAdmin } from '../config/supabase.js';
 import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
-import { respond, CACHE } from '../utils/http.js';
+import { respond } from '../utils/http.js';
 import { isUuid } from '../validators/vendorValidators.js';
 import { writeAudit } from '../utils/audit.js';
+import { calculateServiceFee } from '../utils/feeCalculator.js';
 
 const db = () => supabaseAdmin;
 
@@ -38,20 +39,33 @@ async function findActiveCart(userId) {
     .eq('status', 'active')
     .maybeSingle();
   if (error) throw error;
+  if (data && new Date(data.expires_at) <= new Date()) {
+    const { error: expireError } = await db()
+      .from('carts')
+      .update({ status: 'expired', updated_at: new Date().toISOString() })
+      .eq('id', data.id)
+      .eq('status', 'active');
+    if (expireError) throw expireError;
+    return null;
+  }
   return data;
 }
 
 async function getCartItems(cartId) {
   const { data, error } = await db()
     .from('cart_items')
-    .select('*, menu_items(id, name, description, image_url, base_price, status, prep_minutes, dietary_tags:menu_item_dietary_tags(dietary_tags(name))), cart_item_options(option_id, quantity, price_delta_snapshot, options(name))')
+    .select('*, menu_items(id, name, description, image_url, base_price, status, prep_minutes, dietary_tags:menu_item_dietary_tags(dietary_tags(name)), allergens:menu_item_allergens(allergens(name))), cart_item_options(option_id, quantity, price_delta_snapshot, options(name))')
     .eq('cart_id', cartId)
     .order('created_at');
   if (error) throw error;
   return Promise.all((data || []).map(async (item) => {
-    const { menu_items, cart_item_options, ...rest } = item;
+    const { menu_items, cart_item_options, unit_price_snapshot, special_instructions, cart_id, menu_item_id, ...rest } = item;
     return {
       ...rest,
+      cartId: cart_id,
+      menuItemId: menu_item_id,
+      unitPriceSnapshot: Number(unit_price_snapshot),
+      specialInstructions: special_instructions,
       menuItem: menu_items ? {
         id: menu_items.id,
         name: menu_items.name,
@@ -60,13 +74,15 @@ async function getCartItems(cartId) {
         base_price: menu_items.base_price,
         status: menu_items.status,
         prep_minutes: menu_items.prep_minutes,
-        dietary_tags: (menu_items.dietary_tags || []).map((d) => d.dietary_tags?.name).filter(Boolean),
+        dietaryTags: (menu_items.dietary_tags || []).map((d) => d.dietary_tags?.name).filter(Boolean),
+        allergens: (menu_items.allergens || []).map((a) => a.allergens?.name).filter(Boolean),
       } : null,
       selectedOptions: (cart_item_options || []).map((opt) => ({
+        id: opt.option_id,
         option_id: opt.option_id,
         name: opt.options?.name || null,
-        price_delta: opt.price_delta_snapshot,
-        quantity: opt.quantity,
+        priceDelta: Number(opt.price_delta_snapshot),
+        quantity: Number(opt.quantity),
       })),
     };
   }));
@@ -84,16 +100,109 @@ async function getCollectionSlots(vendorLocationId) {
   return data || [];
 }
 
-async function recalculateCartTotals(cartId) {
-  const items = await getCartItems(cartId);
+function calculateCartSubtotal(items) {
   let subtotal = 0;
   items.forEach((item) => {
-    const optionsTotal = item.selectedOptions.reduce((sum, opt) => sum + (opt.price_delta || 0), 0);
-    subtotal += (item.unit_price_snapshot + optionsTotal) * item.quantity;
+    const optionsTotal = item.selectedOptions.reduce(
+      (sum, option) => sum + (option.priceDelta || 0) * (option.quantity || 1),
+      0,
+    );
+    subtotal += (item.unitPriceSnapshot + optionsTotal) * item.quantity;
   });
   return { subtotal, itemCount: items.reduce((sum, item) => sum + item.quantity, 0) };
 }
 
+async function buildCartTotals(cart, items) {
+  const { subtotal, itemCount } = calculateCartSubtotal(items);
+  const serviceFee = await calculateServiceFee(subtotal, {
+    siteId: cart.vendor_locations?.site_id,
+    vendorLocationId: cart.vendor_location_id,
+  });
+  return { subtotal, serviceFee, total: subtotal + serviceFee, itemCount };
+}
+
+async function getOwnedActiveCartItem(itemId, userId) {
+  const { data: cartItem, error: ciError } = await db()
+    .from('cart_items')
+    .select('id, cart_id')
+    .eq('id', itemId)
+    .maybeSingle();
+  if (ciError) throw ciError;
+  if (!cartItem) throw new ApiError(404, 'ITEM_NOT_FOUND', 'Cart item not found');
+
+  const { data: cart, error: cartError } = await db()
+    .from('carts')
+    .select('id, user_id, status, expires_at, vendor_location_id, vendor_locations(site_id)')
+    .eq('id', cartItem.cart_id)
+    .maybeSingle();
+  if (cartError) throw cartError;
+  if (!cart || cart.user_id !== userId || cart.status !== 'active') {
+    throw new ApiError(404, 'ITEM_NOT_FOUND', 'Cart item not found');
+  }
+  if (new Date(cart.expires_at) <= new Date()) {
+    const { error: expireError } = await db()
+      .from('carts')
+      .update({ status: 'expired', updated_at: new Date().toISOString() })
+      .eq('id', cart.id)
+      .eq('status', 'active');
+    if (expireError) throw expireError;
+    throw new ApiError(410, 'CART_EXPIRED', 'Your cart has expired. Add the items again to start a new cart.');
+  }
+  return { cartItem, cart };
+}
+
+async function validateCartOptions(menuItemId, options) {
+  if (!Array.isArray(options)) throw new ApiError(400, 'VALIDATION_ERROR', 'options must be an array');
+
+  const { data, error } = await db()
+    .from('menu_item_option_groups')
+    .select('option_groups(id, name, selection_type, is_required, min_select, max_select, is_active, options(id, price_delta, max_quantity, is_active))')
+    .eq('menu_item_id', menuItemId);
+  if (error) throw error;
+
+  const groups = (data || [])
+    .map((row) => row.option_groups)
+    .filter((group) => group?.is_active)
+    .map((group) => ({ ...group, options: (group.options || []).filter((option) => option.is_active) }));
+  const selectedByGroup = new Map(groups.map((group) => [group.id, []]));
+  const seenOptionIds = new Set();
+
+  for (const selection of options) {
+    if (!selection || !isUuid(selection.optionId) || seenOptionIds.has(selection.optionId)) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Each selected option must be unique and have a valid optionId');
+    }
+    const quantity = selection.quantity === undefined ? 1 : selection.quantity;
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Option quantity must be a positive integer');
+    }
+
+    const group = groups.find((candidate) => candidate.options.some((option) => option.id === selection.optionId));
+    const option = group?.options.find((candidate) => candidate.id === selection.optionId);
+    if (!option) throw new ApiError(400, 'INVALID_OPTION', 'One or more selected options are not available for this menu item');
+    if (quantity > Number(option.max_quantity || 1)) {
+      throw new ApiError(400, 'VALIDATION_ERROR', `Option quantity for ${group.name} exceeds the allowed maximum`);
+    }
+
+    selectedByGroup.get(group.id).push({
+      optionId: option.id,
+      quantity,
+      priceDelta: Number(option.price_delta) || 0,
+    });
+    seenOptionIds.add(option.id);
+  }
+
+  for (const group of groups) {
+    const selectedCount = selectedByGroup.get(group.id).length;
+    const minimum = Number(group.min_select) || (group.is_required ? 1 : 0);
+    const maximum = Number(group.max_select) || (group.selection_type === 'single' ? 1 : Infinity);
+    if (selectedCount < minimum || selectedCount > maximum
+      || (group.selection_type === 'single' && selectedCount > 1)) {
+      throw new ApiError(400, 'INVALID_OPTION_SELECTION', `Select between ${minimum} and ${maximum} options for ${group.name}`);
+    }
+  }
+
+  return [...selectedByGroup.values()].flat();
+}
 // ---------------------------------------------------------------------------
 // GET /vendor-locations/:vendorLocationId/collection-slots
 // ---------------------------------------------------------------------------
@@ -147,10 +256,7 @@ export async function getCart(req, res) {
 
     const items = await getCartItems(cart.id);
     const slots = await getCollectionSlots(cart.vendor_location_id);
-    const { subtotal, itemCount } = await recalculateCartTotals(cart.id);
-
-    const serviceFee = Math.round(subtotal * 0.05 * 100) / 100;
-    const total = subtotal + serviceFee;
+    const { subtotal, serviceFee, total, itemCount } = await buildCartTotals(cart, items);
 
     return respond(req, res, {
       success: true,
@@ -175,7 +281,7 @@ export async function getCart(req, res) {
         total,
         itemCount,
       },
-    }, { cacheControl: CACHE.employeeRead });
+    }, { cacheControl: null });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -192,6 +298,10 @@ export async function addToCart(req, res) {
 
     if (!menuItemId || !isUuid(menuItemId)) return sendValidation(res, ['menuItemId is required and must be a valid UUID']);
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) return sendValidation(res, ['quantity must be between 1 and 10']);
+    if (specialInstructions !== undefined && specialInstructions !== null
+      && (typeof specialInstructions !== 'string' || specialInstructions.length > 1000)) {
+      return sendValidation(res, ['specialInstructions must be text no longer than 1000 characters']);
+    }
 
     const { data: menuItem, error: miError } = await db()
       .from('menu_items')
@@ -204,6 +314,10 @@ export async function addToCart(req, res) {
     if (menuItem.status !== 'available' && menuItem.status !== 'limited') {
       throw new ApiError(400, 'ITEM_UNAVAILABLE', 'Menu item is not available');
     }
+    const selectedOptions = await validateCartOptions(menuItemId, options);
+    const instructions = typeof specialInstructions === 'string' && specialInstructions.trim()
+      ? specialInstructions.trim()
+      : null;
 
     let cart = await findActiveCart(userId);
 
@@ -252,12 +366,22 @@ export async function addToCart(req, res) {
       cart = newCart;
     }
 
-    const { data: existingItem } = await db()
+    const { data: existingItems, error: existingError } = await db()
       .from('cart_items')
-      .select('id, quantity')
+      .select('id, quantity, special_instructions, cart_item_options(option_id, quantity)')
       .eq('cart_id', cart.id)
-      .eq('menu_item_id', menuItemId)
-      .maybeSingle();
+      .eq('menu_item_id', menuItemId);
+    if (existingError) throw existingError;
+
+    const canonicalOptions = (rows) => (rows || [])
+      .map((option) => `${option.optionId || option.option_id}:${option.quantity || 1}`)
+      .sort()
+      .join('|');
+    const selectedKey = canonicalOptions(selectedOptions);
+    const existingItem = (existingItems || []).find((candidate) => (
+      canonicalOptions(candidate.cart_item_options) === selectedKey
+      && (candidate.special_instructions || null) === instructions
+    ));
 
     let cartItem;
     if (existingItem) {
@@ -265,14 +389,12 @@ export async function addToCart(req, res) {
       if (newQty > 10) return sendValidation(res, ['Maximum quantity is 10 per item']);
       const { data: updated, error: upError } = await db()
         .from('cart_items')
-        .update({ quantity: newQty, special_instructions: specialInstructions || null, updated_at: new Date().toISOString() })
+        .update({ quantity: newQty, updated_at: new Date().toISOString() })
         .eq('id', existingItem.id)
         .select()
         .single();
       if (upError) throw upError;
       cartItem = updated;
-
-      await db().from('cart_item_options').delete().eq('cart_item_id', existingItem.id);
     } else {
       const { data: inserted, error: insError } = await db()
         .from('cart_items')
@@ -281,7 +403,7 @@ export async function addToCart(req, res) {
           menu_item_id: menuItemId,
           quantity,
           unit_price_snapshot: menuItem.base_price,
-          special_instructions: specialInstructions || null,
+          special_instructions: instructions,
         })
         .select()
         .single();
@@ -289,12 +411,12 @@ export async function addToCart(req, res) {
       cartItem = inserted;
     }
 
-    if (options.length && cartItem) {
-      const optionRows = options.map((opt) => ({
+    if (!existingItem && selectedOptions.length && cartItem) {
+      const optionRows = selectedOptions.map((option) => ({
         cart_item_id: cartItem.id,
-        option_id: opt.optionId,
-        quantity: opt.quantity || 1,
-        price_delta_snapshot: opt.priceDelta || 0,
+        option_id: option.optionId,
+        quantity: option.quantity,
+        price_delta_snapshot: option.priceDelta,
       }));
       const { error: optError } = await db().from('cart_item_options').insert(optionRows);
       if (optError) throw optError;
@@ -304,14 +426,14 @@ export async function addToCart(req, res) {
       action: existingItem ? 'UPDATE' : 'INSERT',
       tableName: 'public.cart_items',
       recordKey: cartItem.id,
-      newData: { cart_id: cart.id, menu_item_id: menuItemId, quantity },
+      newData: { cart_id: cart.id, menu_item_id: menuItemId, quantity, option_count: selectedOptions.length },
       reason: existingItem ? 'Cart item quantity updated' : 'Item added to cart',
       category: 'data',
     });
 
+    const responseCart = await findActiveCart(userId);
     const items = await getCartItems(cart.id);
-    const { subtotal, itemCount } = await recalculateCartTotals(cart.id);
-    const serviceFee = Math.round(subtotal * 0.05 * 100) / 100;
+    const { subtotal, serviceFee, total, itemCount } = await buildCartTotals(responseCart || cart, items);
 
     return respond(req, res, {
       success: true,
@@ -319,10 +441,11 @@ export async function addToCart(req, res) {
         id: cart.id,
         vendor: { id: menuItem.vendor_id, name: null },
         vendorLocationId: cart.vendor_location_id,
+        expiresAt: cart.expires_at,
         items,
         subtotal,
         serviceFee,
-        total: subtotal + serviceFee,
+        total,
         itemCount,
       },
     }, { status: existingItem ? 200 : 201 });
@@ -342,30 +465,19 @@ export async function updateCartItem(req, res) {
     if (!itemId) return;
 
     const { quantity, specialInstructions } = req.body || {};
-
-    const { data: cartItem, error: ciError } = await db()
-      .from('cart_items')
-      .select('id, cart_id, quantity')
-      .eq('id', itemId)
-      .maybeSingle();
-    if (ciError) throw ciError;
-    if (!cartItem) throw new ApiError(404, 'ITEM_NOT_FOUND', 'Cart item not found');
-
-    const { data: cart, error: cartError } = await db()
-      .from('carts')
-      .select('id, user_id, status')
-      .eq('id', cartItem.cart_id)
-      .maybeSingle();
-    if (cartError) throw cartError;
-    if (!cart || cart.user_id !== userId || cart.status !== 'active') {
-      throw new ApiError(404, 'ITEM_NOT_FOUND', 'Cart item not found');
+    if (quantity !== undefined && (!Number.isInteger(quantity) || quantity > 10)) {
+      return sendValidation(res, ['quantity must be between 1 and 10']);
     }
+    if (specialInstructions !== undefined && specialInstructions !== null
+      && (typeof specialInstructions !== 'string' || specialInstructions.length > 1000)) {
+      return sendValidation(res, ['specialInstructions must be text no longer than 1000 characters']);
+    }
+    const { cart } = await getOwnedActiveCartItem(itemId, userId);
 
     if (quantity !== undefined && quantity < 1) {
       const { error: delError } = await db().from('cart_items').delete().eq('id', itemId);
       if (delError) throw delError;
     } else if (quantity !== undefined) {
-      if (!Number.isInteger(quantity) || quantity > 10) return sendValidation(res, ['quantity must be between 1 and 10']);
       const updates = { quantity, updated_at: new Date().toISOString() };
       if (specialInstructions !== undefined) updates.special_instructions = specialInstructions || null;
       const { error: upError } = await db().from('cart_items').update(updates).eq('id', itemId);
@@ -377,14 +489,12 @@ export async function updateCartItem(req, res) {
         .eq('id', itemId);
       if (upError) throw upError;
     }
-
     const items = await getCartItems(cart.id);
-    const { subtotal, itemCount } = await recalculateCartTotals(cart.id);
-    const serviceFee = Math.round(subtotal * 0.05 * 100) / 100;
+    const { subtotal, serviceFee, total, itemCount } = await buildCartTotals(cart, items);
 
     return respond(req, res, {
       success: true,
-      cart: { id: cart.id, items, subtotal, serviceFee, total: subtotal + serviceFee, itemCount },
+      cart: { id: cart.id, items, subtotal, serviceFee, total, itemCount },
     });
   } catch (err) {
     return handleControllerError(res, err);
@@ -401,23 +511,7 @@ export async function removeCartItem(req, res) {
     const itemId = requireUuidParam(req, res, 'itemId');
     if (!itemId) return;
 
-    const { data: cartItem, error: ciError } = await db()
-      .from('cart_items')
-      .select('id, cart_id')
-      .eq('id', itemId)
-      .maybeSingle();
-    if (ciError) throw ciError;
-    if (!cartItem) throw new ApiError(404, 'ITEM_NOT_FOUND', 'Cart item not found');
-
-    const { data: cart, error: cartError } = await db()
-      .from('carts')
-      .select('id, user_id, status')
-      .eq('id', cartItem.cart_id)
-      .maybeSingle();
-    if (cartError) throw cartError;
-    if (!cart || cart.user_id !== userId || cart.status !== 'active') {
-      throw new ApiError(404, 'ITEM_NOT_FOUND', 'Cart item not found');
-    }
+    const { cart } = await getOwnedActiveCartItem(itemId, userId);
 
     const { error: delError } = await db().from('cart_items').delete().eq('id', itemId);
     if (delError) throw delError;
@@ -431,12 +525,11 @@ export async function removeCartItem(req, res) {
     });
 
     const items = await getCartItems(cart.id);
-    const { subtotal, itemCount } = await recalculateCartTotals(cart.id);
-    const serviceFee = Math.round(subtotal * 0.05 * 100) / 100;
+    const { subtotal, serviceFee, total, itemCount } = await buildCartTotals(cart, items);
 
     return respond(req, res, {
       success: true,
-      cart: { id: cart.id, items, subtotal, serviceFee, total: subtotal + serviceFee, itemCount },
+      cart: { id: cart.id, items, subtotal, serviceFee, total, itemCount },
     });
   } catch (err) {
     return handleControllerError(res, err);

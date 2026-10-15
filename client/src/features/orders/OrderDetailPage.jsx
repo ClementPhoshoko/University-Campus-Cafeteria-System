@@ -114,6 +114,13 @@ export default function OrderDetailPage() {
 
             <OrderItemList items={order.items || []} />
 
+            {order.notes && (
+              <div className="order-detail__panel">
+                <h3 className="order-detail__panel-title">Order Notes</h3>
+                <p className="order-detail__notes">{order.notes}</p>
+              </div>
+            )}
+
             <div className="order-detail__panel">
               <h3 className="order-detail__panel-title">Collection Details</h3>
               <div className="order-detail__detail-rows">
