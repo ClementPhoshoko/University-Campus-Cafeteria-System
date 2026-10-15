@@ -16,6 +16,14 @@ import {
 import {
   listCollectionSlots,
 } from '../controllers/cartController.js';
+import {
+  listMyVendors,
+  listMyVendorOrders,
+  updateMyVendorOrderStatus,
+  listMyVendorMenu,
+  updateMyVendorAvailability,
+} from '../controllers/vendorOperationsController.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 
 /**
  * Employee-facing cafeteria browsing is vendor-based: each approved vendor is a
@@ -25,6 +33,14 @@ import {
 const vendorRouter = Router();
 
 vendorRouter.use(authenticate);
+
+const vendorMutations = rateLimit({ windowMs: 60 * 1000, max: 30 });
+
+vendorRouter.get('/vendor/me', listMyVendors);
+vendorRouter.get('/vendor/orders', listMyVendorOrders);
+vendorRouter.patch('/vendor/orders/:orderId/status', vendorMutations, updateMyVendorOrderStatus);
+vendorRouter.get('/vendor/menu', listMyVendorMenu);
+vendorRouter.patch('/vendor/menu/items/:itemId/availability', vendorMutations, updateMyVendorAvailability);
 
 vendorRouter.get('/popular-menu-items', listPopularMenuItems);
 vendorRouter.get('/vendor-categories', listPublicVendorCategories);

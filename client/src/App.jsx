@@ -42,6 +42,7 @@ import AdminComplaintDetail from './features/admin/AdminComplaintDetail.jsx';
 import AdminAnnouncementsPage from './features/admin/AdminAnnouncementsPage.jsx';
 import AdminAnnouncementDetail from './features/admin/AdminAnnouncementDetail.jsx';
 import AdminSettingsPage from './features/admin/AdminSettingsPage.jsx';
+import VendorOperationsPage from './features/vendor/VendorOperationsPage.jsx';
 import './features/auth/auth.css';
 
 function isOnboardingCompleted(profile) {
@@ -111,7 +112,7 @@ export default function App() {
           <Route path="/orders/:orderId" element={<OrderDetailPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/corporate" element={<PlaceholderPage title="Corporate Catering" />} />
-          <Route path="/vendor" element={<PlaceholderPage title="Vendor Dashboard" />} />
+          <Route path="/vendor" element={<VendorOperationsPage />} />
         </Route>
       </Route>
 

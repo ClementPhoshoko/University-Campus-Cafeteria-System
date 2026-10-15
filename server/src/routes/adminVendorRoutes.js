@@ -39,7 +39,10 @@ import {
 
 const adminVendorRouter = Router();
 
-adminVendorRouter.use(authenticate, requireRole('admin'));
+// This router shares the /api/v1 mount point with employee and vendor APIs.
+// Limit its authorization middleware to its own namespace so an unmatched
+// vendor endpoint cannot fall through and incorrectly return “Requires admin”.
+adminVendorRouter.use('/admin', authenticate, requireRole('admin'));
 
 const mutations = rateLimit({ windowMs: 60 * 1000, max: 30 });
 

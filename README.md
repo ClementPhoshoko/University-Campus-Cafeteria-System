@@ -1234,11 +1234,14 @@ GET    /support/cases/:caseId
 
 ## Vendor API namespace
 
+The first vendor-operations slice is implemented: membership discovery, a vendor-scoped active order queue, order status updates, and today’s menu availability. Requests are checked against active `vendor_users` membership. The remaining endpoints below are planned work.
+
 ```text
 GET    /vendor/orders
 PATCH  /vendor/orders/:orderId/status
-POST   /vendor/orders/:orderId/reject
 GET    /vendor/menu
+PATCH  /vendor/menu/items/:itemId/availability
+GET    /vendor/me
 POST   /vendor/menu/items
 PATCH  /vendor/menu/items/:itemId
 DELETE /vendor/menu/items/:itemId
@@ -1247,6 +1250,8 @@ GET    /vendor/collection-slots
 PATCH  /vendor/collection-slots/:slotId
 GET    /vendor/reports
 ```
+
+The initial queue supports receiving, accepting, preparing, ready-for-collection, rejecting with a reason, and confirming collection against the customer’s four-character code. Menu availability uses the existing `menu_items.status`, which the employee menu and cart already enforce. Quantity-based stock controls remain future work because the current cart and checkout do not reserve or enforce `menu_item_inventory` quantities. The menu list follows the same first active vendor location used by the current employee menu and cart flows.
 
 ## Administration API namespace
 

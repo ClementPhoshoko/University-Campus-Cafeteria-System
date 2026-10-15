@@ -27,14 +27,25 @@ export function useRoles() {
     const fetchRoles = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .or('expires_at.is.null,expires_at.gt.now()');
+        const [roleResult, vendorResult] = await Promise.all([
+          supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .or('expires_at.is.null,expires_at.gt.now()'),
+          supabase
+            .from('vendor_users')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('is_active', true),
+        ]);
 
         if (!cancelled) {
-          setRoles(error ? [] : (data || []).map((r) => r.role));
+          const appRoles = roleResult.error ? [] : (roleResult.data || []).map((r) => r.role);
+          const vendorRoles = vendorResult.error ? [] : (vendorResult.data || []).map((row) => (
+            row.role === 'manager' ? 'vendor_manager' : 'vendor_staff'
+          ));
+          setRoles([...new Set([...appRoles, ...vendorRoles])]);
         }
       } catch {
         if (!cancelled) setRoles([]);
