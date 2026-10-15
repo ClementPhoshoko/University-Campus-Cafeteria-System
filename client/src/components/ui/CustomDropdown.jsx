@@ -12,6 +12,7 @@ export default function CustomDropdown({
   error,
   disabled,
   showClockIcon = false,
+  onOpen,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState([]);
@@ -53,6 +54,13 @@ export default function CustomDropdown({
     }
   };
 
+  const handleTriggerClick = () => {
+    if (disabled) return;
+    const opening = !isOpen;
+    setIsOpen(opening);
+    if (opening) onOpen?.();
+  };
+
   const displayValue = () => {
     if (selectedOptions.length === 0) return placeholder;
     if (multiple) {
@@ -69,7 +77,7 @@ export default function CustomDropdown({
       <button
         type="button"
         className={`custom-dropdown__trigger${isOpen ? ' custom-dropdown__trigger--open' : ''}`}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={handleTriggerClick}
         disabled={disabled}
       >
         <span className={`custom-dropdown__value${selectedOptions.length === 0 ? ' custom-dropdown__value--placeholder' : ''}`}>

@@ -1,26 +1,64 @@
+import { useEffect, useState } from 'react';
 import { IconShoppingBag } from '@tabler/icons-react';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
+import { listCollectionSlots } from '../../services/employeeApi.js';
 import './CartSummary.css';
 
-const formatTime = (timestamp) => {
+const formatTime = (timestamp, timeZone) => {
   if (!timestamp) return '';
   const date = new Date(timestamp);
   if (isNaN(date.getTime())) return '';
-  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', ...(timeZone ? { timeZone } : {}) });
 };
 
 const isSlotAvailable = (slot) => {
   return !slot.paused && (slot.reserved_count || 0) < (slot.capacity || Infinity);
 };
 
-export default function CartSummary({ subtotal, serviceFee, total, selectedSlot, onSelectSlot, slots, itemCount, onPlaceOrder, disabled = false, updating = false }) {
-  const slotOptions = slots.map(slot => {
+function localDateKey(timestamp, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timeZone || 'Africa/Johannesburg',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(timestamp));
+  const values = Object.fromEntries(parts
+    .filter((part) => part.type !== 'literal')
+    .map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+export default function CartSummary({ subtotal, serviceFee, total, selectedSlot, now = Date.now(), timeZone, token, vendorLocationId, onSelectSlot, slots, itemCount, onPlaceOrder, disabled = false, updating = false }) {
+  const [currentSlots, setCurrentSlots] = useState(slots);
+  const [slotRefreshError, setSlotRefreshError] = useState('');
+
+  useEffect(() => setCurrentSlots(slots), [slots]);
+
+  const refreshSlots = async () => {
+    if (!token || !vendorLocationId) return;
+    setSlotRefreshError('');
+    try {
+      const response = await listCollectionSlots(vendorLocationId, { token });
+      setCurrentSlots(response?.collectionSlots || []);
+    } catch (error) {
+      console.error('Failed to refresh collection slots:', error);
+      setSlotRefreshError('Could not refresh collection times. Showing the last available schedule.');
+    }
+  };
+
+  const nextMinute = Math.floor(now / 60_000) * 60_000 + 60_000;
+  const today = localDateKey(now, timeZone);
+  const upcomingSlots = currentSlots.filter((slot) => (
+    localDateKey(slot.starts_at, timeZone) === today
+    && new Date(slot.starts_at).getTime() >= nextMinute
+  ));
+  const slotOptions = upcomingSlots.map(slot => {
     const available = isSlotAvailable(slot);
     return {
       id: slot.id,
-      name: formatTime(slot.starts_at),
-      timeRange: formatTime(slot.ends_at),
+      name: formatTime(slot.starts_at, timeZone),
+      timeRange: formatTime(slot.ends_at, timeZone),
       available,
     };
   });
@@ -31,7 +69,7 @@ export default function CartSummary({ subtotal, serviceFee, total, selectedSlot,
     }
   };
 
-  const selectedSlotData = slots.find(s => s.id === selectedSlot);
+  const selectedSlotData = upcomingSlots.find(s => s.id === selectedSlot);
 
   return (
     <div className="cart-summary">
@@ -66,14 +104,16 @@ export default function CartSummary({ subtotal, serviceFee, total, selectedSlot,
         <CustomDropdown
           label="Collection Time"
           options={slotOptions}
-          value={selectedSlotData ? { id: selectedSlotData.id, name: `${formatTime(selectedSlotData.starts_at)} - ${formatTime(selectedSlotData.ends_at)}` } : null}
+          value={selectedSlotData ? { id: selectedSlotData.id, name: `${formatTime(selectedSlotData.starts_at, timeZone)} - ${formatTime(selectedSlotData.ends_at, timeZone)}` } : null}
           onChange={handleSlotChange}
-          placeholder={slots.length ? 'Select time...' : 'No collection times available'}
+          onOpen={refreshSlots}
+          placeholder={upcomingSlots.length ? 'Select time...' : 'No collection times available'}
           showClockIcon
         />
-        {slots.length === 0 && (
+        {slotRefreshError && <p className="cart-summary__slot-empty" role="status">{slotRefreshError}</p>}
+        {upcomingSlots.length === 0 && (
           <p className="cart-summary__slot-empty">
-            This cafeteria has no upcoming collection times scheduled.
+            No more collection times are available today.
           </p>
         )}
       </div>
@@ -81,7 +121,7 @@ export default function CartSummary({ subtotal, serviceFee, total, selectedSlot,
       <button
         type="button"
         className="cart-summary__checkout"
-        disabled={!selectedSlot || disabled}
+        disabled={!selectedSlotData || disabled}
         onClick={onPlaceOrder}
       >
         <IconShoppingBag size={18} stroke={2} />

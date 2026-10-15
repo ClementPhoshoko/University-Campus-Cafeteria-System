@@ -36,7 +36,7 @@ function sendValidation(res, errors) {
 async function findActiveCarts(userId) {
   const { data, error } = await db()
     .from('carts')
-    .select('*, vendors(id, name, slug, logo_url), vendor_locations(id, site_id, building_id, collection_point_id)')
+    .select('*, vendors(id, name, slug, logo_url), vendor_locations(id, site_id, building_id, collection_point_id, sites(timezone))')
     .eq('user_id', userId)
     .eq('status', 'active')
     .order('created_at');
@@ -117,6 +117,19 @@ async function getCollectionSlots(vendorLocationId) {
     .order('starts_at');
   if (error) throw error;
   return data || [];
+}
+
+function getLocalDateKey(timestamp, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(timestamp));
+  const values = Object.fromEntries(parts
+    .filter((part) => part.type !== 'literal')
+    .map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
 function calculateCartSubtotal(items) {
@@ -266,7 +279,14 @@ export async function getCart(req, res) {
     const activeCarts = await findActiveCarts(userId);
     const carts = await Promise.all(activeCarts.map(async (cart) => {
       const items = await getCartItems(cart.id, { refreshImages });
-      const slots = await getCollectionSlots(cart.vendor_location_id);
+      const allSlots = await getCollectionSlots(cart.vendor_location_id);
+      const site = Array.isArray(cart.vendor_locations?.sites)
+        ? cart.vendor_locations.sites[0]
+        : cart.vendor_locations?.sites;
+      const timeZone = site?.timezone || 'Africa/Johannesburg';
+      const today = getLocalDateKey(new Date(), timeZone);
+      const slots = allSlots
+        .filter((slot) => getLocalDateKey(slot.starts_at, timeZone) === today);
       const { subtotal, serviceFee, total, itemCount } = await buildCartTotals(cart, items);
       return {
         id: cart.id,
@@ -280,6 +300,7 @@ export async function getCart(req, res) {
           }
           : null,
         vendorLocationId: cart.vendor_location_id,
+        siteTimezone: timeZone,
         expiresAt: cart.expires_at,
         items,
         collectionSlots: slots.map((s) => ({

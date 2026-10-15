@@ -341,6 +341,7 @@ export default function CartPage() {
           <CartGroup
             key={cart.id}
             cart={cart}
+            token={token}
             now={now}
             isUpdating={isCartUpdating}
             checkoutPending={orderStatus === 'loading'}

@@ -14,6 +14,7 @@ function formatExpiry(timestamp, now) {
 
 export default function CartGroup({
   cart,
+  token,
   now,
   isUpdating,
   checkoutPending,
@@ -102,6 +103,10 @@ export default function CartGroup({
             serviceFee={cart.serviceFee || 0}
             total={cart.total || 0}
             selectedSlot={selectedSlot}
+            now={now}
+            timeZone={cart.siteTimezone}
+            token={token}
+            vendorLocationId={cart.vendorLocationId}
             onSelectSlot={setSelectedSlot}
             slots={cart.collectionSlots || []}
             itemCount={cart.itemCount || 0}

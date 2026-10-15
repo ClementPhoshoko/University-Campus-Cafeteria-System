@@ -83,6 +83,27 @@
   width: 100%;
 }
 
+.cart-summary__slot .custom-dropdown__menu {
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-subtle) transparent;
+}
+
+.cart-summary__slot .custom-dropdown__menu::-webkit-scrollbar {
+  width: 5px;
+}
+
+.cart-summary__slot .custom-dropdown__menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cart-summary__slot .custom-dropdown__menu::-webkit-scrollbar-thumb {
+  background: var(--color-border-subtle);
+  border-radius: 3px;
+}
+
 .cart-summary__slot-empty {
   margin: var(--space-2) 0 0;
   font-size: 0.78rem;
