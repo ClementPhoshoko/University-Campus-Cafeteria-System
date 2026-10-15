@@ -16,6 +16,8 @@ export default function OrderList({ orders, onImageError }) {
     groups.get(key).orders.push(order);
   });
 
+  let orderPosition = 0;
+
   return (
     <div className="orders-list">
       {[...groups.values()].map((group) => (
@@ -26,9 +28,15 @@ export default function OrderList({ orders, onImageError }) {
               {group.orders.length} separate order{group.orders.length !== 1 ? 's' : ''}
             </span>
           </div>
-          {group.orders.map((order) => (
-            <OrderCard key={order.id} order={order} showVendor={false} onImageError={onImageError} />
-          ))}
+          {group.orders.map((order) => {
+            orderPosition += 1;
+            return (
+              <div className="order-list__row" key={order.id}>
+                <span className="order-list__number" aria-hidden="true">{orderPosition}.</span>
+                <OrderCard order={order} showVendor={false} onImageError={onImageError} />
+              </div>
+            );
+          })}
         </section>
       ))}
     </div>

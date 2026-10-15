@@ -182,16 +182,19 @@ export default function OrdersPage() {
             {isInitialLoading ? (
               <div className="orders-list" aria-label="Loading orders">
                 {Array.from({ length: 3 }, (_, index) => (
-                  <div className="order-card order-card--skeleton" key={index} aria-hidden="true">
-                    <Skeleton className="order-skeleton__image" />
-                    <div className="order-skeleton__body">
-                      <Skeleton className="skeleton--text" style={{ width: '42%', height: 16 }} />
-                      <Skeleton className="skeleton--text" style={{ width: '66%', height: 12 }} />
-                      <Skeleton className="skeleton--text" style={{ width: '78%', height: 12 }} />
-                    </div>
-                    <div className="order-skeleton__end">
-                      <Skeleton className="skeleton--text" style={{ width: 72, height: 16 }} />
-                      <Skeleton className="skeleton--text" style={{ width: 90, height: 24 }} />
+                  <div className="order-list__row" key={index} aria-hidden="true">
+                    <Skeleton className="order-list__number-skeleton" />
+                    <div className="order-card order-card--skeleton">
+                      <Skeleton className="order-skeleton__image" />
+                      <div className="order-skeleton__body">
+                        <Skeleton className="skeleton--text" style={{ width: '42%', height: 16 }} />
+                        <Skeleton className="skeleton--text" style={{ width: '66%', height: 12 }} />
+                        <Skeleton className="skeleton--text" style={{ width: '78%', height: 12 }} />
+                      </div>
+                      <div className="order-skeleton__end">
+                        <Skeleton className="skeleton--text" style={{ width: 72, height: 16 }} />
+                        <Skeleton className="skeleton--text" style={{ width: 90, height: 24 }} />
+                      </div>
                     </div>
                   </div>
                 ))}

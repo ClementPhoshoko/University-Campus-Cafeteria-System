@@ -111,6 +111,28 @@
   font-size: 0.76rem;
 }
 
+.order-list__row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.order-list__number {
+  color: var(--color-action-primary);
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.order-list__number-skeleton {
+  width: 32px;
+  height: 34px;
+  justify-self: end;
+}
+
 /* ── Layout: list + aside ── */
 
 .orders-layout {
@@ -1122,6 +1144,19 @@
 
   .order-card__header {
     flex-wrap: wrap;
+  }
+
+  .order-list__row {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .order-list__number {
+    font-size: 1.65rem;
+  }
+
+  .order-list__number-skeleton {
+    height: 28px;
   }
 
   .order-card__total {
