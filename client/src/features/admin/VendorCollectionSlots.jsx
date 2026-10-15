@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { IconCalendarTime, IconChevronDown, IconClock, IconInfoCircle } from '@tabler/icons-react';
 import {
   listVendorCollectionSlots,
   updateVendorCollectionSlot,
@@ -76,45 +77,77 @@ export default function VendorCollectionSlots({ location, token }) {
       open={expanded}
       onToggle={(event) => setExpanded(event.currentTarget.open)}
     >
-      <summary className="vd-slot-manager__summary">Manage collection times</summary>
+      <summary className="vd-slot-manager__summary">
+        <span className="vd-slot-manager__summary-icon"><IconCalendarTime size={18} /></span>
+        <span className="vd-slot-manager__summary-copy">
+          <strong>Collection schedule</strong>
+          <span>Automatic · 30-minute slots · 10 orders per slot</span>
+        </span>
+        <span className="vd-slot-manager__summary-range">Next 7 days</span>
+        <IconChevronDown className="vd-slot-manager__chevron" size={17} />
+      </summary>
       <div className="vd-slot-manager__body">
         <aside className="vd-slot-manager__note" aria-label="How collection slots work">
-          <strong>How automatic collection slots work</strong>
+          <IconInfoCircle size={18} aria-hidden="true" />
+          <div>
+            <strong>How it works</strong>
           <ul>
-            <li>Every day, the system creates 30-minute slots from this location’s operating hours in {siteTimezone}, keeping the next 7 days available.</li>
-            <li>Each slot starts with capacity for 10 orders. A successful checkout reserves one place; full or paused slots are unavailable to customers.</li>
-            <li>Change this location’s operating hours to adjust future slots. Unreserved slots outside the updated hours are removed; slots with reservations are kept but paused.</li>
-            <li>Use Pause or Resume below for a one-off change. No daily slot creation is needed.</li>
+              <li>Each day the schedule is generated from the operating hours in {siteTimezone}, maintaining the next seven local days.</li>
+              <li>Successful checkouts reserve one place. Full or paused slots cannot be selected by customers.</li>
+              <li>Changing operating hours updates future slots. Reserved slots outside the new hours are retained but paused.</li>
+              <li>Pause or resume a slot below for a one-off adjustment. No daily slot creation is needed.</li>
           </ul>
-          <p>For deployment: the API scheduler must be running and migration 016 must be applied.</p>
+            <p>The API scheduler must be running and migration 016 must be applied.</p>
+          </div>
         </aside>
 
         {error && <p className="vd-slot-manager__error" role="alert">{error}</p>}
         {loading ? (
-          <p className="vd-slot-manager__hint" role="status">Loading collection times…</p>
+          <div className="vd-slot-manager__loading" role="status">
+            <span />
+            <span />
+            <span>Loading collection times…</span>
+          </div>
         ) : slots.length === 0 ? (
-          <p className="vd-slot-manager__hint">No collection times have been scheduled.</p>
+          <div className="vd-slot-manager__empty">
+            <IconClock size={19} />
+            <span>No collection times yet. The schedule will appear after the next refresh.</span>
+          </div>
         ) : (
           <ul className="vd-slot-list">
             {slots.map((slot) => {
               const state = slotState(slot, now);
               const ended = state === 'Ended';
+              const reserved = Number(slot.reserved_count);
+              const capacity = Number(slot.capacity);
+              const fill = capacity > 0 ? Math.min(100, (reserved / capacity) * 100) : 0;
               return (
                 <li className="vd-slot-list__item" key={slot.id}>
                   <div className="vd-slot-list__info">
-                    <strong>{formatSlotDate(slot.starts_at, siteTimezone)}–{new Date(slot.ends_at).toLocaleTimeString('en-ZA', { timeZone: siteTimezone, hour: '2-digit', minute: '2-digit' })}</strong>
-                    <span>{slot.reserved_count}/{slot.capacity} orders · {state}</span>
+                    <span className="vd-slot-list__time">
+                      {formatSlotDate(slot.starts_at, siteTimezone)}
+                      <span aria-hidden="true">–</span>
+                      {new Date(slot.ends_at).toLocaleTimeString('en-ZA', { timeZone: siteTimezone, hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span className={`vd-slot-list__state vd-slot-list__state--${state.toLowerCase().replaceAll(' ', '-')}`}>{state}</span>
                   </div>
-                  {!ended && (
-                    <button
-                      type="button"
-                      className="admin-action admin-action--ghost"
-                      onClick={() => handlePauseChange(slot)}
-                      disabled={saving}
-                    >
-                      {slot.paused ? 'Resume' : 'Pause'}
-                    </button>
-                  )}
+                  <div className="vd-slot-list__capacity">
+                    <div className="vd-slot-list__capacity-label">
+                      <span>{reserved} of {capacity} orders</span>
+                      <span>{Math.round(fill)}%</span>
+                    </div>
+                    <span className="vd-slot-list__capacity-track" role="progressbar" aria-label={`${reserved} of ${capacity} orders reserved`} aria-valuemin="0" aria-valuemax={capacity} aria-valuenow={reserved}>
+                      <span style={{ width: `${fill}%` }} />
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`vd-slot-list__action${slot.paused ? ' vd-slot-list__action--resume' : ''}`}
+                    onClick={() => handlePauseChange(slot)}
+                    disabled={saving || ended}
+                  >
+                    {ended ? 'Ended' : slot.paused ? 'Resume' : 'Pause'}
+                  </button>
                 </li>
               );
             })}

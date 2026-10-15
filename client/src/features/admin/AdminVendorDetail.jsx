@@ -706,7 +706,7 @@ export default function AdminVendorDetail() {
                   <div className="vd-locations">
                     {vendor.locations.slice(0, locationsVisibleCount).map((location) => (
                       <div className="vd-locations__row" key={location.id}>
-                        <div className="vd-locations__main">
+                        <div className="vd-locations__header">
                           <div className="vd-locations__info">
                             <span className="vd-locations__name">
                               {[location.site_name, location.building_name, location.collection_point_name].filter(Boolean).join(' \u00b7 ')}
@@ -715,12 +715,12 @@ export default function AdminVendorDetail() {
                               {location.service_status}{' \u00b7 '}{location.estimated_prep_minutes || '\u2014'} min prep
                             </span>
                           </div>
-                          <VendorCollectionSlots location={location} token={token} />
+                          <div className="vd-locations__actions">
+                            <StatusPill status={location.service_status} />
+                            <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'location', location })}>Edit</button>
+                          </div>
                         </div>
-                        <div className="vd-locations__actions">
-                          <StatusPill status={location.service_status} />
-                          <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal({ type: 'location', location })}>Edit</button>
-                        </div>
+                        <VendorCollectionSlots location={location} token={token} />
                       </div>
                     ))}
                   </div>
