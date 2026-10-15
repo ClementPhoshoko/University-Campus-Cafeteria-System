@@ -1498,6 +1498,13 @@ paths:
       operationId: listPopularMenuItems
       security:
         - bearerAuth: []
+      parameters:
+        - name: refresh_images
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Reissue signed image URLs after an image load failure.
       responses:
         '200':
           description: Popular menu items retrieved
@@ -1643,6 +1650,13 @@ paths:
       operationId: listPublicVendorCategories
       security:
         - bearerAuth: []
+      parameters:
+        - name: refresh_images
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Reissue signed image URLs after an image load failure.
       responses:
         '200':
           description: Categories retrieved

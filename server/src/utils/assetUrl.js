@@ -58,7 +58,7 @@ function getBucketKey() {
   return Math.floor(Date.now() / (BUCKET_DURATION * 1000));
 }
 
-export async function resolveAssetUrl(path, { size } = {}) {
+export async function resolveAssetUrl(path, { size, refresh = false } = {}) {
   if (!path) return path;
 
   const objectPath = getStorageObjectPath(path);
@@ -70,7 +70,7 @@ export async function resolveAssetUrl(path, { size } = {}) {
   const bucket = getBucketKey();
   const cacheKey = `${bucket}:${size || 'original'}:${objectPath}`;
 
-  const cached = cache.get(cacheKey);
+  const cached = refresh ? null : cache.get(cacheKey);
   if (cached) return cached;
 
   const storage = supabaseAdmin.storage.from(BUCKET);

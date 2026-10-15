@@ -24,15 +24,16 @@ function validateName(name) {
   return name.trim();
 }
 
-async function withImageUrl(category) {
+async function withImageUrl(category, refreshImage = false) {
   return {
     ...category,
-    image_url: await resolveAssetUrl(category.image_url, { size: 'card' }),
+    image_url: await resolveAssetUrl(category.image_url, { size: 'card', refresh: refreshImage }),
   };
 }
 
 export async function listPublicVendorCategories(req, res) {
   try {
+    const refreshImages = req.query.refresh_images === 'true';
     const { data, error } = await db()
       .from('vendor_category_catalog')
       .select('id, name, slug, image_url, sort_order')
@@ -41,7 +42,7 @@ export async function listPublicVendorCategories(req, res) {
       .order('name');
     if (error) throw error;
 
-    const categories = await Promise.all((data || []).map(withImageUrl));
+    const categories = await Promise.all((data || []).map((category) => withImageUrl(category, refreshImages)));
     return respond(req, res, { success: true, categories }, { cacheControl: CACHE.publicOperational });
   } catch (error) {
     return handleError(res, error);

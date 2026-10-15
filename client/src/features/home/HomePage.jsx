@@ -191,6 +191,61 @@ export default function HomePage() {
     }
   };
 
+  const refreshCategoryImage = async (categoryId, failedImage) => {
+    const refreshKey = `category:${categoryId}`;
+    if (!categoryId || attemptedImageRefreshes.current.has(refreshKey)) return;
+    attemptedImageRefreshes.current.add(refreshKey);
+
+    try {
+      const response = await listVendorCategoryCatalog({ token, cache: 'no-cache', refreshImages: true });
+      const image = response?.categories?.find((category) => category.id === categoryId)?.image_url;
+      if (!image || image === failedImage) {
+        console.error(`Unable to refresh category image for category ${categoryId}: no new image URL was returned.`);
+        return;
+      }
+      categoryFeed.mutate((current) => current?.map((category) => (
+        category.id === categoryId ? { ...category, image } : category
+      )));
+    } catch (error) {
+      console.error(`Unable to refresh category image for category ${categoryId}:`, error);
+    }
+  };
+
+  const refreshMealImage = async (itemId, vendorId, failedImage) => {
+    const refreshKey = `meal:${vendorId}:${itemId}`;
+    if (!itemId || !vendorId || attemptedImageRefreshes.current.has(refreshKey)) return;
+    attemptedImageRefreshes.current.add(refreshKey);
+
+    try {
+      let image;
+      try {
+        const popularResponse = await getPopularMenuItems({ token, cache: 'no-cache', refreshImages: true });
+        image = popularResponse?.items?.find((item) => item.id === itemId)?.image_url;
+      } catch (error) {
+        console.error(`Unable to refresh featured feed image for menu item ${itemId}:`, error);
+      }
+      if (!image || image === failedImage) {
+        const menuResponse = await listVendorMenu(vendorId, { token, cache: 'no-cache', refreshImages: true });
+        const menuImage = menuResponse?.categories
+          ?.flatMap((category) => category.items || [])
+          .find((item) => item.id === itemId)?.image_url;
+        if (menuImage && menuImage !== failedImage) image = menuImage;
+      }
+      if (!image || image === failedImage) {
+        console.error(`Unable to refresh meal image for menu item ${itemId}: no new image URL was returned.`);
+        return;
+      }
+      mealsFeed.mutate((current) => current && ({
+        ...current,
+        popularMeals: current.popularMeals.map((meal) => (
+          meal.id === itemId && meal.vendorId === vendorId ? { ...meal, image } : meal
+        )),
+      }));
+    } catch (error) {
+      console.error(`Unable to refresh meal image for menu item ${itemId}:`, error);
+    }
+  };
+
   const PER_PAGE = 3;
   const homeReviews = [];
   const totalPages = Math.max(1, Math.ceil(homeReviews.length / PER_PAGE));
@@ -323,6 +378,8 @@ export default function HomePage() {
                   price={m.price}
                   cafeteriaName={m.cafeteriaName}
                   image={m.image}
+                  vendorId={m.vendorId}
+                  onImageError={refreshMealImage}
                   bestSeller={m.source === 'sales' && index < 3}
                   to={`/cafeterias/${m.vendorId}/menu/${m.id}`}
                 />
@@ -345,7 +402,14 @@ export default function HomePage() {
               : categoryError
                 ? <p className="home_loading-text" role="alert">{categoryError}</p>
                 : categories.map((c) => (
-                  <CategoryCard key={c.id} id={c.id} name={c.name} image={c.image} filterId={c.name} />
+                  <CategoryCard
+                    key={c.id}
+                    id={c.id}
+                    name={c.name}
+                    image={c.image}
+                    filterId={c.name}
+                    onImageError={refreshCategoryImage}
+                  />
                 ))}
           </div>
         </section>

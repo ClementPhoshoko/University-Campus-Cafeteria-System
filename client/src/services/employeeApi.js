@@ -14,18 +14,18 @@ export function getVendorHours(vendorId, { token, signal } = {}) {
   return apiRequest(`/vendors/${vendorId}/hours`, { token, signal });
 }
 
-export function getPopularMenuItems({ token, signal, cache } = {}) {
-  return apiRequest('/popular-menu-items', { token, signal, cache });
+export function getPopularMenuItems({ token, signal, cache, refreshImages = false } = {}) {
+  return apiRequest('/popular-menu-items', { query: { refresh_images: refreshImages ? 'true' : undefined }, token, signal, cache });
 }
 
-export function listVendorCategoryCatalog({ token, signal, cache } = {}) {
-  return apiRequest('/vendor-categories', { token, signal, cache });
+export function listVendorCategoryCatalog({ token, signal, cache, refreshImages = false } = {}) {
+  return apiRequest('/vendor-categories', { query: { refresh_images: refreshImages ? 'true' : undefined }, token, signal, cache });
 }
 
 // ─── Menu ───────────────────────────────────────────────────────────
 
-export function listVendorMenu(vendorId, { token, signal, cache } = {}) {
-  return apiRequest(`/vendors/${vendorId}/menu`, { token, signal, cache });
+export function listVendorMenu(vendorId, { token, signal, cache, refreshImages = false } = {}) {
+  return apiRequest(`/vendors/${vendorId}/menu`, { query: { refresh_images: refreshImages ? 'true' : undefined }, token, signal, cache });
 }
 
 export function getMenuItem(vendorId, itemId, { token, signal } = {}) {

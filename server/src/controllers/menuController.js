@@ -75,6 +75,7 @@ async function listAvailableMenuItems(vendorIds) {
 
 export async function listPopularMenuItems(req, res) {
   try {
+    const refreshImages = req.query.refresh_images === 'true';
     const windowDays = 30;
     const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString();
     const [completedItems, collectedItems] = await Promise.all([
@@ -189,7 +190,7 @@ export async function listPopularMenuItems(req, res) {
 
     const items = await Promise.all(ranked.map(async (item) => ({
       ...item,
-      image_url: await resolveAssetUrl(item.image_url, { size: 'thumb' }),
+      image_url: await resolveAssetUrl(item.image_url, { size: 'thumb', refresh: refreshImages }),
     })));
 
     return respond(req, res, {
@@ -210,6 +211,7 @@ export async function listPopularMenuItems(req, res) {
 
 export async function listVendorMenu(req, res) {
   try {
+    const refreshImages = req.query.refresh_images === 'true';
     const vendorId = requireUuidParam(req, res, 'vendorId');
     if (!vendorId) return;
 
@@ -305,7 +307,7 @@ export async function listVendorMenu(req, res) {
         id: item.id,
         name: item.name,
         description: item.description,
-        image_url: await resolveAssetUrl(item.image_url, { size: 'thumb' }),
+        image_url: await resolveAssetUrl(item.image_url, { size: 'thumb', refresh: refreshImages }),
         base_price: item.base_price,
         prep_minutes: item.prep_minutes,
         status: item.status,
