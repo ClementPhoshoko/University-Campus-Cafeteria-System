@@ -127,6 +127,12 @@
   display: none;
 }
 
+.cafeteria_filter-skeleton-chip {
+  flex: 0 0 auto;
+  height: 42px;
+  border-radius: var(--radius-xs);
+}
+
 .cafeteria_filter-chip {
   flex: 0 0 auto;
   height: 42px;

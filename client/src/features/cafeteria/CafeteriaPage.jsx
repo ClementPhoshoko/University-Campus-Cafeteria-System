@@ -15,6 +15,7 @@ import { mapVendorToCafeteriaCard } from '../home/homeTransform.js';
 import { heroImage } from "../home/homeData.js";
 import { CACHE_TTL } from '../../services/cache.js';
 import { useFetch } from '../../hooks/useFetch.js';
+import '../../components/cards/CardSkeletonShimmer.css';
 import "./cafeteria.css";
 
 const DIRECTORY_FILTERS = [
@@ -61,6 +62,20 @@ function FilterChipGroup({ activeFilter, onChange, counts, categories, selectedC
         >
           {category}
         </FilterChip>
+      ))}
+    </div>
+  );
+}
+
+function FilterChipSkeletons() {
+  return (
+    <div className="cafeteria_filter-scroll" role="status" aria-label="Loading cafeteria filters" aria-busy="true">
+      {[64, 94, 88, 110, 78, 102].map((width, index) => (
+        <span
+          key={index}
+          className="cafeteria_filter-skeleton-chip home_card-skeleton-shimmer"
+          style={{ width }}
+        />
       ))}
     </div>
   );
@@ -217,14 +232,18 @@ export default function CafeteriaPage() {
               </button>
             </div>
             <div className={`cafeteria_filters-bar${showFilters ? " cafeteria_filters-bar--visible" : ""}`}>
-              <FilterChipGroup
-                activeFilter={activeFilter}
-                onChange={changeFilter}
-                counts={counts}
-                categories={categoryCounts}
-                selectedCategory={selectedCategory}
-                onCategoryChange={changeCategory}
-              />
+              {loading ? (
+                <FilterChipSkeletons />
+              ) : (
+                <FilterChipGroup
+                  activeFilter={activeFilter}
+                  onChange={changeFilter}
+                  counts={counts}
+                  categories={categoryCounts}
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={changeCategory}
+                />
+              )}
             </div>
           </div>
           <div className="cafeteria_hero-right">
