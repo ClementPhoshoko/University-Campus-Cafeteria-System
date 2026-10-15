@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   IconAdjustmentsHorizontal,
@@ -20,12 +20,8 @@ import "./cafeteria.css";
 const DIRECTORY_FILTERS = [
   { id: "all", label: "All" },
   { id: "open", label: "Open Now" },
-  { id: "popular", label: "Popular" },
+  { id: "top-rated", label: "Top rated" },
 ];
-
-function cafeteriaPopularCount(list) {
-  return Math.min(3, list.length);
-}
 
 function FilterChip({ active, children, count, onClick }) {
   return (
@@ -43,7 +39,7 @@ function FilterChip({ active, children, count, onClick }) {
   );
 }
 
-function FilterChipGroup({ activeFilter, onChange, counts }) {
+function FilterChipGroup({ activeFilter, onChange, counts, categories, selectedCategory, onCategoryChange }) {
   return (
     <div className="cafeteria_filter-scroll" role="group" aria-label="Cafeteria filters">
       {DIRECTORY_FILTERS.map((filter) => (
@@ -56,6 +52,16 @@ function FilterChipGroup({ activeFilter, onChange, counts }) {
           {filter.label}
         </FilterChip>
       ))}
+      {categories.map(([category, count]) => (
+        <FilterChip
+          key={category}
+          active={selectedCategory.toLowerCase() === category.toLowerCase()}
+          count={count}
+          onClick={() => onCategoryChange(category)}
+        >
+          {category}
+        </FilterChip>
+      ))}
     </div>
   );
 }
@@ -65,9 +71,18 @@ export default function CafeteriaPage() {
   const token = session?.access_token;
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState(searchParams.get("filter") || "all");
+  const requestedFilter = searchParams.get("filter");
+  const [activeFilter, setActiveFilter] = useState(
+    DIRECTORY_FILTERS.some((filter) => filter.id === requestedFilter) ? requestedFilter : "all",
+  );
   const selectedCategory = searchParams.get("category") || '';
   const [showFilters, setShowFilters] = useState(true);
+  useEffect(() => {
+    setActiveFilter(
+      DIRECTORY_FILTERS.some((filter) => filter.id === requestedFilter) ? requestedFilter : "all",
+    );
+  }, [requestedFilter]);
+
   const loadDirectory = useCallback(async ({ signal }) => {
     const firstPage = await listVendors({ page: 1, limit: 100, token, signal, cache: 'no-cache' });
     const totalPages = Math.max(1, Number(firstPage?.pagination?.totalPages) || 1);
@@ -104,13 +119,22 @@ export default function CafeteriaPage() {
   const counts = useMemo(() => ({
     all: cafeterias.length,
     open: cafeterias.filter((c) => c.status === 'open').length,
-    popular: cafeteriaPopularCount(cafeterias),
+    'top-rated': cafeterias.filter((c) => Number(c.rating) > 0).length,
   }), [cafeterias]);
+
+  const categoryCounts = useMemo(() => {
+    const countsByCategory = new Map();
+    cafeterias.forEach((cafeteria) => {
+      new Set(cafeteria.categories.map((category) => category.trim()).filter(Boolean))
+        .forEach((category) => countsByCategory.set(category, (countsByCategory.get(category) || 0) + 1));
+    });
+    return [...countsByCategory.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [cafeterias]);
 
   const visibleCafeterias = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return cafeterias.filter((cafeteria) => {
+    const filtered = cafeterias.filter((cafeteria) => {
       const matchesQuery = !normalizedQuery || [
         cafeteria.name,
         cafeteria.description,
@@ -120,13 +144,44 @@ export default function CafeteriaPage() {
         ? true
         : activeFilter === 'open'
           ? cafeteria.status === 'open'
-          : true;
+          : Number(cafeteria.rating) > 0;
       const matchesCategory = !selectedCategory
         || cafeteria.categories.some((category) => category.toLowerCase() === selectedCategory.toLowerCase());
 
       return matchesQuery && matchesFilter && matchesCategory;
     });
+    if (activeFilter !== 'top-rated') return filtered;
+    return filtered.sort((a, b) => (
+      Number(b.rating) - Number(a.rating)
+      || b.reviewCount - a.reviewCount
+      || a.name.localeCompare(b.name)
+    ));
   }, [activeFilter, cafeterias, query, selectedCategory]);
+
+  const changeFilter = (filter) => {
+    setActiveFilter(filter);
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (filter === 'all') next.delete('filter');
+      else next.set('filter', filter);
+      return next;
+    });
+  };
+
+  const changeCategory = (category) => {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (selectedCategory.toLowerCase() === category.toLowerCase()) next.delete('category');
+      else next.set('category', category);
+      return next;
+    });
+  };
+
+  const clearFilters = () => {
+    setQuery('');
+    setActiveFilter('all');
+    setSearchParams({});
+  };
 
   return (
     <PageContainer noPad>
@@ -162,7 +217,14 @@ export default function CafeteriaPage() {
               </button>
             </div>
             <div className={`cafeteria_filters-bar${showFilters ? " cafeteria_filters-bar--visible" : ""}`}>
-              <FilterChipGroup activeFilter={activeFilter} onChange={setActiveFilter} counts={counts} />
+              <FilterChipGroup
+                activeFilter={activeFilter}
+                onChange={changeFilter}
+                counts={counts}
+                categories={categoryCounts}
+                selectedCategory={selectedCategory}
+                onCategoryChange={changeCategory}
+              />
             </div>
           </div>
           <div className="cafeteria_hero-right">
@@ -179,6 +241,11 @@ export default function CafeteriaPage() {
           {refreshError && <p role="status">{refreshError}</p>}
           <div className="cafeteria_results-heading" aria-live="polite">
             <span>{loading ? 'Loading' : `${visibleCafeterias.length} cafeterias`}</span>
+            {activeFilter !== 'all' && (
+              <span className="cafeteria_results-query">
+                {DIRECTORY_FILTERS.find((filter) => filter.id === activeFilter)?.label}
+              </span>
+            )}
             {query && <span className="cafeteria_results-query">for "{query}"</span>}
             {selectedCategory && <span className="cafeteria_results-query">in {selectedCategory}</span>}
           </div>
@@ -203,7 +270,7 @@ export default function CafeteriaPage() {
             <div className="cafeteria_empty">
               <h2>No cafeterias found</h2>
               <p>Try changing your search or filters.</p>
-              <button type="button" className="cafeteria_clear-button" onClick={() => { setQuery(""); setActiveFilter("all"); setSearchParams({}); }}>
+              <button type="button" className="cafeteria_clear-button" onClick={clearFilters}>
                 Clear filters
               </button>
             </div>
