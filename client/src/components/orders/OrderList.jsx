@@ -1,6 +1,6 @@
 import OrderCard from './OrderCard.jsx';
 
-export default function OrderList({ orders }) {
+export default function OrderList({ orders, onImageError }) {
   if (orders.length === 0) return null;
 
   const groups = new Map();
@@ -27,7 +27,7 @@ export default function OrderList({ orders }) {
             </span>
           </div>
           {group.orders.map((order) => (
-            <OrderCard key={order.id} order={order} showVendor={false} />
+            <OrderCard key={order.id} order={order} showVendor={false} onImageError={onImageError} />
           ))}
         </section>
       ))}

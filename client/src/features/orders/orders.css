@@ -440,6 +440,29 @@
   cursor: pointer;
 }
 
+.orders-retry--inline {
+  margin: 0 0 0 var(--space-3);
+}
+
+.orders-retry-link {
+  display: inline-block;
+  margin-top: var(--space-3);
+  color: var(--color-action-link);
+  font-size: 0.84rem;
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+}
+
+.orders-retry-link:hover {
+  color: var(--color-action-primary);
+}
+
+.orders-action-error {
+  margin: 0 0 var(--space-4);
+  color: var(--color-status-error);
+  font-size: 0.84rem;
+}
+
 /* ── Status badge ── */
 
 .order-status-badge {
@@ -634,6 +657,86 @@
   max-width: var(--content-max-width);
   margin: 0 auto;
   padding: var(--space-6) var(--screen-padding) var(--space-16);
+}
+
+.order-detail-skeleton {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+.order-detail-skeleton__back {
+  width: 128px;
+  height: 18px;
+}
+
+.order-detail-skeleton__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: var(--space-4) 0 var(--space-6);
+}
+
+.order-detail-skeleton__heading-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.order-detail-skeleton__title {
+  width: min(320px, 70%);
+  height: 28px;
+}
+
+.order-detail-skeleton__subtitle {
+  width: min(280px, 60%);
+  height: 16px;
+}
+
+.order-detail-skeleton__total {
+  width: 96px;
+  height: 24px;
+}
+
+.order-detail-skeleton__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.order-detail-skeleton__panel-title {
+  width: 120px;
+  height: 14px;
+}
+
+.order-detail-skeleton__progress {
+  width: 100%;
+  height: 96px;
+}
+
+.order-detail-skeleton__item {
+  width: 100%;
+  height: 48px;
+}
+
+.order-detail-skeleton__details {
+  width: 100%;
+  height: 72px;
+}
+
+.order-detail-skeleton__summary {
+  width: 100%;
+  height: 108px;
+}
+
+.order-detail__collection-instructions {
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.5;
 }
 
 .order-detail__header {

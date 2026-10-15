@@ -259,7 +259,7 @@ export async function listMyOrders(req, res) {
 
     let query = db()
       .from('orders')
-      .select('id, order_number, order_reference, status, total, created_at, collection_reference_last4, vendors(name, logo_url)', { count: 'exact' })
+      .select('id, order_number, order_reference, status, total, created_at, collection_reference_last4, vendors(name, logo_url), order_items(quantity, item_name_snapshot)', { count: 'exact' })
       .eq('user_id', userId);
 
     if (statusFilter === 'active') {
@@ -276,12 +276,16 @@ export async function listMyOrders(req, res) {
     if (error) throw error;
 
     const orders = await Promise.all((data || []).map(async (o) => {
-      const { vendors, collection_reference_last4, ...rest } = o;
+      const { vendors, collection_reference_last4, order_items, ...rest } = o;
       const logo = vendors?.logo_url || null;
       const collectionCodeVisible = ['ready_for_collection', 'collected', 'completed'].includes(o.status);
       return {
         ...rest,
         collectionCode: collectionCodeVisible ? collection_reference_last4 : null,
+        items: (order_items || []).map((item) => ({
+          quantity: item.quantity,
+          item_name_snapshot: item.item_name_snapshot,
+        })),
         vendorName: vendors?.name || null,
         vendorLogo: logo ? await resolveAssetUrl(logo, { size: 'icon' }) : null,
       };
@@ -316,18 +320,20 @@ export async function getMyOrder(req, res) {
     if (oError) throw oError;
     if (!order) throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
 
-    const { data: items, error: iError } = await db()
-      .from('order_items')
-      .select('*, menu_items(image_url)')
-      .eq('order_id', orderId);
-    if (iError) throw iError;
-
-    const { data: history, error: hError } = await db()
-      .from('order_status_history')
-      .select('*')
-      .eq('order_id', orderId)
-      .order('changed_at', { ascending: true });
-    if (hError) throw hError;
+    const [itemsResult, historyResult, collectionPointResult, collectionSlotResult] = await Promise.all([
+      db().from('order_items').select('*, menu_items(image_url)').eq('order_id', orderId),
+      db().from('order_status_history').select('*').eq('order_id', orderId).order('changed_at', { ascending: true }),
+      order.collection_point_id
+        ? db().from('collection_points').select('id, name, instructions').eq('id', order.collection_point_id).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      order.collection_slot_id
+        ? db().from('collection_slots').select('id, starts_at, ends_at').eq('id', order.collection_slot_id).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+    if (itemsResult.error) throw itemsResult.error;
+    if (historyResult.error) throw historyResult.error;
+    if (collectionPointResult.error) throw collectionPointResult.error;
+    if (collectionSlotResult.error) throw collectionSlotResult.error;
 
     const { vendors, ...orderRest } = order;
     const vendor = vendors
@@ -341,12 +347,14 @@ export async function getMyOrder(req, res) {
       order: {
         ...orderRest,
         vendor,
-        items: await Promise.all((items || []).map(async (i) => {
+        collectionPoint: collectionPointResult.data,
+        collectionSlot: collectionSlotResult.data,
+        items: await Promise.all((itemsResult.data || []).map(async (i) => {
           const { menu_items, ...itemRest } = i;
           const image = menu_items?.image_url || null;
           return { ...itemRest, image_url: image ? await resolveAssetUrl(image, { size: 'thumb' }) : null };
         })),
-        statusHistory: history || [],
+        statusHistory: historyResult.data || [],
       },
     }, { cacheControl: CACHE.employeeRead });
   } catch (err) {

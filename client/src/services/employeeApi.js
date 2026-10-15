@@ -93,6 +93,7 @@ export function createOrder({ cartId, vendorId, vendorLocationId, collectionSlot
     signal,
   }).then((response) => {
     invalidateCachePattern('employee:cart:');
+    invalidateCachePattern('employee:orders:');
     return response;
   });
 }

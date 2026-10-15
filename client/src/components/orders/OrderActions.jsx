@@ -34,8 +34,11 @@ export default function OrderActions({ order, onCancel, onReorder, onRate }) {
   const handleCancel = async () => {
     if (!window.confirm('Are you sure you want to cancel this order?')) return;
     setIsCancelling(true);
-    await onCancel?.(order.id, 'User requested cancellation');
-    setIsCancelling(false);
+    try {
+      await onCancel?.(order.id, 'User requested cancellation');
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   return (

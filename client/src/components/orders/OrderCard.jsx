@@ -12,7 +12,7 @@ function formatOrderTime(isoString) {
   return new Date(isoString).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-export default function OrderCard({ order, showVendor = true }) {
+export default function OrderCard({ order, showVendor = true, onImageError }) {
   const itemNames = Array.isArray(order.items)
     ? order.items.map((item) => `${item.quantity || 1}× ${item.item_name_snapshot || item.name || 'Item'}`)
     : [];
@@ -25,7 +25,13 @@ export default function OrderCard({ order, showVendor = true }) {
   return (
     <Link to={`/orders/${order.id}`} className="order-card">
       <div className="order-card__image">
-        <SmartImage src={logo} alt="" width={72} height={72} />
+        <SmartImage
+          src={logo}
+          alt=""
+          width={72}
+          height={72}
+          onError={() => onImageError?.(order.vendor_id, logo)}
+        />
       </div>
       <div className="order-card__body">
         <div className="order-card__header">
@@ -34,9 +40,9 @@ export default function OrderCard({ order, showVendor = true }) {
         <div className="order-card__meta">
           {order.collectionCode ? (
             <span>Collection code <strong className="order-card__collection-code">{order.collectionCode}</strong></span>
-          ) : (
-            <span>Order ref <strong>{order.order_reference || `#${order.order_number}`}</strong></span>
-          )}
+          ) : order.order_reference ? (
+            <span>Order ref <strong>{order.order_reference}</strong></span>
+          ) : null}
           <span>{formatOrderDate(order.created_at)}</span>
           <span>{formatOrderTime(order.created_at)}</span>
         </div>

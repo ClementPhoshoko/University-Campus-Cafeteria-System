@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IconHelpCircle, IconClipboardCheck, IconKey } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
@@ -10,7 +10,7 @@ import Pagination from '../../components/ui/Pagination.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFetch } from '../../hooks/useFetch.js';
-import { listMyOrders } from '../../services/employeeApi.js';
+import { getVendor, listMyOrders } from '../../services/employeeApi.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import './orders.css';
 
@@ -82,6 +82,7 @@ export default function OrdersPage() {
   const hasSession = Boolean(token && userId);
   const [activeFilter, setActiveFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const attemptedImageRefreshes = useRef(new Set());
 
   const fetchOrders = useCallback(({ signal }) => (
     listMyOrders({ page: 1, limit: 100, token, signal })
@@ -92,8 +93,9 @@ export default function OrdersPage() {
     state: fetchState,
     isError,
     invalidate,
+    mutate,
   } = useFetch(fetchOrders, {
-    cacheKey: userId ? `employee:orders:${userId}` : null,
+    cacheKey: userId ? `employee:orders:v2:${userId}` : null,
     enabled: hasSession,
     staleTime: CACHE_TTL.orders,
     transform: transformOrders,
@@ -101,6 +103,26 @@ export default function OrdersPage() {
   const ordersResponse = cachedResponse?.ownerId === userId ? cachedResponse : null;
   const orders = Array.isArray(ordersResponse?.orders) ? ordersResponse.orders : [];
   const isInitialLoading = hasSession && !ordersResponse && (fetchState === 'loading' || fetchState === 'idle');
+
+  const refreshVendorImage = async (vendorId, failedImage) => {
+    const refreshKey = `${vendorId}`;
+    if (!vendorId || attemptedImageRefreshes.current.has(refreshKey)) return;
+    attemptedImageRefreshes.current.add(refreshKey);
+
+    try {
+      const response = await getVendor(vendorId, { token, cache: 'no-cache', refreshImages: true });
+      const image = response?.vendor?.logo_url;
+      if (!image || image === failedImage) return;
+      mutate((current) => current && ({
+        ...current,
+        orders: current.orders.map((order) => (
+          order.vendor_id === vendorId ? { ...order, vendorLogo: image } : order
+        )),
+      }));
+    } catch (error) {
+      console.error(`Unable to refresh vendor image for ${vendorId}:`, error);
+    }
+  };
 
   const filteredOrders = useMemo(() => {
     if (activeFilter === 'all') return orders;
@@ -199,7 +221,7 @@ export default function OrdersPage() {
                 )}
                 {filteredOrders.length > 0 ? (
                   <>
-                    <OrderList orders={paginatedOrders} />
+                    <OrderList orders={paginatedOrders} onImageError={refreshVendorImage} />
                     <Pagination
                       currentPage={page}
                       totalPages={totalPages}
