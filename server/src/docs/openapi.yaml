@@ -77,8 +77,8 @@ paths:
     get:
       tags:
         - Cart
-      summary: Get the authenticated user's active cart
-      description: Returns the cart only while its fixed two-hour expiry is in the future. Expired carts are marked by the server's periodic expiry worker and trigger one best-effort email notification. Cart totals include the applicable service-fee rule, or the 5% fallback when no rule applies.
+      summary: Get the authenticated user's active carts
+      description: Returns one active cart per vendor location, each with its own items, totals, and collection slots. The worker sends a best-effort reminder during the final 20 minutes, then clears cart items and marks the cart expired.
       operationId: getCart
       security:
         - bearerAuth: []
@@ -90,7 +90,7 @@ paths:
             type: boolean
       responses:
         '200':
-          description: Active cart, or null when the user has no active cart
+          description: Active vendor-location carts (empty when there are none)
           content:
             application/json:
               schema:
@@ -98,7 +98,37 @@ paths:
                 properties:
                   success:
                     type: boolean
+                  carts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        vendor:
+                          type: object
+                        vendorLocationId:
+                          type: string
+                          format: uuid
+                        items:
+                          type: array
+                          items:
+                            type: object
+                        collectionSlots:
+                          type: array
+                          items:
+                            type: object
+                        subtotal:
+                          type: number
+                        serviceFee:
+                          type: number
+                        total:
+                          type: number
+                        itemCount:
+                          type: integer
                   cart:
+                    description: First cart retained for compatibility with older clients.
                     nullable: true
                     type: object
                     properties:
@@ -125,7 +155,7 @@ paths:
       tags:
         - Cart
       summary: Add an item to the active cart
-      description: The server validates option availability and selection rules and uses database option prices. Different customizations or instructions for the same menu item are kept as separate cart lines.
+      description: Adds to the user's active cart for the item's vendor location without affecting other vendor carts. The server validates option rules and prices. Different customizations or instructions for the same menu item are kept as separate cart lines.
       operationId: addCartItem
       security:
         - bearerAuth: []
@@ -175,8 +205,8 @@ paths:
     post:
       tags:
         - Orders
-      summary: Create an order from the active cart
-      description: Order line items, prices, and customizations are read exclusively from the authenticated user's active cart. Client-supplied non-empty items are rejected. The optional order-level notes are persisted with the order.
+      summary: Create an order from one vendor-location cart
+      description: Order line items, prices, and customizations are read exclusively from the identified active cart owned by the authenticated user. Checkout creates one order for one vendor location. Client-supplied non-empty items are rejected.
       operationId: createOrderFromCart
       security:
         - bearerAuth: []
@@ -187,10 +217,14 @@ paths:
             schema:
               type: object
               required:
+                - cartId
                 - vendorId
                 - vendorLocationId
                 - collectionSlotId
               properties:
+                cartId:
+                  type: string
+                  format: uuid
                 vendorId:
                   type: string
                   format: uuid

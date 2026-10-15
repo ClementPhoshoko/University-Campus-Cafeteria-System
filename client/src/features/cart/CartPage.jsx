@@ -1,15 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { IconClock, IconMapPin } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
-import CartItem from './CartItem.jsx';
-import CartSummary from './CartSummary.jsx';
+import CartGroup from './CartGroup.jsx';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import CartBackground from '../../components/CartBackground.jsx';
-import FoodCard from '../../components/cards/FoodCard.jsx';
 import OrderConfirmation from '../../components/orders/OrderConfirmation.jsx';
-import SmartImage from '../../components/ui/SmartImage.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
 import '../../components/cards/CardSkeletonShimmer.css';
 import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.webp';
@@ -27,10 +23,13 @@ export default function CartPage() {
   const attemptedImageRefreshes = useRef(new Set());
   const cartMutationQueue = useRef(Promise.resolve());
   const pendingCartMutations = useRef(0);
-  const latestCartMutation = useRef(0);
+  const latestCartMutation = useRef(new Map());
   const loadCart = useCallback(async ({ signal }) => {
     const response = await getCart({ token, signal });
-    return { userId: cartUserId, cart: response?.cart || null };
+    const carts = Array.isArray(response?.carts)
+      ? response.carts
+      : response?.cart ? [response.cart] : [];
+    return { userId: cartUserId, carts };
   }, [cartUserId, token]);
   const cartFeed = useFetch(loadCart, {
     cacheKey: cartUserId ? `employee:cart:${cartUserId}` : null,
@@ -38,7 +37,7 @@ export default function CartPage() {
     staleTime: CACHE_TTL.cart,
   });
   const cartData = cartFeed.data?.userId === cartUserId ? cartFeed.data : null;
-  const cart = cartData?.cart || null;
+  const carts = cartData?.carts || (cartData?.cart ? [cartData.cart] : []);
   const loading = Boolean(token && cartUserId) && !cartData
     && (cartFeed.isLoading || Boolean(cartFeed.data && cartFeed.data.userId !== cartUserId));
   const loadError = !token || !cartUserId
@@ -51,8 +50,6 @@ export default function CartPage() {
     : '';
   const [actionError, setActionError] = useState('');
   const [isCartUpdating, setIsCartUpdating] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState(null);
-  const [specialInstructions, setSpecialInstructions] = useState('');
   const [orderStatus, setOrderStatus] = useState(null);
   const [createdOrderId, setCreatedOrderId] = useState(null);
   const [now, setNow] = useState(Date.now());
@@ -62,57 +59,58 @@ export default function CartPage() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const subtotal = cart?.subtotal || 0;
-  const serviceFee = cart?.serviceFee || 0;
-  const total = cart?.total || 0;
-
-  const updateCartOptimistically = (updater) => {
+  const updateCartOptimistically = (cartId, updater) => {
     cartFeed.mutate((current) => {
-      if (!current?.cart) return current;
-      const nextCart = updater(current.cart);
-      const items = nextCart.items || [];
-      const nextSubtotal = items.reduce((sum, item) => {
-        const snapshot = item.unitPriceSnapshot === null || item.unitPriceSnapshot === undefined || item.unitPriceSnapshot === ''
-          ? NaN
-          : Number(item.unitPriceSnapshot);
-        const currentPrice = item.menuItem?.base_price === null
-          || item.menuItem?.base_price === undefined
-          || item.menuItem?.base_price === ''
-          ? NaN
-          : Number(item.menuItem.base_price);
-        const unitPrice = Number.isFinite(snapshot) && snapshot >= 0 ? snapshot : currentPrice;
-        const optionsTotal = (item.selectedOptions || []).reduce(
-          (optionSum, option) => optionSum + (Number(option.priceDelta) || 0) * (Number(option.quantity) || 1),
-          0,
-        );
-        return Number.isFinite(unitPrice)
-          ? sum + (unitPrice + optionsTotal) * item.quantity
-          : sum;
-      }, 0);
-      const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+      if (!current?.carts?.length) return current;
       return {
         ...current,
-        cart: {
-          ...nextCart,
-          items,
-          subtotal: nextSubtotal,
-          itemCount,
-        },
+        carts: current.carts.map((cart) => {
+          if (cart.id !== cartId) return cart;
+          const nextCart = updater(cart);
+          const items = nextCart.items || [];
+          const subtotal = items.reduce((sum, item) => {
+            const snapshot = item.unitPriceSnapshot === null || item.unitPriceSnapshot === undefined || item.unitPriceSnapshot === ''
+              ? NaN
+              : Number(item.unitPriceSnapshot);
+            const currentPrice = item.menuItem?.base_price === null
+              || item.menuItem?.base_price === undefined
+              || item.menuItem?.base_price === ''
+              ? NaN
+              : Number(item.menuItem.base_price);
+            const unitPrice = Number.isFinite(snapshot) && snapshot >= 0 ? snapshot : currentPrice;
+            const optionsTotal = (item.selectedOptions || []).reduce(
+              (optionSum, option) => optionSum + (Number(option.priceDelta) || 0) * (Number(option.quantity) || 1),
+              0,
+            );
+            return Number.isFinite(unitPrice)
+              ? sum + (unitPrice + optionsTotal) * item.quantity
+              : sum;
+          }, 0);
+          return {
+            ...nextCart,
+            items,
+            subtotal,
+            itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+          };
+        }),
       };
     });
   };
 
-  const queueCartMutation = (mutation) => {
-    const mutationId = ++latestCartMutation.current;
+  const queueCartMutation = (cartId, mutation) => {
+    const mutationId = (latestCartMutation.current.get(cartId) || 0) + 1;
+    latestCartMutation.current.set(cartId, mutationId);
     pendingCartMutations.current += 1;
     setIsCartUpdating(true);
 
     const queuedMutation = cartMutationQueue.current.then(async () => {
       try {
         const response = await mutation();
-        if (response?.cart && mutationId === latestCartMutation.current) {
-          cartFeed.mutate((current) => current?.cart
-            ? { ...current, cart: { ...current.cart, ...response.cart } }
+        if (response?.cart && mutationId === latestCartMutation.current.get(cartId)) {
+          cartFeed.mutate((current) => current?.carts
+            ? { ...current, carts: current.carts.map((cart) => cart.id === response.cart.id
+              ? { ...cart, ...response.cart }
+              : cart) }
             : current);
           setActionError('');
         }
@@ -120,9 +118,9 @@ export default function CartPage() {
         setActionError(error?.message || 'Could not update your cart. Please try again.');
         try {
           const response = await getCart({ token });
-          if (mutationId === latestCartMutation.current) {
+          if (mutationId === latestCartMutation.current.get(cartId)) {
             cartFeed.mutate((current) => current
-              ? { ...current, cart: response?.cart || null }
+              ? { ...current, carts: response?.carts || (response?.cart ? [response.cart] : []) }
               : current);
           }
         } catch (refreshError) {
@@ -139,15 +137,16 @@ export default function CartPage() {
     });
   };
 
-  const refreshCartImage = async (itemId, failedImage) => {
+  const refreshCartImage = async (cartId, itemId, failedImage) => {
     if (!token || !failedImage) return;
-    const key = `cart:${itemId}`;
+    const key = `cart:${cartId}:${itemId}`;
     if (attemptedImageRefreshes.current.has(key)) return;
     attemptedImageRefreshes.current.add(key);
 
     try {
       const response = await getCart({ token, refreshImages: true });
-      const refreshedCart = response?.cart;
+      const refreshedCart = (response?.carts || (response?.cart ? [response.cart] : []))
+        .find((cart) => cart.id === cartId);
       const nextImage = itemId === 'vendor'
         ? refreshedCart?.vendor?.logo_url
         : refreshedCart?.items?.find((item) => item.id === itemId)?.menuItem?.image_url;
@@ -156,22 +155,22 @@ export default function CartPage() {
         return;
       }
       cartFeed.mutate((current) => {
-        if (!current?.cart || !refreshedCart) return current;
+        if (!current?.carts || !refreshedCart) return current;
         return {
           ...current,
-          cart: {
-            ...current.cart,
+          carts: current.carts.map((cart) => cart.id !== cartId ? cart : ({
+            ...cart,
             vendor: itemId === 'vendor'
-              ? { ...current.cart.vendor, logo_url: nextImage }
-              : current.cart.vendor,
+              ? { ...cart.vendor, logo_url: nextImage }
+              : cart.vendor,
             items: itemId === 'vendor'
-              ? current.cart.items
-              : current.cart.items.map((item) => (
+              ? cart.items
+              : cart.items.map((item) => (
                 item.id === itemId
                   ? { ...item, menuItem: { ...item.menuItem, image_url: nextImage } }
                   : item
               )),
-          },
+          })),
         };
       });
     } catch (error) {
@@ -179,58 +178,57 @@ export default function CartPage() {
     }
   };
 
-  const handleUpdateQuantity = async (itemId, newQuantity) => {
+  const handleUpdateQuantity = async (cartId, itemId, newQuantity) => {
     if (!token) return;
     if (newQuantity < 1) {
-      handleRemoveItem(itemId);
+      handleRemoveItem(cartId, itemId);
       return;
     }
     setActionError('');
-    updateCartOptimistically((current) => ({
+    updateCartOptimistically(cartId, (current) => ({
       ...current,
       items: current.items.map((item) => item.id === itemId ? { ...item, quantity: newQuantity } : item),
     }));
-    queueCartMutation(() => updateCartItem(itemId, { quantity: newQuantity }, { token }));
+    queueCartMutation(cartId, () => updateCartItem(itemId, { quantity: newQuantity }, { token }));
   };
 
-  const handleRemoveItem = async (itemId) => {
+  const handleRemoveItem = async (cartId, itemId) => {
     if (!token) return;
     setActionError('');
-    updateCartOptimistically((current) => ({
+    updateCartOptimistically(cartId, (current) => ({
       ...current,
       items: current.items.filter((item) => item.id !== itemId),
     }));
-    queueCartMutation(() => removeCartItem(itemId, { token }));
+    queueCartMutation(cartId, () => removeCartItem(itemId, { token }));
   };
 
-  const handleSelectSlot = (slotId) => {
-    setSelectedSlot(slotId);
-  };
-
-  const handlePlaceOrder = async () => {
-    if (!token || !selectedSlot || !cart) return;
+  const handlePlaceOrder = async (cart, selectedSlot, orderNotes) => {
+    if (!token || !selectedSlot || !cart) return 'Select a collection time before checkout.';
     if (cart.expiresAt && new Date(cart.expiresAt).getTime() <= Date.now()) {
-      setActionError('Your cart has expired. Refresh the cart and add your items again.');
-      return;
+      return 'This cart has expired. Refresh the cart and add the items again.';
     }
-    if (specialInstructions.length > 1000) {
-      setActionError('Order notes must be 1000 characters or fewer.');
-      return;
+    if (orderNotes.length > 1000) {
+      return 'Order notes must be 1000 characters or fewer.';
     }
-    setActionError('');
     setOrderStatus('loading');
     try {
       const res = await createOrder({
+        cartId: cart.id,
         vendorId: cart.vendor?.id,
         vendorLocationId: cart.vendorLocationId,
         collectionSlotId: selectedSlot,
-        notes: specialInstructions || null,
+        notes: orderNotes || null,
       }, { token });
       setCreatedOrderId(res?.order?.id || null);
+      cartFeed.mutate((current) => current?.carts
+        ? { ...current, carts: current.carts.filter((entry) => entry.id !== cart.id) }
+        : current);
       setOrderStatus('success');
+      return null;
     } catch (err) {
-      setActionError(err?.message || 'Could not place your order. Please try again.');
+      const message = err?.message || 'Could not place your order. Please try again.';
       setOrderStatus(null);
+      return message;
     }
   };
 
@@ -284,7 +282,7 @@ export default function CartPage() {
     );
   }
 
-  if (loadError && !cart) {
+  if (loadError && !cartData) {
     return (
       <PageContainer className="cart-page-container">
         <CartBackground />
@@ -304,7 +302,9 @@ export default function CartPage() {
     );
   }
 
-  if (!cart || !cart.items || cart.items.length === 0) {
+  const nonEmptyCarts = carts.filter((cart) => cart.items?.length > 0);
+
+  if (nonEmptyCarts.length === 0) {
     return (
       <PageContainer className="cart-page-container">
         <CartBackground />
@@ -324,104 +324,32 @@ export default function CartPage() {
     );
   }
 
-  const vendorName = cart.vendor?.name || 'Vendor';
-  const vendorImage = cart.vendor?.logo_url;
-
-  const formatExpiry = () => {
-    if (!cart.expiresAt) return '';
-    const diff = new Date(cart.expiresAt).getTime() - now;
-    if (diff <= 0) return 'Expired';
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}h ${minutes}m`;
-  };
-  const isExpired = Boolean(cart.expiresAt && new Date(cart.expiresAt).getTime() <= now);
-
   return (
     <PageContainer className="cart-page-container">
       <CartBackground />
       <div className="cart-page">
         <Breadcrumb items={[{ label: 'Cafeterias', to: '/cafeterias' }, { label: 'Your Cart' }]} />
 
-        <div className="cart__content">
-          <div className="cart__main">
-            {actionError && <p className="cart-action-error" role="alert">{actionError}</p>}
-            {refreshError && <p className="cart-refresh-error" role="status">{refreshError}</p>}
-            <div className="cart__header">
-              <div className="cart__vendor">
-                {vendorImage && (
-                  <div className="cart__vendor-image">
-                    <SmartImage
-                      src={vendorImage}
-                      alt={vendorName}
-                      width={56}
-                      height={56}
-                      onError={() => refreshCartImage('vendor', vendorImage)}
-                    />
-                  </div>
-                )}
-                <div className="cart__vendor-details">
-                  <h1 className="cart__vendor-name">{vendorName}</h1>
-                </div>
-                {cart.expiresAt && (
-                  <div className="cart__expiry">
-                    <span className="cart__expiry-label">Cart expires in</span>
-                    <span className="cart__expiry-time">{formatExpiry()}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="cart__items">
-              <h2 className="cart__section-title">Your Order</h2>
-              <div className="cart__items-list">
-                {cart.items.map((item) => (
-                  <CartItem
-                    key={item.id}
-                    item={item}
-                    to={item.menuItem ? `/cafeterias/${cart.vendor?.id}/menu/${item.menuItem.id}` : '#'}
-                    onUpdateQuantity={handleUpdateQuantity}
-                    onRemove={handleRemoveItem}
-                    onImageError={refreshCartImage}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="cart__special">
-              <label className="cart__special-label" htmlFor="cart-special-instructions">
-                Order Notes
-              </label>
-              <textarea
-                id="cart-special-instructions"
-                className="cart__special-input"
-                placeholder="Any special requests or notes for your order..."
-                maxLength={1000}
-                value={specialInstructions}
-                onChange={(e) => {
-                  setSpecialInstructions(e.target.value);
-                  e.target.style.height = 'auto';
-                  e.target.style.height = `${e.target.scrollHeight}px`;
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="cart__sidebar">
-            <CartSummary
-              subtotal={subtotal}
-              serviceFee={serviceFee}
-              total={total}
-              selectedSlot={selectedSlot}
-              onSelectSlot={handleSelectSlot}
-              slots={cart.collectionSlots || []}
-              itemCount={cart.itemCount || 0}
-              onPlaceOrder={handlePlaceOrder}
-              disabled={isExpired || orderStatus === 'loading' || isCartUpdating}
-              updating={isCartUpdating}
-            />
-          </div>
-        </div>
+        {actionError && <p className="cart-action-error" role="alert">{actionError}</p>}
+        {refreshError && <p className="cart-refresh-error" role="status">{refreshError}</p>}
+        {nonEmptyCarts.length > 1 && (
+          <p className="cart-multi-vendor-notice" role="note">
+            Your items are grouped by cafeteria. Each cafeteria has its own collection time and checkout.
+          </p>
+        )}
+        {nonEmptyCarts.map((cart) => (
+          <CartGroup
+            key={cart.id}
+            cart={cart}
+            now={now}
+            isUpdating={isCartUpdating}
+            checkoutPending={orderStatus === 'loading'}
+            onUpdateQuantity={(itemId, quantity) => handleUpdateQuantity(cart.id, itemId, quantity)}
+            onRemoveItem={(itemId) => handleRemoveItem(cart.id, itemId)}
+            onImageError={refreshCartImage}
+            onCheckout={handlePlaceOrder}
+          />
+        ))}
       </div>
 
       {orderStatus === 'loading' && (

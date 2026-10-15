@@ -33,11 +33,32 @@ function sendValidation(res, errors) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function findActiveCart(userId) {
+async function findActiveCarts(userId) {
   const { data, error } = await db()
     .from('carts')
     .select('*, vendors(id, name, slug, logo_url), vendor_locations(id, site_id, building_id, collection_point_id)')
     .eq('user_id', userId)
+    .eq('status', 'active')
+    .order('created_at');
+  if (error) throw error;
+  const activeCarts = [];
+  for (const cart of data || []) {
+    if (new Date(cart.expires_at) <= new Date()) {
+      await expireCartIfExpired(cart);
+    } else {
+      activeCarts.push(cart);
+    }
+  }
+  return activeCarts;
+}
+
+async function findActiveCartForLocation(userId, vendorId, vendorLocationId) {
+  const { data, error } = await db()
+    .from('carts')
+    .select('*, vendors(id, name, slug, logo_url), vendor_locations(id, site_id, building_id, collection_point_id)')
+    .eq('user_id', userId)
+    .eq('vendor_id', vendorId)
+    .eq('vendor_location_id', vendorLocationId)
     .eq('status', 'active')
     .maybeSingle();
   if (error) throw error;
@@ -91,6 +112,7 @@ async function getCollectionSlots(vendorLocationId) {
     .select('id, starts_at, ends_at, capacity, reserved_count, paused')
     .eq('vendor_location_id', vendorLocationId)
     .eq('paused', false)
+    .gt('starts_at', new Date().toISOString())
     .gt('ends_at', new Date().toISOString())
     .order('starts_at');
   if (error) throw error;
@@ -241,19 +263,12 @@ export async function getCart(req, res) {
   try {
     const userId = req.user.id;
     const refreshImages = req.query.refresh_images === 'true';
-    const cart = await findActiveCart(userId);
-
-    if (!cart) {
-      return respond(req, res, { success: true, cart: null });
-    }
-
-    const items = await getCartItems(cart.id, { refreshImages });
-    const slots = await getCollectionSlots(cart.vendor_location_id);
-    const { subtotal, serviceFee, total, itemCount } = await buildCartTotals(cart, items);
-
-    return respond(req, res, {
-      success: true,
-      cart: {
+    const activeCarts = await findActiveCarts(userId);
+    const carts = await Promise.all(activeCarts.map(async (cart) => {
+      const items = await getCartItems(cart.id, { refreshImages });
+      const slots = await getCollectionSlots(cart.vendor_location_id);
+      const { subtotal, serviceFee, total, itemCount } = await buildCartTotals(cart, items);
+      return {
         id: cart.id,
         vendor: cart.vendors
           ? {
@@ -279,7 +294,13 @@ export async function getCart(req, res) {
         serviceFee,
         total,
         itemCount,
-      },
+      };
+    }));
+
+    return respond(req, res, {
+      success: true,
+      carts,
+      cart: carts[0] || null,
     }, { cacheControl: null });
   } catch (err) {
     return handleControllerError(res, err);
@@ -318,51 +339,35 @@ export async function addToCart(req, res) {
       ? specialInstructions.trim()
       : null;
 
-    let cart = await findActiveCart(userId);
+    const { data: vendorLoc, error: vlError } = await db()
+      .from('vendor_locations')
+      .select('id')
+      .eq('vendor_id', menuItem.vendor_id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (vlError) throw vlError;
+    if (!vendorLoc) throw new ApiError(400, 'VENDOR_UNAVAILABLE', 'Vendor has no active locations');
 
-    if (cart && cart.vendor_id !== menuItem.vendor_id) {
-      const { error: delError } = await db().from('cart_items').delete().eq('cart_id', cart.id);
-      if (delError) throw delError;
-
-      const { data: vendorLoc, error: vlError } = await db()
-        .from('vendor_locations')
-        .select('id')
-        .eq('vendor_id', menuItem.vendor_id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      if (vlError) throw vlError;
-      if (!vendorLoc) throw new ApiError(400, 'VENDOR_UNAVAILABLE', 'Vendor has no active locations');
-
-      const { error: updError } = await db()
-        .from('carts')
-        .update({ vendor_id: menuItem.vendor_id, vendor_location_id: vendorLoc.id, updated_at: new Date().toISOString() })
-        .eq('id', cart.id);
-      if (updError) throw updError;
-      cart.vendor_id = menuItem.vendor_id;
-      cart.vendor_location_id = vendorLoc.id;
-    }
-
+    let cart = await findActiveCartForLocation(userId, menuItem.vendor_id, vendorLoc.id);
     if (!cart) {
-      const { data: vendorLoc, error: vlError } = await db()
-        .from('vendor_locations')
-        .select('id')
-        .eq('vendor_id', menuItem.vendor_id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      if (vlError) throw vlError;
-      if (!vendorLoc) throw new ApiError(400, 'VENDOR_UNAVAILABLE', 'Vendor has no active locations');
-
       const { data: newCart, error: createError } = await db()
         .from('carts')
-        .insert({ user_id: userId, vendor_id: menuItem.vendor_id, vendor_location_id: vendorLoc.id })
-        .select()
+        .insert({
+          user_id: userId,
+          vendor_id: menuItem.vendor_id,
+          vendor_location_id: vendorLoc.id,
+        })
+        .select('*, vendors(id, name, slug, logo_url), vendor_locations(id, site_id, building_id, collection_point_id)')
         .single();
-      if (createError) throw createError;
-      cart = newCart;
+      if (createError) {
+        if (createError.code !== '23505') throw createError;
+        cart = await findActiveCartForLocation(userId, menuItem.vendor_id, vendorLoc.id);
+        if (!cart) throw createError;
+      } else {
+        cart = newCart;
+      }
     }
 
     const { data: existingItems, error: existingError } = await db()
@@ -430,15 +435,14 @@ export async function addToCart(req, res) {
       category: 'data',
     });
 
-    const responseCart = await findActiveCart(userId);
     const items = await getCartItems(cart.id);
-    const { subtotal, serviceFee, total, itemCount } = await buildCartTotals(responseCart || cart, items);
+    const { subtotal, serviceFee, total, itemCount } = await buildCartTotals(cart, items);
 
     return respond(req, res, {
       success: true,
       cart: {
         id: cart.id,
-        vendor: { id: menuItem.vendor_id, name: null },
+        vendor: cart.vendors || { id: menuItem.vendor_id, name: null },
         vendorLocationId: cart.vendor_location_id,
         expiresAt: cart.expires_at,
         items,
@@ -542,9 +546,9 @@ export async function removeCartItem(req, res) {
 export async function clearCart(req, res) {
   try {
     const userId = req.user.id;
-    const cart = await findActiveCart(userId);
+    const carts = await findActiveCarts(userId);
 
-    if (cart) {
+    for (const cart of carts) {
       const { error: delError } = await db().from('cart_items').delete().eq('cart_id', cart.id);
       if (delError) throw delError;
 
@@ -557,7 +561,7 @@ export async function clearCart(req, res) {
       });
     }
 
-    return respond(req, res, { success: true, cart: null });
+    return respond(req, res, { success: true, carts: [], cart: null });
   } catch (err) {
     return handleControllerError(res, err);
   }

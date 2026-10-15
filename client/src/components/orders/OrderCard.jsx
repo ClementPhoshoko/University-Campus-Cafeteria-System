@@ -12,7 +12,7 @@ function formatOrderTime(isoString) {
   return new Date(isoString).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-export default function OrderCard({ order }) {
+export default function OrderCard({ order, showVendor = true }) {
   const itemNames = Array.isArray(order.items)
     ? order.items.map((item) => `${item.quantity || 1}× ${item.item_name_snapshot || item.name || 'Item'}`)
     : [];
@@ -29,10 +29,10 @@ export default function OrderCard({ order }) {
       </div>
       <div className="order-card__body">
         <div className="order-card__header">
-          <h3 className="order-card__vendor">{vendorName}</h3>
+          {showVendor && <h3 className="order-card__vendor">{vendorName}</h3>}
         </div>
         <div className="order-card__meta">
-          <span>#{order.order_number}</span>
+          <span>Order code #{order.order_number}</span>
           <span>{formatOrderDate(order.created_at)}</span>
           <span>{formatOrderTime(order.created_at)}</span>
         </div>

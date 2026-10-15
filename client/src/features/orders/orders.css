@@ -85,6 +85,32 @@
   gap: var(--space-4);
 }
 
+.orders-vendor-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.orders-vendor-group__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 var(--space-1);
+}
+
+.orders-vendor-group__title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.orders-vendor-group__count {
+  color: var(--color-text-tertiary);
+  font-size: 0.76rem;
+}
+
 /* ── Layout: list + aside ── */
 
 .orders-layout {

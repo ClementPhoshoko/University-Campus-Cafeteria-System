@@ -903,7 +903,9 @@ create index if not exists idx_menu_menu_items_item on public.menu_menu_items(me
 create index if not exists idx_inventory_menu_item on public.menu_item_inventory(menu_id, menu_item_id, status);
 create index if not exists idx_collection_slots_location_time on public.collection_slots(vendor_location_id, starts_at, paused);
 create index if not exists idx_carts_user_status on public.carts(user_id, status, expires_at);
-create unique index if not exists idx_one_active_cart_per_user on public.carts(user_id) where status = 'active';
+drop index if exists public.idx_one_active_cart_per_user;
+create unique index if not exists idx_one_active_cart_per_vendor_location
+  on public.carts(user_id, vendor_location_id) where status = 'active';
 create index if not exists idx_cart_items_cart on public.cart_items(cart_id);
 create index if not exists idx_orders_user_created on public.orders(user_id, created_at desc);
 create index if not exists idx_orders_vendor_status_time on public.orders(vendor_id, status, collection_slot_id, created_at desc);

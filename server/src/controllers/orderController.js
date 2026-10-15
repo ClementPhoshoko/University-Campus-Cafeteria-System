@@ -49,8 +49,9 @@ const RATEABLE_STATUSES = ['completed', 'collected'];
 export async function createOrder(req, res) {
   try {
     const userId = req.user.id;
-    const { vendorId, vendorLocationId, collectionSlotId, items: rawItems, notes } = req.body || {};
+    const { cartId, vendorId, vendorLocationId, collectionSlotId, items: rawItems, notes } = req.body || {};
 
+    if (!cartId || !isUuid(cartId)) return sendValidation(res, ['cartId is required']);
     if (!vendorId || !isUuid(vendorId)) return sendValidation(res, ['vendorId is required']);
     if (!vendorLocationId || !isUuid(vendorLocationId)) return sendValidation(res, ['vendorLocationId is required']);
     if (!collectionSlotId || !isUuid(collectionSlotId)) return sendValidation(res, ['collectionSlotId is required']);
@@ -86,16 +87,20 @@ export async function createOrder(req, res) {
     if (sError) throw sError;
     if (!slot) throw new ApiError(404, 'SLOT_NOT_FOUND', 'Collection slot not found');
     if (slot.paused) throw new ApiError(400, 'SLOT_PAUSED', 'Collection slot is paused');
+    if (new Date(slot.starts_at) <= new Date() || new Date(slot.ends_at) <= new Date()) {
+      throw new ApiError(400, 'SLOT_EXPIRED', 'Collection slot is no longer available');
+    }
     if (slot.reserved_count >= slot.capacity) throw new ApiError(400, 'SLOT_FULL', 'Collection slot is full');
 
     const { data: cart, error: cError } = await db()
       .from('carts')
       .select('id, user_id, vendor_id, vendor_location_id, expires_at')
+      .eq('id', cartId)
       .eq('user_id', userId)
       .eq('status', 'active')
       .maybeSingle();
     if (cError) throw cError;
-    if (!cart) throw new ApiError(400, 'EMPTY_CART', 'No active cart to order');
+    if (!cart) throw new ApiError(400, 'EMPTY_CART', 'No active cart found for this checkout');
     if (new Date(cart.expires_at) <= new Date()) {
       await expireCartIfExpired(cart);
       throw new ApiError(410, 'CART_EXPIRED', 'Your cart has expired. Add the items again to start a new cart.');
@@ -416,17 +421,6 @@ export async function reorderOrder(req, res) {
       .eq('order_id', orderId);
     if (oiError) throw oiError;
 
-    const { data: existingCart } = await db()
-      .from('carts')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .maybeSingle();
-
-    if (existingCart) {
-      await db().from('cart_items').delete().eq('cart_id', existingCart.id);
-    }
-
     const { data: vendorLoc, error: vlError } = await db()
       .from('vendor_locations')
       .select('id')
@@ -438,22 +432,39 @@ export async function reorderOrder(req, res) {
     if (vlError) throw vlError;
     if (!vendorLoc) throw new ApiError(400, 'VENDOR_UNAVAILABLE', 'Vendor has no active locations');
 
-    let cart;
-    if (existingCart) {
-      const { error: upError } = await db()
-        .from('carts')
-        .update({ vendor_id: order.vendor_id, vendor_location_id: vendorLoc.id, updated_at: new Date().toISOString() })
-        .eq('id', existingCart.id);
-      if (upError) throw upError;
-      cart = existingCart;
-    } else {
+    const { data: existingCart, error: existingCartError } = await db()
+      .from('carts')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('vendor_id', order.vendor_id)
+      .eq('vendor_location_id', vendorLoc.id)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (existingCartError) throw existingCartError;
+
+    let cart = existingCart;
+    if (!cart) {
       const { data: newCart, error: createError } = await db()
         .from('carts')
         .insert({ user_id: userId, vendor_id: order.vendor_id, vendor_location_id: vendorLoc.id })
         .select()
         .single();
-      if (createError) throw createError;
-      cart = newCart;
+      if (createError && createError.code !== '23505') throw createError;
+      if (createError) {
+        const { data: racedCart, error: racedCartError } = await db()
+          .from('carts')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('vendor_id', order.vendor_id)
+          .eq('vendor_location_id', vendorLoc.id)
+          .eq('status', 'active')
+          .maybeSingle();
+        if (racedCartError) throw racedCartError;
+        if (!racedCart) throw createError;
+        cart = racedCart;
+      } else {
+        cart = newCart;
+      }
     }
 
     const addedItems = [];
