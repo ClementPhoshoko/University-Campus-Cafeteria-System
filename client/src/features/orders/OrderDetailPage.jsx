@@ -116,7 +116,7 @@ export default function OrderDetailPage() {
           </Link>
           <div className="order-detail__heading">
             <div>
-              <h1 className="order-detail__title">Order #{order.order_number}</h1>
+              <h1 className="order-detail__title">Order {order.order_reference || `#${order.order_number}`}</h1>
               <p className="order-detail__subtitle">
                 {vendor?.name || 'Vendor'} · {formatOrderDate(order.created_at)} at {formatOrderTime(order.created_at)}
               </p>

@@ -36,6 +36,18 @@ function generateCollectionCode() {
   return Array.from({ length: 4 }, () => alphabet[crypto.randomInt(alphabet.length)]).join('');
 }
 
+function generateOrderReference() {
+  const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const date = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Johannesburg',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date()).replaceAll('-', '');
+  const suffix = Array.from({ length: 8 }, () => alphabet[crypto.randomInt(alphabet.length)]).join('');
+  return `MM-${date}-${suffix}`;
+}
+
 function hashCollectionCode(code) {
   return crypto.createHash('sha256').update(code).digest('hex');
 }
@@ -163,30 +175,34 @@ export async function createOrder(req, res) {
     const collectionCode = generateCollectionCode();
     const collectionHash = hashCollectionCode(collectionCode);
 
-    const { data: order, error: orderError } = await db()
-      .from('orders')
-      .insert({
-        user_id: userId,
-        vendor_id: vendorId,
-        vendor_location_id: vendorLocationId,
-        order_type: 'personal',
-        site_id: location.site_id,
-        building_id: location.building_id,
-        collection_point_id: location.collection_point_id,
-        collection_slot_id: collectionSlotId,
-        status: 'payment_pending',
-        payment_status: 'pending',
-        currency: 'ZAR',
-        subtotal,
-        service_fee: serviceFee,
-        total,
-        notes: orderNotes,
-        idempotency_key: idempotencyKey,
-        collection_reference_hash: collectionHash,
-        collection_reference_last4: collectionCode,
-      })
-      .select()
-      .single();
+    const orderValues = {
+      user_id: userId,
+      order_reference: generateOrderReference(),
+      vendor_id: vendorId,
+      vendor_location_id: vendorLocationId,
+      order_type: 'personal',
+      site_id: location.site_id,
+      building_id: location.building_id,
+      collection_point_id: location.collection_point_id,
+      collection_slot_id: collectionSlotId,
+      status: 'payment_pending',
+      payment_status: 'pending',
+      currency: 'ZAR',
+      subtotal,
+      service_fee: serviceFee,
+      total,
+      notes: orderNotes,
+      idempotency_key: idempotencyKey,
+      collection_reference_hash: collectionHash,
+      collection_reference_last4: collectionCode,
+    };
+    let { data: order, error: orderError } = await db()
+      .from('orders').insert(orderValues).select().single();
+    if (orderError?.code === '23505' && orderError.message?.includes('order_reference')) {
+      orderValues.order_reference = generateOrderReference();
+      ({ data: order, error: orderError } = await db()
+        .from('orders').insert(orderValues).select().single());
+    }
     if (orderError) throw orderError;
 
     const orderItemRows = orderItems.map((item) => ({ ...item, order_id: order.id }));
@@ -254,7 +270,7 @@ export async function listMyOrders(req, res) {
 
     let query = db()
       .from('orders')
-      .select('id, order_number, status, total, created_at, collection_reference_last4, vendors(name, logo_url)', { count: 'exact' })
+      .select('id, order_number, order_reference, status, total, created_at, collection_reference_last4, vendors(name, logo_url)', { count: 'exact' })
       .eq('user_id', userId);
 
     if (statusFilter === 'active') {

@@ -35,7 +35,7 @@ export default function OrderCard({ order, showVendor = true }) {
           {order.collectionCode ? (
             <span>Collection code <strong className="order-card__collection-code">{order.collectionCode}</strong></span>
           ) : (
-            <span>Order code #{order.order_number}</span>
+            <span>Order ref <strong>{order.order_reference || `#${order.order_number}`}</strong></span>
           )}
           <span>{formatOrderDate(order.created_at)}</span>
           <span>{formatOrderTime(order.created_at)}</span>

@@ -408,6 +408,7 @@ create table if not exists public.cart_item_options (
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
   order_number bigint generated always as identity unique,
+  order_reference text not null,
   user_id uuid not null references public.profiles(id) on delete restrict,
   vendor_id uuid not null references public.vendors(id) on delete restrict,
   vendor_location_id uuid not null references public.vendor_locations(id) on delete restrict,
@@ -912,6 +913,7 @@ create index if not exists idx_orders_user_created on public.orders(user_id, cre
 create index if not exists idx_orders_vendor_status_time on public.orders(vendor_id, status, collection_slot_id, created_at desc);
 create index if not exists idx_orders_location_slot on public.orders(vendor_location_id, collection_slot_id, status);
 create index if not exists idx_orders_order_number on public.orders(order_number);
+create unique index if not exists idx_orders_order_reference on public.orders(order_reference);
 create index if not exists idx_orders_completed_at_popular
   on public.orders(completed_at desc) where status = 'completed' and completed_at is not null;
 create index if not exists idx_orders_collected_at_popular
