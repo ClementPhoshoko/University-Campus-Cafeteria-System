@@ -4,6 +4,7 @@ import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/err
 import { writeAudit } from '../utils/audit.js';
 import { respond, CACHE } from '../utils/http.js';
 import { resolveAssetUrl } from '../utils/assetUrl.js';
+import { generateOrderReference } from '../utils/orderReference.js';
 import { getSiteServiceStatus } from '../utils/vendorAvailability.js';
 import { getCafeteriaDescription } from '../utils/cafeteriaDescription.js';
 import { sendEmail } from '../services/email/sendEmail.js';
@@ -1318,20 +1319,22 @@ export async function createVendorOrder(req, res) {
     if (!user) throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
 
     // Create the order with audit logging
-    const { data, error } = await db()
-      .from('orders')
-      .insert({
-        vendor_id,
-        user_id,
-        collection_point_id,
-        items: Array.isArray(items) ? items : [items],
-        total,
-        payment_method,
-        status,
-        created_at: new Date(),
-      })
-      .select()
-      .single();
+    const orderValues = {
+      order_reference: generateOrderReference(),
+      vendor_id,
+      user_id,
+      collection_point_id,
+      items: Array.isArray(items) ? items : [items],
+      total,
+      payment_method,
+      status,
+      created_at: new Date(),
+    };
+    let { data, error } = await db().from('orders').insert(orderValues).select().single();
+    if (error?.code === '23505' && error.message?.includes('order_reference')) {
+      orderValues.order_reference = generateOrderReference();
+      ({ data, error } = await db().from('orders').insert(orderValues).select().single());
+    }
     if (error) throw error;
 
     // Write audit log for order creation
@@ -1364,6 +1367,7 @@ function mapOrder(row) {
   return {
     id: row.id,
     order_number: row.order_number,
+    order_reference: row.order_reference,
     status: row.status,
     payment_status: row.payment_status,
     payment_method: row.payment_method,
@@ -1413,7 +1417,10 @@ export async function listVendorOrders(req, res) {
       const userIds = (matchingUsers || []).map((u) => u.id);
       const { data: matchingVendors } = await db().from('vendors').select('id').ilike('name', `%${search}%`);
       const vendorIds = (matchingVendors || []).map((v) => v.id);
-      const orParts = [`order_number::text.ilike.%${search}%`];
+      const orParts = [
+        `order_number::text.ilike.%${search}%`,
+        `order_reference.ilike.%${search}%`,
+      ];
       if (userIds.length) orParts.push(`user_id.in.(${userIds.join(',')})`);
       if (vendorIds.length) orParts.push(`vendor_id.in.(${vendorIds.join(',')})`);
       query = query.or(orParts.join(','));

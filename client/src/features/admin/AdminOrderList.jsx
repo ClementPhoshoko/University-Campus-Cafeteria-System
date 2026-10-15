@@ -76,7 +76,7 @@ function OrderRow({ order }) {
     <tr className="admin-order-row">
       <td>
         <Link to={`/admin/orders/${order.id}`} className="admin-order-id">
-          #{order.id}
+          {order.order_reference || `#${order.order_number || order.id}`}
         </Link>
       </td>
       <td>

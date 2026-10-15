@@ -9,6 +9,7 @@ import { writeAudit } from '../utils/audit.js';
 import { calculateServiceFee } from '../utils/feeCalculator.js';
 import { expireCartIfExpired } from '../services/cartExpiry.js';
 import { resolveUnitPrice } from '../utils/pricing.js';
+import { generateOrderReference } from '../utils/orderReference.js';
 
 const db = () => supabaseAdmin;
 
@@ -34,18 +35,6 @@ function sendValidation(res, errors) {
 function generateCollectionCode() {
   const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
   return Array.from({ length: 4 }, () => alphabet[crypto.randomInt(alphabet.length)]).join('');
-}
-
-function generateOrderReference() {
-  const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-  const date = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Africa/Johannesburg',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date()).replaceAll('-', '');
-  const suffix = Array.from({ length: 8 }, () => alphabet[crypto.randomInt(alphabet.length)]).join('');
-  return `MM-${date}-${suffix}`;
 }
 
 function hashCollectionCode(code) {

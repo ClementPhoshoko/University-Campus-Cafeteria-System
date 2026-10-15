@@ -109,7 +109,7 @@ function InterventionModal({ option, order, onConfirm, onCancel, api }) {
           <div>
             <h3 className="admin-modal__title">{option.label}</h3>
             <p className="admin-modal__sub">
-              Order #{order?.id} · {formatCurrency(order?.total || 0)}
+              Order {order?.order_reference || `#${order?.order_number || order?.id}`} · {formatCurrency(order?.total || 0)}
             </p>
           </div>
         </header>
@@ -230,7 +230,7 @@ export default function AdminOrderDetail() {
         homeTo="/admin"
         items={[
           { label: 'Orders', to: '/admin/orders' },
-          { label: `#${order.id}` }
+          { label: order.order_reference || `#${order.order_number || order.id}` }
         ]}
       />
 
@@ -241,7 +241,7 @@ export default function AdminOrderDetail() {
         </div>
         <div className="admin-user-hero__info">
           <div className="admin-user-hero__head">
-            <span className="admin-user-hero__slug">Order #{order.id}</span>
+            <span className="admin-user-hero__slug">Order {order.order_reference || `#${order.order_number || order.id}`}</span>
             <StatusPill status={order.status} />
             {order.flags?.filter((f) => !['refund', 'uncollected', 'cancelled', 'rejected'].includes(f)).map((flag) => (
               <span key={flag} className={`admin-flag admin-flag--${flag === 'urgent' ? 'warning' : 'info'}`}>
