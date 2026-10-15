@@ -1,5 +1,6 @@
 import { IconShoppingBag } from '@tabler/icons-react';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
+import Skeleton from '../../components/ui/Skeleton.jsx';
 import './CartSummary.css';
 
 const formatTime = (timestamp) => {
@@ -13,7 +14,7 @@ const isSlotAvailable = (slot) => {
   return !slot.paused && (slot.reserved_count || 0) < (slot.capacity || Infinity);
 };
 
-export default function CartSummary({ subtotal, serviceFee, total, selectedSlot, onSelectSlot, slots, itemCount, onPlaceOrder, disabled = false }) {
+export default function CartSummary({ subtotal, serviceFee, total, selectedSlot, onSelectSlot, slots, itemCount, onPlaceOrder, disabled = false, updating = false }) {
   const slotOptions = slots.map(slot => {
     const available = isSlotAvailable(slot);
     return {
@@ -46,7 +47,9 @@ export default function CartSummary({ subtotal, serviceFee, total, selectedSlot,
         </div>
         <div className="cart-summary__line">
           <span className="cart-summary__label">Service Fee</span>
-          <span className="cart-summary__value">R{serviceFee.toFixed(2)}</span>
+          {updating
+            ? <Skeleton className="cart-summary__value-skeleton home_card-skeleton-shimmer" style={{ width: 68, height: 14 }} aria-label="Updating service fee" />
+            : <span className="cart-summary__value">R{serviceFee.toFixed(2)}</span>}
         </div>
       </div>
 
@@ -54,7 +57,9 @@ export default function CartSummary({ subtotal, serviceFee, total, selectedSlot,
 
       <div className="cart-summary__line cart-summary__line--total">
         <span className="cart-summary__label">Total</span>
-        <span className="cart-summary__value">R{total.toFixed(2)}</span>
+        {updating
+          ? <Skeleton className="cart-summary__value-skeleton cart-summary__value-skeleton--total home_card-skeleton-shimmer" style={{ width: 82, height: 16 }} aria-label="Updating total" />
+          : <span className="cart-summary__value">R{total.toFixed(2)}</span>}
       </div>
 
       <div className="cart-summary__slot">
@@ -63,9 +68,14 @@ export default function CartSummary({ subtotal, serviceFee, total, selectedSlot,
           options={slotOptions}
           value={selectedSlotData ? { id: selectedSlotData.id, name: `${formatTime(selectedSlotData.starts_at)} - ${formatTime(selectedSlotData.ends_at)}` } : null}
           onChange={handleSlotChange}
-          placeholder="Select time..."
+          placeholder={slots.length ? 'Select time...' : 'No collection times available'}
           showClockIcon
         />
+        {slots.length === 0 && (
+          <p className="cart-summary__slot-empty">
+            This cafeteria has no upcoming collection times scheduled.
+          </p>
+        )}
       </div>
 
       <button

@@ -53,6 +53,12 @@
   color: var(--color-text-primary);
 }
 
+.cart-summary__value-skeleton {
+  display: inline-block;
+  flex: 0 0 auto;
+  border-radius: var(--radius-xs);
+}
+
 .cart-summary__line--total .cart-summary__label,
 .cart-summary__line--total .cart-summary__value {
   font-size: 1rem;
@@ -75,6 +81,12 @@
 
 .cart-summary__slot .custom-dropdown {
   width: 100%;
+}
+
+.cart-summary__slot-empty {
+  margin: var(--space-2) 0 0;
+  font-size: 0.78rem;
+  color: var(--color-text-tertiary);
 }
 
 .cart-summary__checkout {

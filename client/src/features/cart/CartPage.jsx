@@ -25,6 +25,9 @@ export default function CartPage() {
   const token = session?.access_token;
   const cartUserId = session?.user?.id;
   const attemptedImageRefreshes = useRef(new Set());
+  const cartMutationQueue = useRef(Promise.resolve());
+  const pendingCartMutations = useRef(0);
+  const latestCartMutation = useRef(0);
   const loadCart = useCallback(async ({ signal }) => {
     const response = await getCart({ token, signal });
     return { userId: cartUserId, cart: response?.cart || null };
@@ -47,6 +50,7 @@ export default function CartPage() {
     ? 'Cart refresh failed. Showing the last available cart.'
     : '';
   const [actionError, setActionError] = useState('');
+  const [isCartUpdating, setIsCartUpdating] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [orderStatus, setOrderStatus] = useState(null);
@@ -61,6 +65,79 @@ export default function CartPage() {
   const subtotal = cart?.subtotal || 0;
   const serviceFee = cart?.serviceFee || 0;
   const total = cart?.total || 0;
+
+  const updateCartOptimistically = (updater) => {
+    cartFeed.mutate((current) => {
+      if (!current?.cart) return current;
+      const nextCart = updater(current.cart);
+      const items = nextCart.items || [];
+      const nextSubtotal = items.reduce((sum, item) => {
+        const snapshot = item.unitPriceSnapshot === null || item.unitPriceSnapshot === undefined || item.unitPriceSnapshot === ''
+          ? NaN
+          : Number(item.unitPriceSnapshot);
+        const currentPrice = item.menuItem?.base_price === null
+          || item.menuItem?.base_price === undefined
+          || item.menuItem?.base_price === ''
+          ? NaN
+          : Number(item.menuItem.base_price);
+        const unitPrice = Number.isFinite(snapshot) && snapshot >= 0 ? snapshot : currentPrice;
+        const optionsTotal = (item.selectedOptions || []).reduce(
+          (optionSum, option) => optionSum + (Number(option.priceDelta) || 0) * (Number(option.quantity) || 1),
+          0,
+        );
+        return Number.isFinite(unitPrice)
+          ? sum + (unitPrice + optionsTotal) * item.quantity
+          : sum;
+      }, 0);
+      const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+      return {
+        ...current,
+        cart: {
+          ...nextCart,
+          items,
+          subtotal: nextSubtotal,
+          itemCount,
+        },
+      };
+    });
+  };
+
+  const queueCartMutation = (mutation) => {
+    const mutationId = ++latestCartMutation.current;
+    pendingCartMutations.current += 1;
+    setIsCartUpdating(true);
+
+    const queuedMutation = cartMutationQueue.current.then(async () => {
+      try {
+        const response = await mutation();
+        if (response?.cart && mutationId === latestCartMutation.current) {
+          cartFeed.mutate((current) => current?.cart
+            ? { ...current, cart: { ...current.cart, ...response.cart } }
+            : current);
+          setActionError('');
+        }
+      } catch (error) {
+        setActionError(error?.message || 'Could not update your cart. Please try again.');
+        try {
+          const response = await getCart({ token });
+          if (mutationId === latestCartMutation.current) {
+            cartFeed.mutate((current) => current
+              ? { ...current, cart: response?.cart || null }
+              : current);
+          }
+        } catch (refreshError) {
+          console.error('Failed to restore cart after an update error:', refreshError);
+          setActionError(`${error?.message || 'Cart update failed.'} Your cart could not be refreshed.`);
+        }
+      } finally {
+        pendingCartMutations.current -= 1;
+        if (pendingCartMutations.current === 0) setIsCartUpdating(false);
+      }
+    });
+    cartMutationQueue.current = queuedMutation.catch((error) => {
+      console.error('Unexpected cart update queue failure:', error);
+    });
+  };
 
   const refreshCartImage = async (itemId, failedImage) => {
     if (!token || !failedImage) return;
@@ -108,28 +185,22 @@ export default function CartPage() {
       handleRemoveItem(itemId);
       return;
     }
-    try {
-      setActionError('');
-      const res = await updateCartItem(itemId, { quantity: newQuantity }, { token });
-      if (res?.cart) cartFeed.mutate((prev) => prev?.cart
-        ? { ...prev, cart: { ...prev.cart, ...res.cart } }
-        : prev);
-    } catch (err) {
-      setActionError(err?.message || 'Could not update this cart item. Please try again.');
-    }
+    setActionError('');
+    updateCartOptimistically((current) => ({
+      ...current,
+      items: current.items.map((item) => item.id === itemId ? { ...item, quantity: newQuantity } : item),
+    }));
+    queueCartMutation(() => updateCartItem(itemId, { quantity: newQuantity }, { token }));
   };
 
   const handleRemoveItem = async (itemId) => {
     if (!token) return;
-    try {
-      setActionError('');
-      const res = await removeCartItem(itemId, { token });
-      if (res?.cart) cartFeed.mutate((prev) => prev?.cart
-        ? { ...prev, cart: { ...prev.cart, ...res.cart } }
-        : prev);
-    } catch (err) {
-      setActionError(err?.message || 'Could not remove this cart item. Please try again.');
-    }
+    setActionError('');
+    updateCartOptimistically((current) => ({
+      ...current,
+      items: current.items.filter((item) => item.id !== itemId),
+    }));
+    queueCartMutation(() => removeCartItem(itemId, { token }));
   };
 
   const handleSelectSlot = (slotId) => {
@@ -342,7 +413,8 @@ export default function CartPage() {
               slots={cart.collectionSlots || []}
               itemCount={cart.itemCount || 0}
               onPlaceOrder={handlePlaceOrder}
-              disabled={isExpired || orderStatus === 'loading'}
+              disabled={isExpired || orderStatus === 'loading' || isCartUpdating}
+              updating={isCartUpdating}
             />
           </div>
         </div>
