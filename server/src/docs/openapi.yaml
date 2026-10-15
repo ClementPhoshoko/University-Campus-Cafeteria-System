@@ -78,7 +78,7 @@ paths:
       tags:
         - Cart
       summary: Get the authenticated user's active cart
-      description: Returns the cart only while its fixed two-hour expiry is in the future. Cart totals include the applicable service-fee rule, or the 5% fallback when no rule applies.
+      description: Returns the cart only while its fixed two-hour expiry is in the future. Expired carts are marked by the server's periodic expiry worker and trigger one best-effort email notification. Cart totals include the applicable service-fee rule, or the 5% fallback when no rule applies.
       operationId: getCart
       security:
         - bearerAuth: []

@@ -7,6 +7,7 @@ import { parsePagination, buildPagination } from '../utils/pagination.js';
 import { isUuid } from '../validators/vendorValidators.js';
 import { writeAudit } from '../utils/audit.js';
 import { calculateServiceFee } from '../utils/feeCalculator.js';
+import { expireCartIfExpired } from '../services/cartExpiry.js';
 
 const db = () => supabaseAdmin;
 
@@ -88,19 +89,14 @@ export async function createOrder(req, res) {
 
     const { data: cart, error: cError } = await db()
       .from('carts')
-      .select('id, vendor_id, vendor_location_id, expires_at')
+      .select('id, user_id, vendor_id, vendor_location_id, expires_at')
       .eq('user_id', userId)
       .eq('status', 'active')
       .maybeSingle();
     if (cError) throw cError;
     if (!cart) throw new ApiError(400, 'EMPTY_CART', 'No active cart to order');
     if (new Date(cart.expires_at) <= new Date()) {
-      const { error: expireError } = await db()
-        .from('carts')
-        .update({ status: 'expired', updated_at: new Date().toISOString() })
-        .eq('id', cart.id)
-        .eq('status', 'active');
-      if (expireError) throw expireError;
+      await expireCartIfExpired(cart);
       throw new ApiError(410, 'CART_EXPIRED', 'Your cart has expired. Add the items again to start a new cart.');
     }
     if (cart.vendor_id !== vendorId || cart.vendor_location_id !== vendorLocationId) {

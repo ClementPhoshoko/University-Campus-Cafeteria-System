@@ -5,6 +5,7 @@ import { respond } from '../utils/http.js';
 import { isUuid } from '../validators/vendorValidators.js';
 import { writeAudit } from '../utils/audit.js';
 import { calculateServiceFee } from '../utils/feeCalculator.js';
+import { expireCartIfExpired } from '../services/cartExpiry.js';
 
 const db = () => supabaseAdmin;
 
@@ -40,12 +41,7 @@ async function findActiveCart(userId) {
     .maybeSingle();
   if (error) throw error;
   if (data && new Date(data.expires_at) <= new Date()) {
-    const { error: expireError } = await db()
-      .from('carts')
-      .update({ status: 'expired', updated_at: new Date().toISOString() })
-      .eq('id', data.id)
-      .eq('status', 'active');
-    if (expireError) throw expireError;
+    await expireCartIfExpired(data);
     return null;
   }
   return data;
@@ -132,7 +128,7 @@ async function getOwnedActiveCartItem(itemId, userId) {
 
   const { data: cart, error: cartError } = await db()
     .from('carts')
-    .select('id, user_id, status, expires_at, vendor_location_id, vendor_locations(site_id)')
+    .select('id, user_id, vendor_id, status, expires_at, vendor_location_id, vendor_locations(site_id)')
     .eq('id', cartItem.cart_id)
     .maybeSingle();
   if (cartError) throw cartError;
@@ -140,12 +136,7 @@ async function getOwnedActiveCartItem(itemId, userId) {
     throw new ApiError(404, 'ITEM_NOT_FOUND', 'Cart item not found');
   }
   if (new Date(cart.expires_at) <= new Date()) {
-    const { error: expireError } = await db()
-      .from('carts')
-      .update({ status: 'expired', updated_at: new Date().toISOString() })
-      .eq('id', cart.id)
-      .eq('status', 'active');
-    if (expireError) throw expireError;
+    await expireCartIfExpired(cart);
     throw new ApiError(410, 'CART_EXPIRED', 'Your cart has expired. Add the items again to start a new cart.');
   }
   return { cartItem, cart };

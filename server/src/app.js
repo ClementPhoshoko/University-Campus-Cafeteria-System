@@ -23,6 +23,7 @@ import adminAssetRoutes from './routes/adminAssetRoutes.js';
 import adminAuditRoutes from './routes/adminAuditRoutes.js';
 import geocodeRoutes from './routes/geocodeRoutes.js';
 import { bootstrapSuperAdmin } from './services/bootstrapSuperAdmin.js';
+import { startCartExpiryWorker } from './services/cartExpiry.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT) || 4000;
@@ -94,4 +95,5 @@ app.listen(port, () => {
 
   // Ensure the configured super admin always has admin access
   bootstrapSuperAdmin();
+  startCartExpiryWorker();
 });
