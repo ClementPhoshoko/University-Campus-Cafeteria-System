@@ -39,6 +39,23 @@ function MenuItemSkeleton() {
   );
 }
 
+function MenuControlsSkeleton() {
+  return (
+    <div className="browse_cafeteria-controls-skeleton" role="status" aria-label="Loading menu controls" aria-busy="true">
+      <div className="browse_cafeteria-controls-skeleton__categories" aria-hidden="true">
+        {[74, 112, 96, 124, 86].map((width, index) => (
+          <Skeleton
+            key={index}
+            className="browse_cafeteria-controls-skeleton__chip home_card-skeleton-shimmer"
+            style={{ width }}
+          />
+        ))}
+      </div>
+      <Skeleton className="browse_cafeteria-controls-skeleton__search home_card-skeleton-shimmer" />
+    </div>
+  );
+}
+
 function formatPrice(price) {
   const num = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.]/g, '')) : price;
   return `R${Number(num || 0).toFixed(2)}`;
@@ -452,10 +469,14 @@ export default function BrowseCafeteriaPage() {
         </header>
 
         {!isReviewsView && (
-          <div className="browse_cafeteria-controls">
-            <CategoryTabs activeCategory={activeCategory} onChange={setActiveCategory} counts={categoryCounts} categoryNames={categoryNames} />
-            <SearchRow />
-          </div>
+          menuLoading
+            ? <MenuControlsSkeleton />
+            : (
+              <div className="browse_cafeteria-controls">
+                <CategoryTabs activeCategory={activeCategory} onChange={setActiveCategory} counts={categoryCounts} categoryNames={categoryNames} />
+                <SearchRow />
+              </div>
+            )
         )}
 
         {isReviewsView ? (
