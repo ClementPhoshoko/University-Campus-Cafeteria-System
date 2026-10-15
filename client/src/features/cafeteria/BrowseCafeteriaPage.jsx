@@ -10,6 +10,7 @@ import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
 import BrowseCafeteriaBackground from '../../components/BrowseCafeteriaBackground.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
+import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 import { useAuth } from '../../hooks/useAuth.js';
 import { listVendorMenu, getVendor, addToCart } from '../../services/employeeApi.js';
 import { CACHE_TTL } from '../../services/cache.js';
@@ -540,6 +541,7 @@ export default function BrowseCafeteriaPage() {
               </div>
             ) : (
               <div className="browse_cafeteria-empty">
+                <img src={emptyStateAvatar} alt="" className="browse_cafeteria-empty__avatar" />
                 <h2>No meals available right now</h2>
                 <p>Try another menu category.</p>
               </div>

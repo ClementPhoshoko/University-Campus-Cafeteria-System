@@ -382,6 +382,14 @@
   text-align: center;
 }
 
+.browse_cafeteria-empty__avatar {
+  display: block;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto var(--space-4);
+  object-fit: contain;
+}
+
 .browse_cafeteria-empty h2 { margin: 0; font-size: 1rem; color: var(--color-text-primary); }
 .browse_cafeteria-empty p { margin: var(--space-2) 0 0; color: var(--color-text-secondary); font-size: 0.84rem; }
 
