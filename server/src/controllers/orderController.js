@@ -8,6 +8,7 @@ import { isUuid } from '../validators/vendorValidators.js';
 import { writeAudit } from '../utils/audit.js';
 import { calculateServiceFee } from '../utils/feeCalculator.js';
 import { expireCartIfExpired } from '../services/cartExpiry.js';
+import { resolveUnitPrice } from '../utils/pricing.js';
 
 const db = () => supabaseAdmin;
 
@@ -112,7 +113,7 @@ export async function createOrder(req, res) {
     const cartItems = ci.map((item) => ({
       menuItemId: item.menu_item_id,
       quantity: item.quantity,
-      unitPrice: Number(item.unit_price_snapshot),
+      unitPrice: resolveUnitPrice(item.unit_price_snapshot, item.menu_items?.base_price),
       name: item.menu_items?.name || 'Unknown item',
       description: item.menu_items?.description,
       status: item.menu_items?.status,

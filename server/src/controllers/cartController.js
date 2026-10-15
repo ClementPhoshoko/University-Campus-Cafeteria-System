@@ -5,6 +5,7 @@ import { respond } from '../utils/http.js';
 import { isUuid } from '../validators/vendorValidators.js';
 import { writeAudit } from '../utils/audit.js';
 import { calculateServiceFee } from '../utils/feeCalculator.js';
+import { resolveUnitPrice } from '../utils/pricing.js';
 import { expireCartIfExpired } from '../services/cartExpiry.js';
 
 const db = () => supabaseAdmin;
@@ -47,7 +48,7 @@ async function findActiveCart(userId) {
   return data;
 }
 
-async function getCartItems(cartId) {
+async function getCartItems(cartId, { refreshImages = false } = {}) {
   const { data, error } = await db()
     .from('cart_items')
     .select('*, menu_items(id, name, description, image_url, base_price, status, prep_minutes, dietary_tags:menu_item_dietary_tags(dietary_tags(name)), allergens:menu_item_allergens(allergens(name))), cart_item_options(option_id, quantity, price_delta_snapshot, options(name))')
@@ -60,13 +61,13 @@ async function getCartItems(cartId) {
       ...rest,
       cartId: cart_id,
       menuItemId: menu_item_id,
-      unitPriceSnapshot: Number(unit_price_snapshot),
+      unitPriceSnapshot: resolveUnitPrice(unit_price_snapshot, menu_items?.base_price),
       specialInstructions: special_instructions,
       menuItem: menu_items ? {
         id: menu_items.id,
         name: menu_items.name,
         description: menu_items.description,
-        image_url: await resolveAssetUrl(menu_items.image_url, { size: 'thumb' }),
+        image_url: await resolveAssetUrl(menu_items.image_url, { size: 'thumb', refresh: refreshImages }),
         base_price: menu_items.base_price,
         status: menu_items.status,
         prep_minutes: menu_items.prep_minutes,
@@ -239,13 +240,14 @@ export async function listCollectionSlots(req, res) {
 export async function getCart(req, res) {
   try {
     const userId = req.user.id;
+    const refreshImages = req.query.refresh_images === 'true';
     const cart = await findActiveCart(userId);
 
     if (!cart) {
       return respond(req, res, { success: true, cart: null });
     }
 
-    const items = await getCartItems(cart.id);
+    const items = await getCartItems(cart.id, { refreshImages });
     const slots = await getCollectionSlots(cart.vendor_location_id);
     const { subtotal, serviceFee, total, itemCount } = await buildCartTotals(cart, items);
 
@@ -254,7 +256,13 @@ export async function getCart(req, res) {
       cart: {
         id: cart.id,
         vendor: cart.vendors
-          ? { ...cart.vendors, logo_url: await resolveAssetUrl(cart.vendors.logo_url, { size: 'icon' }) }
+          ? {
+            ...cart.vendors,
+            logo_url: await resolveAssetUrl(cart.vendors.logo_url, {
+              size: 'icon',
+              refresh: refreshImages,
+            }),
+          }
           : null,
         vendorLocationId: cart.vendor_location_id,
         expiresAt: cart.expires_at,

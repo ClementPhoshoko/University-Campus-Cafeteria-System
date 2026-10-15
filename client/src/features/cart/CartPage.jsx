@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { IconClock, IconMapPin } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
+import PrimaryButton from '../../components/PrimaryButton.jsx';
 import CartItem from './CartItem.jsx';
 import CartSummary from './CartSummary.jsx';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
@@ -10,49 +11,47 @@ import FoodCard from '../../components/cards/FoodCard.jsx';
 import OrderConfirmation from '../../components/orders/OrderConfirmation.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
+import '../../components/cards/CardSkeletonShimmer.css';
 import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.webp';
 import { useAuth } from '../../hooks/useAuth.js';
+import { useFetch } from '../../hooks/useFetch.js';
 import { getCart, updateCartItem, removeCartItem, createOrder } from '../../services/employeeApi.js';
+import { CACHE_TTL } from '../../services/cache.js';
 import './CartPage.css';
 
 export default function CartPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
   const token = session?.access_token;
-
-  const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
+  const cartUserId = session?.user?.id;
+  const attemptedImageRefreshes = useRef(new Set());
+  const loadCart = useCallback(async ({ signal }) => {
+    const response = await getCart({ token, signal });
+    return { userId: cartUserId, cart: response?.cart || null };
+  }, [cartUserId, token]);
+  const cartFeed = useFetch(loadCart, {
+    cacheKey: cartUserId ? `employee:cart:${cartUserId}` : null,
+    enabled: Boolean(token && cartUserId),
+    staleTime: CACHE_TTL.cart,
+  });
+  const cartData = cartFeed.data?.userId === cartUserId ? cartFeed.data : null;
+  const cart = cartData?.cart || null;
+  const loading = Boolean(token && cartUserId) && !cartData
+    && (cartFeed.isLoading || Boolean(cartFeed.data && cartFeed.data.userId !== cartUserId));
+  const loadError = !token || !cartUserId
+    ? 'Please sign in again to view your cart.'
+    : cartFeed.error && !cartData && !loading
+      ? cartFeed.error?.message || 'Could not load your cart. Please try again.'
+      : '';
+  const refreshError = cartFeed.error && cartData
+    ? 'Cart refresh failed. Showing the last available cart.'
+    : '';
   const [actionError, setActionError] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [orderStatus, setOrderStatus] = useState(null);
   const [createdOrderId, setCreatedOrderId] = useState(null);
   const [now, setNow] = useState(Date.now());
-  const [reloadKey, setReloadKey] = useState(0);
-
-  useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      setLoadError('Please sign in again to view your cart.');
-      return undefined;
-    }
-    let cancelled = false;
-    setLoading(true);
-    setLoadError('');
-    getCart({ token })
-      .then((res) => {
-        if (!cancelled) {
-          setCart(res?.cart || null);
-          setActionError('');
-        }
-      })
-      .catch((error) => {
-        if (!cancelled) setLoadError(error?.message || 'Could not load your cart. Please try again.');
-      })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [token, reloadKey]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -63,6 +62,46 @@ export default function CartPage() {
   const serviceFee = cart?.serviceFee || 0;
   const total = cart?.total || 0;
 
+  const refreshCartImage = async (itemId, failedImage) => {
+    if (!token || !failedImage) return;
+    const key = `cart:${itemId}`;
+    if (attemptedImageRefreshes.current.has(key)) return;
+    attemptedImageRefreshes.current.add(key);
+
+    try {
+      const response = await getCart({ token, refreshImages: true });
+      const refreshedCart = response?.cart;
+      const nextImage = itemId === 'vendor'
+        ? refreshedCart?.vendor?.logo_url
+        : refreshedCart?.items?.find((item) => item.id === itemId)?.menuItem?.image_url;
+      if (!nextImage || nextImage === failedImage) {
+        console.error(`Unable to refresh cart image for ${itemId}: no new image URL was returned.`);
+        return;
+      }
+      cartFeed.mutate((current) => {
+        if (!current?.cart || !refreshedCart) return current;
+        return {
+          ...current,
+          cart: {
+            ...current.cart,
+            vendor: itemId === 'vendor'
+              ? { ...current.cart.vendor, logo_url: nextImage }
+              : current.cart.vendor,
+            items: itemId === 'vendor'
+              ? current.cart.items
+              : current.cart.items.map((item) => (
+                item.id === itemId
+                  ? { ...item, menuItem: { ...item.menuItem, image_url: nextImage } }
+                  : item
+              )),
+          },
+        };
+      });
+    } catch (error) {
+      console.error(`Unable to refresh cart image for ${itemId}:`, error);
+    }
+  };
+
   const handleUpdateQuantity = async (itemId, newQuantity) => {
     if (!token) return;
     if (newQuantity < 1) {
@@ -72,7 +111,9 @@ export default function CartPage() {
     try {
       setActionError('');
       const res = await updateCartItem(itemId, { quantity: newQuantity }, { token });
-      if (res?.cart) setCart((prev) => prev ? { ...prev, ...res.cart } : prev);
+      if (res?.cart) cartFeed.mutate((prev) => prev?.cart
+        ? { ...prev, cart: { ...prev.cart, ...res.cart } }
+        : prev);
     } catch (err) {
       setActionError(err?.message || 'Could not update this cart item. Please try again.');
     }
@@ -83,7 +124,9 @@ export default function CartPage() {
     try {
       setActionError('');
       const res = await removeCartItem(itemId, { token });
-      if (res?.cart) setCart((prev) => prev ? { ...prev, ...res.cart } : prev);
+      if (res?.cart) cartFeed.mutate((prev) => prev?.cart
+        ? { ...prev, cart: { ...prev.cart, ...res.cart } }
+        : prev);
     } catch (err) {
       setActionError(err?.message || 'Could not remove this cart item. Please try again.');
     }
@@ -123,7 +166,6 @@ export default function CartPage() {
   const handleCloseOrderStatus = () => {
     setOrderStatus(null);
     if (orderStatus === 'success') {
-      setCart(null);
       navigate('/orders');
     }
   };
@@ -143,24 +185,24 @@ export default function CartPage() {
         <CartBackground />
         <div className="cart-page">
           <Breadcrumb items={[{ label: 'Your Cart' }]} />
-          <div className="cart__content cart__content--skeleton" aria-label="Loading cart">
+          <div className="cart__content cart__content--skeleton" role="status" aria-label="Loading cart" aria-busy="true">
             <div className="cart__main">
               <div className="cart-skeleton__vendor">
-                <Skeleton className="cart-skeleton__avatar" />
-                <Skeleton className="skeleton--text" style={{ width: '38%', height: 20 }} />
+                <Skeleton className="cart-skeleton__avatar home_card-skeleton-shimmer" />
+                <Skeleton className="skeleton--text home_card-skeleton-shimmer" style={{ width: '38%', height: 20 }} />
               </div>
               {[0, 1].map((item) => (
                 <div className="cart-skeleton__item" key={item} aria-hidden="true">
-                  <Skeleton className="cart-skeleton__image" />
+                  <Skeleton className="cart-skeleton__image home_card-skeleton-shimmer" />
                   <div className="cart-skeleton__details">
-                    <Skeleton className="skeleton--text" style={{ width: '48%', height: 16 }} />
-                    <Skeleton className="skeleton--text" style={{ width: '70%', height: 12 }} />
-                    <Skeleton className="skeleton--text" style={{ width: '26%', height: 16 }} />
+                    <Skeleton className="skeleton--text home_card-skeleton-shimmer" style={{ width: '48%', height: 16 }} />
+                    <Skeleton className="skeleton--text home_card-skeleton-shimmer" style={{ width: '70%', height: 12 }} />
+                    <Skeleton className="skeleton--text home_card-skeleton-shimmer" style={{ width: '26%', height: 16 }} />
                   </div>
                 </div>
               ))}
             </div>
-            <Skeleton className="cart-skeleton__summary" />
+            <Skeleton className="cart-skeleton__summary home_card-skeleton-shimmer" />
           </div>
         </div>
       </PageContainer>
@@ -177,7 +219,7 @@ export default function CartPage() {
             <h2>Could not load your cart</h2>
             <p>{loadError}</p>
             {token && (
-              <button type="button" onClick={() => setReloadKey((key) => key + 1)}>
+              <button type="button" onClick={() => cartFeed.invalidate()}>
                 Try again
               </button>
             )}
@@ -193,14 +235,13 @@ export default function CartPage() {
         <CartBackground />
         <div className="cart-page">
           <Breadcrumb items={[{ label: 'Your Cart' }]} />
+          {refreshError && <p className="cart-refresh-error" role="status">{refreshError}</p>}
           <div className="cart-empty">
             <img src={avoidQueuesImg} alt="" className="cart-empty__image" />
             <div className="cart-empty__content">
               <h2 className="cart-empty__title">Your cart is empty</h2>
               <p className="cart-empty__text">Start your order and fill it with delicious items from our campus cafeterias</p>
-              <button type="button" className="cart-empty__btn" onClick={() => navigate('/cafeterias')}>
-                Order Now
-              </button>
+              <PrimaryButton onClick={() => navigate('/cafeterias')}>Order Now</PrimaryButton>
             </div>
           </div>
         </div>
@@ -230,12 +271,18 @@ export default function CartPage() {
         <div className="cart__content">
           <div className="cart__main">
             {actionError && <p className="cart-action-error" role="alert">{actionError}</p>}
-            {loadError && <p className="cart-refresh-error" role="status">Cart refresh failed. Showing the last available cart.</p>}
+            {refreshError && <p className="cart-refresh-error" role="status">{refreshError}</p>}
             <div className="cart__header">
               <div className="cart__vendor">
                 {vendorImage && (
                   <div className="cart__vendor-image">
-                    <SmartImage src={vendorImage} alt={vendorName} width={56} height={56} />
+                    <SmartImage
+                      src={vendorImage}
+                      alt={vendorName}
+                      width={56}
+                      height={56}
+                      onError={() => refreshCartImage('vendor', vendorImage)}
+                    />
                   </div>
                 )}
                 <div className="cart__vendor-details">
@@ -257,9 +304,10 @@ export default function CartPage() {
                   <CartItem
                     key={item.id}
                     item={item}
-                    to={item.menuItem ? `/cafeterias/${cart.vendorLocationId}/menu/${item.menuItem.id}` : '#'}
+                    to={item.menuItem ? `/cafeterias/${cart.vendor?.id}/menu/${item.menuItem.id}` : '#'}
                     onUpdateQuantity={handleUpdateQuantity}
                     onRemove={handleRemoveItem}
+                    onImageError={refreshCartImage}
                   />
                 ))}
               </div>

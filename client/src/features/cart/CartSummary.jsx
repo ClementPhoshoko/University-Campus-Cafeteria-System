@@ -1,4 +1,4 @@
-import { IconClock, IconShoppingBag } from '@tabler/icons-react';
+import { IconShoppingBag } from '@tabler/icons-react';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import './CartSummary.css';
 

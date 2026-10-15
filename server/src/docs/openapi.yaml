@@ -82,6 +82,12 @@ paths:
       operationId: getCart
       security:
         - bearerAuth: []
+      parameters:
+        - name: refresh_images
+          in: query
+          description: Refresh signed URLs for cart item and vendor images after an image load failure.
+          schema:
+            type: boolean
       responses:
         '200':
           description: Active cart, or null when the user has no active cart

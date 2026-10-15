@@ -4,26 +4,43 @@ import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import './CartItem.css';
 
-export default function CartItem({ item, onUpdateQuantity, onRemove, to }) {
+export default function CartItem({ item, onUpdateQuantity, onRemove, onImageError, to }) {
   const { menuItem, quantity, unitPriceSnapshot, selectedOptions, specialInstructions } = item;
 
   const formatPrice = (price) => {
-    const numPrice = typeof price === 'string' ? parseFloat(price.toString().replace(/[^0-9.]/g, '')) : price;
-    if (isNaN(numPrice)) return 'R0.00';
+    const numPrice = typeof price === 'string'
+      ? parseFloat(price.toString().replace(/[^0-9.]/g, ''))
+      : Number(price);
+    if (!Number.isFinite(numPrice)) return 'Price unavailable';
     return `R${numPrice.toFixed(2)}`;
   };
 
+  const snapshotPrice = unitPriceSnapshot === null || unitPriceSnapshot === undefined || unitPriceSnapshot === ''
+    ? NaN
+    : Number(unitPriceSnapshot);
+  const currentMenuPrice = menuItem?.base_price === null || menuItem?.base_price === undefined || menuItem?.base_price === ''
+    ? NaN
+    : Number(menuItem.base_price);
+  const unitPrice = Number.isFinite(snapshotPrice) && snapshotPrice >= 0
+    ? snapshotPrice
+    : currentMenuPrice;
   const optionsTotal = selectedOptions.reduce(
-    (sum, opt) => sum + opt.priceDelta * (opt.quantity || 1),
+    (sum, opt) => sum + (Number(opt.priceDelta) || 0) * (Number(opt.quantity) || 1),
     0,
   );
-  const lineTotal = (unitPriceSnapshot + optionsTotal) * quantity;
+  const lineTotal = Number.isFinite(unitPrice) ? (unitPrice + optionsTotal) * quantity : NaN;
 
   return (
     <div className="cart-item">
       <Link to={to} className="cart-item__image">
         {menuItem.image_url ? (
-          <SmartImage src={menuItem.image_url} alt={menuItem.name} width={100} height={100} />
+          <SmartImage
+            src={menuItem.image_url}
+            alt={menuItem.name}
+            width={100}
+            height={100}
+            onError={onImageError ? () => onImageError(item.id, menuItem.image_url) : undefined}
+          />
         ) : (
           <div className="cart-item__image-placeholder">
             <IconLeaf size={20} stroke={1.2} />

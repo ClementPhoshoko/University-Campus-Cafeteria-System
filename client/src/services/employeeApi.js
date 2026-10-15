@@ -1,4 +1,5 @@
 import { apiRequest } from './api.js';
+import { invalidateCachePattern } from './cache.js';
 
 // ─── Vendor Browsing ────────────────────────────────────────────────
 
@@ -39,17 +40,24 @@ export function getMenuItem(vendorId, itemId, { token, signal, cache, refreshIma
 
 // ─── Cart ───────────────────────────────────────────────────────────
 
-export function getCart({ token, signal } = {}) {
-  return apiRequest('/cart', { token, signal });
+export function getCart({ token, signal, refreshImages = false, cache = 'no-cache' } = {}) {
+  return apiRequest('/cart', {
+    query: { refresh_images: refreshImages ? 'true' : undefined },
+    token,
+    signal,
+    cache,
+  });
 }
 
-export function addToCart({ menuItemId, quantity, options, specialInstructions }, { token, signal } = {}) {
-  return apiRequest('/cart/items', {
+export async function addToCart({ menuItemId, quantity, options, specialInstructions }, { token, signal } = {}) {
+  const response = await apiRequest('/cart/items', {
     method: 'POST',
     body: { menuItemId, quantity, options, specialInstructions },
     token,
     signal,
   });
+  invalidateCachePattern('employee:cart:');
+  return response;
 }
 
 export function updateCartItem(itemId, { quantity, specialInstructions }, { token, signal } = {}) {
@@ -83,6 +91,9 @@ export function createOrder({ vendorId, vendorLocationId, collectionSlotId, note
     body: { vendorId, vendorLocationId, collectionSlotId, notes },
     token,
     signal,
+  }).then((response) => {
+    invalidateCachePattern('employee:cart:');
+    return response;
   });
 }
 
