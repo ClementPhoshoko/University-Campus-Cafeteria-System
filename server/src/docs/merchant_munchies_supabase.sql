@@ -380,6 +380,7 @@ create table if not exists public.carts (
   status public.cart_status not null default 'active',
   currency char(3) not null default 'ZAR',
   expires_at timestamptz not null default (now() + interval '2 hours'),
+  expiry_reminder_sent_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -1956,6 +1957,48 @@ $$;
 
 revoke all on function public.reserve_collection_slot(uuid) from public, anon, authenticated;
 grant execute on function public.reserve_collection_slot(uuid) to service_role;
+
+-- ---------------------------------------------------------------------------
+-- HELPER RPC: ATOMIC CART EXPIRY AND ITEM CLEARING
+-- Keep the expired cart record for history/email, but remove its contents.
+-- ---------------------------------------------------------------------------
+create or replace function public.expire_cart_and_clear_items(
+  p_cart_id uuid,
+  p_now timestamptz
+)
+returns boolean
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_status public.cart_status;
+  v_expires_at timestamptz;
+begin
+  select status, expires_at
+    into v_status, v_expires_at
+    from public.carts
+   where id = p_cart_id
+   for update;
+
+  if not found or v_status <> 'active' or v_expires_at > p_now then
+    return false;
+  end if;
+
+  update public.carts
+     set status = 'expired',
+         updated_at = p_now
+   where id = p_cart_id;
+
+  delete from public.cart_items
+   where cart_id = p_cart_id;
+
+  return true;
+end;
+$$;
+
+revoke all on function public.expire_cart_and_clear_items(uuid, timestamptz) from public, anon, authenticated;
+grant execute on function public.expire_cart_and_clear_items(uuid, timestamptz) to service_role;
 
 -- -----------------------------------------------------------------------------
 -- VERIFICATION / SECURITY CHECK QUERIES
