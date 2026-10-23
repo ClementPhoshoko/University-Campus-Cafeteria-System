@@ -24,7 +24,7 @@ export async function login(req, res) {
 
   // Fetch profile to attach role info
   const { data: profile, error: profileError } = await supabase
-    .from('public.profiles')
+    .from('profiles')
     .select('*')
     .eq('id', data.user.id)
     .single();
@@ -74,7 +74,7 @@ export async function refresh(req, res) {
 
 export async function me(req, res) {
   const { data: profile, error: profileError } = await supabase
-    .from('public.profiles')
+    .from('profiles')
     .select('*')
     .eq('id', req.user?.id)
     .single();
