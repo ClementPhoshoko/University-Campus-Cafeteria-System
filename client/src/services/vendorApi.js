@@ -19,3 +19,19 @@ export function listVendorOperationsMenu(vendorId, { token, signal, locationId }
 export function updateVendorAvailability(itemId, payload, { token, signal } = {}) {
   return apiRequest(`/vendor/menu/items/${itemId}/availability`, { method: 'PATCH', token, signal, body: payload });
 }
+
+export function listVendorMenuCategories(vendorId, { token, signal } = {}) {
+  return apiRequest('/vendor/menu/categories', { token, signal, query: { vendor_id: vendorId }, cache: 'no-store' });
+}
+
+export function createVendorMenuItem(vendorId, payload, { token, signal } = {}) {
+  return apiRequest('/vendor/menu/items', { method: 'POST', token, signal, body: { ...payload, vendor_id: vendorId } });
+}
+
+export function updateVendorMenuItem(itemId, payload, { token, signal } = {}) {
+  return apiRequest(`/vendor/menu/items/${itemId}`, { method: 'PATCH', token, signal, body: payload });
+}
+
+export function archiveVendorMenuItem(itemId, { token, signal } = {}) {
+  return apiRequest(`/vendor/menu/items/${itemId}`, { method: 'DELETE', token, signal });
+}

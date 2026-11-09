@@ -8,6 +8,7 @@ import { isUuid } from '../validators/vendorValidators.js';
 const db = () => supabaseAdmin;
 const ACTIVE_STATUSES = ['payment_confirmed', 'received_by_vendor', 'accepted', 'preparing', 'ready_for_collection'];
 const ORDER_SELECT = 'id, order_reference, vendor_id, vendor_location_id, status, payment_status, order_type, total, currency, notes, created_at, collection_slot_id, collection_points(name), profiles!orders_user_id_fkey(full_name), collection_slots(starts_at, ends_at)';
+const MENU_ITEM_SELECT = 'id, vendor_id, category_id, name, description, image_url, ingredients, portion_description, base_price, currency, prep_minutes, status, is_active, menu_categories(id, name)';
 
 function johannesburgDate() {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
@@ -33,6 +34,130 @@ async function membership(userId, vendorId) {
   return data || [];
 }
 
+async function requireVendorManager(userId, vendorId) {
+  const rows = await membership(userId, vendorId);
+  if (rows[0]?.role !== 'manager') throw new ApiError(403, 'VENDOR_MANAGER_REQUIRED', 'A vendor manager role is required to manage menu items');
+  return rows[0];
+}
+
+function validateMenuItem(input, { partial = false } = {}) {
+  const errors = [];
+  const value = {};
+  const statuses = ['available', 'limited', 'sold_out', 'unavailable'];
+  if (!partial || input.name !== undefined) {
+    if (typeof input.name !== 'string' || !input.name.trim() || input.name.trim().length > 120) errors.push('name must be between 1 and 120 characters');
+    else value.name = input.name.trim();
+  }
+  if (!partial || input.base_price !== undefined) {
+    const price = Number(input.base_price);
+    if (!Number.isFinite(price) || price < 0 || Math.round(price * 100) !== price * 100) errors.push('base_price must be a non-negative amount with up to two decimal places');
+    else value.base_price = price;
+  }
+  for (const key of ['description', 'portion_description']) {
+    if (input[key] === undefined) continue;
+    if (input[key] !== null && typeof input[key] !== 'string') errors.push(`${key} must be a string`);
+    else if ((input[key] || '').length > (key === 'description' ? 2000 : 120)) errors.push(`${key} is too long`);
+    else value[key] = input[key]?.trim() || null;
+  }
+  if (input.category_id !== undefined) {
+    if (input.category_id !== null && input.category_id !== '' && !isUuid(input.category_id)) errors.push('category_id must be a valid UUID');
+    else value.category_id = input.category_id || null;
+  }
+  if (input.prep_minutes !== undefined) {
+    const prep = input.prep_minutes === null || input.prep_minutes === '' ? null : Number(input.prep_minutes);
+    if (prep !== null && (!Number.isInteger(prep) || prep < 1 || prep > 1440)) errors.push('prep_minutes must be an integer from 1 to 1440');
+    else value.prep_minutes = prep;
+  }
+  if (input.ingredients !== undefined) {
+    if (!Array.isArray(input.ingredients) || input.ingredients.length > 50 || input.ingredients.some((ingredient) => typeof ingredient !== 'string' || !ingredient.trim() || ingredient.trim().length > 100)) errors.push('ingredients must contain up to 50 non-empty strings of 100 characters or fewer');
+    else value.ingredients = input.ingredients.map((ingredient) => ingredient.trim());
+  }
+  if (input.status !== undefined) {
+    if (!statuses.includes(input.status)) errors.push(`status must be one of: ${statuses.join(', ')}`);
+    else value.status = input.status;
+  } else if (!partial) value.status = 'available';
+  if (errors.length) return { errors };
+  return { value };
+}
+
+async function validateVendorCategory(vendorId, categoryId) {
+  if (!categoryId) return;
+  const { data, error } = await db().from('menu_categories').select('id').eq('id', categoryId).eq('vendor_id', vendorId).maybeSingle();
+  if (error) throw error;
+  if (!data) throw new ApiError(400, 'INVALID_CATEGORY', 'Category does not belong to this vendor');
+}
+
+export async function listMyVendorCategories(req, res) {
+  try {
+    const vendorId = String(req.query.vendor_id || '');
+    if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
+    await membership(req.user.id, vendorId);
+    const { data, error } = await db().from('menu_categories').select('id, name, description, sort_order, is_active').eq('vendor_id', vendorId).order('sort_order').order('name');
+    if (error) throw error;
+    return respond(req, res, { success: true, categories: data || [] }, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
+export async function createMyVendorMenuItem(req, res) {
+  try {
+    const vendorId = String(req.body?.vendor_id || '');
+    if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
+    await requireVendorManager(req.user.id, vendorId);
+    const parsed = validateMenuItem(req.body || {});
+    if (parsed.errors) return sendError(res, 400, 'VALIDATION_ERROR', parsed.errors.join('; '));
+    const menuId = String(req.body?.menu_id || '');
+    if (!isUuid(menuId)) return sendError(res, 400, 'INVALID_UUID', 'A valid published menu_id is required');
+    const { data: menu, error: menuError } = await db().from('menus').select('id, vendor_location_id, vendor_locations!inner(vendor_id, is_active)').eq('id', menuId).eq('menu_date', johannesburgDate()).eq('status', 'published').maybeSingle();
+    if (menuError) throw menuError;
+    if (!menu || menu.vendor_locations?.vendor_id !== vendorId || !menu.vendor_locations?.is_active) throw new ApiError(409, 'NO_PUBLISHED_MENU', 'Choose a published menu for an active vendor location');
+    await validateVendorCategory(vendorId, parsed.value.category_id);
+    const payload = { ...parsed.value, vendor_id: vendorId, currency: 'ZAR', is_active: true, created_by: req.user.id };
+    const { data, error } = await db().from('menu_items').insert(payload).select(MENU_ITEM_SELECT).single();
+    if (error) throw error;
+    const { error: linkError } = await db().from('menu_menu_items').insert({ menu_id: menuId, menu_item_id: data.id });
+    if (linkError) {
+      await db().from('menu_items').delete().eq('id', data.id).eq('vendor_id', vendorId);
+      throw linkError;
+    }
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.menu_items', recordKey: data.id, newData: { vendor_id: vendorId, name: data.name, base_price: data.base_price, status: data.status }, reason: 'Vendor manager created menu item', category: 'config' });
+    return respond(req, res, { success: true, menuItem: data }, { status: 201, cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
+export async function updateMyVendorMenuItem(req, res) {
+  try {
+    const { itemId } = req.params;
+    if (!isUuid(itemId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid menu item id');
+    const { data: item, error: itemError } = await db().from('menu_items').select('id, vendor_id, name, base_price, status').eq('id', itemId).maybeSingle();
+    if (itemError) throw itemError;
+    if (!item) throw new ApiError(404, 'MENU_ITEM_NOT_FOUND', 'Menu item not found');
+    await requireVendorManager(req.user.id, item.vendor_id);
+    const parsed = validateMenuItem(req.body || {}, { partial: true });
+    if (parsed.errors) return sendError(res, 400, 'VALIDATION_ERROR', parsed.errors.join('; '));
+    if (!Object.keys(parsed.value).length) return sendError(res, 400, 'VALIDATION_ERROR', 'No valid fields provided');
+    await validateVendorCategory(item.vendor_id, parsed.value.category_id);
+    const { data, error } = await db().from('menu_items').update({ ...parsed.value, updated_at: new Date().toISOString() }).eq('id', itemId).eq('vendor_id', item.vendor_id).select(MENU_ITEM_SELECT).single();
+    if (error) throw error;
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.menu_items', recordKey: itemId, oldData: { name: item.name, base_price: item.base_price, status: item.status }, newData: { name: data.name, base_price: data.base_price, status: data.status }, reason: 'Vendor manager updated menu item', category: 'config' });
+    return respond(req, res, { success: true, menuItem: data }, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
+export async function deactivateMyVendorMenuItem(req, res) {
+  try {
+    const { itemId } = req.params;
+    if (!isUuid(itemId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid menu item id');
+    const { data: item, error: itemError } = await db().from('menu_items').select('id, vendor_id, name, status, is_active').eq('id', itemId).maybeSingle();
+    if (itemError) throw itemError;
+    if (!item) throw new ApiError(404, 'MENU_ITEM_NOT_FOUND', 'Menu item not found');
+    await requireVendorManager(req.user.id, item.vendor_id);
+    const { data, error } = await db().from('menu_items').update({ is_active: false, status: 'unavailable', updated_at: new Date().toISOString() }).eq('id', itemId).eq('vendor_id', item.vendor_id).select('id, is_active, status').single();
+    if (error) throw error;
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.menu_items', recordKey: itemId, oldData: { is_active: item.is_active, status: item.status }, newData: data, reason: 'Vendor manager archived menu item', category: 'config' });
+    return respond(req, res, { success: true, menuItem: data }, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
 export async function listMyVendors(req, res) {
   try {
     const memberships = await membership(req.user.id);
@@ -52,7 +177,7 @@ export async function listMyVendorOrders(req, res) {
     if (error) throw error;
     const ids = (orders || []).map((order) => order.id);
     const { data: items, error: itemError } = ids.length
-      ? await db().from('order_items').select('order_id, item_name_snapshot, quantity, special_instructions, customization_snapshot').in('order_id', ids).order('created_at')
+      ? await db().from('order_items').select('order_id, item_name_snapshot, quantity, unit_price_snapshot, line_total, special_instructions, customization_snapshot, dietary_snapshot').in('order_id', ids).order('created_at')
       : { data: [], error: null };
     if (itemError) throw itemError;
     const itemsByOrder = {};
@@ -136,7 +261,7 @@ export async function listMyVendorMenu(req, res) {
       : { data: [], error: null };
     if (menuError) throw menuError;
     const menuIds = (menus || []).map((menu) => menu.id);
-    const { data: items, error: itemError } = await db().from('menu_items').select('id, name, description, base_price, currency, status, is_active, menu_categories(name)').eq('vendor_id', vendorId).eq('is_active', true).order('name');
+    const { data: items, error: itemError } = await db().from('menu_items').select('id, name, description, category_id, ingredients, portion_description, prep_minutes, base_price, currency, status, is_active, menu_categories(id, name)').eq('vendor_id', vendorId).eq('is_active', true).order('name');
     if (itemError) throw itemError;
     const links = menuIds.length
       ? await db().from('menu_menu_items').select('menu_id, menu_item_id').in('menu_id', menuIds)

@@ -22,6 +22,10 @@ import {
   updateMyVendorOrderStatus,
   listMyVendorMenu,
   updateMyVendorAvailability,
+  listMyVendorCategories,
+  createMyVendorMenuItem,
+  updateMyVendorMenuItem,
+  deactivateMyVendorMenuItem,
 } from '../controllers/vendorOperationsController.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 
@@ -40,6 +44,10 @@ vendorRouter.get('/vendor/me', listMyVendors);
 vendorRouter.get('/vendor/orders', listMyVendorOrders);
 vendorRouter.patch('/vendor/orders/:orderId/status', vendorMutations, updateMyVendorOrderStatus);
 vendorRouter.get('/vendor/menu', listMyVendorMenu);
+vendorRouter.get('/vendor/menu/categories', listMyVendorCategories);
+vendorRouter.post('/vendor/menu/items', vendorMutations, createMyVendorMenuItem);
+vendorRouter.patch('/vendor/menu/items/:itemId', vendorMutations, updateMyVendorMenuItem);
+vendorRouter.delete('/vendor/menu/items/:itemId', vendorMutations, deactivateMyVendorMenuItem);
 vendorRouter.patch('/vendor/menu/items/:itemId/availability', vendorMutations, updateMyVendorAvailability);
 
 vendorRouter.get('/popular-menu-items', listPopularMenuItems);

@@ -2870,6 +2870,91 @@ paths:
       responses:
         '200': { description: Today’s menu items and their availability }
         '403': { $ref: '#/components/responses/Forbidden' }
+  '/vendor/menu/categories':
+    get:
+      tags: [Vendor Operations]
+      summary: List categories belonging to a vendor membership
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vendor_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Vendor menu categories }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  '/vendor/menu/items':
+    post:
+      tags: [Vendor Operations]
+      summary: Add an item to a published menu (vendor managers only)
+      description: Creates an active vendor menu item and links it to the specified published menu for the current Johannesburg date. Uses existing menu item, category, and menu link tables; no migration is required.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vendor_id, menu_id, name, base_price]
+              properties:
+                vendor_id: { type: string, format: uuid }
+                menu_id: { type: string, format: uuid }
+                name: { type: string, minLength: 1, maxLength: 120 }
+                description: { type: string, maxLength: 2000, nullable: true }
+                category_id: { type: string, format: uuid, nullable: true }
+                base_price: { type: number, minimum: 0 }
+                prep_minutes: { type: integer, minimum: 1, maximum: 1440, nullable: true }
+                status: { type: string, enum: [available, limited, sold_out, unavailable] }
+                portion_description: { type: string, maxLength: 120, nullable: true }
+                ingredients: { type: array, maxItems: 50, items: { type: string, maxLength: 100 } }
+      responses:
+        '201': { description: Menu item created and attached to the published menu }
+        '400': { description: Invalid item fields or category }
+        '403': { description: Active vendor manager membership is required }
+        '409': { description: The menu is not published for today at an active vendor location }
+  '/vendor/menu/items/{itemId}':
+    patch:
+      tags: [Vendor Operations]
+      summary: Update a vendor menu item (vendor managers only)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                description: { type: string, maxLength: 2000, nullable: true }
+                category_id: { type: string, format: uuid, nullable: true }
+                base_price: { type: number, minimum: 0 }
+                prep_minutes: { type: integer, minimum: 1, maximum: 1440, nullable: true }
+                status: { type: string, enum: [available, limited, sold_out, unavailable] }
+                portion_description: { type: string, maxLength: 120, nullable: true }
+                ingredients: { type: array, maxItems: 50, items: { type: string, maxLength: 100 } }
+      responses:
+        '200': { description: Menu item updated }
+        '403': { description: Active vendor manager membership is required }
+        '404': { description: Menu item not found }
+    delete:
+      tags: [Vendor Operations]
+      summary: Archive a vendor menu item (vendor managers only)
+      description: Soft-deactivates the item and sets it unavailable, preserving references from historical orders.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Menu item archived }
+        '403': { description: Active vendor manager membership is required }
+        '404': { description: Menu item not found }
   '/vendor/menu/items/{itemId}/availability':
     patch:
       tags: [Vendor Operations]
