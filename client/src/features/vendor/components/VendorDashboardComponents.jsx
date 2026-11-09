@@ -36,13 +36,20 @@ export function OrderCard({ order, busy, urgent, onStatus }) {
     ready_for_collection: [{ status: 'collected', label: 'Confirm collection' }],
   }[order.status] || [];
   const [rejectReason, setRejectReason] = useState('');
+  const [showRejectReason, setShowRejectReason] = useState(false);
   const [collectionCode, setCollectionCode] = useState('');
   const slotTime = order.collection_slot?.starts_at ? new Date(order.collection_slot.starts_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : null;
   const paymentLabel = order.payment_status === 'succeeded' ? 'Paid' : formatStatus(order.payment_status || 'unknown');
-  const actionsContent = actions.length > 0 && <div className="vendor-order-card__actions">{actions.map((action) => action.status === 'rejected' || action.status === 'collected' ? <form key={action.status} className="vendor-order-card__form" onSubmit={(event) => { event.preventDefault(); onStatus(order, action.status, action.status === 'rejected' ? rejectReason : collectionCode); }}>
-    <input aria-label={action.status === 'rejected' ? 'Reason for rejecting order' : 'Customer collection code'} placeholder={action.status === 'rejected' ? 'Reason required' : '4-character code'} maxLength={action.status === 'collected' ? 4 : undefined} value={action.status === 'rejected' ? rejectReason : collectionCode} onChange={(event) => action.status === 'rejected' ? setRejectReason(event.target.value) : setCollectionCode(event.target.value.toUpperCase())} />
-    <button className={`vendor-ops-button${action.status === 'rejected' ? ' vendor-ops-button--quiet' : ''}`} type="submit" disabled={busy || !(action.status === 'rejected' ? rejectReason.trim() : /^[A-Z0-9]{4}$/.test(collectionCode))}>{busy ? 'Saving…' : action.label}</button>
-  </form> : action.status === 'received_by_vendor' ? <PrimaryButton key={action.status} size="md" className="primary-btn primary-btn--md vendor-order-card__receive-button" disabled={busy} onClick={() => onStatus(order, action.status)}>{busy ? 'Receiving…' : action.label}</PrimaryButton> : <button key={action.status} className="vendor-ops-button" type="button" disabled={busy} onClick={() => onStatus(order, action.status)}>{busy ? 'Saving…' : action.label}</button>)}</div>;
+  const actionsContent = actions.length > 0 && <div className="vendor-order-card__actions">{actions.map((action) => action.status === 'rejected' ? <div key={action.status} className="vendor-order-card__reject-action">
+    {showRejectReason ? <form className="vendor-order-card__form" onSubmit={(event) => { event.preventDefault(); onStatus(order, action.status, rejectReason); }}>
+      <input aria-label="Reason for rejecting order" placeholder="Reason for rejection" value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} />
+      <button className="vendor-ops-button vendor-ops-button--quiet" type="submit" disabled={busy || !rejectReason.trim()}>{busy ? 'Saving...' : 'Confirm reject'}</button>
+      <button className="vendor-order-card__cancel" type="button" onClick={() => { setShowRejectReason(false); setRejectReason(''); }}>Cancel</button>
+    </form> : <button className="vendor-ops-button vendor-ops-button--quiet" type="button" disabled={busy} onClick={() => setShowRejectReason(true)}>{action.label}</button>}
+  </div> : action.status === 'collected' ? <form key={action.status} className="vendor-order-card__form" onSubmit={(event) => { event.preventDefault(); onStatus(order, action.status, collectionCode); }}>
+    <input aria-label="Customer collection code" placeholder="4-character code" maxLength={4} value={collectionCode} onChange={(event) => setCollectionCode(event.target.value.toUpperCase())} />
+    <PrimaryButton type="submit" size="md" disabled={busy || !/^[A-Z0-9]{4}$/.test(collectionCode)}>{busy ? 'Saving...' : action.label}</PrimaryButton>
+  </form> : action.status === 'received_by_vendor' || action.status === 'accepted' || action.status === 'preparing' || action.status === 'ready_for_collection' ? <PrimaryButton key={action.status} size="md" className="primary-btn primary-btn--md vendor-order-card__receive-button" disabled={busy} onClick={() => onStatus(order, action.status)}>{busy ? 'Saving...' : action.label}</PrimaryButton> : <button key={action.status} className="vendor-ops-button" type="button" disabled={busy} onClick={() => onStatus(order, action.status)}>{busy ? 'Saving...' : action.label}</button>)}</div>;
   const itemList = <ul className="vendor-order-card__items">{(order.items || []).map((item, index) => {
     const itemTotal = item.line_total ?? (item.unit_price_snapshot != null ? Number(item.unit_price_snapshot) * Number(item.quantity || 0) : null);
     return <li key={`${order.id}-${index}`}>
@@ -61,18 +68,29 @@ export function OrderCard({ order, busy, urgent, onStatus }) {
       </header>
       <div className="vendor-order-card__urgent-details">
         <div className="vendor-order-card__pickup-time"><span>Collection time</span><strong><IconClockHour4 size={17} />{slotTime || 'Not scheduled'}</strong></div>
-        <div className="vendor-order-card__pickup-point"><span>Pickup point</span><strong><IconMapPin size={16} />{order.collection_point_name || 'To be confirmed'}</strong></div>
         <div className="vendor-order-card__urgent-total"><span>Order total</span><strong>{formatMoney(order.total, order.currency)}</strong></div>
       </div>
       <p className="vendor-order-card__alert"><IconAlertTriangle size={16} aria-hidden="true" />Collection time is approaching</p>
-      {itemList}
-      {order.notes && <p className="vendor-order-card__note">Order note: {order.notes}</p>}
+      <details className="vendor-order-card__details">
+        <summary>Order details <span>{order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'items'}</span></summary>
+        <div className="vendor-order-card__details-content">
+          <div className="vendor-order-card__pickup-point"><span>Pickup point</span><strong><IconMapPin size={16} />{order.collection_point_name || 'To be confirmed'}</strong></div>
+          {itemList}
+          {order.notes && <p className="vendor-order-card__note">Order note: {order.notes}</p>}
+        </div>
+      </details>
       {actionsContent}
     </> : <>
       <div className="vendor-order-card__top"><div><p className="vendor-order-card__reference">{order.order_reference || 'Order'}</p><p className="vendor-order-card__customer">{order.customer_name || 'Customer'}</p></div><StatusBadge status={order.status} /></div>
-      <div className="vendor-order-card__meta">{slotTime && <span><IconClockHour4 size={15} /> Collection {slotTime}</span>}{order.collection_point_name && <span>{order.collection_point_name}</span>}<span className="vendor-order-card__payment">Payment: {paymentLabel}</span><strong>{formatMoney(order.total, order.currency)}</strong></div>
-      {itemList}
-      {order.notes && <p className="vendor-order-card__note">Order note: {order.notes}</p>}
+      <div className="vendor-order-card__meta">{slotTime && <span><IconClockHour4 size={15} /> Collection {slotTime}</span>}<span className="vendor-order-card__payment">Payment: {paymentLabel}</span><strong>{formatMoney(order.total, order.currency)}</strong></div>
+      <details className="vendor-order-card__details">
+        <summary>Order details <span>{order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'items'}</span></summary>
+        <div className="vendor-order-card__details-content">
+          {order.collection_point_name && <p className="vendor-order-card__detail-line"><IconMapPin size={15} />{order.collection_point_name}</p>}
+          {itemList}
+          {order.notes && <p className="vendor-order-card__note">Order note: {order.notes}</p>}
+        </div>
+      </details>
       {actionsContent}
     </>}
     {order.status === 'ready_for_collection' && <p className="vendor-order-card__hint">Verify the customer’s collection code before completing handover.</p>}
