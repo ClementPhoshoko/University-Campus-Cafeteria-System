@@ -73,10 +73,12 @@ export function OrderCard({ order, busy, urgent, onStatus }) {
         <span className="vendor-order-card__expand-icon" aria-hidden="true" />
       </summary>
       <div className="vendor-order-card__expanded">
-        {urgent && <p className="vendor-order-card__alert"><IconAlertTriangle size={16} aria-hidden="true" />Collection time is approaching</p>}
-        <div className="vendor-order-card__expanded-meta">
-          <span><IconMapPin size={15} />{order.collection_point_name || 'Pickup point to be confirmed'}</span>
-          <span className="vendor-order-card__payment">Payment: {paymentLabel}</span>
+        <div className="vendor-order-card__detail-bar">
+          {urgent && <p className="vendor-order-card__alert"><IconAlertTriangle size={16} aria-hidden="true" />Collection time is approaching</p>}
+          <div className="vendor-order-card__expanded-meta">
+            <span><IconMapPin size={15} />{order.collection_point_name || 'Pickup point to be confirmed'}</span>
+            <span className="vendor-order-card__payment">Payment: {paymentLabel}</span>
+          </div>
         </div>
         {itemList}
         {order.notes && <p className="vendor-order-card__note">Order note: {order.notes}</p>}
