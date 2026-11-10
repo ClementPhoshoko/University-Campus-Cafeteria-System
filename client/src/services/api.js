@@ -53,7 +53,11 @@ export async function apiRequest(path, {
   cache = 'default',
 } = {}) {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  let timedOut = false;
+  const timeoutId = window.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
   const abortFromCaller = () => controller.abort();
 
   if (signal) {
@@ -86,11 +90,12 @@ export async function apiRequest(path, {
     return payload;
   } catch (err) {
     if (err.name === 'AbortError') {
-      throw new ApiError('Request timed out', { code: 'TIMEOUT' });
+      if (timedOut) throw new ApiError('Request timed out', { code: 'TIMEOUT' });
+      if (signal?.aborted) throw err;
     }
     throw err;
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(timeoutId);
     if (signal) signal.removeEventListener('abort', abortFromCaller);
   }
 }

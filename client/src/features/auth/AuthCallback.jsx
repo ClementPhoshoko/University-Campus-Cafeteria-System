@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
+import { getSafeReturnTo } from '../../utils/returnTo.js';
 import { sendWelcomeEmail } from '../../services/email.js';
 import cheerfulAvatar from '../../assets/avatars/Cheerful_Student_with_Green_Checkmark.webp';
 
@@ -46,7 +47,7 @@ export default function AuthCallback() {
           }).catch((e) => console.error('[Welcome email]', e));
         }
       }
-      setTimeout(() => navigate('/', { replace: true }), 1800);
+      setTimeout(() => navigate(getSafeReturnTo(searchParams.get('returnTo')), { replace: true }), 1800);
     } else {
       setStatus('Completing sign-in...');
     }

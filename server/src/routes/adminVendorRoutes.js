@@ -32,6 +32,11 @@ import {
   addOrderNote,
 } from '../controllers/vendorController.js';
 import {
+  createVendorInvitation,
+  listVendorInvitations,
+  revokeVendorInvitation,
+} from '../controllers/vendorInvitationController.js';
+import {
   createVendorCategoryCatalogEntry,
   listAdminVendorCategories,
   updateVendorCategoryCatalogEntry,
@@ -76,6 +81,9 @@ adminVendorRouter.patch('/admin/collection-slots/:slotId', mutations, updateVend
 
 adminVendorRouter.post('/admin/vendors/:vendorId/users', mutations, addVendorUser);
 adminVendorRouter.delete('/admin/vendors/:vendorId/users/:userId', mutations, removeVendorUser);
+adminVendorRouter.get('/admin/vendors/:vendorId/invitations', listVendorInvitations);
+adminVendorRouter.post('/admin/vendors/:vendorId/invitations', mutations, createVendorInvitation);
+adminVendorRouter.delete('/admin/vendors/:vendorId/invitations/:invitationId', mutations, revokeVendorInvitation);
 adminVendorRouter.get('/admin/buildings/:buildingId/vendors', listBuildingVendors);
 adminVendorRouter.get('/admin/vendors/:vendorId/categories', listVendorCategories);
 adminVendorRouter.post('/admin/vendors/:vendorId/categories', mutations, createVendorCategory);

@@ -43,6 +43,7 @@ import AdminAnnouncementsPage from './features/admin/AdminAnnouncementsPage.jsx'
 import AdminAnnouncementDetail from './features/admin/AdminAnnouncementDetail.jsx';
 import AdminSettingsPage from './features/admin/AdminSettingsPage.jsx';
 import VendorOperationsPage from './features/vendor/VendorOperationsPage.jsx';
+import VendorInvitationPage from './features/vendor/VendorInvitationPage.jsx';
 import './features/auth/auth.css';
 
 function isOnboardingCompleted(profile) {
@@ -106,6 +107,9 @@ export default function App() {
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/auth/confirm" element={<EmailConfirmation />} />
       <Route path="/auth/recovery" element={<PasswordRecovery />} />
+      <Route element={<AuthLayout />}>
+        <Route path="/vendor-invitations/:token" element={<VendorInvitationPage />} />
+      </Route>
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>

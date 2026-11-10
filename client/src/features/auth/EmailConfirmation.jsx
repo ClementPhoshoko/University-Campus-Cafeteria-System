@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
+import { getSafeReturnTo } from '../../utils/returnTo.js';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import cheerfulAvatar from '../../assets/avatars/Cheerful_Student_with_Green_Checkmark.webp';
 
@@ -50,8 +51,8 @@ export default function EmailConfirmation() {
         )}
 
         {initialized && !error && user && (
-          <PrimaryButton onClick={() => navigate('/', { replace: true })}>
-            Continue
+          <PrimaryButton onClick={() => navigate(getSafeReturnTo(searchParams.get('returnTo')), { replace: true })}>
+            {searchParams.get('returnTo') ? 'Continue to invitation' : 'Continue'}
           </PrimaryButton>
         )}
         {error && initialized && (

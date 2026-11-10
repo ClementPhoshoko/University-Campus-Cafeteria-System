@@ -6,6 +6,7 @@ import PasswordInput from '../../components/PasswordInput.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import GlassTooltip from '../../components/GlassTooltip.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
+import { getSafeReturnTo } from '../../utils/returnTo.js';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ export default function Login() {
     setFormError('');
     try {
       await signIn(form.email.trim(), form.password);
-      const returnTo = searchParams.get('returnTo') || '/';
+      const returnTo = getSafeReturnTo(searchParams.get('returnTo'));
       navigate(returnTo, { replace: true });
     } catch (err) {
       setFormError(err.message || 'Invalid email or password. Please try again.');
@@ -49,7 +50,7 @@ export default function Login() {
   const handleGoogle = async () => {
     setFormError('');
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(getSafeReturnTo(searchParams.get('returnTo')));
     } catch (err) {
       setFormError(err.message || 'Google sign-in failed. Please try again.');
     }

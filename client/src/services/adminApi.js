@@ -321,6 +321,27 @@ export function removeVendorUser(token, vendorId, userId, options) {
   });
 }
 
+export function listVendorInvitations(token, vendorId, options) {
+  return adminRequest(`/admin/vendors/${vendorId}/invitations`, { token, ...options });
+}
+
+export function createVendorInvitation(token, vendorId, payload, options) {
+  return adminRequest(`/admin/vendors/${vendorId}/invitations`, {
+    method: 'POST',
+    token,
+    body: payload,
+    ...options,
+  });
+}
+
+export function revokeVendorInvitation(token, vendorId, invitationId, options) {
+  return adminRequest(`/admin/vendors/${vendorId}/invitations/${invitationId}`, {
+    method: 'DELETE',
+    token,
+    ...options,
+  });
+}
+
 export function listVendorCategories(token, vendorId, options) {
   return adminRequest(`/admin/vendors/${vendorId}/categories`, { token, ...options });
 }

@@ -42,7 +42,7 @@ export function OrderCard({ order, busy, urgent, onStatus }) {
   const paymentLabel = order.payment_status === 'succeeded' ? 'Paid' : formatStatus(order.payment_status || 'unknown');
   const actionsContent = actions.length > 0 && <div className="vendor-order-card__actions">{actions.map((action) => action.status === 'rejected' ? <div key={action.status} className="vendor-order-card__reject-action">
     {showRejectReason ? <form className="vendor-order-card__form" onSubmit={(event) => { event.preventDefault(); onStatus(order, action.status, rejectReason); }}>
-      <input aria-label="Reason for rejecting order" placeholder="Reason for rejection" value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} />
+      <input aria-label="Reason for rejecting order" placeholder="Reason for rejection (max 500 characters)" maxLength={500} value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} />
       <button className="vendor-ops-button vendor-ops-button--quiet" type="submit" disabled={busy || !rejectReason.trim()}>{busy ? 'Saving...' : 'Confirm reject'}</button>
       <button className="vendor-order-card__cancel" type="button" onClick={() => { setShowRejectReason(false); setRejectReason(''); }}>Cancel</button>
     </form> : <button className="vendor-ops-button vendor-ops-button--quiet" type="button" disabled={busy} onClick={() => setShowRejectReason(true)}>{action.label}</button>}

@@ -19,10 +19,18 @@ Archiving sets `is_active=false` and `status=unavailable`. It does not physicall
 
 The editor currently supports name, description, category, price, preparation estimate, portion, ingredients, and availability. Vendor image uploads, dietary/allergen editing, option groups, and weekly menu scheduling are not part of this API slice yet.
 
-## Database migration
+## Vendor invitations
 
-No migration is required for vendor menu CRUD. The existing schema already provides `menu_items`, `menu_categories`, and the `menu_menu_items` relationship, including audit triggers. The endpoint uses these existing structures and the existing audit writer. Add a migration only when a later feature introduces a schema change, such as inventory reservation rules.
+Admins can invite an email address to one approved vendor as `staff` or `manager`. The invitation does not assign a platform-wide role. The recipient must sign in or register with the invited address, verify that email, and redeem the single-use token. Redemption is atomic with creating or updating the `vendor_users` membership. Expiry is the end of the third working day in `Africa/Johannesburg`; Saturdays, Sundays, and South African public holidays do not count.
+
+The invitation token is generated with 256 bits of randomness. Only its SHA-256 hash is stored. Pending invitations can be revoked, and issuing a replacement revokes earlier pending invitations for the same vendor and email. Expired, revoked, wrong-email, and previously accepted tokens cannot be redeemed.
+
+## Database migrations
+
+Apply `migrations/019_vendor_invitations.sql` before enabling the admin invitation action. It creates the invitation table and service-role-only RPCs used for serialized creation and transactional redemption.
+
+No migration is required for vendor menu CRUD. The existing schema already provides `menu_items`, `menu_categories`, and the `menu_menu_items` relationship, including audit triggers.
 
 ## Authorization and audit
 
-Every route requires authentication and verifies active vendor membership. Menu item mutations additionally require the manager role and are rate-limited. Mutations write application audit entries. The existing database audit trigger also records row changes.
+Every vendor operations route requires authentication and verifies active vendor membership. Order processing and availability updates are available to active staff and managers; menu item creation, detail edits, and archiving additionally require the manager membership role. Order status transitions are validated server-side, rejection reasons are required and capped at 500 characters, and collection completion requires the order's matching four-character code. Mutations write application audit entries. Invitation creation and redemption record explicit actor-attributed audit entries.

@@ -1,9 +1,14 @@
-import crypto from 'node:crypto';
 import { supabaseAdmin } from '../config/supabase.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { writeAudit } from '../utils/audit.js';
 import { respond } from '../utils/http.js';
 import { isUuid } from '../validators/vendorValidators.js';
+import {
+  VENDOR_ORDER_STATUSES,
+  collectionCodeMatches,
+  isValidVendorOrderTransition,
+  validateRejectionReason,
+} from '../utils/vendorOrderWorkflow.js';
 
 const db = () => supabaseAdmin;
 const ACTIVE_STATUSES = ['payment_confirmed', 'received_by_vendor', 'accepted', 'preparing', 'ready_for_collection'];
@@ -196,31 +201,25 @@ export async function updateMyVendorOrderStatus(req, res) {
   try {
     const { orderId } = req.params;
     const nextStatus = req.body?.status;
-    const allowed = {
-      payment_confirmed: ['received_by_vendor'],
-      received_by_vendor: ['accepted', 'rejected'],
-      accepted: ['preparing', 'rejected'],
-      preparing: ['ready_for_collection'],
-      ready_for_collection: ['collected'],
-    };
     if (!isUuid(orderId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid order id');
-    if (!['received_by_vendor', 'accepted', 'preparing', 'ready_for_collection', 'rejected'].includes(nextStatus)) {
+    if (!VENDOR_ORDER_STATUSES.includes(nextStatus)) {
       return sendError(res, 400, 'VALIDATION_ERROR', 'Unsupported order status');
     }
     const { data: order, error: fetchError } = await db().from('orders').select('id, vendor_id, status, collection_reference_hash').eq('id', orderId).maybeSingle();
     if (fetchError) throw fetchError;
     if (!order) throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
     await membership(req.user.id, order.vendor_id);
-    if (!allowed[order.status]?.includes(nextStatus)) throw new ApiError(409, 'INVALID_STATUS_TRANSITION', `Cannot change an order from ${order.status} to ${nextStatus}`);
-    const reason = nextStatus === 'rejected' ? String(req.body?.reason || '').trim() : null;
-    if (nextStatus === 'rejected' && !reason) return sendError(res, 400, 'VALIDATION_ERROR', 'A reason is required when rejecting an order');
+    if (!isValidVendorOrderTransition(order.status, nextStatus)) throw new ApiError(409, 'INVALID_STATUS_TRANSITION', `Cannot change an order from ${order.status} to ${nextStatus}`);
+    let reason = null;
+    if (nextStatus === 'rejected') {
+      const result = validateRejectionReason(req.body?.reason);
+      if (result.error) return sendError(res, 400, 'VALIDATION_ERROR', result.error);
+      reason = result.value;
+    }
     if (nextStatus === 'collected') {
       const code = String(req.body?.collection_code || '').trim().toUpperCase();
       if (!/^[A-Z0-9]{4}$/.test(code)) return sendError(res, 400, 'VALIDATION_ERROR', 'Enter the customer’s 4-character collection code');
-      const submittedHash = crypto.createHash('sha256').update(code).digest('hex');
-      const expected = Buffer.from(order.collection_reference_hash || '', 'hex');
-      const submitted = Buffer.from(submittedHash, 'hex');
-      if (expected.length !== submitted.length || !crypto.timingSafeEqual(expected, submitted)) {
+      if (!collectionCodeMatches(code, order.collection_reference_hash)) {
         return sendError(res, 400, 'INVALID_COLLECTION_CODE', 'That collection code does not match this order');
       }
     }

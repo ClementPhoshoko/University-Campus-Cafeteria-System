@@ -114,10 +114,10 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(async (returnTo) => {
     setLoading(true);
     try {
-      await auth.signInWithGoogle();
+      await auth.signInWithGoogle(returnTo);
     } finally {
       setLoading(false);
     }

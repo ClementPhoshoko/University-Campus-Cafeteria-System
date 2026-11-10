@@ -4,6 +4,7 @@ import * as vendorController from '../src/controllers/vendorController.js';
 import * as vendorRoutes from '../src/routes/vendorRoutes.js';
 import * as adminVendorRoutes from '../src/routes/adminVendorRoutes.js';
 import * as vendorCategoryController from '../src/controllers/vendorCategoryController.js';
+import * as vendorInvitationController from '../src/controllers/vendorInvitationController.js';
 
 test('controller exports the full admin + public surface', () => {
   const expected = [
@@ -32,5 +33,15 @@ test('vendor category controller exports customer and admin category endpoints',
     'updateVendorCategoryCatalogEntry',
   ]) {
     assert.equal(typeof vendorCategoryController[name], 'function', `${name} should be exported`);
+  }
+});
+
+test('admin vendor routes expose invitation management', () => {
+  for (const name of [
+    'createVendorInvitation',
+    'listVendorInvitations',
+    'revokeVendorInvitation',
+  ]) {
+    assert.equal(typeof vendorInvitationController[name], 'function', `${name} should be exported`);
   }
 });

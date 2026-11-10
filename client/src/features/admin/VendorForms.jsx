@@ -307,6 +307,56 @@ export function StaffModal({ onClose, onSubmit, submitting = false }) {
   return <div className="admin-modal" role="dialog" aria-modal="true"><div className="admin-modal__overlay" onClick={onClose} /><div className="admin-modal__card"><header className="admin-modal__head"><div><h3 className="admin-modal__title">Add vendor staff</h3><p className="admin-modal__sub">The user must already have a platform profile.</p></div></header><div className="admin-form-grid"><Field label="User email" full><input autoFocus className="admin-input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field><Field label="Vendor role" renderLabel={false}><AdminDropdown label="Vendor role" options={roleOptions} value={form.role} onChange={(val) => setForm({ ...form, role: val })} /></Field></div><footer className="admin-modal__foot"><button type="button" className="admin-action" onClick={onClose}>Cancel</button><button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.email.trim()} onClick={() => onSubmit(form)}>{submitting ? 'Adding…' : 'Add staff member'}</button></footer><ModalProgressOverlay active={submitting} messages={['Adding staff member...', 'Updating vendor team...', 'Almost there...']} /></div></div>;
 }
 
+export function VendorInvitationModal({ onClose, onSubmit, submitting = false }) {
+  const [form, setForm] = useState({ email: '', role: 'staff' });
+  const [error, setError] = useState('');
+  const roleOptions = [{ value: 'staff', label: 'Staff' }, { value: 'manager', label: 'Manager' }];
+
+  const submit = async () => {
+    setError('');
+    try {
+      await onSubmit({ email: form.email.trim(), role: form.role });
+    } catch (submitError) {
+      setError(submitError.message || 'Could not send this invitation. Please try again.');
+    }
+  };
+
+  return <div className="admin-modal" role="dialog" aria-modal="true" aria-labelledby="vendor-invitation-title">
+    <div className="admin-modal__overlay" onClick={() => !submitting && onClose()} />
+    <div className="admin-modal__card">
+      <header className="admin-modal__head">
+        <div>
+          <h3 id="vendor-invitation-title" className="admin-modal__title">Invite vendor team member</h3>
+          <p className="admin-modal__sub">The invitation is limited to this vendor and expires after 3 South African business days.</p>
+        </div>
+      </header>
+      {error && <div className="vendor-form-error" role="alert">{error}</div>}
+      <div className="admin-form-grid">
+        <Field label="Invitee email" full>
+          <input
+            autoFocus
+            className="admin-input"
+            type="email"
+            autoComplete="email"
+            value={form.email}
+            onChange={(event) => setForm({ ...form, email: event.target.value })}
+          />
+        </Field>
+        <Field label="Vendor role" renderLabel={false}>
+          <AdminDropdown label="Vendor role" options={roleOptions} value={form.role} onChange={(role) => setForm({ ...form, role })} />
+        </Field>
+      </div>
+      <footer className="admin-modal__foot">
+        <button type="button" className="admin-action" onClick={onClose} disabled={submitting}>Cancel</button>
+        <button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.email.trim()} onClick={submit}>
+          {submitting ? 'Sending…' : 'Send invitation'}
+        </button>
+      </footer>
+      <ModalProgressOverlay active={submitting} messages={['Creating invitation...', 'Sending email...', 'Almost there...']} />
+    </div>
+  </div>;
+}
+
 export function VendorLocationModal({ location, onClose, onSubmit, submitting = false }) {
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');

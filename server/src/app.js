@@ -15,6 +15,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import siteRoutes from './routes/siteRoutes.js';
 import adminSiteRoutes from './routes/adminSiteRoutes.js';
 import vendorRoutes from './routes/vendorRoutes.js';
+import vendorInvitationRoutes from './routes/vendorInvitationRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import favoriteRoutes from './routes/favoriteRoutes.js';
@@ -56,7 +57,11 @@ app.use(express.json({
   limit: '10mb',
   verify: (req, res, buf) => { req.rawBody = buf; },
 }));
-app.use(morgan('dev'));
+morgan.token('redacted-url', (req) => req.originalUrl.replace(
+  /(\/vendor-invitations\/)[A-Za-z0-9_-]{43}(?=\/|[?#]|$)/g,
+  '$1[redacted]',
+));
+app.use(morgan(':method :redacted-url :status :response-time ms - :res[content-length]'));
 
 // Load and parse OpenAPI spec
 const specPath = path.join(__dirname, 'docs', 'openapi.yaml');
@@ -72,6 +77,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec, {
 app.use('/api/v1', healthRoutes);
 app.use('/api/v1', authRoutes);
 app.use('/api/v1', emailRoutes);
+// This router includes a public invitation preview and must precede routers
+// whose namespace-wide authentication middleware can intercept unmatched paths.
+app.use('/api/v1', vendorInvitationRoutes);
 app.use('/api/v1', siteRoutes);
 app.use('/api/v1', vendorRoutes);
 app.use('/api/v1', cartRoutes);

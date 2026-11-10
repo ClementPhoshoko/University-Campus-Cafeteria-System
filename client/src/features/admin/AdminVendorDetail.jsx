@@ -23,10 +23,10 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
-import { addVendorUser, adminRequest, createVendorLocation, listMenuItems, listVendorCategories, createMenuItem, updateMenuItem, deleteMenuItem, createVendorCategory, updateVendorCategory, deleteVendorCategory, removeVendorUser, updateVendor, updateVendorApproval, updateVendorLocation, uploadAdminAsset } from '../../services/adminApi.js';
+import { addVendorUser, adminRequest, createVendorLocation, listMenuItems, listVendorCategories, createMenuItem, updateMenuItem, deleteMenuItem, createVendorCategory, updateVendorCategory, deleteVendorCategory, removeVendorUser, updateVendor, updateVendorApproval, updateVendorLocation, uploadAdminAsset, createVendorInvitation, listVendorInvitations, revokeVendorInvitation } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
-import { StaffModal, VendorLocationModal, VendorProfileModal, MenuItemModal, CategoryModal } from './VendorForms.jsx';
+import { StaffModal, VendorInvitationModal, VendorLocationModal, VendorProfileModal, MenuItemModal, CategoryModal } from './VendorForms.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
 import VendorCollectionSlots from './VendorCollectionSlots.jsx';
 
@@ -135,6 +135,9 @@ export default function AdminVendorDetail() {
   const [staffVisibleCount, setStaffVisibleCount] = useState(PAGE_SIZE);
   const [staffLoading, setStaffLoading] = useState(false);
   const staffBottomRef = useRef(null);
+  const [invitations, setInvitations] = useState([]);
+  const [invitationsError, setInvitationsError] = useState('');
+  const [invitationNotice, setInvitationNotice] = useState('');
 
   const [categoriesVisibleCount, setCategoriesVisibleCount] = useState(PAGE_SIZE);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
@@ -164,6 +167,20 @@ export default function AdminVendorDetail() {
     };
     fetchVendor();
   }, [vendorId, token]);
+
+  useEffect(() => {
+    if (!vendorId || !token || !vendor) return;
+    let cancelled = false;
+    listVendorInvitations(token, vendorId).then((response) => {
+      if (!cancelled) {
+        setInvitations(response.invitations || []);
+        setInvitationsError('');
+      }
+    }).catch((error) => {
+      if (!cancelled) setInvitationsError(error.message || 'Could not load vendor invitations.');
+    });
+    return () => { cancelled = true; };
+  }, [vendorId, token, vendor?.id]);
 
   useEffect(() => {
     if (!vendorId || !token || !vendor || vendor.isPending) return;
@@ -301,6 +318,28 @@ export default function AdminVendorDetail() {
       const refreshed = await adminRequest(`/admin/vendors/${vendorId}`, { token });
       if (refreshed.vendor) setVendor(getVendorDetails(refreshed.vendor));
       setModal(null);
+    } finally { setActionLoading(false); }
+  };
+
+  const handleInvitationCreate = async (payload) => {
+    setActionLoading(true);
+    setInvitationNotice('');
+    try {
+      const response = await createVendorInvitation(token, vendorId, payload);
+      setInvitations((current) => [response.invitation, ...current.filter((item) => item.email !== response.invitation.email || item.status !== 'pending')].slice(0, 30));
+      setInvitationNotice(`Invitation sent to ${response.invitation.email}.`);
+      setModal(null);
+    } finally { setActionLoading(false); }
+  };
+
+  const handleInvitationRevoke = async (invitation) => {
+    if (!window.confirm(`Revoke the invitation for ${invitation.email}?`)) return;
+    setActionLoading(true);
+    setInvitationNotice('');
+    try {
+      const response = await revokeVendorInvitation(token, vendorId, invitation.id);
+      setInvitations((current) => current.map((item) => item.id === invitation.id ? response.invitation : item));
+      setInvitationNotice(`Invitation for ${invitation.email} revoked.`);
     } finally { setActionLoading(false); }
   };
 
@@ -740,10 +779,17 @@ export default function AdminVendorDetail() {
             <section className="vd-panel">
               <div className="vd-panel__header">
                 <h3 className="vd-panel__heading">Staff</h3>
-                <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('staff')}>
-                  <IconPlus size={14} /> Add staff
-                </button>
+                <div className="vd-staff__actions">
+                  <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('invite')} disabled={vendor.status !== 'approved'} title={vendor.status !== 'approved' ? 'Approve the vendor before sending invitations' : undefined}>
+                    <IconPlus size={14} /> Invite
+                  </button>
+                  <button type="button" className="admin-action admin-action--ghost" onClick={() => setModal('staff')}>
+                    <IconPlus size={14} /> Add existing user
+                  </button>
+                </div>
               </div>
+              {invitationNotice && <p className="vd-invitation-notice" role="status">{invitationNotice}</p>}
+              {invitationsError && <p className="vd-invitation-error" role="alert">{invitationsError}</p>}
               {vendor.staff.length === 0 ? (
                 <p className="vd-panel__empty">No staff members assigned.</p>
               ) : (
@@ -773,6 +819,21 @@ export default function AdminVendorDetail() {
                   )}
                 </div>
               )}
+              {invitations.length > 0 && <div className="vd-invitations">
+                <h4 className="vd-invitations__heading">Invitations</h4>
+                {invitations.map((invitation) => (
+                  <div className="vd-invitations__row" key={invitation.id}>
+                    <div className="vd-staff__info">
+                      <span className="vd-staff__name">{invitation.email}</span>
+                      <span className="vd-staff__meta">
+                        {invitation.role} · {invitation.status}
+                        {invitation.status === 'pending' && ` · Expires ${new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium', timeZone: 'Africa/Johannesburg' }).format(new Date(invitation.expires_at))} (SAST)`}
+                      </span>
+                    </div>
+                    {invitation.status === 'pending' && <button type="button" className="admin-action admin-action--ghost-danger" onClick={() => handleInvitationRevoke(invitation)} disabled={actionLoading}>Revoke</button>}
+                  </div>
+                ))}
+              </div>}
             </section>
 
             {/* Menu Categories */}
@@ -886,6 +947,7 @@ export default function AdminVendorDetail() {
       {modal === 'location' && <VendorLocationModal onClose={() => setModal(null)} onSubmit={handleLocationCreate} submitting={actionLoading} />}
       {modal?.type === 'location' && <VendorLocationModal key={modal.location.id} location={modal.location} onClose={() => setModal(null)} onSubmit={(payload) => handleLocationUpdate(modal.location.id, payload)} submitting={actionLoading} />}
       {modal === 'staff' && <StaffModal onClose={() => setModal(null)} onSubmit={handleStaffAdd} submitting={actionLoading} />}
+      {modal === 'invite' && <VendorInvitationModal onClose={() => setModal(null)} onSubmit={handleInvitationCreate} submitting={actionLoading} />}
       {modal === 'menuItem' && <MenuItemModal categories={menuCategories} onClose={() => setModal(null)} onSubmit={handleMenuItemCreate} submitting={actionLoading} />}
       {modal?.type === 'menuItem' && <MenuItemModal key={modal.item.id} item={modal.item} categories={menuCategories} onClose={() => setModal(null)} onSubmit={(payload) => handleMenuItemUpdate(modal.item.id, payload)} submitting={actionLoading} />}
       {modal === 'category' && <CategoryModal onClose={() => setModal(null)} onSubmit={handleCategoryCreate} submitting={actionLoading} />}

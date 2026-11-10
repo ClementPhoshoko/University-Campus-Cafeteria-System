@@ -21,12 +21,14 @@ export async function signUpWithEmail(email, password, metadata, options = {}) {
   return data;
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(returnTo = '/') {
   if (!supabase) throw new Error('Supabase not configured');
+  const callback = new URL('/auth/callback', window.location.origin);
+  callback.searchParams.set('returnTo', returnTo);
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: callback.toString(),
     },
   });
   if (error) throw error;
