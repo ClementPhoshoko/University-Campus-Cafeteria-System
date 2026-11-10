@@ -61,39 +61,29 @@ export function OrderCard({ order, busy, urgent, onStatus }) {
   })}</ul>;
 
   return <article className={`vendor-order-card${urgent ? ' vendor-order-card--urgent' : ''}`}>
-    {urgent ? <>
-      <header className="vendor-order-card__urgent-header">
-        <div><p className="vendor-order-card__reference">{order.order_reference || 'Order'}</p><p className="vendor-order-card__customer">{order.customer_name ? `${order.customer_name} is buying this item` : 'Customer placed this order'}</p></div>
-        <div className="vendor-order-card__urgent-status"><StatusBadge status={order.status} /></div>
-      </header>
-      <div className="vendor-order-card__urgent-details">
-        <div className="vendor-order-card__pickup-time"><span>Collection time</span><strong><IconClockHour4 size={17} />{slotTime || 'Not scheduled'}</strong></div>
-        <div className="vendor-order-card__urgent-total"><span>Order total</span><strong>{formatMoney(order.total, order.currency)}</strong></div>
+    <details className="vendor-order-card__disclosure">
+      <summary className="vendor-order-card__summary">
+        <span className="vendor-order-card__summary-identity">
+          <span className="vendor-order-card__reference">{order.order_reference || 'Order'}</span>
+          <span className="vendor-order-card__customer">{order.customer_name ? `${order.customer_name} is buying this item` : 'Customer placed this order'}</span>
+        </span>
+        <span className="vendor-order-card__summary-time"><IconClockHour4 size={15} />{slotTime || 'No collection time'}</span>
+        <StatusBadge status={order.status} />
+        <strong className="vendor-order-card__summary-total">{formatMoney(order.total, order.currency)}</strong>
+        <span className="vendor-order-card__expand-icon" aria-hidden="true" />
+      </summary>
+      <div className="vendor-order-card__expanded">
+        {urgent && <p className="vendor-order-card__alert"><IconAlertTriangle size={16} aria-hidden="true" />Collection time is approaching</p>}
+        <div className="vendor-order-card__expanded-meta">
+          <span><IconMapPin size={15} />{order.collection_point_name || 'Pickup point to be confirmed'}</span>
+          <span className="vendor-order-card__payment">Payment: {paymentLabel}</span>
+        </div>
+        {itemList}
+        {order.notes && <p className="vendor-order-card__note">Order note: {order.notes}</p>}
+        {order.status === 'ready_for_collection' && <p className="vendor-order-card__hint">Verify the customer's collection code before completing handover.</p>}
+        {actionsContent}
       </div>
-      <p className="vendor-order-card__alert"><IconAlertTriangle size={16} aria-hidden="true" />Collection time is approaching</p>
-      <details className="vendor-order-card__details">
-        <summary>Order details <span>{order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'items'}</span></summary>
-        <div className="vendor-order-card__details-content">
-          <div className="vendor-order-card__pickup-point"><span>Pickup point</span><strong><IconMapPin size={16} />{order.collection_point_name || 'To be confirmed'}</strong></div>
-          {itemList}
-          {order.notes && <p className="vendor-order-card__note">Order note: {order.notes}</p>}
-        </div>
-      </details>
-      {actionsContent}
-    </> : <>
-      <div className="vendor-order-card__top"><div><p className="vendor-order-card__reference">{order.order_reference || 'Order'}</p><p className="vendor-order-card__customer">{order.customer_name || 'Customer'}</p></div><StatusBadge status={order.status} /></div>
-      <div className="vendor-order-card__meta">{slotTime && <span><IconClockHour4 size={15} /> Collection {slotTime}</span>}<span className="vendor-order-card__payment">Payment: {paymentLabel}</span><strong>{formatMoney(order.total, order.currency)}</strong></div>
-      <details className="vendor-order-card__details">
-        <summary>Order details <span>{order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'items'}</span></summary>
-        <div className="vendor-order-card__details-content">
-          {order.collection_point_name && <p className="vendor-order-card__detail-line"><IconMapPin size={15} />{order.collection_point_name}</p>}
-          {itemList}
-          {order.notes && <p className="vendor-order-card__note">Order note: {order.notes}</p>}
-        </div>
-      </details>
-      {actionsContent}
-    </>}
-    {order.status === 'ready_for_collection' && <p className="vendor-order-card__hint">Verify the customer’s collection code before completing handover.</p>}
+    </details>
   </article>;
 }
 
