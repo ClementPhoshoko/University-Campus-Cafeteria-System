@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { IconBrandGoogle, IconMail, IconUser } from '@tabler/icons-react';
 import { useAuth } from '../../hooks/useAuth.js';
-import { acceptVendorInvitation, getVendorInvitation } from '../../services/vendorApi.js';
+import {
+  acceptVendorInvitation,
+  getVendorInvitation,
+  registerAndAcceptVendorInvitation,
+} from '../../services/vendorApi.js';
 import Input from '../../components/Input.jsx';
 import PasswordInput from '../../components/PasswordInput.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
@@ -16,7 +20,7 @@ function normalizeEmail(email) {
 export default function VendorInvitationPage() {
   const { token: invitationToken } = useParams();
   const location = useLocation();
-  const { user, session, isEmailVerified, signIn, signUp, signInWithGoogle, signOut } = useAuth();
+  const { user, session, isEmailVerified, signIn, signInWithGoogle, signOut } = useAuth();
   const [invitation, setInvitation] = useState(null);
   const [loadingInvitation, setLoadingInvitation] = useState(true);
   const [invitationError, setInvitationError] = useState('');
@@ -26,7 +30,6 @@ export default function VendorInvitationPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [awaitingEmailVerification, setAwaitingEmailVerification] = useState(false);
   const [accepted, setAccepted] = useState(null);
 
   useEffect(() => {
@@ -48,11 +51,6 @@ export default function VendorInvitationPage() {
   }, [invitationToken]);
 
   async function redeem(accessToken, account) {
-    if (!isEmailVerified && !account?.email_confirmed_at) {
-      setMessage('Verify your account email first, then return to this invitation link.');
-      setBusy(false);
-      return;
-    }
     if (normalizeEmail(account?.email) !== normalizeEmail(invitation?.email)) {
       setError(`Sign in with ${invitation?.email} to accept this vendor invitation.`);
       setBusy(false);
@@ -64,6 +62,9 @@ export default function VendorInvitationPage() {
     try {
       const response = await acceptVendorInvitation(invitationToken, { token: accessToken });
       setAccepted(response.invitation);
+      if (!response.confirmation_email_sent) {
+        setMessage('You joined the vendor team, but we could not send the confirmation email. Contact your vendor administrator if you need help.');
+      }
     } catch (requestError) {
       setError(requestError.message || 'Could not accept this invitation. Please try again.');
     } finally {
@@ -91,23 +92,27 @@ export default function VendorInvitationPage() {
     setError('');
     setMessage('');
     try {
-      const redirectTo = new URL('/auth/confirm', window.location.origin);
-      redirectTo.searchParams.set('returnTo', location.pathname);
-      const data = await signUp(
-        invitation.email,
+      const response = await registerAndAcceptVendorInvitation(invitationToken, {
+        fullName: name.trim(),
         password,
-        { full_name: name.trim() },
-        { emailRedirectTo: redirectTo.toString() },
-      );
-      if (data.session?.access_token && data.user?.email_confirmed_at) {
-        await redeem(data.session.access_token, data.user);
-      } else {
-        setMessage(`Check ${invitation.email} and verify your email. The link will bring you back here to accept the invitation.`);
-        setAwaitingEmailVerification(true);
-        setBusy(false);
+      });
+      setAccepted(response.invitation);
+      if (!response.confirmation_email_sent) {
+        setMessage('You joined the vendor team, but we could not send the confirmation email. Contact your vendor administrator if you need help.');
+      }
+      try {
+        await signIn(invitation.email, password);
+      } catch {
+        setMessage((current) => `${current ? `${current} ` : ''}Sign in with your new account to open the vendor dashboard.`);
       }
     } catch (requestError) {
-      setError(requestError.message || 'Could not create your account. Please try again.');
+      if (requestError.code === 'ACCOUNT_EXISTS') {
+        setMode('signin');
+        setMessage(requestError.message);
+      } else {
+        setError(requestError.message || 'Could not create your account. Please try again.');
+      }
+    } finally {
       setBusy(false);
     }
   }
@@ -135,6 +140,7 @@ export default function VendorInvitationPage() {
     <p className="vendor-invitation__eyebrow">Invitation accepted</p>
     <h1 className="auth-heading">You’re on the team</h1>
     <p className="auth-subtitle">You joined {accepted.vendor_name || invitation.vendor_name} as vendor {accepted.role}.</p>
+    {message && <p className="vendor-invitation__notice" role="status">{message}</p>}
     <Link to="/vendor" className="vendor-invitation__continue">Open vendor dashboard</Link>
   </>;
 
@@ -145,10 +151,13 @@ export default function VendorInvitationPage() {
       You’re invited as <strong>{invitation.role}</strong> using <strong>{invitation.email}</strong>.
       This single-use invitation expires {new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium', timeZone: 'Africa/Johannesburg' }).format(new Date(invitation.expires_at))} (South African time).
     </p>
+    <p className="vendor-invitation__proof-note">
+      This secure invitation link verifies your email. Create an account, or sign in if you already have one; we’ll email you once you’ve joined.
+    </p>
 
     {user ? hasMatchingAccount ? <>
-      {!isEmailVerified && <p className="vendor-invitation__notice" role="status">Your account email must be verified before you can accept.</p>}
-      <PrimaryButton disabled={busy || !isEmailVerified} onClick={() => redeem(session?.access_token, user)}>
+      {!isEmailVerified && <p className="vendor-invitation__notice" role="status">This invitation link verifies the invited email when you accept.</p>}
+      <PrimaryButton disabled={busy} onClick={() => redeem(session?.access_token, user)}>
         {busy ? 'Accepting…' : 'Accept invitation'}
       </PrimaryButton>
     </> : <>
@@ -156,15 +165,14 @@ export default function VendorInvitationPage() {
       <button type="button" className="auth-google-btn" onClick={signOut}>Sign out</button>
     </> : <>
       <GlassTooltip message={error} type="error" banner onClose={() => setError('')} autoClose />
-      {awaitingEmailVerification && mode === 'signup' ? (
-        <p className="vendor-invitation__notice" role="status">{message}</p>
-      ) : <form className="auth-form" onSubmit={mode === 'signin' ? handleSignIn : handleSignUp}>
+      <form className="auth-form" onSubmit={mode === 'signin' ? handleSignIn : handleSignUp}>
         {message && <p className="vendor-invitation__notice" role="status">{message}</p>}
-        {mode === 'signup' && <Input label="Full name" icon={IconUser} type="text" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} required />}
+        {mode === 'signup' && <Input label="Full name" icon={IconUser} type="text" autoComplete="name" maxLength={120} value={name} onChange={(event) => setName(event.target.value)} required />}
         <Input label="Email address" icon={IconMail} type="email" value={invitation.email} readOnly aria-readonly="true" />
         <PasswordInput
           label="Password"
           autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+          maxLength={mode === 'signup' ? 128 : undefined}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           minLength={mode === 'signup' ? 8 : undefined}
@@ -173,7 +181,7 @@ export default function VendorInvitationPage() {
         <PrimaryButton type="submit" disabled={busy || (mode === 'signup' && password.length < 8)}>
           {busy ? 'Please wait…' : mode === 'signup' ? 'Create account and continue' : 'Sign in and accept'}
         </PrimaryButton>
-      </form>}
+      </form>
       {mode === 'signin' && <>
         <div className="auth-divider"><span>or continue with</span></div>
         <button type="button" className="auth-google-btn" onClick={handleGoogleSignIn}>
@@ -184,7 +192,7 @@ export default function VendorInvitationPage() {
       </>}
       <p className="auth-footer vendor-invitation__switch">
         {mode === 'signin' ? 'New to Merchant Munchies?' : 'Already have an account?'}{' '}
-        <button type="button" className="auth-link" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setMessage(''); setAwaitingEmailVerification(false); }}>
+        <button type="button" className="auth-link" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setMessage(''); }}>
           {mode === 'signin' ? 'Create account' : 'Sign in'}
         </button>
       </p>

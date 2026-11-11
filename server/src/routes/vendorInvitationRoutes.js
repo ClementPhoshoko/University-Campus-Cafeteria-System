@@ -4,11 +4,17 @@ import { rateLimit } from '../middleware/rateLimit.js';
 import {
   acceptVendorInvitation,
   getPublicVendorInvitation,
+  registerAndAcceptVendorInvitation,
 } from '../controllers/vendorInvitationController.js';
 
 const vendorInvitationRouter = Router();
 
 vendorInvitationRouter.get('/vendor-invitations/:token', getPublicVendorInvitation);
+vendorInvitationRouter.post(
+  '/vendor-invitations/:token/register',
+  rateLimit({ windowMs: 60 * 1000, max: 5 }),
+  registerAndAcceptVendorInvitation,
+);
 vendorInvitationRouter.post(
   '/vendor-invitations/:token/accept',
   rateLimit({ windowMs: 60 * 1000, max: 10 }),

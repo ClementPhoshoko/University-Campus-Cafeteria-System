@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { supabaseAdmin } from '../config/supabase.js';
 import { sendEmail } from '../services/email/sendEmail.js';
 import vendorInvitationEmail from '../services/email/templates/vendorInvitation.js';
+import vendorJoinedEmail from '../services/email/templates/vendorJoined.js';
 import { addSouthAfricanBusinessDays } from '../utils/businessDays.js';
 import { ApiError, sendError, sendInternalError } from '../utils/errors.js';
 import { writeAudit } from '../utils/audit.js';
@@ -26,12 +27,56 @@ export function normalizeVendorInvitationInput(input = {}) {
   return errors.length ? { errors } : { value: { email, role } };
 }
 
+export function normalizeVendorInvitationRegistrationInput(input = {}) {
+  const fullName = typeof input.full_name === 'string' ? input.full_name.trim() : '';
+  const password = typeof input.password === 'string' ? input.password : '';
+  const errors = [];
+  if (!fullName || fullName.length > 120) errors.push('Enter your name (up to 120 characters)');
+  if (password.length < 8 || password.length > 128) errors.push('Password must be between 8 and 128 characters');
+  return errors.length ? { errors } : { value: { fullName, password } };
+}
+
+function isExistingAuthUserError(error) {
+  return error?.code === 'email_exists'
+    || /already registered|already exists/i.test(error?.message || '');
+}
+
 function handleError(res, error) {
   if (error instanceof ApiError) return sendError(res, error.status, error.code, error.message);
   if (error?.code === 'P0001' && error.message === 'VENDOR_NOT_APPROVED') {
     return sendError(res, 409, 'VENDOR_NOT_APPROVED', 'Approve the vendor before inviting staff');
   }
   return sendInternalError(res, error);
+}
+
+function invitationFailure(data) {
+  const responses = {
+    NOT_FOUND: [404, 'INVITATION_NOT_FOUND', 'Invitation not found'],
+    EXPIRED: [410, 'INVITATION_EXPIRED', 'This invitation has expired'],
+    REVOKED: [410, 'INVITATION_REVOKED', 'This invitation has been revoked'],
+    ACCEPTED: [410, 'INVITATION_ALREADY_USED', 'This invitation has already been used'],
+    EMAIL_MISMATCH: [403, 'INVITATION_EMAIL_MISMATCH', 'This invitation is for another email address'],
+    VENDOR_UNAVAILABLE: [410, 'VENDOR_UNAVAILABLE', 'This vendor is not currently accepting invitations'],
+  };
+  return responses[data?.code] || [409, 'INVITATION_UNAVAILABLE', 'This invitation is no longer available'];
+}
+
+async function sendJoinedConfirmation(email, invitation) {
+  try {
+    await sendEmail({
+      to: email,
+      subject: `You joined ${invitation.vendor_name} on Merchant Munchies`,
+      html: vendorJoinedEmail({
+        vendorName: invitation.vendor_name,
+        role: invitation.role,
+        loginUrl: new URL('/login', process.env.CLIENT_ORIGIN || 'http://localhost:5173').toString(),
+      }),
+    });
+    return true;
+  } catch (error) {
+    console.error('Vendor invitation was accepted, but the joined confirmation email failed:', error);
+    return false;
+  }
 }
 
 function requireToken(req, res) {
@@ -41,6 +86,31 @@ function requireToken(req, res) {
     return null;
   }
   return token;
+}
+
+async function redeemInvitation(token, userId, email) {
+  const { data, error } = await db().rpc('redeem_vendor_invitation', {
+    p_token_hash: hashToken(token),
+    p_user_id: userId,
+    p_email: email,
+  });
+  if (error) throw error;
+  return data;
+}
+
+async function confirmInvitedUserEmail(token, userId) {
+  const { data: invitedUsers, error: lookupError } = await db().rpc('get_invited_auth_user', {
+    p_token_hash: hashToken(token),
+  });
+  if (lookupError) throw lookupError;
+  const invitedUser = invitedUsers?.find((user) => user.user_id === userId);
+  if (!invitedUser || invitedUser.email_confirmed_at) return Boolean(invitedUser);
+
+  const { error: confirmError } = await db().auth.admin.updateUserById(userId, {
+    email_confirm: true,
+  });
+  if (confirmError) throw confirmError;
+  return true;
 }
 
 export async function listVendorInvitations(req, res) {
@@ -241,27 +311,109 @@ export async function acceptVendorInvitation(req, res) {
     const token = requireToken(req, res);
     if (!token) return;
     if (!req.user.email_confirmed_at) {
-      return sendError(res, 403, 'EMAIL_VERIFICATION_REQUIRED', 'Verify your email address before accepting this invitation');
+      const emailConfirmedByInvitation = await confirmInvitedUserEmail(token, req.user.id);
+      if (!emailConfirmedByInvitation) {
+        return sendError(res, 403, 'EMAIL_VERIFICATION_REQUIRED', 'This invitation cannot verify the signed-in account email');
+      }
     }
-    const { data, error } = await db().rpc('redeem_vendor_invitation', {
-      p_token_hash: hashToken(token),
-      p_user_id: req.user.id,
-      p_email: req.user.email || '',
-    });
-    if (error) throw error;
+    const data = await redeemInvitation(token, req.user.id, req.user.email || '');
     if (!data?.success) {
-      const responses = {
-        NOT_FOUND: [404, 'INVITATION_NOT_FOUND', 'Invitation not found'],
-        EXPIRED: [410, 'INVITATION_EXPIRED', 'This invitation has expired'],
-        REVOKED: [410, 'INVITATION_REVOKED', 'This invitation has been revoked'],
-        ACCEPTED: [410, 'INVITATION_ALREADY_USED', 'This invitation has already been used'],
-        EMAIL_MISMATCH: [403, 'INVITATION_EMAIL_MISMATCH', 'Sign in with the email address this invitation was sent to'],
-        VENDOR_UNAVAILABLE: [410, 'VENDOR_UNAVAILABLE', 'This vendor is not currently accepting invitations'],
-      };
-      const [status, code, message] = responses[data?.code] || [409, 'INVITATION_UNAVAILABLE', 'This invitation is no longer available'];
+      const [status, code, message] = invitationFailure(data);
       return sendError(res, status, code, message);
     }
-    return respond(req, res, { success: true, invitation: data });
+    const confirmationEmailSent = await sendJoinedConfirmation(req.user.email, data);
+    return respond(req, res, {
+      success: true,
+      invitation: data,
+      confirmation_email_sent: confirmationEmailSent,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+export async function registerAndAcceptVendorInvitation(req, res) {
+  try {
+    const token = requireToken(req, res);
+    if (!token) return;
+    const parsed = normalizeVendorInvitationRegistrationInput(req.body);
+    if (parsed.errors) return sendError(res, 400, 'VALIDATION_ERROR', parsed.errors.join('; '));
+
+    const { data: invitation, error: invitationError } = await db()
+      .from('vendor_invitations')
+      .select('id, email, role, status, expires_at, vendors!inner(name, status)')
+      .eq('token_hash', hashToken(token))
+      .maybeSingle();
+    if (invitationError) throw invitationError;
+    if (!invitation) return sendError(res, 404, 'INVITATION_NOT_FOUND', 'Invitation not found');
+    if (invitation.status !== 'pending') {
+      const [status, code, message] = invitationFailure({ code: invitation.status.toUpperCase() });
+      return sendError(res, status, code, message);
+    }
+    if (new Date(invitation.expires_at) <= new Date()) {
+      const { error: updateError } = await db()
+        .from('vendor_invitations')
+        .update({ status: 'expired' })
+        .eq('id', invitation.id)
+        .eq('status', 'pending');
+      if (updateError) throw updateError;
+      await writeAudit(req, {
+        action: 'UPDATE',
+        tableName: 'public.vendor_invitations',
+        recordKey: invitation.id,
+        oldData: { status: 'pending' },
+        newData: { status: 'expired' },
+        reason: 'Vendor invitation expired during registration',
+        category: 'access',
+      });
+      return sendError(res, 410, 'INVITATION_EXPIRED', 'This invitation has expired');
+    }
+    if (invitation.vendors.status !== 'approved') {
+      return sendError(res, 410, 'VENDOR_UNAVAILABLE', 'This vendor is not currently accepting invitations');
+    }
+
+    // The single-use link was delivered to this mailbox and is the verification proof.
+    const { data: created, error: createError } = await db().auth.admin.createUser({
+      email: invitation.email,
+      password: parsed.value.password,
+      email_confirm: true,
+      user_metadata: { full_name: parsed.value.fullName },
+    });
+    if (createError) {
+      if (isExistingAuthUserError(createError)) {
+        const { data: invitedUsers, error: lookupError } = await db().rpc('get_invited_auth_user', {
+          p_token_hash: hashToken(token),
+        });
+        if (lookupError) throw lookupError;
+        const existingUser = invitedUsers?.[0];
+        if (existingUser && !existingUser.email_confirmed_at) {
+          const { error: confirmError } = await db().auth.admin.updateUserById(existingUser.user_id, {
+            email_confirm: true,
+          });
+          if (confirmError) throw confirmError;
+        }
+        return sendError(res, 409, 'ACCOUNT_EXISTS', 'An account already uses this email. Sign in to accept the invitation.');
+      }
+      throw createError;
+    }
+    if (!created?.user?.id) throw new Error('Supabase did not return the created invitation account');
+
+    const accepted = await redeemInvitation(token, created.user.id, created.user.email || invitation.email);
+    if (!accepted?.success) {
+      const [status, code, message] = invitationFailure(accepted);
+      const { error: deleteError } = await db().auth.admin.deleteUser(created.user.id);
+      if (deleteError) {
+        console.error('Failed to remove account created for an invitation that could not be redeemed:', deleteError);
+      }
+      return sendError(res, status, code, message);
+    }
+
+    const confirmationEmailSent = await sendJoinedConfirmation(invitation.email, accepted);
+    return respond(req, res, {
+      success: true,
+      invitation: accepted,
+      confirmation_email_sent: confirmationEmailSent,
+    }, { status: 201 });
   } catch (error) {
     return handleError(res, error);
   }

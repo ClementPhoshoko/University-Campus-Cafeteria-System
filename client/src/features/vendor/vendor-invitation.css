@@ -18,6 +18,15 @@
   font-weight: var(--font-weight-semibold);
 }
 
+.vendor-invitation__proof-note {
+  margin: calc(-1 * var(--space-3)) 0 var(--space-5);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-primary);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .vendor-invitation__notice,
 .vendor-invitation__error {
   width: 100%;

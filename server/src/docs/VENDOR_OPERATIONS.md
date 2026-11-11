@@ -21,13 +21,15 @@ The editor currently supports name, description, category, price, preparation es
 
 ## Vendor invitations
 
-Admins can invite an email address to one approved vendor as `staff` or `manager`. The invitation does not assign a platform-wide role. The recipient must sign in or register with the invited address, verify that email, and redeem the single-use token. Redemption is atomic with creating or updating the `vendor_users` membership. Expiry is the end of the third working day in `Africa/Johannesburg`; Saturdays, Sundays, and South African public holidays do not count.
+Admins can invite an email address to one approved vendor as `staff` or `manager`. The invitation does not assign a platform-wide role. The high-entropy, single-use link delivered to the invited mailbox serves as email verification. For a new account, the server creates it with its email confirmed, atomically redeems the invitation, and assigns the vendor membership; it does not send a separate signup-verification email. Existing account holders sign in with the invited address and accept; if their account is still unverified, presenting the valid invitation link confirms that email without changing their password. A joined-team confirmation email is sent after successful acceptance.
+
+The public registration endpoint accepts only the invitation token, full name, and password. It derives the email, vendor, and role from the stored invitation; it never trusts those values from the client. Expiry, revocation, email matching, vendor approval, and single-use redemption are enforced server-side. Expiry is the end of the third working day in `Africa/Johannesburg`; Saturdays, Sundays, and South African public holidays do not count.
 
 The invitation token is generated with 256 bits of randomness. Only its SHA-256 hash is stored. Pending invitations can be revoked, and issuing a replacement revokes earlier pending invitations for the same vendor and email. Expired, revoked, wrong-email, and previously accepted tokens cannot be redeemed.
 
 ## Database migrations
 
-Apply `migrations/019_vendor_invitations.sql` before enabling the admin invitation action. It creates the invitation table and service-role-only RPCs used for serialized creation and transactional redemption.
+Apply `migrations/019_vendor_invitations.sql` and `migrations/020_confirm_invited_auth_email.sql` before enabling the admin invitation action. They create the invitation table, service-role-only RPCs for serialized creation and transactional redemption, and a constrained lookup used to confirm an existing account's email only when its owner presents a valid invitation link.
 
 No migration is required for vendor menu CRUD. The existing schema already provides `menu_items`, `menu_categories`, and the `menu_menu_items` relationship, including audit triggers.
 

@@ -10,10 +10,32 @@ test('invitation controller exposes creation, listing, revocation, preview, and 
     'revokeVendorInvitation',
     'getPublicVendorInvitation',
     'acceptVendorInvitation',
+    'registerAndAcceptVendorInvitation',
   ]) {
     assert.equal(typeof invitationController[name], 'function', `${name} should be exported`);
   }
   assert.equal(typeof invitationRoutes.default, 'function');
+});
+
+test('invitation registration validates name and password without accepting client-supplied email or role', () => {
+  assert.deepEqual(invitationController.normalizeVendorInvitationRegistrationInput({
+    full_name: '  Staff Example ',
+    password: 'secure-password',
+    email: 'attacker@example.com',
+    role: 'manager',
+  }), {
+    value: { fullName: 'Staff Example', password: 'secure-password' },
+  });
+
+  assert.deepEqual(invitationController.normalizeVendorInvitationRegistrationInput({
+    full_name: ' ',
+    password: 'short',
+  }), {
+    errors: [
+      'Enter your name (up to 120 characters)',
+      'Password must be between 8 and 128 characters',
+    ],
+  });
 });
 
 test('invitation input normalizes email and limits the role to vendor staff or manager', () => {

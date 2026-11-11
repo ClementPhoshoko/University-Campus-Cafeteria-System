@@ -13,6 +13,14 @@ export function acceptVendorInvitation(invitationToken, { token, signal } = {}) 
   });
 }
 
+export function registerAndAcceptVendorInvitation(invitationToken, { fullName, password, signal } = {}) {
+  return apiRequest(`/vendor-invitations/${encodeURIComponent(invitationToken)}/register`, {
+    method: 'POST',
+    signal,
+    body: { full_name: fullName, password },
+  });
+}
+
 export function listMyVendors({ token, signal } = {}) {
   return apiRequest('/vendor/me', { token, signal, cache: 'no-store' });
 }
