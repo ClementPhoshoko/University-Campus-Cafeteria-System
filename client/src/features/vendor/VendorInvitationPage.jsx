@@ -26,6 +26,7 @@ export default function VendorInvitationPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [awaitingEmailVerification, setAwaitingEmailVerification] = useState(false);
   const [accepted, setAccepted] = useState(null);
 
   useEffect(() => {
@@ -102,6 +103,7 @@ export default function VendorInvitationPage() {
         await redeem(data.session.access_token, data.user);
       } else {
         setMessage(`Check ${invitation.email} and verify your email. The link will bring you back here to accept the invitation.`);
+        setAwaitingEmailVerification(true);
         setBusy(false);
       }
     } catch (requestError) {
@@ -153,8 +155,10 @@ export default function VendorInvitationPage() {
       <p className="vendor-invitation__error" role="alert">You’re signed in as {user.email}. Sign out and use the invited email address.</p>
       <button type="button" className="auth-google-btn" onClick={signOut}>Sign out</button>
     </> : <>
-      <form className="auth-form" onSubmit={mode === 'signin' ? handleSignIn : handleSignUp}>
-        <GlassTooltip message={error} type="error" banner onClose={() => setError('')} autoClose />
+      <GlassTooltip message={error} type="error" banner onClose={() => setError('')} autoClose />
+      {awaitingEmailVerification && mode === 'signup' ? (
+        <p className="vendor-invitation__notice" role="status">{message}</p>
+      ) : <form className="auth-form" onSubmit={mode === 'signin' ? handleSignIn : handleSignUp}>
         {message && <p className="vendor-invitation__notice" role="status">{message}</p>}
         {mode === 'signup' && <Input label="Full name" icon={IconUser} type="text" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} required />}
         <Input label="Email address" icon={IconMail} type="email" value={invitation.email} readOnly aria-readonly="true" />
@@ -169,7 +173,7 @@ export default function VendorInvitationPage() {
         <PrimaryButton type="submit" disabled={busy || (mode === 'signup' && password.length < 8)}>
           {busy ? 'Please wait…' : mode === 'signup' ? 'Create account and continue' : 'Sign in and accept'}
         </PrimaryButton>
-      </form>
+      </form>}
       {mode === 'signin' && <>
         <div className="auth-divider"><span>or continue with</span></div>
         <button type="button" className="auth-google-btn" onClick={handleGoogleSignIn}>
@@ -180,7 +184,7 @@ export default function VendorInvitationPage() {
       </>}
       <p className="auth-footer vendor-invitation__switch">
         {mode === 'signin' ? 'New to Merchant Munchies?' : 'Already have an account?'}{' '}
-        <button type="button" className="auth-link" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setMessage(''); }}>
+        <button type="button" className="auth-link" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setMessage(''); setAwaitingEmailVerification(false); }}>
           {mode === 'signin' ? 'Create account' : 'Sign in'}
         </button>
       </p>
