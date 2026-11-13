@@ -36,6 +36,8 @@ import {
 } from '../controllers/vendorInvitationController.js';
 import {
   listVendorMenuPlans,
+  listVendorMenuPlanCategories,
+  listVendorMenuCatalog,
   createVendorMenuPlan,
   createVendorCatalogItem,
   updateVendorMenuPlan,
@@ -68,6 +70,8 @@ vendorRouter.get('/vendor/menu', listMyVendorMenu);
 vendorRouter.get('/vendor/menu/categories', listMyVendorCategories);
 vendorRouter.post('/vendor/menu/categories', vendorMutations, createMyVendorCategory);
 vendorRouter.patch('/vendor/menu/categories/:categoryId', vendorMutations, updateMyVendorCategory);
+vendorRouter.get('/vendor/menus/categories', listVendorMenuPlanCategories);
+vendorRouter.get('/vendor/menus/catalog', listVendorMenuCatalog);
 vendorRouter.get('/vendor/menus', listVendorMenuPlans);
 vendorRouter.post('/vendor/menus', vendorMutations, createVendorMenuPlan);
 vendorRouter.post('/vendor/menus/:menuId/copy', vendorMutations, copyVendorMenuPlan);

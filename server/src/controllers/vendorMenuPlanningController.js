@@ -4,6 +4,7 @@ import { writeAudit } from '../utils/audit.js';
 import { respond } from '../utils/http.js';
 import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { isUuid } from '../validators/vendorValidators.js';
+import { buildPagination, parsePagination } from '../utils/pagination.js';
 
 const db = () => supabaseAdmin;
 const MENU_ITEM_SELECT = 'id, vendor_id, category_id, name, description, image_url, ingredients, portion_description, base_price, currency, prep_minutes, status, is_active, menu_categories(id, name)';
@@ -105,24 +106,24 @@ export async function listVendorMenuPlans(req, res) {
     }
     const scopedLocationIds = requestedLocation ? [requestedLocation] : locationIds;
 
-    const [menusResult, itemsResult, categoriesResult] = await Promise.all([
-      scopedLocationIds.length
-        ? db().from('menus')
-          .select('id, vendor_location_id, menu_date, name, status, published_at')
-          .in('vendor_location_id', scopedLocationIds)
-          .gte('menu_date', from)
-          .lte('menu_date', to)
-          .order('menu_date')
-        : Promise.resolve({ data: [], error: null }),
-      db().from('menu_items').select(MENU_ITEM_SELECT).eq('vendor_id', vendorId).eq('is_active', true).order('name'),
-      db().from('menu_categories').select('id, name, is_active').eq('vendor_id', vendorId).eq('is_active', true).order('sort_order').order('name'),
-    ]);
+    const selectedDate = req.query.selected_date === undefined ? null : parseDate(String(req.query.selected_date));
+    if (req.query.selected_date !== undefined && (!selectedDate || selectedDate < from || selectedDate > to)) {
+      return sendError(res, 400, 'INVALID_MENU_DATE', 'Choose a valid selected menu date within the requested date range');
+    }
+    const menusResult = scopedLocationIds.length
+      ? await db().from('menus')
+        .select('id, vendor_location_id, menu_date, name, status, published_at')
+        .in('vendor_location_id', scopedLocationIds)
+        .gte('menu_date', from)
+        .lte('menu_date', to)
+        .order('menu_date')
+      : { data: [], error: null };
     if (menusResult.error) throw menusResult.error;
-    if (itemsResult.error) throw itemsResult.error;
-    if (categoriesResult.error) throw categoriesResult.error;
 
     const menus = menusResult.data || [];
-    const menuIds = menus.map((menu) => menu.id);
+    const menuIds = menus
+      .filter((menu) => selectedDate === null || menu.menu_date === selectedDate)
+      .map((menu) => menu.id);
     const linksResult = menuIds.length
       ? await db().from('menu_menu_items')
         .select('menu_id, menu_item_id, display_order, status, menu_items!inner(id, name, base_price, currency, category_id, is_active)')
@@ -147,18 +148,62 @@ export async function listVendorMenuPlans(req, res) {
       linksByMenu.set(link.menu_id, links);
     }
 
-    const catalog = await Promise.all((itemsResult.data || []).map(async (item) => ({
-      ...item,
-      image_url: await resolveAssetUrl(item.image_url, { size: 'thumb' }),
-    })));
-
     return respond(req, res, {
       success: true,
       today,
       locations: locations || [],
       menus: menus.map((menu) => ({ ...menu, items: linksByMenu.get(menu.id) || [] })),
+    }, { cacheControl: 'private, no-store' });
+  } catch (error) {
+    return sendControllerError(res, error);
+  }
+}
+
+export async function listVendorMenuPlanCategories(req, res) {
+  try {
+    const vendorId = String(req.query.vendor_id || '');
+    if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
+    await requireManager(req.user.id, vendorId);
+    const { pageNum, limitNum, from, to } = parsePagination(req.query, { maxLimit: 50, defaultLimit: 8 });
+    const { data, count, error } = await db().from('menu_categories')
+      .select('id, name, is_active', { count: 'exact' })
+      .eq('vendor_id', vendorId)
+      .eq('is_active', true)
+      .order('sort_order')
+      .order('name')
+      .range(from, to);
+    if (error) throw error;
+    return respond(req, res, {
+      success: true,
+      categories: data || [],
+      pagination: buildPagination(count, pageNum, limitNum),
+    }, { cacheControl: 'private, no-store' });
+  } catch (error) {
+    return sendControllerError(res, error);
+  }
+}
+
+export async function listVendorMenuCatalog(req, res) {
+  try {
+    const vendorId = String(req.query.vendor_id || '');
+    if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
+    await requireManager(req.user.id, vendorId);
+    const { pageNum, limitNum, from, to } = parsePagination(req.query, { maxLimit: 50, defaultLimit: 8 });
+    const { data, count, error } = await db().from('menu_items')
+      .select(MENU_ITEM_SELECT, { count: 'exact' })
+      .eq('vendor_id', vendorId)
+      .eq('is_active', true)
+      .order('name')
+      .range(from, to);
+    if (error) throw error;
+    const catalog = await Promise.all((data || []).map(async (item) => ({
+      ...item,
+      image_url: await resolveAssetUrl(item.image_url, { size: 'thumb' }),
+    })));
+    return respond(req, res, {
+      success: true,
       catalog,
-      categories: categoriesResult.data || [],
+      pagination: buildPagination(count, pageNum, limitNum),
     }, { cacheControl: 'private, no-store' });
   } catch (error) {
     return sendControllerError(res, error);

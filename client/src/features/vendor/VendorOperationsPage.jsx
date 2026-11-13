@@ -179,6 +179,11 @@ export default function VendorOperationsPage() {
   }
 
   if (vendorsState === 'loading') {
+    if (showingMenuPlanning) {
+      return <PageContainer className="vendor-ops-page-container"><div className="vendor-ops-page">
+        <VendorMenuPlanningPage vendorId="" vendorName="" onBack={() => setSearchParams({})} />
+      </div></PageContainer>;
+    }
     return <PageContainer className="vendor-ops-page-container"><div className="vendor-ops-page">
       <VendorDashboardSkeleton />
     </div></PageContainer>;

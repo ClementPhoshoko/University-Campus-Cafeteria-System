@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { IconArrowLeft, IconCalendar, IconCopy, IconPlus, IconSoup, IconTrash } from '@tabler/icons-react';
+import { IconArrowLeft, IconCalendar, IconCategory, IconChevronDown, IconCopy, IconList, IconMapPin, IconPlus, IconSoup, IconTrash } from '@tabler/icons-react';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
+import Pagination from '../../components/ui/Pagination.jsx';
+import Skeleton from '../../components/ui/Skeleton.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import {
   addItemToVendorMenu,
@@ -9,6 +11,8 @@ import {
   createVendorCatalogItem,
   createVendorMenuPlan,
   createVendorMenuCategory,
+  listVendorMenuPlanCategories,
+  listVendorMenuCatalog,
   listVendorMenuPlans,
   removeItemFromVendorMenu,
   updateVendorMenuCategory,
@@ -40,6 +44,9 @@ function shiftDate(date, offset) {
   return value.toISOString().slice(0, 10);
 }
 
+const CATALOG_PAGE_SIZE = 8;
+const EMPTY_PAGINATION = { page: 1, limit: CATALOG_PAGE_SIZE, total: 0, totalPages: 1 };
+
 export default function VendorMenuPlanningPage({ vendorId, vendorName, onBack }) {
   const { session } = useAuth();
   const token = session?.access_token;
@@ -55,6 +62,21 @@ export default function VendorMenuPlanningPage({ vendorId, vendorName, onBack })
   const [sourceMenuId, setSourceMenuId] = useState('');
   const [editingCategory, setEditingCategory] = useState(null);
   const [showNewCategory, setShowNewCategory] = useState(false);
+  const [categoriesExpanded, setCategoriesExpanded] = useState(false);
+  const [itemsExpanded, setItemsExpanded] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [catalog, setCatalog] = useState([]);
+  const [formCategories, setFormCategories] = useState([]);
+  const [categoriesPagination, setCategoriesPagination] = useState(EMPTY_PAGINATION);
+  const [catalogPagination, setCatalogPagination] = useState(EMPTY_PAGINATION);
+  const [categoriesPage, setCategoriesPage] = useState(1);
+  const [catalogPage, setCatalogPage] = useState(1);
+  const [categoriesState, setCategoriesState] = useState('idle');
+  const [catalogState, setCatalogState] = useState('idle');
+  const [categoriesError, setCategoriesError] = useState('');
+  const [catalogError, setCatalogError] = useState('');
+  const [categoriesReload, setCategoriesReload] = useState(0);
+  const [catalogReload, setCatalogReload] = useState(0);
 
   const loadPlan = useCallback(async (signal) => {
     if (!vendorId) return;
@@ -63,6 +85,7 @@ export default function VendorMenuPlanningPage({ vendorId, vendorName, onBack })
         token,
         from: menuDate > shiftDate(today, 30) ? shiftDate(menuDate, -30) : shiftDate(today, -30),
         to: menuDate < shiftDate(today, 335) ? shiftDate(menuDate, 30) : shiftDate(today, 365),
+        selectedDate: menuDate,
         signal,
       });
       setPlan(response);
@@ -75,6 +98,67 @@ export default function VendorMenuPlanningPage({ vendorId, vendorName, onBack })
     }
   }, [menuDate, today, token, vendorId]);
 
+  const loadCategories = useCallback(async (page, signal) => {
+    if (!vendorId) return;
+    setCategoriesState('loading');
+    setCategoriesError('');
+    try {
+      const response = await listVendorMenuPlanCategories(vendorId, { token, page, limit: CATALOG_PAGE_SIZE, signal });
+      setCategories(response.categories || []);
+      setCategoriesPagination(response.pagination || EMPTY_PAGINATION);
+      setCategoriesError('');
+      setCategoriesState('ready');
+      const lastPage = Math.max(1, response.pagination?.totalPages || 1);
+      if (page > lastPage) setCategoriesPage(lastPage);
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        setCategoriesError(error.message || 'Could not load menu categories.');
+        setCategoriesState('error');
+      }
+    }
+  }, [token, vendorId]);
+
+  const loadCatalog = useCallback(async (page, signal) => {
+    if (!vendorId) return;
+    setCatalogState('loading');
+    setCatalogError('');
+    try {
+      const response = await listVendorMenuCatalog(vendorId, { token, page, limit: CATALOG_PAGE_SIZE, signal });
+      setCatalog(response.catalog || []);
+      setCatalogPagination(response.pagination || EMPTY_PAGINATION);
+      setCatalogError('');
+      setCatalogState('ready');
+      const lastPage = Math.max(1, response.pagination?.totalPages || 1);
+      if (page > lastPage) setCatalogPage(lastPage);
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        setCatalogError(error.message || 'Could not load menu items.');
+        setCatalogState('error');
+      }
+    }
+  }, [token, vendorId]);
+
+  async function loadFormCategories() {
+    const firstPage = await listVendorMenuPlanCategories(vendorId, { token, page: 1, limit: 50 });
+    const allCategories = firstPage.categories || [];
+    for (let page = 2; page <= (firstPage.pagination?.totalPages || 1); page += 1) {
+      const response = await listVendorMenuPlanCategories(vendorId, { token, page, limit: 50 });
+      allCategories.push(...(response.categories || []));
+    }
+    setFormCategories(allCategories);
+  }
+
+  async function openItemModal(item = null) {
+    setEditingItem(item);
+    setShowNewItem(!item);
+    setLoadError('');
+    try {
+      await loadFormCategories();
+    } catch (error) {
+      setLoadError(error.message || 'Could not load categories for the menu item form.');
+    }
+  }
+
   useEffect(() => {
     if (!vendorId) return undefined;
     const controller = new AbortController();
@@ -83,11 +167,25 @@ export default function VendorMenuPlanningPage({ vendorId, vendorName, onBack })
     return () => controller.abort();
   }, [loadPlan, vendorId]);
 
+  useEffect(() => {
+    if (!categoriesExpanded || !vendorId) return undefined;
+    const controller = new AbortController();
+    loadCategories(categoriesPage, controller.signal);
+    return () => controller.abort();
+  }, [categoriesExpanded, categoriesPage, categoriesReload, loadCategories, vendorId]);
+
+  useEffect(() => {
+    if (!itemsExpanded || !vendorId) return undefined;
+    const controller = new AbortController();
+    loadCatalog(catalogPage, controller.signal);
+    return () => controller.abort();
+  }, [itemsExpanded, catalogPage, catalogReload, loadCatalog, vendorId]);
+
   const selectedVendor = vendorId ? { id: vendorId, name: vendorName || 'Vendor' } : null;
   const selectedLocation = plan?.locations.find((location) => location.id === locationId);
   const menu = plan?.menus.find((item) => item.vendor_location_id === locationId && item.menu_date === menuDate);
   const menuItemIds = new Set((menu?.items || []).map((item) => item.id));
-  const availableItems = (plan?.catalog || []).filter((item) => !menuItemIds.has(item.id));
+  const availableItems = catalog.filter((item) => !menuItemIds.has(item.id));
   const sourceMenus = (plan?.menus || []).filter((item) =>
     item.vendor_location_id === locationId && item.menu_date !== menuDate && item.status !== 'archived',
   );
@@ -174,12 +272,13 @@ export default function VendorMenuPlanningPage({ vendorId, vendorName, onBack })
         await uploadVendorMenuItemAsset(itemId, imageFile, { token });
       }
       await loadPlan();
+      await loadCatalog(catalogPage);
       setEditingItem(null);
       setShowNewItem(false);
       setNotice(editing ? 'Catalogue item updated.' : 'Catalogue item created.');
     } catch (error) {
       if (saved) {
-        await loadPlan();
+        await loadCatalog(catalogPage);
         setEditingItem(null);
         setShowNewItem(false);
         setLoadError(`Menu item saved, but its image could not be uploaded: ${error.message}`);
@@ -197,7 +296,8 @@ export default function VendorMenuPlanningPage({ vendorId, vendorName, onBack })
     try {
       await createVendorMenuCategory(vendorId, payload, { token });
       setShowNewCategory(false);
-      await loadPlan();
+      await loadCategories(categoriesPage);
+      if (itemsExpanded) await loadCatalog(catalogPage);
       setNotice('Menu category created.');
     } catch (error) {
       setNotice(error.message || 'Could not create the category.');
@@ -211,7 +311,8 @@ export default function VendorMenuPlanningPage({ vendorId, vendorName, onBack })
     try {
       await updateVendorMenuCategory(vendorId, categoryId, payload, { token });
       setEditingCategory(null);
-      await loadPlan();
+      await loadCategories(categoriesPage);
+      if (itemsExpanded) await loadCatalog(catalogPage);
       setNotice(successMessage);
     } catch (error) {
       setNotice(error.message || 'Could not update the category.');
@@ -225,9 +326,20 @@ export default function VendorMenuPlanningPage({ vendorId, vendorName, onBack })
     handleCategoryUpdate(category.id, { is_active: false }, `${category.name} archived.`);
   }
 
-  function handleArchiveItem(item) {
+  async function handleArchiveItem(item) {
     if (!window.confirm(`Archive “${item.name}”? It will no longer be available on menus.`)) return;
-    runMutation(() => archiveVendorMenuItem(item.id, { token }), `${item.name} archived.`);
+    setBusy(true);
+    setNotice('');
+    try {
+      await archiveVendorMenuItem(item.id, { token });
+      await loadPlan();
+      await loadCatalog(catalogPage);
+      setNotice(`${item.name} archived.`);
+    } catch (error) {
+      setNotice(error.message || 'Could not archive this menu item.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   return <div className="vendor-menu-planning">
@@ -238,23 +350,29 @@ export default function VendorMenuPlanningPage({ vendorId, vendorName, onBack })
 
       {loadError && <p className="vendor-menu-planning__alert" role="alert">{loadError}</p>}
       {notice && <p className="vendor-menu-planning__notice" role="status">{notice}</p>}
-      {!plan && vendorId && !loadError && <VendorMenuPlanningSkeleton />}
+      {!plan && !loadError && <VendorMenuPlanningSkeleton />}
 
       {plan && selectedVendor && <>
         <section className="vendor-menu-planning__controls" aria-label="Select menu location and date">
           <label className="vendor-menu-planning__field">
-            Location
-            <select value={locationId} onChange={(event) => setLocationId(event.target.value)}>
-              {plan.locations.map((location) => <option key={location.id} value={location.id}>
-                {[location.sites?.name, location.buildings?.name].filter(Boolean).join(' · ') || 'Vendor location'}
-              </option>)}
-            </select>
+            <span>Location</span>
+            <span className="vendor-menu-planning__input-wrap">
+              <IconMapPin size={17} aria-hidden="true" />
+              <select value={locationId} onChange={(event) => setLocationId(event.target.value)}>
+                {plan.locations.map((location) => <option key={location.id} value={location.id}>
+                  {[location.sites?.name, location.buildings?.name].filter(Boolean).join(' · ') || 'Vendor location'}
+                </option>)}
+              </select>
+            </span>
           </label>
           <label className="vendor-menu-planning__field">
-            Menu date
-            <input type="date" min={today} max={shiftDate(today, 365)} value={menuDate} onChange={(event) => {
-              if (event.target.value) setMenuDate(event.target.value);
-            }} />
+            <span>Menu date</span>
+            <span className="vendor-menu-planning__input-wrap">
+              <IconCalendar size={17} aria-hidden="true" />
+              <input type="date" min={today} max={shiftDate(today, 365)} value={menuDate} onChange={(event) => {
+                if (event.target.value) setMenuDate(event.target.value);
+              }} />
+            </span>
           </label>
         </section>
 
@@ -263,26 +381,32 @@ export default function VendorMenuPlanningPage({ vendorId, vendorName, onBack })
           <p>Ask an administrator to add an active location before planning menus.</p>
         </div> : <section className="vendor-menu-planning__card">
           <header className="vendor-menu-planning__card-header">
-            <div>
-              <p><IconCalendar size={17} /> {new Intl.DateTimeFormat('en-ZA', { dateStyle: 'full', timeZone: 'Africa/Johannesburg' }).format(new Date(`${menuDate}T12:00:00+02:00`))}</p>
+            <span className="vendor-menu-planning__date-icon"><IconCalendar size={20} aria-hidden="true" /></span>
+            <div className="vendor-menu-planning__date-copy">
+              <p>{new Intl.DateTimeFormat('en-ZA', { dateStyle: 'full', timeZone: 'Africa/Johannesburg' }).format(new Date(`${menuDate}T12:00:00+02:00`))}</p>
               <h3>{menu?.name || 'No menu planned for this date'}</h3>
             </div>
-            {menu && <span className={`vendor-menu-planning__status vendor-menu-planning__status--${menu.status}`}>{formatStatus(menu.status)}</span>}
+            <span className={`vendor-menu-planning__status${menu ? ` vendor-menu-planning__status--${menu.status}` : ' vendor-menu-planning__status--empty'}`}>{menu ? formatStatus(menu.status) : 'Not planned'}</span>
           </header>
 
           {!menu ? <div className="vendor-menu-planning__empty-action">
-            <p>Create a draft for this location and date, or copy a previous menu to get started.</p>
-            <PrimaryButton icon={IconPlus} disabled={busy} onClick={handleCreateMenu}>Create draft menu</PrimaryButton>
-            {sourceMenus.length > 0 && <div className="vendor-menu-planning__copy">
-              <label className="vendor-menu-planning__field">
-                Copy a previous menu
-                <select value={sourceMenuId} onChange={(event) => setSourceMenuId(event.target.value)}>
-                  <option value="">Choose a menu</option>
-                  {sourceMenus.map((source) => <option key={source.id} value={source.id}>{source.menu_date} · {source.name}</option>)}
-                </select>
-              </label>
-              <PrimaryButton icon={IconCopy} disabled={busy || !sourceMenuId} onClick={handleCopyMenu}>Copy as draft</PrimaryButton>
-            </div>}
+            <div className="vendor-menu-planning__empty-copy">
+              <strong>No menu for this date</strong>
+              <p>Create a draft for this location and date, or copy a previous menu to get started.</p>
+            </div>
+            <div className="vendor-menu-planning__empty-actions">
+              <PrimaryButton icon={IconPlus} disabled={busy} onClick={handleCreateMenu}>Create draft menu</PrimaryButton>
+              {sourceMenus.length > 0 && <div className="vendor-menu-planning__copy">
+                <label className="vendor-menu-planning__field">
+                  Copy a previous menu
+                  <select value={sourceMenuId} onChange={(event) => setSourceMenuId(event.target.value)}>
+                    <option value="">Choose a menu</option>
+                    {sourceMenus.map((source) => <option key={source.id} value={source.id}>{source.menu_date} · {source.name}</option>)}
+                  </select>
+                </label>
+                <PrimaryButton icon={IconCopy} disabled={busy || !sourceMenuId} onClick={handleCopyMenu}>Copy as draft</PrimaryButton>
+              </div>}
+            </div>
           </div> : <>
             <div className="vendor-menu-planning__menu-actions">
               {menu.status === 'draft' && <PrimaryButton disabled={busy || !menu.items.some((item) => item.is_active && ['available', 'limited'].includes(item.status))} onClick={() => handleMenuStatus('published')}>Publish menu</PrimaryButton>}
@@ -333,37 +457,58 @@ export default function VendorMenuPlanningPage({ vendorId, vendorName, onBack })
           <header className="vendor-menu-planning__catalog-heading">
             <div><p><IconSoup size={17} /> Reusable vendor items</p><h3>Menu setup</h3><span>Organize your categories and reusable items, then add them to dated menus.</span></div>
           </header>
-          <div className="vendor-menu-planning__categories">
-            <div className="vendor-menu-planning__subheading"><div><h4>Categories</h4><p>Group items so customers can browse your menu easily.</p></div></div>
-            <PrimaryButton size="sm" icon={IconPlus} onClick={() => setShowNewCategory(true)} disabled={busy}>Add category</PrimaryButton>
-            {plan.categories.length > 0 && <div className="vendor-menu-planning__category-list">
-              {plan.categories.map((category) => <div className="vendor-menu-planning__category-row" key={category.id}>
-                <span>{category.name}</span>
-                <div><PrimaryButton size="sm" onClick={() => setEditingCategory(category)}>Rename</PrimaryButton>
-                  <PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" onClick={() => handleCategoryArchive(category)}>Archive</PrimaryButton></div>
-              </div>)}
-            </div>}
-          </div>
-          <div className="vendor-menu-planning__catalog-items">
-          <header className="vendor-menu-planning__subheading">
-            <div><h4>Menu items</h4><p>Reusable items are added to each dated menu separately.</p></div>
-            <PrimaryButton size="sm" icon={IconPlus} onClick={() => { setEditingItem(null); setShowNewItem(true); }}>Add item</PrimaryButton>
-          </header>
-          {!plan.catalog.length ? <p className="vendor-menu-planning__empty-text">Create catalogue items, then add them to one or more dated menus.</p> :
-            plan.catalog.map((item) => <article className="vendor-menu-planning__catalog-item" key={item.id}>
-              <div><strong>{item.name}</strong><span>{item.menu_categories?.name || 'Uncategorized'} · {formatMoney(item.base_price, item.currency)}</span></div>
-              <div className="vendor-menu-planning__catalog-actions">
-                <PrimaryButton size="sm" onClick={() => { setShowNewItem(false); setEditingItem(item); }}>Edit</PrimaryButton>
-                <PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" onClick={() => handleArchiveItem(item)}>Archive</PrimaryButton>
+          <section className={`vendor-menu-planning__accordion${categoriesExpanded ? ' is-expanded' : ''}`}>
+            <button type="button" className="vendor-menu-planning__accordion-trigger" aria-expanded={categoriesExpanded} onClick={() => setCategoriesExpanded((expanded) => !expanded)}>
+              <span className="vendor-menu-planning__accordion-icon"><IconCategory size={19} aria-hidden="true" /></span>
+              <span className="vendor-menu-planning__accordion-copy"><strong>Categories</strong><span>Group items so customers can browse your menu easily.</span></span>
+              <IconChevronDown className="vendor-menu-planning__accordion-chevron" size={18} aria-hidden="true" />
+            </button>
+            {categoriesExpanded && <div className="vendor-menu-planning__accordion-content vendor-menu-planning__categories">
+              <div className="vendor-menu-planning__accordion-actions">
+                <PrimaryButton size="sm" icon={IconPlus} onClick={() => setShowNewCategory(true)} disabled={busy}>Add category</PrimaryButton>
               </div>
-            </article>)}
-          </div>
+              {categoriesState === 'loading' && <div className="vendor-menu-planning__lazy-skeleton" role="status" aria-label="Loading categories">{[1, 2, 3].map((row) => <Skeleton key={row} />)}</div>}
+              {categoriesError && <p className="vendor-menu-planning__inline-error" role="alert">{categoriesError} <button type="button" onClick={() => setCategoriesReload((value) => value + 1)}>Retry</button></p>}
+              {categoriesState === 'ready' && !categories.length && <p className="vendor-menu-planning__empty-text">No active categories yet.</p>}
+              {categoriesState === 'ready' && categories.length > 0 && <div className="vendor-menu-planning__category-list">
+                {categories.map((category) => <div className="vendor-menu-planning__category-row" key={category.id}>
+                  <span>{category.name}</span>
+                  <div><PrimaryButton size="sm" onClick={() => setEditingCategory(category)}>Rename</PrimaryButton>
+                    <PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" onClick={() => handleCategoryArchive(category)}>Archive</PrimaryButton></div>
+                </div>)}
+                <Pagination currentPage={categoriesPagination.page} totalPages={categoriesPagination.totalPages} totalItems={categoriesPagination.total} itemsPerPage={categoriesPagination.limit} label="categories" onPageChange={setCategoriesPage} />
+              </div>}
+            </div>}
+          </section>
+          <section className={`vendor-menu-planning__accordion${itemsExpanded ? ' is-expanded' : ''}`}>
+            <button type="button" className="vendor-menu-planning__accordion-trigger" aria-expanded={itemsExpanded} onClick={() => setItemsExpanded((expanded) => !expanded)}>
+              <span className="vendor-menu-planning__accordion-icon"><IconList size={19} aria-hidden="true" /></span>
+              <span className="vendor-menu-planning__accordion-copy"><strong>Menu items</strong><span>Reusable items are added to each dated menu separately.</span></span>
+              <IconChevronDown className="vendor-menu-planning__accordion-chevron" size={18} aria-hidden="true" />
+            </button>
+            {itemsExpanded && <div className="vendor-menu-planning__accordion-content vendor-menu-planning__catalog-items">
+              <div className="vendor-menu-planning__accordion-actions">
+                <PrimaryButton size="sm" icon={IconPlus} onClick={() => openItemModal()}>Add item</PrimaryButton>
+              </div>
+              {catalogState === 'loading' && <div className="vendor-menu-planning__catalog-skeleton" role="status" aria-label="Loading menu items">{[1, 2, 3, 4].map((row) => <Skeleton key={row} />)}</div>}
+              {catalogError && <p className="vendor-menu-planning__inline-error" role="alert">{catalogError} <button type="button" onClick={() => setCatalogReload((value) => value + 1)}>Retry</button></p>}
+              {catalogState === 'ready' && !catalog.length ? <p className="vendor-menu-planning__empty-text">Create catalogue items, then add them to one or more dated menus.</p> :
+                catalogState === 'ready' && catalog.map((item) => <article className="vendor-menu-planning__catalog-item" key={item.id}>
+                  <div><strong>{item.name}</strong><span>{item.menu_categories?.name || 'Uncategorized'} · {formatMoney(item.base_price, item.currency)}</span></div>
+                  <div className="vendor-menu-planning__catalog-actions">
+                    <PrimaryButton size="sm" onClick={() => openItemModal(item)}>Edit</PrimaryButton>
+                    <PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" onClick={() => handleArchiveItem(item)}>Archive</PrimaryButton>
+                  </div>
+                </article>)}
+              {catalogState === 'ready' && catalog.length > 0 && <Pagination currentPage={catalogPagination.page} totalPages={catalogPagination.totalPages} totalItems={catalogPagination.total} itemsPerPage={catalogPagination.limit} label="menu items" onPageChange={setCatalogPage} />}
+            </div>}
+          </section>
         </section>
       </>}
 
       {(editingItem || showNewItem) && <MenuItemModal
         item={editingItem}
-        categories={plan?.categories || []}
+        categories={formCategories}
         submitting={busy}
         usePrimaryButtons
         onClose={() => { setEditingItem(null); setShowNewItem(false); }}

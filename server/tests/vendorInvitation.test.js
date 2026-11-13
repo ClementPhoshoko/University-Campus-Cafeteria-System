@@ -92,3 +92,12 @@ test('vendor menu item image upload is registered through the vendor route', () 
   assert.equal(typeof assetController.uploadVendorMenuItemAsset, 'function');
   assert.ok(routes.some((route) => route.path === '/vendor/menu/items/:itemId/image' && route.methods.post));
 });
+
+test('menu planning catalogue endpoints are registered as separate paginated requests', () => {
+  const routes = vendorOperationsRoutes.default.stack
+    .filter((layer) => layer.route)
+    .map((layer) => ({ path: layer.route.path, methods: layer.route.methods }));
+
+  assert.ok(routes.some((route) => route.path === '/vendor/menus/categories' && route.methods.get));
+  assert.ok(routes.some((route) => route.path === '/vendor/menus/catalog' && route.methods.get));
+});

@@ -59,11 +59,29 @@ export function listVendorOperationsMenu(vendorId, { token, signal, locationId }
   return apiRequest('/vendor/menu', { token, signal, query: { vendor_id: vendorId, location_id: locationId }, cache: 'no-store' });
 }
 
-export function listVendorMenuPlans(vendorId, { token, from, to, locationId, signal } = {}) {
+export function listVendorMenuPlans(vendorId, { token, from, to, locationId, selectedDate, signal } = {}) {
   return apiRequest('/vendor/menus', {
     token,
     signal,
-    query: { vendor_id: vendorId, from, to, location_id: locationId },
+    query: { vendor_id: vendorId, from, to, location_id: locationId, selected_date: selectedDate },
+    cache: 'no-store',
+  });
+}
+
+export function listVendorMenuPlanCategories(vendorId, { token, page = 1, limit = 8, signal } = {}) {
+  return apiRequest('/vendor/menus/categories', {
+    token,
+    signal,
+    query: { vendor_id: vendorId, page, limit },
+    cache: 'no-store',
+  });
+}
+
+export function listVendorMenuCatalog(vendorId, { token, page = 1, limit = 8, signal } = {}) {
+  return apiRequest('/vendor/menus/catalog', {
+    token,
+    signal,
+    query: { vendor_id: vendorId, page, limit },
     cache: 'no-store',
   });
 }
