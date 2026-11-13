@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { IconArrowLeft, IconUserPlus } from '@tabler/icons-react';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
+import { VendorTeamInvitationsSkeleton } from './VendorLoadingSkeletons.jsx';
 import { inviteVendorStaff, listMyVendorInvitations, revokeMyVendorInvitation } from '../../services/vendorApi.js';
 
 function formatExpiry(value) {
@@ -118,7 +119,7 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
         <h3 id="vendor-team-invitations-title">Staff invitations</h3>
         <p>Invite links expire after three South African business days.</p>
       </header>
-      {loading && <p className="vendor-team__empty">Loading invitations…</p>}
+      {loading && <VendorTeamInvitationsSkeleton />}
       {!loading && !loadError && invitations.length === 0 && (
         <p className="vendor-team__empty">No staff invitations yet.</p>
       )}

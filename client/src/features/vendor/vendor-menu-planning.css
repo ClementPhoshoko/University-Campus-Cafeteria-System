@@ -38,6 +38,33 @@
 .vendor-menu-planning__alert, .vendor-menu-planning__notice { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); color: var(--color-status-error); background: color-mix(in srgb, var(--color-status-error) 9%, var(--color-surface-default)); font-size: .84rem; }
 .vendor-menu-planning__notice { color: var(--color-status-success); background: color-mix(in srgb, var(--color-status-success) 10%, var(--color-surface-default)); }
 .vendor-menu-planning__loading { display: grid; gap: var(--space-4); }
+.vendor-menu-planning__loading .vendor-menu-planning__controls { padding: var(--space-4) 0; border: 0; border-bottom: 1px solid var(--color-border-subtle); border-radius: 0; background: transparent; }
+.vendor-menu-planning__loading .vendor-menu-planning__card { display: grid; gap: var(--space-3); padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.vendor-menu-planning__loading .vendor-menu-planning__card-header { align-items: center; padding-bottom: var(--space-3); }
+.vendor-menu-planning__loading .vendor-menu-planning__card-header > div,
+.vendor-menu-planning__loading .vendor-menu-planning__catalog-heading > div { display: grid; gap: var(--space-2); }
+.vendor-menu-planning__loading .vendor-menu-planning__card-header > div > span,
+.vendor-menu-planning__loading .vendor-menu-planning__catalog-heading > div > span { display: block; }
+.vendor-menu-planning__loading .vendor-menu-planning__menu-actions { min-height: 48px; }
+.vendor-menu-planning__loading .vendor-menu-planning__item-list { gap: 0; }
+.vendor-menu-planning__loading .vendor-menu-planning__item { padding: var(--space-3) 0; border: 0; border-bottom: 1px solid var(--color-border-subtle); border-radius: 0; }
+.vendor-menu-planning__loading .vendor-menu-planning__item > div:first-child > span,
+.vendor-menu-planning__loading .vendor-menu-planning__catalog-item > div:first-child > span { display: block; }
+.vendor-menu-planning__loading .vendor-menu-planning__catalog-picker { width: min(100%, 460px); }
+.vendor-menu-planning__loading .vendor-menu-planning__catalog { margin-top: var(--space-2); }
+.vendor-menu-planning__loading .vendor-menu-planning__catalog-heading { padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-border-subtle); }
+.vendor-menu-planning__loading .vendor-menu-planning__categories,
+.vendor-menu-planning__loading .vendor-menu-planning__catalog-items { display: grid; gap: var(--space-2); }
+.vendor-menu-planning__loading .vendor-menu-planning__catalog-items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.vendor-menu-planning__loading .vendor-menu-planning__catalog-items > .vendor-menu-planning__subheading { grid-column: 1 / -1; }
+.vendor-menu-planning__loading .vendor-menu-planning__subheading > div { display: grid; gap: 5px; }
+.vendor-menu-planning__loading .vendor-menu-planning__subheading > div > span { display: block; }
+.vendor-menu-planning__loading .vendor-menu-planning__category-row { min-height: 44px; }
+.vendor-menu-planning__loading .vendor-menu-planning__category-row > div { display: flex; gap: var(--space-1); }
+.vendor-menu-planning__loading .vendor-menu-planning__catalog-item { padding: var(--space-3) 0; border: 0; border-bottom: 1px solid var(--color-border-subtle); border-radius: 0; }
+.vendor-menu-planning__loading .vendor-menu-planning__catalog-actions { opacity: 1; pointer-events: none; }
+.vendor-menu-planning__loading .vendor-loading-button { width: 70px; height: 36px; }
+.vendor-menu-planning__loading .vendor-loading-input { height: 44px; }
 .vendor-menu-planning__empty { display: grid; gap: var(--space-2); }
 
 @media (max-width: 620px) {
@@ -51,6 +78,9 @@
   .vendor-menu-planning__catalog-item { align-items: flex-start; flex-direction: column; }
   .vendor-menu-planning__item-actions { flex: 0 0 auto; }
   .vendor-menu-planning__catalog-actions { width: 100%; }
+  .vendor-menu-planning__loading .vendor-menu-planning__catalog-items { grid-template-columns: 1fr; }
+  .vendor-menu-planning__loading .vendor-menu-planning__category-row { align-items: flex-start; flex-direction: column; padding: var(--space-2) 0; }
+  .vendor-menu-planning__loading .vendor-menu-planning__catalog-item { align-items: flex-start; flex-direction: column; }
 }
 
 .vendor-menu-planning { width: 100%; max-width: none; gap: var(--space-4); margin: 0; }

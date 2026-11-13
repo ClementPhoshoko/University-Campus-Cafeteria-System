@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { IconArrowLeft, IconCalendar, IconCopy, IconPlus, IconSoup, IconTrash } from '@tabler/icons-react';
-import Skeleton from '../../components/ui/Skeleton.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import {
@@ -19,6 +18,7 @@ import {
   uploadVendorMenuItemAsset,
 } from '../../services/vendorApi.js';
 import { formatMoney, formatStatus } from './components/VendorDashboardComponents.jsx';
+import { VendorMenuPlanningSkeleton } from './VendorLoadingSkeletons.jsx';
 import { CategoryModal, MenuItemModal } from '../admin/VendorForms.jsx';
 import './vendor-operations.css';
 import './vendor-menu-planning.css';
@@ -238,7 +238,7 @@ export default function VendorMenuPlanningPage({ vendorId, vendorName, onBack })
 
       {loadError && <p className="vendor-menu-planning__alert" role="alert">{loadError}</p>}
       {notice && <p className="vendor-menu-planning__notice" role="status">{notice}</p>}
-      {!plan && vendorId && !loadError && <div className="vendor-menu-planning__loading"><Skeleton height={70} /><Skeleton height={180} /></div>}
+      {!plan && vendorId && !loadError && <VendorMenuPlanningSkeleton />}
 
       {plan && selectedVendor && <>
         <section className="vendor-menu-planning__controls" aria-label="Select menu location and date">

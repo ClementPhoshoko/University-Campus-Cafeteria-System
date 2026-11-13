@@ -3,7 +3,6 @@ import { Navigate, useSearchParams } from 'react-router-dom';
 import { IconRefresh, IconShoppingBag, IconSoup, IconClockHour4, IconAlertTriangle, IconCalendar, IconUsers } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
-import Skeleton from '../../components/ui/Skeleton.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -13,6 +12,7 @@ import { MenuItemModal } from '../admin/VendorForms.jsx';
 import { archiveVendorMenuItem, createVendorMenuItem, listVendorMenuCategories, updateVendorMenuItem, uploadVendorMenuItemAsset } from '../../services/vendorApi.js';
 import VendorMenuPlanningPage from './VendorMenuPlanningPage.jsx';
 import VendorTeamManagementPage from './VendorTeamManagementPage.jsx';
+import { VendorDashboardSkeleton, VendorMenuItemsSkeleton, VendorQueueSkeleton, VendorSummarySkeleton } from './VendorLoadingSkeletons.jsx';
 import './vendor-operations.css';
 
 const QUEUE_FILTERS = [
@@ -178,6 +178,12 @@ export default function VendorOperationsPage() {
     return <Navigate to="/vendor" replace />;
   }
 
+  if (vendorsState === 'loading') {
+    return <PageContainer className="vendor-ops-page-container"><div className="vendor-ops-page">
+      <VendorDashboardSkeleton />
+    </div></PageContainer>;
+  }
+
   const headerActions = (vendors.length > 1 || (selectedVendor?.role === 'manager' && !showingManagerView)) && (
     <div className="vendor-ops-header-actions">
       {vendors.length > 1 && <label className="vendor-ops-picker">Vendor<select value={vendorId} onChange={(event) => setVendorId(event.target.value)}>{vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}</select></label>}
@@ -190,12 +196,12 @@ export default function VendorOperationsPage() {
 
   return <PageContainer className="vendor-ops-page-container"><div className="vendor-ops-page">
     <PageHeader eyebrow="Vendor workspace" title={selectedVendor?.name || 'Vendor operations'} subtitle="A clear view of what needs preparing and what customers can order today." actions={headerActions} />
-    {vendorsState === 'loading' && <div className="vendor-ops-loading"><Skeleton height={72} /><Skeleton height={72} /></div>}
     {vendorsState === 'error' && <div className="vendor-ops-alert" role="alert">{vendorError}</div>}
     {vendorsState === 'ready' && !vendors.length && <div className="vendor-ops-empty"><IconShoppingBag size={30} /><h3>No vendor access yet</h3><p>Your account is not assigned to a vendor. Ask an administrator to add you to the vendor team.</p></div>}
     {selectedVendor && <>
       {notice && <p className="vendor-ops-notice" role="status">{notice}</p>}
-      {!showingManagerView && <div className="vendor-ops-summary">
+      {!showingManagerView && ordersState === 'loading' && <VendorSummarySkeleton />}
+      {!showingManagerView && ordersState !== 'loading' && <div className="vendor-ops-summary">
         <SummaryCard label="Active orders" value={orders.length} detail="In your live queue" Icon={IconShoppingBag} />
         <SummaryCard label="Needs attention" value={urgentCount} detail="Collection within 15 minutes" Icon={IconAlertTriangle} tone={urgentCount ? 'warning' : ''} />
         <SummaryCard label="Ready to collect" value={readyCount} detail="Waiting for customer pickup" Icon={IconSoup} tone="blue" />
@@ -219,7 +225,7 @@ export default function VendorOperationsPage() {
         <VendorSection title="Live order queue" description="Sorted by collection time · refreshes automatically" Icon={IconShoppingBag} className="vendor-ops-section--queue" action={<button className="vendor-ops-refresh" type="button" onClick={() => loadOrders()} aria-label="Refresh orders"><IconRefresh size={18} /></button>}>
           <div className="vendor-queue-filters" role="group" aria-label="Filter orders">{QUEUE_FILTERS.map((item) => <button key={item.value} type="button" className={filter === item.value ? 'is-active' : ''} aria-pressed={filter === item.value} onClick={() => setFilter(item.value)}>{item.label}{item.value === 'needs_attention' && urgentCount > 0 ? <span>{urgentCount}</span> : null}</button>)}</div>
           <div className="vendor-queue-list">
-            {ordersState === 'loading' && <div className="vendor-ops-loading"><Skeleton height={190} /><Skeleton height={190} /></div>}
+            {ordersState === 'loading' && <VendorQueueSkeleton />}
             {ordersError && ordersState !== 'error' && <div className="vendor-ops-inline-error" role="status">Queue refresh failed: {ordersError} Showing the last loaded orders.</div>}
             {ordersState === 'error' && <div className="vendor-ops-inline-error" role="alert">{ordersError}</div>}
             {ordersState === 'ready' && !visibleOrders.length && <div className="vendor-ops-section-empty">{orders.length ? 'No orders match this filter.' : 'No active orders. New paid orders will appear here.'}</div>}
@@ -229,7 +235,7 @@ export default function VendorOperationsPage() {
         </VendorSection>
         <VendorSection title="Today’s menu" description="Manage the items customers can order today" Icon={IconSoup} className="vendor-ops-section--menu" action={selectedVendor.role === 'manager' && menu ? <PrimaryButton onClick={() => setEditingItem({ isNew: true })}>Add item</PrimaryButton> : null}>
           <div className="vendor-menu-list">
-            {menuState === 'loading' && <div className="vendor-ops-loading"><Skeleton height={92} /><Skeleton height={92} /></div>}
+            {menuState === 'loading' && <VendorMenuItemsSkeleton />}
             {menuError && menuState !== 'error' && <div className="vendor-ops-inline-error" role="status">Menu refresh failed: {menuError}</div>}
             {menuState === 'error' && <div className="vendor-ops-inline-error" role="alert">{menuError}</div>}
             {menuState === 'ready' && !menu && <div className="vendor-ops-section-empty">There is no published menu for today. Ask an administrator to publish the menu before adding items.</div>}
