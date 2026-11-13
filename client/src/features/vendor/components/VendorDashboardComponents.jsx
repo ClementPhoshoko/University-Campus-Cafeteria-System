@@ -99,37 +99,3 @@ export function MenuItemCard({ item, busy, onSave }) {
     </div>
   </article>;
 }
-
-export function VendorMenuItemForm({ item, categories, saving, onCancel, onSubmit }) {
-  const [form, setForm] = useState({
-    name: item?.name || '', description: item?.description || '', category_id: item?.category_id || '',
-    base_price: item?.base_price ?? '', prep_minutes: item?.prep_minutes ?? '',
-    portion_description: item?.portion_description || '',
-    ingredients: Array.isArray(item?.ingredients) ? item.ingredients.join(', ') : '', status: item?.status || 'available',
-  });
-  const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
-  const submit = (event) => {
-    event.preventDefault();
-    onSubmit({
-      name: form.name.trim(), description: form.description.trim() || null,
-      category_id: form.category_id || null, base_price: Number(form.base_price),
-      prep_minutes: form.prep_minutes === '' ? null : Number(form.prep_minutes),
-      portion_description: form.portion_description.trim() || null,
-      ingredients: form.ingredients.split(',').map((value) => value.trim()).filter(Boolean), status: form.status,
-    });
-  };
-  return <div className="vendor-menu-editor__backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
-    <form className="vendor-menu-editor" role="dialog" aria-modal="true" aria-labelledby="vendor-menu-editor-title" onSubmit={submit}>
-      <header><div><p>Menu management</p><h3 id="vendor-menu-editor-title">{item ? 'Edit menu item' : 'Add menu item'}</h3></div><button type="button" onClick={onCancel} aria-label="Close editor">×</button></header>
-      <div className="vendor-menu-editor__fields">
-        <label>Item name<input required maxLength={120} value={form.name} onChange={(event) => update('name', event.target.value)} /></label>
-        <div className="vendor-menu-editor__row"><label>Price (ZAR)<input required type="number" min="0" step="0.01" value={form.base_price} onChange={(event) => update('base_price', event.target.value)} /></label><label>Prep time (minutes)<input type="number" min="1" max="1440" value={form.prep_minutes} onChange={(event) => update('prep_minutes', event.target.value)} /></label></div>
-        <label>Category<select value={form.category_id} onChange={(event) => update('category_id', event.target.value)}><option value="">Uncategorized</option>{categories.filter((category) => category.is_active || category.id === item?.category_id).map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
-        <label>Description<textarea rows="3" maxLength={2000} value={form.description} onChange={(event) => update('description', event.target.value)} /></label>
-        <label>Ingredients <span>Separate items with commas</span><input value={form.ingredients} onChange={(event) => update('ingredients', event.target.value)} /></label>
-        <div className="vendor-menu-editor__row"><label>Portion<input maxLength={120} value={form.portion_description} onChange={(event) => update('portion_description', event.target.value)} /></label><label>Availability<select value={form.status} onChange={(event) => update('status', event.target.value)}>{['available', 'limited', 'sold_out', 'unavailable'].map((status) => <option key={status} value={status}>{formatStatus(status)}</option>)}</select></label></div>
-      </div>
-      <footer><button type="button" className="vendor-ops-button vendor-ops-button--quiet" onClick={onCancel}>Cancel</button><button type="submit" className="vendor-ops-button" disabled={saving || !form.name.trim() || form.base_price === ''}>{saving ? 'Saving…' : item ? 'Save changes' : 'Add item'}</button></footer>
-    </form>
-  </div>;
-}

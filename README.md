@@ -1234,7 +1234,7 @@ GET    /support/cases/:caseId
 
 ## Vendor API namespace
 
-The vendor-operations slice includes membership discovery, a vendor-scoped active order queue, order status updates, today’s menu availability, and manager-only menu-item create/edit/archive. Requests are checked against active `vendor_users` membership; menu catalog mutations require the active membership role to be `manager`.
+The vendor-operations slice includes membership discovery, a vendor-scoped active order queue, order status updates, today’s menu availability, and manager-only catalogue and dated-menu planning. Requests are checked against active `vendor_users` membership; menu planning and catalogue mutations require the active membership role to be `manager`.
 
 ```text
 GET    /vendor/orders
@@ -1243,9 +1243,19 @@ GET    /vendor/menu
 PATCH  /vendor/menu/items/:itemId/availability
 GET    /vendor/me
 GET    /vendor/menu/categories
+POST   /vendor/menu/categories
+PATCH  /vendor/menu/categories/:categoryId
 POST   /vendor/menu/items
 PATCH  /vendor/menu/items/:itemId
 DELETE /vendor/menu/items/:itemId
+GET    /vendor/menus
+POST   /vendor/menus
+POST   /vendor/menus/:menuId/copy
+PATCH  /vendor/menus/:menuId
+POST   /vendor/menus/:menuId/items
+PATCH  /vendor/menus/:menuId/items/:itemId
+DELETE /vendor/menus/:menuId/items/:itemId
+POST   /vendor/menu/catalog-items
 ```
 
 Still planned:
@@ -1257,7 +1267,7 @@ PATCH  /vendor/collection-slots/:slotId
 GET    /vendor/reports
 ```
 
-Menu item creation attaches the item to a published menu for the current Johannesburg date and an active vendor location. Archive is a soft deactivation, preserving historical order references. This step uses existing schema and requires no database migration. Image upload, dietary/allergen editing, option/customization management, weekly menu scheduling, and quantity-based stock remain planned. Quantity-based stock is future work because the current cart and checkout do not reserve or enforce `menu_item_inventory` quantities. The menu list follows the same first active vendor location used by the current employee menu and cart flows.
+The vendor workspace keeps the staff order queue and daily availability controls, with manager-only menu planning and staff invitations embedded in the same page. Managers can invite staff only to their own vendor; admins continue to assign manager access. Menu planning maintains a reusable vendor catalogue and creates, copies, publishes, unpublishes, or archives location/date-specific menus. Menu availability is stored per menu item, and the customer menu and cart accept items only from the currently published menu; a draft or catalogue-only item is not orderable. Apply `server/src/docs/migrations/021_vendor_menu_planning.sql` before using dated menu planning and `server/src/docs/migrations/022_protect_vendor_manager_from_staff_invite.sql` before enabling manager-issued staff invitations; the latter enforces the staff-only invite role atomically and protects existing managers. The daily staff workspace and current employee/cart flow continue to use the first active vendor location. Image upload, dietary/allergen editing, option/customization management, recurring weekly templates, and quantity-based stock remain planned. Quantity-based stock is future work because the current cart and checkout do not reserve or enforce `menu_item_inventory` quantities.
 
 ## Administration API namespace
 

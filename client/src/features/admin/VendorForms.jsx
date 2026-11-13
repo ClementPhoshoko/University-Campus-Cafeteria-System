@@ -8,6 +8,7 @@ import { useAdminLocations } from '../../hooks/useAdminLocations.js';
 import AdminDropdown from '../../components/ui/AdminDropdown.jsx';
 import { FileInput } from './AdminCafeteriaList.jsx';
 import ModalProgressOverlay from './ModalProgressOverlay.jsx';
+import PrimaryButton from '../../components/PrimaryButton.jsx';
 import './vendor-categories.css';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -408,7 +409,7 @@ export function VendorLocationModal({ location, onClose, onSubmit, submitting = 
 
 export { HoursFields };
 
-export function MenuItemModal({ item, categories, onClose, onSubmit, submitting = false }) {
+export function MenuItemModal({ item, categories, onClose, onSubmit, submitting = false, allowImageUpload = true, usePrimaryButtons = false }) {
   const [form, setForm] = useState({
     name: item?.name || '',
     description: item?.description || '',
@@ -454,7 +455,7 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
       status: form.status,
       portion_description: form.portion_description.trim() || null,
       ingredients: form.ingredients.split(',').map((s) => s.trim()).filter(Boolean),
-      image_file: form.image_file || null,
+      ...(allowImageUpload ? { image_file: form.image_file || null } : {}),
     };
     onSubmit(payload);
   };
@@ -466,7 +467,7 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
         <header className="admin-modal__head">
           <div><h3 className="admin-modal__title">{editing ? 'Edit menu item' : 'Add menu item'}</h3><p className="admin-modal__sub">{editing ? 'Update the item details and availability.' : 'Add a new item to this vendor\'s menu.'}</p></div>
         </header>
-        <div className="admin-modal__body">
+        <div className={`admin-modal__body${allowImageUpload ? '' : ' admin-modal__body--single'}`}>
           <div className="admin-modal__left">
             <div className="admin-modal__row">
               <Field label="Item name"><input autoFocus className="admin-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Classic Chicken Wrap" /></Field>
@@ -485,7 +486,7 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
             <Field label="Ingredients" full><input className="admin-input" value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} placeholder="Comma-separated, e.g. chicken, lettuce, tomato" /></Field>
             <Field label="Description" full><textarea className="admin-modal__textarea" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
           </div>
-          <div className="admin-modal__right">
+          {allowImageUpload && <div className="admin-modal__right">
             <div className="admin-modal__image-area admin-modal__image-area--sm">
               {imagePreview ? (
                 <img src={imagePreview} alt="Item preview" />
@@ -498,11 +499,13 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
               )}
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setForm({ ...form, image_file: file }); setImagePreview(file); }} />
             </div>
-          </div>
+          </div>}
         </div>
         <footer className="admin-modal__foot">
-          <button type="button" className="admin-action" onClick={onClose}>Cancel</button>
-          <button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.name.trim() || !form.base_price} onClick={submit}>{submitting ? 'Saving…' : editing ? 'Save item' : 'Add item'}</button>
+          {usePrimaryButtons ? <PrimaryButton onClick={onClose}>Cancel</PrimaryButton> : <button type="button" className="admin-action" onClick={onClose}>Cancel</button>}
+          {usePrimaryButtons
+            ? <PrimaryButton disabled={submitting || !form.name.trim() || !form.base_price} onClick={submit}>{submitting ? 'Saving…' : editing ? 'Save item' : 'Add item'}</PrimaryButton>
+            : <button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.name.trim() || !form.base_price} onClick={submit}>{submitting ? 'Saving…' : editing ? 'Save item' : 'Add item'}</button>}
         </footer>
         <ModalProgressOverlay active={submitting} messages={editing ? ['Updating menu item...', 'Saving your changes...', 'Almost there...'] : ['Adding menu item...', 'Updating the menu...', 'Almost there...']} />
       </div>
@@ -510,7 +513,7 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
   );
 }
 
-export function CategoryModal({ category, onClose, onSubmit, submitting = false }) {
+export function CategoryModal({ category, onClose, onSubmit, submitting = false, usePrimaryButtons = false }) {
   const [form, setForm] = useState({
     name: category?.name || '',
     sort_order: String(category?.sort_order ?? 0),
@@ -533,8 +536,10 @@ export function CategoryModal({ category, onClose, onSubmit, submitting = false 
           <Field label="Sort order"><input className="admin-input" type="number" min="0" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: e.target.value })} /></Field>
         </div>
         <footer className="admin-modal__foot">
-          <button type="button" className="admin-action" onClick={onClose}>Cancel</button>
-          <button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.name.trim()} onClick={submit}>{submitting ? 'Saving…' : editing ? 'Save category' : 'Add category'}</button>
+          {usePrimaryButtons ? <PrimaryButton onClick={onClose}>Cancel</PrimaryButton> : <button type="button" className="admin-action" onClick={onClose}>Cancel</button>}
+          {usePrimaryButtons
+            ? <PrimaryButton disabled={submitting || !form.name.trim()} onClick={submit}>{submitting ? 'Saving…' : editing ? 'Save category' : 'Add category'}</PrimaryButton>
+            : <button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.name.trim()} onClick={submit}>{submitting ? 'Saving…' : editing ? 'Save category' : 'Add category'}</button>}
         </footer>
         <ModalProgressOverlay active={submitting} messages={editing ? ['Updating category...', 'Saving your changes...', 'Almost there...'] : ['Adding category...', 'Updating the menu...', 'Almost there...']} />
       </div>

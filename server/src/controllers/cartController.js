@@ -7,6 +7,7 @@ import { writeAudit } from '../utils/audit.js';
 import { calculateServiceFee } from '../utils/feeCalculator.js';
 import { resolveUnitPrice } from '../utils/pricing.js';
 import { expireCartIfExpired } from '../services/cartExpiry.js';
+import { getTodaysPublishedMenuItem } from '../utils/vendorMenus.js';
 
 const db = () => supabaseAdmin;
 
@@ -346,30 +347,23 @@ export async function addToCart(req, res) {
 
     const { data: menuItem, error: miError } = await db()
       .from('menu_items')
-      .select('id, vendor_id, base_price, status, name')
+      .select('id, vendor_id, base_price, name')
       .eq('id', menuItemId)
       .eq('is_active', true)
       .maybeSingle();
     if (miError) throw miError;
     if (!menuItem) throw new ApiError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
-    if (menuItem.status !== 'available' && menuItem.status !== 'limited') {
-      throw new ApiError(400, 'ITEM_UNAVAILABLE', 'Menu item is not available');
-    }
     const selectedOptions = await validateCartOptions(menuItemId, options);
     const instructions = typeof specialInstructions === 'string' && specialInstructions.trim()
       ? specialInstructions.trim()
       : null;
 
-    const { data: vendorLoc, error: vlError } = await db()
-      .from('vendor_locations')
-      .select('id')
-      .eq('vendor_id', menuItem.vendor_id)
-      .eq('is_active', true)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    if (vlError) throw vlError;
-    if (!vendorLoc) throw new ApiError(400, 'VENDOR_UNAVAILABLE', 'Vendor has no active locations');
+    const publishedMenuItem = await getTodaysPublishedMenuItem(db(), menuItem.vendor_id, menuItem.id);
+    if (!publishedMenuItem.locationId) throw new ApiError(400, 'VENDOR_UNAVAILABLE', 'Vendor has no active locations');
+    if (!['available', 'limited'].includes(publishedMenuItem.status)) {
+      throw new ApiError(400, 'ITEM_UNAVAILABLE', 'Menu item is not available on today’s published menu');
+    }
+    const vendorLoc = { id: publishedMenuItem.locationId };
 
     let cart = await findActiveCartForLocation(userId, menuItem.vendor_id, vendorLoc.id);
     if (!cart) {

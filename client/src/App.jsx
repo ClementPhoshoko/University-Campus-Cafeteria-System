@@ -123,6 +123,7 @@ export default function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/corporate" element={<PlaceholderPage title="Corporate Catering" />} />
           <Route path="/vendor" element={<VendorOperationsPage />} />
+          <Route path="/vendor/menus" element={<Navigate to="/vendor?view=menus" replace />} />
         </Route>
       </Route>
 

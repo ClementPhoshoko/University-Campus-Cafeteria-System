@@ -27,6 +27,10 @@ export function normalizeVendorInvitationInput(input = {}) {
   return errors.length ? { errors } : { value: { email, role } };
 }
 
+export function normalizeVendorStaffInvitationInput(input = {}) {
+  return normalizeVendorInvitationInput({ email: input.email, role: 'staff' });
+}
+
 export function normalizeVendorInvitationRegistrationInput(input = {}) {
   const fullName = typeof input.full_name === 'string' ? input.full_name.trim() : '';
   const password = typeof input.password === 'string' ? input.password : '';
@@ -43,8 +47,15 @@ function isExistingAuthUserError(error) {
 
 function handleError(res, error) {
   if (error instanceof ApiError) return sendError(res, error.status, error.code, error.message);
-  if (error?.code === 'P0001' && error.message === 'VENDOR_NOT_APPROVED') {
-    return sendError(res, 409, 'VENDOR_NOT_APPROVED', 'Approve the vendor before inviting staff');
+  if (error?.code === 'P0001') {
+    const databaseErrors = {
+      VENDOR_NOT_APPROVED: [409, 'VENDOR_NOT_APPROVED', 'Approve the vendor before inviting staff'],
+      VENDOR_MANAGER_REQUIRED: [403, 'VENDOR_MANAGER_REQUIRED', 'A vendor manager role is required to invite staff'],
+      MANAGER_ROLE_PROTECTED: [409, 'MANAGER_ROLE_PROTECTED', 'An existing vendor manager cannot be changed by a staff invitation'],
+      MANAGER_INVITATION_EXISTS: [409, 'MANAGER_INVITATION_EXISTS', 'An administrator already has a pending manager invitation for this email'],
+    };
+    const mapped = databaseErrors[error.message];
+    if (mapped) return sendError(res, ...mapped);
   }
   return sendInternalError(res, error);
 }
@@ -57,6 +68,7 @@ function invitationFailure(data) {
     ACCEPTED: [410, 'INVITATION_ALREADY_USED', 'This invitation has already been used'],
     EMAIL_MISMATCH: [403, 'INVITATION_EMAIL_MISMATCH', 'This invitation is for another email address'],
     VENDOR_UNAVAILABLE: [410, 'VENDOR_UNAVAILABLE', 'This vendor is not currently accepting invitations'],
+    MANAGER_ROLE_PROTECTED: [409, 'MANAGER_ROLE_PROTECTED', 'An existing vendor manager cannot accept a staff invitation'],
   };
   return responses[data?.code] || [409, 'INVITATION_UNAVAILABLE', 'This invitation is no longer available'];
 }
@@ -98,6 +110,56 @@ async function redeemInvitation(token, userId, email) {
   return data;
 }
 
+async function requireVendorManager(userId, vendorId) {
+  const { data, error } = await db()
+    .from('vendor_users')
+    .select('role')
+    .eq('user_id', userId)
+    .eq('vendor_id', vendorId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (error) throw error;
+  if (data?.role !== 'manager') {
+    throw new ApiError(403, 'VENDOR_MANAGER_REQUIRED', 'A vendor manager role is required to manage staff invitations');
+  }
+}
+
+async function assertStaffInviteDoesNotTargetManager(vendorId, email) {
+  const { data: profile, error: profileError } = await db()
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle();
+  if (profileError) throw profileError;
+  if (profile) {
+    const { data: membership, error: membershipError } = await db()
+      .from('vendor_users')
+      .select('role')
+      .eq('user_id', profile.id)
+      .eq('vendor_id', vendorId)
+      .maybeSingle();
+    if (membershipError) throw membershipError;
+    if (membership?.role === 'manager') {
+      throw new ApiError(409, 'MANAGER_ROLE_PROTECTED', 'An existing vendor manager cannot be changed by a staff invitation');
+    }
+  }
+
+  const { data: managerInvitation, error: invitationError } = await db()
+    .from('vendor_invitations')
+    .select('id')
+    .eq('vendor_id', vendorId)
+    .eq('email', email)
+    .eq('role', 'manager')
+    .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
+    .limit(1)
+    .maybeSingle();
+  if (invitationError) throw invitationError;
+  if (managerInvitation) {
+    throw new ApiError(409, 'MANAGER_INVITATION_EXISTS', 'An administrator already has a pending manager invitation for this email');
+  }
+}
+
 async function confirmInvitedUserEmail(token, userId) {
   const { data: invitedUsers, error: lookupError } = await db().rpc('get_invited_auth_user', {
     p_token_hash: hashToken(token),
@@ -130,78 +192,135 @@ export async function listVendorInvitations(req, res) {
   }
 }
 
+export async function listMyVendorInvitations(req, res) {
+  try {
+    const vendorId = String(req.query.vendor_id || '');
+    if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid vendor id');
+    await requireVendorManager(req.user.id, vendorId);
+    const { data, error } = await db()
+      .from('vendor_invitations')
+      .select('id, email, role, status, expires_at, created_at')
+      .eq('vendor_id', vendorId)
+      .eq('role', 'staff')
+      .order('created_at', { ascending: false })
+      .limit(30);
+    if (error) throw error;
+    return respond(req, res, { success: true, invitations: data || [] }, { cacheControl: 'private, no-store' });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+async function createInvitation(req, vendorId, { email, role }, managerStaffOnly = false) {
+  const { data: vendor, error: vendorError } = await db()
+    .from('vendors')
+    .select('name, status')
+    .eq('id', vendorId)
+    .maybeSingle();
+  if (vendorError) throw vendorError;
+  if (!vendor) throw new ApiError(404, 'VENDOR_NOT_FOUND', 'Vendor not found');
+  if (vendor.status !== 'approved') throw new ApiError(409, 'VENDOR_NOT_APPROVED', 'Approve the vendor before inviting staff');
+
+  const token = crypto.randomBytes(32).toString('base64url');
+  const tokenHash = hashToken(token);
+  const expiresAt = addSouthAfricanBusinessDays(new Date(), 3).toISOString();
+  const inviteUrl = new URL(`/vendor-invitations/${token}`, process.env.CLIENT_ORIGIN || 'http://localhost:5173').toString();
+  const invitation = { email, role, status: 'pending', expires_at: expiresAt };
+  const emailHtml = vendorInvitationEmail({
+    vendorName: vendor.name,
+    role: invitation.role,
+    inviteUrl,
+    expiresAt,
+  });
+  const rpcArgs = {
+    p_vendor_id: vendorId,
+    p_email: email,
+    p_created_by: req.user.id,
+    p_token_hash: tokenHash,
+    p_expires_at: expiresAt,
+  };
+  if (!managerStaffOnly) rpcArgs.p_role = role;
+  const { data: invitationId, error: createError } = await db().rpc(
+    managerStaffOnly ? 'create_vendor_staff_invitation' : 'create_vendor_invitation',
+    rpcArgs,
+  );
+  if (createError) throw createError;
+  invitation.id = invitationId;
+  try {
+    await sendEmail({
+      to: invitation.email,
+      subject: `Join ${vendor.name} on Merchant Munchies`,
+      html: emailHtml,
+    });
+  } catch (emailError) {
+    const { error: revokeError } = await db()
+      .from('vendor_invitations')
+      .update({ status: 'revoked' })
+      .eq('id', invitation.id)
+      .eq('status', 'pending');
+    if (revokeError) {
+      console.error('Failed to revoke undelivered vendor invitation:', revokeError);
+      console.error('Vendor invitation email delivery failed:', emailError);
+      throw new ApiError(500, 'INVITATION_CLEANUP_FAILED', 'Email delivery failed and the invitation could not be revoked. Contact support before retrying.');
+    }
+    await writeAudit(req, {
+      action: 'UPDATE',
+      tableName: 'public.vendor_invitations',
+      recordKey: invitation.id,
+      oldData: { status: 'pending' },
+      newData: { status: 'revoked' },
+      reason: 'Invitation email delivery failed',
+      category: 'access',
+    });
+    throw new ApiError(502, 'INVITATION_EMAIL_FAILED', 'The invitation could not be emailed. No active invitation was left behind; try again.');
+  }
+  return invitation;
+}
+
 export async function createVendorInvitation(req, res) {
   try {
     const { vendorId } = req.params;
     if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid vendor id');
     const parsed = normalizeVendorInvitationInput(req.body);
     if (parsed.errors) return sendError(res, 400, 'VALIDATION_ERROR', parsed.errors.join('; '));
-
-    const { data: vendor, error: vendorError } = await db()
-      .from('vendors')
-      .select('name, status')
-      .eq('id', vendorId)
-      .maybeSingle();
-    if (vendorError) throw vendorError;
-    if (!vendor) return sendError(res, 404, 'VENDOR_NOT_FOUND', 'Vendor not found');
-    if (vendor.status !== 'approved') return sendError(res, 409, 'VENDOR_NOT_APPROVED', 'Approve the vendor before inviting staff');
-
-    const token = crypto.randomBytes(32).toString('base64url');
-    const tokenHash = hashToken(token);
-    const expiresAt = addSouthAfricanBusinessDays(new Date(), 3).toISOString();
-    const inviteUrl = new URL(`/vendor-invitations/${token}`, process.env.CLIENT_ORIGIN || 'http://localhost:5173').toString();
-    const invitation = {
-      email: parsed.value.email,
-      role: parsed.value.role,
-      status: 'pending',
-      expires_at: expiresAt,
-    };
-    const emailHtml = vendorInvitationEmail({
-      vendorName: vendor.name,
-      role: invitation.role,
-      inviteUrl,
-      expiresAt,
-    });
-    const { data: invitationId, error: createError } = await db().rpc('create_vendor_invitation', {
-      p_vendor_id: vendorId,
-      p_email: parsed.value.email,
-      p_role: parsed.value.role,
-      p_created_by: req.user.id,
-      p_token_hash: tokenHash,
-      p_expires_at: expiresAt,
-    });
-    if (createError) throw createError;
-    invitation.id = invitationId;
-    try {
-      await sendEmail({
-        to: invitation.email,
-        subject: `Join ${vendor.name} on Merchant Munchies`,
-        html: emailHtml,
-      });
-    } catch (emailError) {
-      const { error: revokeError } = await db()
-        .from('vendor_invitations')
-        .update({ status: 'revoked' })
-        .eq('id', invitation.id)
-        .eq('status', 'pending');
-      if (revokeError) {
-        console.error('Failed to revoke undelivered vendor invitation:', revokeError);
-        console.error('Vendor invitation email delivery failed:', emailError);
-        throw new ApiError(500, 'INVITATION_CLEANUP_FAILED', 'Email delivery failed and the invitation could not be revoked. Contact support before retrying.');
-      }
-      await writeAudit(req, {
-        action: 'UPDATE',
-        tableName: 'public.vendor_invitations',
-        recordKey: invitation.id,
-        oldData: { status: 'pending' },
-        newData: { status: 'revoked' },
-        reason: 'Invitation email delivery failed',
-        category: 'access',
-      });
-      throw new ApiError(502, 'INVITATION_EMAIL_FAILED', 'The invitation could not be emailed. No active invitation was left behind; try again.');
-    }
-
+    const invitation = await createInvitation(req, vendorId, parsed.value);
     return respond(req, res, { success: true, invitation }, { status: 201 });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+export async function createMyVendorStaffInvitation(req, res) {
+  try {
+    const vendorId = String(req.body?.vendor_id || '');
+    if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid vendor id');
+    const parsed = normalizeVendorStaffInvitationInput(req.body);
+    if (parsed.errors) return sendError(res, 400, 'VALIDATION_ERROR', parsed.errors.join('; '));
+    await requireVendorManager(req.user.id, vendorId);
+    await assertStaffInviteDoesNotTargetManager(vendorId, parsed.value.email);
+    const invitation = await createInvitation(req, vendorId, parsed.value, true);
+    return respond(req, res, { success: true, invitation }, { status: 201 });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+export async function revokeMyVendorInvitation(req, res) {
+  try {
+    const { invitationId } = req.params;
+    if (!isUuid(invitationId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid invitation id');
+    const { data: existing, error: fetchError } = await db()
+      .from('vendor_invitations')
+      .select('vendor_id, role')
+      .eq('id', invitationId)
+      .maybeSingle();
+    if (fetchError) throw fetchError;
+    if (!existing || existing.role !== 'staff') {
+      return sendError(res, 404, 'INVITATION_NOT_FOUND', 'Staff invitation not found');
+    }
+    await requireVendorManager(req.user.id, existing.vendor_id);
+    req.params.vendorId = existing.vendor_id;
+    return revokeVendorInvitation(req, res);
   } catch (error) {
     return handleError(res, error);
   }

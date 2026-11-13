@@ -5,6 +5,7 @@ import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { writeAudit } from '../utils/audit.js';
 import { sendError, sendInternalError } from '../utils/errors.js';
 import { respond } from '../utils/http.js';
+import { isUuid } from '../validators/vendorValidators.js';
 
 const BUCKET = 'vendor-assets';
 // Base64 inflates payload ~4/3, so 7 MB binary stays under the 10 MB JSON limit.
@@ -89,5 +90,38 @@ export async function uploadAdminAsset(req, res) {
     return respond(req, res, { success: true, asset: { path, signed_url: signedUrl }, [entityType]: updated });
   } catch (err) {
     return sendInternalError(res, err);
+  }
+}
+
+export async function uploadVendorMenuItemAsset(req, res) {
+  const itemId = String(req.params.itemId || '');
+  if (!isUuid(itemId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid menu item id');
+
+  try {
+    const { data: item, error: itemError } = await supabaseAdmin
+      .from('menu_items')
+      .select('id, vendor_id')
+      .eq('id', itemId)
+      .maybeSingle();
+    if (itemError) throw itemError;
+    if (!item) return sendError(res, 404, 'MENU_ITEM_NOT_FOUND', 'Menu item not found');
+
+    const { data: membership, error: membershipError } = await supabaseAdmin
+      .from('vendor_users')
+      .select('role')
+      .eq('user_id', req.user.id)
+      .eq('vendor_id', item.vendor_id)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (membershipError) throw membershipError;
+    if (!membership) return sendError(res, 403, 'VENDOR_ACCESS_DENIED', 'You do not have access to this vendor');
+    if (membership.role !== 'manager') {
+      return sendError(res, 403, 'VENDOR_MANAGER_REQUIRED', 'A vendor manager role is required to manage menu items');
+    }
+
+    req.body = { ...req.body, entityType: 'menu_item', entityId: itemId };
+    return uploadAdminAsset(req, res);
+  } catch (error) {
+    return sendInternalError(res, error);
   }
 }

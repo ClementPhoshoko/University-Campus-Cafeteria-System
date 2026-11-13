@@ -4,6 +4,7 @@ import { respond, CACHE } from '../utils/http.js';
 import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { rankFeaturedMenuItems, rankPopularMenuItems } from '../utils/popularMenuItems.js';
 import { isUuid } from '../validators/vendorValidators.js';
+import { getTodaysPublishedMenuItem, getTodaysPublishedVendorMenu } from '../utils/vendorMenus.js';
 
 const db = () => supabaseAdmin;
 
@@ -217,53 +218,18 @@ export async function listVendorMenu(req, res) {
 
     const vendor = await assertApprovedVendor(vendorId);
 
-    const today = new Date().toISOString().slice(0, 10);
-
-    const { data: location, error: locError } = await db()
-      .from('vendor_locations')
-      .select('id')
-      .eq('vendor_id', vendorId)
-      .eq('is_active', true)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    if (locError) throw locError;
-
     let menuItems = [];
-
-    if (location) {
-      const { data: menu, error: menuError } = await db()
-        .from('menus')
-        .select('id, name')
-        .eq('vendor_location_id', location.id)
-        .eq('menu_date', today)
-        .eq('status', 'published')
-        .maybeSingle();
-      if (menuError) throw menuError;
-
-      if (menu) {
-        const { data: links, error: linkError } = await db()
-          .from('menu_menu_items')
-          .select('menu_items!inner(*), display_order')
-          .eq('menu_id', menu.id)
-          .eq('menu_items.is_active', true)
-          .in('menu_items.status', ['available', 'limited'])
-          .order('display_order');
-        if (linkError) throw linkError;
-        menuItems = (links || []).map((l) => l.menu_items);
-      }
-    }
-
-    if (!menuItems.length) {
-      const { data: items, error: itemsError } = await db()
-        .from('menu_items')
-        .select('*')
-        .eq('vendor_id', vendorId)
-        .eq('is_active', true)
+    const { menu } = await getTodaysPublishedVendorMenu(db(), vendorId);
+    if (menu) {
+      const { data: links, error: linkError } = await db()
+        .from('menu_menu_items')
+        .select('menu_items!inner(*), display_order, status')
+        .eq('menu_id', menu.id)
+        .eq('menu_items.is_active', true)
         .in('status', ['available', 'limited'])
-        .order('name');
-      if (itemsError) throw itemsError;
-      menuItems = items || [];
+        .order('display_order');
+      if (linkError) throw linkError;
+      menuItems = (links || []).map((link) => ({ ...link.menu_items, status: link.status }));
     }
 
     if (!menuItems.length) {
@@ -355,6 +321,10 @@ export async function getMenuItem(req, res) {
       .maybeSingle();
     if (itemError) throw itemError;
     if (!item) throw new ApiError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
+    const currentItem = await getTodaysPublishedMenuItem(db(), vendorId, itemId);
+    if (!['available', 'limited'].includes(currentItem.status)) {
+      throw new ApiError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
+    }
 
     const [dietaryResult, allergenResult, optionResult] = await Promise.all([
       db()
@@ -409,7 +379,7 @@ export async function getMenuItem(req, res) {
         image_url: await resolveAssetUrl(item.image_url, { size: 'hero', refresh: refreshImages }),
         base_price: item.base_price,
         prep_minutes: item.prep_minutes,
-        status: item.status,
+        status: currentItem.status,
         ingredients: item.ingredients,
         portion_description: item.portion_description,
         dietary_tags,

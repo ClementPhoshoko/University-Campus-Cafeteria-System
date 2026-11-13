@@ -2,6 +2,7 @@ import { supabaseAdmin } from '../config/supabase.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { writeAudit } from '../utils/audit.js';
 import { respond } from '../utils/http.js';
+import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { isUuid } from '../validators/vendorValidators.js';
 import {
   VENDOR_ORDER_STATUSES,
@@ -100,6 +101,85 @@ export async function listMyVendorCategories(req, res) {
     const { data, error } = await db().from('menu_categories').select('id, name, description, sort_order, is_active').eq('vendor_id', vendorId).order('sort_order').order('name');
     if (error) throw error;
     return respond(req, res, { success: true, categories: data || [] }, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
+export async function createMyVendorCategory(req, res) {
+  try {
+    const vendorId = String(req.body?.vendor_id || '');
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    const sortOrder = req.body?.sort_order === undefined ? 0 : Number(req.body.sort_order);
+    if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
+    if (!name || name.length > 80) return sendError(res, 400, 'VALIDATION_ERROR', 'Category name must be between 1 and 80 characters');
+    if (!Number.isSafeInteger(sortOrder) || sortOrder < 0) return sendError(res, 400, 'VALIDATION_ERROR', 'sort_order must be a non-negative integer');
+    await requireVendorManager(req.user.id, vendorId);
+
+    const { data, error } = await db().from('menu_categories')
+      .insert({ vendor_id: vendorId, name, sort_order: sortOrder, is_active: true })
+      .select('id, vendor_id, name, description, sort_order, is_active')
+      .single();
+    if (error) throw error;
+    await writeAudit(req, {
+      action: 'INSERT',
+      tableName: 'public.menu_categories',
+      recordKey: data.id,
+      newData: data,
+      reason: 'Vendor manager created a menu category',
+      category: 'config',
+    });
+    return respond(req, res, { success: true, category: data }, { status: 201, cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
+export async function updateMyVendorCategory(req, res) {
+  try {
+    const { categoryId } = req.params;
+    const vendorId = String(req.body?.vendor_id || '');
+    if (!isUuid(categoryId) || !isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid category_id and vendor_id are required');
+    await requireVendorManager(req.user.id, vendorId);
+
+    const { data: existing, error: existingError } = await db().from('menu_categories')
+      .select('id, vendor_id, name, sort_order, is_active')
+      .eq('id', categoryId)
+      .eq('vendor_id', vendorId)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    if (!existing) throw new ApiError(404, 'CATEGORY_NOT_FOUND', 'Menu category not found');
+
+    const patch = {};
+    if (req.body?.name !== undefined) {
+      const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+      if (!name || name.length > 80) return sendError(res, 400, 'VALIDATION_ERROR', 'Category name must be between 1 and 80 characters');
+      patch.name = name;
+    }
+    if (req.body?.is_active !== undefined) {
+      if (typeof req.body.is_active !== 'boolean') return sendError(res, 400, 'VALIDATION_ERROR', 'is_active must be a boolean');
+      patch.is_active = req.body.is_active;
+    }
+    if (req.body?.sort_order !== undefined) {
+      const sortOrder = Number(req.body.sort_order);
+      if (!Number.isSafeInteger(sortOrder) || sortOrder < 0) return sendError(res, 400, 'VALIDATION_ERROR', 'sort_order must be a non-negative integer');
+      patch.sort_order = sortOrder;
+    }
+    if (!Object.keys(patch).length) return sendError(res, 400, 'VALIDATION_ERROR', 'Provide a category name, sort order, or active status');
+
+    const { data, error } = await db().from('menu_categories')
+      .update(patch)
+      .eq('id', categoryId)
+      .eq('vendor_id', vendorId)
+      .select('id, vendor_id, name, description, sort_order, is_active')
+      .single();
+    if (error) throw error;
+    await writeAudit(req, {
+      action: 'UPDATE',
+      tableName: 'public.menu_categories',
+      recordKey: categoryId,
+      oldData: existing,
+      newData: data,
+      reason: 'Vendor manager updated a menu category',
+      category: 'config',
+    });
+    return respond(req, res, { success: true, category: data }, { cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
 }
 
@@ -260,10 +340,10 @@ export async function listMyVendorMenu(req, res) {
       : { data: [], error: null };
     if (menuError) throw menuError;
     const menuIds = (menus || []).map((menu) => menu.id);
-    const { data: items, error: itemError } = await db().from('menu_items').select('id, name, description, category_id, ingredients, portion_description, prep_minutes, base_price, currency, status, is_active, menu_categories(id, name)').eq('vendor_id', vendorId).eq('is_active', true).order('name');
+    const { data: items, error: itemError } = await db().from('menu_items').select('id, name, description, image_url, category_id, ingredients, portion_description, prep_minutes, base_price, currency, status, is_active, menu_categories(id, name)').eq('vendor_id', vendorId).eq('is_active', true).order('name');
     if (itemError) throw itemError;
     const links = menuIds.length
-      ? await db().from('menu_menu_items').select('menu_id, menu_item_id').in('menu_id', menuIds)
+      ? await db().from('menu_menu_items').select('menu_id, menu_item_id, status').in('menu_id', menuIds)
       : { data: [], error: null };
     if (links.error) throw links.error;
     const linkedItemIds = new Set((links.data || []).map((row) => row.menu_item_id));
@@ -272,10 +352,12 @@ export async function listMyVendorMenu(req, res) {
       success: true,
       date: day,
       menu: menu ? { id: menu.id, name: menu.name, vendor_location_id: menu.vendor_location_id } : null,
-      items: menu ? (items || []).filter((item) => linkedItemIds.has(item.id)).map((item) => ({
+      items: menu ? await Promise.all((items || []).filter((item) => linkedItemIds.has(item.id)).map(async (item) => ({
         ...item,
+        image_url: await resolveAssetUrl(item.image_url, { size: 'thumb' }),
         menu_id: menu.id,
-      })) : [],
+        status: links.data.find((link) => link.menu_item_id === item.id)?.status || item.status,
+      }))) : [],
     }, { cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
 }
@@ -296,12 +378,12 @@ export async function updateMyVendorAvailability(req, res) {
     if (menuError) throw menuError;
     if (!menu || menu.vendor_locations?.vendor_id !== item.vendor_id || !menu.vendor_locations?.is_active) throw new ApiError(403, 'VENDOR_MENU_ACCESS_DENIED', 'This menu does not belong to your vendor');
     if (menu.menu_date !== day || menu.status !== 'published') throw new ApiError(409, 'NO_PUBLISHED_MENU', 'This is not today’s published menu');
-    const { data: links, error: linksError } = await db().from('menu_menu_items').select('menu_id').eq('menu_item_id', itemId).eq('menu_id', menuId);
+    const { data: links, error: linksError } = await db().from('menu_menu_items').select('menu_id, status').eq('menu_item_id', itemId).eq('menu_id', menuId).maybeSingle();
     if (linksError) throw linksError;
-    if (!links?.length) throw new ApiError(404, 'MENU_ITEM_NOT_ON_TODAYS_MENU', 'This item is not on this menu');
-    const { data: updated, error } = await db().from('menu_items').update({ status, updated_at: new Date().toISOString() }).eq('id', itemId).select('id, status').single();
+    if (!links) throw new ApiError(404, 'MENU_ITEM_NOT_ON_TODAYS_MENU', 'This item is not on this menu');
+    const { data: updated, error } = await db().from('menu_menu_items').update({ status }).eq('menu_id', menuId).eq('menu_item_id', itemId).select('menu_item_id, status').single();
     if (error) throw error;
-    await writeAudit(req, { action: 'UPDATE', tableName: 'public.menu_items', recordKey: itemId, oldData: { status: item.status }, newData: { status }, reason: 'Vendor updated menu availability', category: 'config' });
-    return respond(req, res, { success: true, item: updated }, { cacheControl: 'private, no-store' });
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.menu_menu_items', recordKey: `${menuId}:${itemId}`, oldData: { status: links.status }, newData: { status }, reason: 'Vendor updated menu availability', category: 'config' });
+    return respond(req, res, { success: true, item: { id: updated.menu_item_id, status: updated.status } }, { cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
 }

@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
 import connectedAvatar from '../../assets/avatars/connected_avatar.webp';
 import notConnectedAvatar from '../../assets/avatars/not_connected_avatar.webp';
@@ -6,6 +6,7 @@ import '../../features/auth/auth.css';
 
 export default function ProtectedRoute() {
   const { user, initialized } = useAuth();
+  const location = useLocation();
 
   if (!initialized) {
     return (
@@ -22,7 +23,8 @@ export default function ProtectedRoute() {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    const returnTo = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to={`/login?returnTo=${encodeURIComponent(returnTo)}`} replace />;
   }
 
   return <Outlet />;

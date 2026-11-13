@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { IconRefresh, IconShoppingBag, IconSoup, IconClockHour4, IconAlertTriangle } from '@tabler/icons-react';
+import { Navigate, useSearchParams } from 'react-router-dom';
+import { IconRefresh, IconShoppingBag, IconSoup, IconClockHour4, IconAlertTriangle, IconCalendar, IconUsers } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
+import PrimaryButton from '../../components/PrimaryButton.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { listMyVendors, listVendorQueue, listVendorOperationsMenu, updateVendorOrderStatus, updateVendorAvailability } from '../../services/vendorApi.js';
-import { MenuItemCard, OrderCard, SummaryCard, VendorMenuItemForm, VendorSection, formatTime } from './components/VendorDashboardComponents.jsx';
-import { archiveVendorMenuItem, createVendorMenuItem, listVendorMenuCategories, updateVendorMenuItem } from '../../services/vendorApi.js';
+import { MenuItemCard, OrderCard, SummaryCard, VendorSection, formatTime } from './components/VendorDashboardComponents.jsx';
+import { MenuItemModal } from '../admin/VendorForms.jsx';
+import { archiveVendorMenuItem, createVendorMenuItem, listVendorMenuCategories, updateVendorMenuItem, uploadVendorMenuItemAsset } from '../../services/vendorApi.js';
+import VendorMenuPlanningPage from './VendorMenuPlanningPage.jsx';
+import VendorTeamManagementPage from './VendorTeamManagementPage.jsx';
 import './vendor-operations.css';
 
 const QUEUE_FILTERS = [
@@ -27,7 +32,11 @@ function isUrgent(order, now) {
 
 export default function VendorOperationsPage() {
   const { session } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const token = session?.access_token;
+  const showingMenuPlanning = searchParams.get('view') === 'menus';
+  const showingTeamManagement = searchParams.get('view') === 'team';
+  const showingManagerView = showingMenuPlanning || showingTeamManagement;
   const [vendors, setVendors] = useState([]);
   const [vendorId, setVendorId] = useState('');
   const [vendorsState, setVendorsState] = useState('loading');
@@ -125,12 +134,35 @@ export default function VendorOperationsPage() {
   }
 
   async function handleMenuItemSave(payload) {
-    setSavingEditor(true); setNotice('');
+    setSavingEditor(true); setNotice(''); setMenuError('');
+    const { image_file: imageFile, ...itemPayload } = payload;
+    const editing = editingItem && !editingItem.isNew;
+    let saved = false;
     try {
-      if (editingItem && !editingItem.isNew) await updateVendorMenuItem(editingItem.id, payload, { token });
-      else await createVendorMenuItem(vendorId, { ...payload, menu_id: menu.id }, { token });
-      await loadMenu(); setEditingItem(null); setNotice(editingItem && !editingItem.isNew ? 'Menu item updated.' : 'Menu item added to today’s published menu.');
-    } catch (error) { setNotice(error.message || 'Could not save the menu item.'); }
+      let itemId = editing ? editingItem.id : null;
+      if (editing) {
+        await updateVendorMenuItem(itemId, itemPayload, { token });
+      } else {
+        const response = await createVendorMenuItem(vendorId, { ...itemPayload, menu_id: menu.id }, { token });
+        itemId = response?.menuItem?.id;
+      }
+      saved = true;
+      if (imageFile) {
+        if (!itemId) throw new Error('The saved item could not be identified for image upload.');
+        await uploadVendorMenuItemAsset(itemId, imageFile, { token });
+      }
+      await loadMenu();
+      setEditingItem(null);
+      setNotice(editing ? 'Menu item updated.' : 'Menu item added to today’s published menu.');
+    } catch (error) {
+      if (saved) {
+        await loadMenu();
+        setEditingItem(null);
+        setMenuError(`Menu item saved, but its image could not be uploaded: ${error.message}`);
+      } else {
+        setMenuError(error.message || 'Could not save the menu item.');
+      }
+    }
     finally { setSavingEditor(false); }
   }
 
@@ -142,20 +174,48 @@ export default function VendorOperationsPage() {
     finally { setBusyItem(''); }
   }
 
+  if (showingManagerView && selectedVendor?.role !== 'manager' && vendorsState === 'ready') {
+    return <Navigate to="/vendor" replace />;
+  }
+
+  const headerActions = (vendors.length > 1 || (selectedVendor?.role === 'manager' && !showingManagerView)) && (
+    <div className="vendor-ops-header-actions">
+      {vendors.length > 1 && <label className="vendor-ops-picker">Vendor<select value={vendorId} onChange={(event) => setVendorId(event.target.value)}>{vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}</select></label>}
+      {selectedVendor?.role === 'manager' && !showingManagerView && <>
+        <PrimaryButton size="sm" icon={IconCalendar} onClick={() => setSearchParams({ view: 'menus' })}>Plan menus</PrimaryButton>
+        <PrimaryButton size="sm" icon={IconUsers} onClick={() => setSearchParams({ view: 'team' })}>Manage staff</PrimaryButton>
+      </>}
+    </div>
+  );
+
   return <PageContainer className="vendor-ops-page-container"><div className="vendor-ops-page">
-    <PageHeader eyebrow="Vendor workspace" title={selectedVendor?.name || 'Vendor operations'} subtitle="A clear view of what needs preparing and what customers can order today." actions={vendors.length > 1 ? <label className="vendor-ops-picker">Vendor<select value={vendorId} onChange={(event) => setVendorId(event.target.value)}>{vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}</select></label> : null} />
+    <PageHeader eyebrow="Vendor workspace" title={selectedVendor?.name || 'Vendor operations'} subtitle="A clear view of what needs preparing and what customers can order today." actions={headerActions} />
     {vendorsState === 'loading' && <div className="vendor-ops-loading"><Skeleton height={72} /><Skeleton height={72} /></div>}
     {vendorsState === 'error' && <div className="vendor-ops-alert" role="alert">{vendorError}</div>}
     {vendorsState === 'ready' && !vendors.length && <div className="vendor-ops-empty"><IconShoppingBag size={30} /><h3>No vendor access yet</h3><p>Your account is not assigned to a vendor. Ask an administrator to add you to the vendor team.</p></div>}
     {selectedVendor && <>
       {notice && <p className="vendor-ops-notice" role="status">{notice}</p>}
-      <div className="vendor-ops-summary">
+      {!showingManagerView && <div className="vendor-ops-summary">
         <SummaryCard label="Active orders" value={orders.length} detail="In your live queue" Icon={IconShoppingBag} />
         <SummaryCard label="Needs attention" value={urgentCount} detail="Collection within 15 minutes" Icon={IconAlertTriangle} tone={urgentCount ? 'warning' : ''} />
         <SummaryCard label="Ready to collect" value={readyCount} detail="Waiting for customer pickup" Icon={IconSoup} tone="blue" />
         <SummaryCard label="Next collection" value={nextCollection ? formatTime(nextCollection.collection_slot?.starts_at) : '—'} detail={nextCollection?.order_reference || 'No scheduled orders'} Icon={IconClockHour4} />
-      </div>
-      <div className="vendor-ops-grid">
+      </div>}
+      {showingMenuPlanning
+        ? <VendorMenuPlanningPage
+          vendorId={vendorId}
+          vendorName={selectedVendor.name}
+          onBack={() => setSearchParams({})}
+        />
+        : showingTeamManagement
+          ? <VendorTeamManagementPage
+            vendorId={vendorId}
+            vendorName={selectedVendor.name}
+            token={token}
+            onBack={() => setSearchParams({})}
+          />
+        : <>
+        <div className="vendor-ops-grid">
         <VendorSection title="Live order queue" description="Sorted by collection time · refreshes automatically" Icon={IconShoppingBag} className="vendor-ops-section--queue" action={<button className="vendor-ops-refresh" type="button" onClick={() => loadOrders()} aria-label="Refresh orders"><IconRefresh size={18} /></button>}>
           <div className="vendor-queue-filters" role="group" aria-label="Filter orders">{QUEUE_FILTERS.map((item) => <button key={item.value} type="button" className={filter === item.value ? 'is-active' : ''} aria-pressed={filter === item.value} onClick={() => setFilter(item.value)}>{item.label}{item.value === 'needs_attention' && urgentCount > 0 ? <span>{urgentCount}</span> : null}</button>)}</div>
           <div className="vendor-queue-list">
@@ -167,20 +227,21 @@ export default function VendorOperationsPage() {
             <div className="vendor-list-pagination-slot"><Pagination currentPage={safeQueuePage} totalPages={queueTotalPages} totalItems={visibleOrders.length} itemsPerPage={VENDOR_LIST_PAGE_SIZE} label="orders" onPageChange={setQueuePage} /></div>
           </div>
         </VendorSection>
-        <VendorSection title="Today’s menu" description="Manage the items customers can order today" Icon={IconSoup} className="vendor-ops-section--menu" action={selectedVendor.role === 'manager' && menu ? <button className="vendor-ops-button vendor-ops-button--small" type="button" onClick={() => setEditingItem({ isNew: true })}>Add item</button> : null}>
+        <VendorSection title="Today’s menu" description="Manage the items customers can order today" Icon={IconSoup} className="vendor-ops-section--menu" action={selectedVendor.role === 'manager' && menu ? <PrimaryButton onClick={() => setEditingItem({ isNew: true })}>Add item</PrimaryButton> : null}>
           <div className="vendor-menu-list">
             {menuState === 'loading' && <div className="vendor-ops-loading"><Skeleton height={92} /><Skeleton height={92} /></div>}
             {menuError && menuState !== 'error' && <div className="vendor-ops-inline-error" role="status">Menu refresh failed: {menuError}</div>}
             {menuState === 'error' && <div className="vendor-ops-inline-error" role="alert">{menuError}</div>}
             {menuState === 'ready' && !menu && <div className="vendor-ops-section-empty">There is no published menu for today. Ask an administrator to publish the menu before adding items.</div>}
             {menuState === 'ready' && menu && !menuItems.length && <div className="vendor-ops-section-empty">No items are on a published menu today.</div>}
-            {menuState === 'ready' && pagedMenuItems.map((item) => <div className="vendor-menu-item-wrap" key={item.id}><MenuItemCard item={item} busy={busyItem === item.id} onSave={handleAvailability} />{selectedVendor.role === 'manager' && <div className="vendor-menu-item-wrap__actions"><button type="button" onClick={() => setEditingItem(item)}>Edit details</button><button type="button" onClick={() => handleArchiveMenuItem(item)} disabled={busyItem === item.id}>Archive</button></div>}</div>)}
+            {menuState === 'ready' && pagedMenuItems.map((item) => <div className="vendor-menu-item-wrap" key={item.id}><MenuItemCard item={item} busy={busyItem === item.id} onSave={handleAvailability} />{selectedVendor.role === 'manager' && <div className="vendor-menu-item-wrap__actions"><PrimaryButton size="sm" onClick={() => setEditingItem(item)}>Edit details</PrimaryButton><PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" onClick={() => handleArchiveMenuItem(item)} disabled={busyItem === item.id}>Archive</PrimaryButton></div>}</div>)}
             <div className="vendor-list-pagination-slot"><Pagination currentPage={safeMenuPage} totalPages={menuTotalPages} totalItems={menuItems.length} itemsPerPage={VENDOR_LIST_PAGE_SIZE} label="menu items" onPageChange={setMenuPage} /></div>
-          </div>
+        </div>
         </VendorSection>
       </div>
       <p className="vendor-ops-footnote">Availability indicates whether an item can be ordered. Quantity-based stock is not enabled yet.</p>
-      {editingItem && <VendorMenuItemForm item={editingItem.isNew ? null : editingItem} categories={menuCategories} saving={savingEditor} onCancel={() => setEditingItem(null)} onSubmit={handleMenuItemSave} />}
+      {editingItem && <MenuItemModal item={editingItem.isNew ? null : editingItem} categories={menuCategories} submitting={savingEditor} usePrimaryButtons onClose={() => setEditingItem(null)} onSubmit={handleMenuItemSave} />}
+      </>}
     </>}
   </div></PageContainer>;
 }
