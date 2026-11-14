@@ -124,48 +124,6 @@ export function VendorDashboardSkeleton() {
   </div>;
 }
 
-export function VendorMenuPlanningSkeleton() {
-  return <div className="vendor-menu-planning__loading" role="status" aria-label="Loading menu plan">
-    <section className="vendor-menu-planning__controls" aria-hidden="true">
-      <div className="vendor-menu-planning__field">
-        <LoadingLine width="54px" height={11} />
-        <div className="vendor-menu-planning__input-wrap"><Skeleton className="vendor-loading-input home_card-skeleton-shimmer" /></div>
-      </div>
-      <div className="vendor-menu-planning__field">
-        <LoadingLine width="60px" height={11} />
-        <div className="vendor-menu-planning__input-wrap"><Skeleton className="vendor-loading-input home_card-skeleton-shimmer" /></div>
-      </div>
-    </section>
-
-    <div className="vendor-menu-planning__loading-layout">
-      <section className="vendor-menu-planning__card" aria-hidden="true">
-        <header className="vendor-menu-planning__card-header">
-          <Skeleton className="vendor-menu-planning__date-icon home_card-skeleton-shimmer" />
-          <div><LoadingLine width="176px" height={12} /><LoadingLine width="148px" height={16} /></div>
-          <Skeleton className="vendor-loading-status home_card-skeleton-shimmer" />
-        </header>
-        <div className="vendor-menu-planning__empty-action">
-          <div className="vendor-menu-planning__empty-copy"><LoadingLine width="158px" height={13} /><LoadingLine width="min(100%, 340px)" height={11} /></div>
-          <Skeleton className="vendor-loading-button home_card-skeleton-shimmer" />
-        </div>
-      </section>
-
-      <section className="vendor-menu-planning__catalog" aria-hidden="true">
-        <header className="vendor-menu-planning__catalog-heading">
-          <div><LoadingLine width="116px" height={11} /><LoadingLine width="104px" height={16} /><LoadingLine width="min(100%, 340px)" height={11} /></div>
-        </header>
-        {[1, 2].map((row) => <div className="vendor-menu-planning__accordion" key={row}>
-          <div className="vendor-menu-planning__accordion-trigger">
-            <Skeleton className="vendor-menu-planning__accordion-icon home_card-skeleton-shimmer" />
-            <div className="vendor-menu-planning__accordion-copy"><LoadingLine width={row === 1 ? '80px' : '90px'} height={13} /><LoadingLine width="min(100%, 250px)" height={10} /></div>
-            <Skeleton className="vendor-loading-chevron home_card-skeleton-shimmer" />
-          </div>
-        </div>)}
-      </section>
-    </div>
-  </div>;
-}
-
 export function VendorTeamInvitationsSkeleton() {
   return <div className="vendor-team__loading" role="status" aria-label="Loading staff invitations">
     {Array.from({ length: 3 }, (_, index) => <article className="vendor-team__invitation" key={index} aria-hidden="true">

@@ -4,6 +4,7 @@ import { writeAudit } from '../utils/audit.js';
 import { respond } from '../utils/http.js';
 import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { isUuid } from '../validators/vendorValidators.js';
+import { buildPagination, parsePagination } from '../utils/pagination.js';
 import {
   VENDOR_ORDER_STATUSES,
   collectionCodeMatches,
@@ -97,10 +98,49 @@ export async function listMyVendorCategories(req, res) {
   try {
     const vendorId = String(req.query.vendor_id || '');
     if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
-    await membership(req.user.id, vendorId);
-    const { data, error } = await db().from('menu_categories').select('id, name, description, sort_order, is_active').eq('vendor_id', vendorId).order('sort_order').order('name');
+    const pagination = req.query.page !== undefined || req.query.limit !== undefined
+      ? parsePagination(req.query, { maxLimit: 50, defaultLimit: 8 })
+      : null;
+    if (pagination) await requireVendorManager(req.user.id, vendorId);
+    else await membership(req.user.id, vendorId);
+    let query = db().from('menu_categories')
+      .select('id, name, description, sort_order, is_active', pagination ? { count: 'exact' } : {})
+      .eq('vendor_id', vendorId)
+      .order('sort_order')
+      .order('name');
+    if (pagination) query = query.eq('is_active', true).range(pagination.from, pagination.to);
+    const { data, error, count } = await query;
     if (error) throw error;
-    return respond(req, res, { success: true, categories: data || [] }, { cacheControl: 'private, no-store' });
+    return respond(req, res, {
+      success: true,
+      categories: data || [],
+      ...(pagination ? { pagination: buildPagination(count, pagination.pageNum, pagination.limitNum) } : {}),
+    }, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
+export async function listMyVendorCatalogItems(req, res) {
+  try {
+    const vendorId = String(req.query.vendor_id || '');
+    if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
+    await requireVendorManager(req.user.id, vendorId);
+    const { pageNum, limitNum, from, to } = parsePagination(req.query, { maxLimit: 50, defaultLimit: 8 });
+    const { data, count, error } = await db().from('menu_items')
+      .select(MENU_ITEM_SELECT, { count: 'exact' })
+      .eq('vendor_id', vendorId)
+      .eq('is_active', true)
+      .order('name')
+      .range(from, to);
+    if (error) throw error;
+    const catalog = await Promise.all((data || []).map(async (item) => ({
+      ...item,
+      image_url: await resolveAssetUrl(item.image_url, { size: 'thumb' }),
+    })));
+    return respond(req, res, {
+      success: true,
+      catalog,
+      pagination: buildPagination(count, pageNum, limitNum),
+    }, { cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
 }
 
@@ -183,6 +223,36 @@ export async function updateMyVendorCategory(req, res) {
   } catch (error) { return handleError(res, error); }
 }
 
+export async function deleteMyVendorCategory(req, res) {
+  try {
+    const { categoryId } = req.params;
+    const vendorId = String(req.query.vendor_id || '');
+    if (!isUuid(categoryId) || !isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid category_id and vendor_id are required');
+    await requireVendorManager(req.user.id, vendorId);
+    const { data: existing, error: existingError } = await db().from('menu_categories')
+      .select('id, vendor_id, name')
+      .eq('id', categoryId)
+      .eq('vendor_id', vendorId)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    if (!existing) throw new ApiError(404, 'CATEGORY_NOT_FOUND', 'Menu category not found');
+    const { error } = await db().from('menu_categories')
+      .delete()
+      .eq('id', categoryId)
+      .eq('vendor_id', vendorId);
+    if (error) throw error;
+    await writeAudit(req, {
+      action: 'DELETE',
+      tableName: 'public.menu_categories',
+      recordKey: categoryId,
+      oldData: existing,
+      reason: 'Vendor manager deleted a menu category',
+      category: 'config',
+    });
+    return respond(req, res, { success: true, categoryId }, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
 export async function createMyVendorMenuItem(req, res) {
   try {
     const vendorId = String(req.body?.vendor_id || '');
@@ -205,6 +275,35 @@ export async function createMyVendorMenuItem(req, res) {
       throw linkError;
     }
     await writeAudit(req, { action: 'INSERT', tableName: 'public.menu_items', recordKey: data.id, newData: { vendor_id: vendorId, name: data.name, base_price: data.base_price, status: data.status }, reason: 'Vendor manager created menu item', category: 'config' });
+    return respond(req, res, { success: true, menuItem: data }, { status: 201, cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
+export async function createMyVendorCatalogItem(req, res) {
+  try {
+    const vendorId = String(req.body?.vendor_id || '');
+    if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
+    await requireVendorManager(req.user.id, vendorId);
+    const parsed = validateMenuItem(req.body || {});
+    if (parsed.errors) return sendError(res, 400, 'VALIDATION_ERROR', parsed.errors.join('; '));
+    await validateVendorCategory(vendorId, parsed.value.category_id);
+    const payload = {
+      ...parsed.value,
+      vendor_id: vendorId,
+      currency: 'ZAR',
+      is_active: true,
+      created_by: req.user.id,
+    };
+    const { data, error } = await db().from('menu_items').insert(payload).select(MENU_ITEM_SELECT).single();
+    if (error) throw error;
+    await writeAudit(req, {
+      action: 'INSERT',
+      tableName: 'public.menu_items',
+      recordKey: data.id,
+      newData: { vendor_id: vendorId, name: data.name, base_price: data.base_price },
+      reason: 'Vendor manager created a reusable menu item',
+      category: 'config',
+    });
     return respond(req, res, { success: true, menuItem: data }, { status: 201, cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
 }

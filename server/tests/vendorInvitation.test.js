@@ -93,11 +93,14 @@ test('vendor menu item image upload is registered through the vendor route', () 
   assert.ok(routes.some((route) => route.path === '/vendor/menu/items/:itemId/image' && route.methods.post));
 });
 
-test('menu planning catalogue endpoints are registered as separate paginated requests', () => {
+test('vendor menu management exposes paginated category and reusable item endpoints', () => {
   const routes = vendorOperationsRoutes.default.stack
     .filter((layer) => layer.route)
     .map((layer) => ({ path: layer.route.path, methods: layer.route.methods }));
 
-  assert.ok(routes.some((route) => route.path === '/vendor/menus/categories' && route.methods.get));
-  assert.ok(routes.some((route) => route.path === '/vendor/menus/catalog' && route.methods.get));
+  assert.ok(routes.some((route) => route.path === '/vendor/menu/categories' && route.methods.get));
+  assert.ok(routes.some((route) => route.path === '/vendor/menu/categories/:categoryId' && route.methods.delete));
+  assert.ok(routes.some((route) => route.path === '/vendor/menu/catalog-items' && route.methods.get));
+  assert.ok(routes.some((route) => route.path === '/vendor/menu/catalog-items' && route.methods.post));
+  assert.equal(routes.some((route) => route.path === '/vendor/menus'), false);
 });

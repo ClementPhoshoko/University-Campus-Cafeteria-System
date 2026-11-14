@@ -409,7 +409,7 @@ export function VendorLocationModal({ location, onClose, onSubmit, submitting = 
 
 export { HoursFields };
 
-export function MenuItemModal({ item, categories, onClose, onSubmit, submitting = false, allowImageUpload = true, usePrimaryButtons = false }) {
+export function MenuItemModal({ item, categories, onClose, onSubmit, submitting = false, allowImageUpload = true, usePrimaryButtons = false, title, subtitle, submitLabel }) {
   const [form, setForm] = useState({
     name: item?.name || '',
     description: item?.description || '',
@@ -465,7 +465,7 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
       <div className="admin-modal__overlay" onClick={onClose} />
       <div className="admin-modal__card admin-modal__card--lg" onClick={(e) => e.stopPropagation()}>
         <header className="admin-modal__head">
-          <div><h3 className="admin-modal__title">{editing ? 'Edit menu item' : 'Add menu item'}</h3><p className="admin-modal__sub">{editing ? 'Update the item details and availability.' : 'Add a new item to this vendor\'s menu.'}</p></div>
+          <div><h3 className="admin-modal__title">{title || (editing ? 'Edit menu item' : 'Add menu item')}</h3><p className="admin-modal__sub">{subtitle || (editing ? 'Update the item details and availability.' : 'Add a new item to this vendor\'s menu.')}</p></div>
         </header>
         <div className={`admin-modal__body${allowImageUpload ? '' : ' admin-modal__body--single'}`}>
           <div className="admin-modal__left">
@@ -504,8 +504,8 @@ export function MenuItemModal({ item, categories, onClose, onSubmit, submitting 
         <footer className="admin-modal__foot">
           {usePrimaryButtons ? <PrimaryButton onClick={onClose}>Cancel</PrimaryButton> : <button type="button" className="admin-action" onClick={onClose}>Cancel</button>}
           {usePrimaryButtons
-            ? <PrimaryButton disabled={submitting || !form.name.trim() || !form.base_price} onClick={submit}>{submitting ? 'Saving…' : editing ? 'Save item' : 'Add item'}</PrimaryButton>
-            : <button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.name.trim() || !form.base_price} onClick={submit}>{submitting ? 'Saving…' : editing ? 'Save item' : 'Add item'}</button>}
+            ? <PrimaryButton disabled={submitting || !form.name.trim() || !form.base_price} onClick={submit}>{submitting ? 'Saving…' : submitLabel || (editing ? 'Save item' : 'Add item')}</PrimaryButton>
+            : <button type="button" className="admin-action admin-action--approve" disabled={submitting || !form.name.trim() || !form.base_price} onClick={submit}>{submitting ? 'Saving…' : submitLabel || (editing ? 'Save item' : 'Add item')}</button>}
         </footer>
         <ModalProgressOverlay active={submitting} messages={editing ? ['Updating menu item...', 'Saving your changes...', 'Almost there...'] : ['Adding menu item...', 'Updating the menu...', 'Almost there...']} />
       </div>

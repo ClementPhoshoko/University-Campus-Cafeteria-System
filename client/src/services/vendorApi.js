@@ -59,64 +59,12 @@ export function listVendorOperationsMenu(vendorId, { token, signal, locationId }
   return apiRequest('/vendor/menu', { token, signal, query: { vendor_id: vendorId, location_id: locationId }, cache: 'no-store' });
 }
 
-export function listVendorMenuPlans(vendorId, { token, from, to, locationId, selectedDate, signal } = {}) {
-  return apiRequest('/vendor/menus', {
-    token,
-    signal,
-    query: { vendor_id: vendorId, from, to, location_id: locationId, selected_date: selectedDate },
-    cache: 'no-store',
-  });
-}
-
-export function listVendorMenuPlanCategories(vendorId, { token, page = 1, limit = 8, signal } = {}) {
-  return apiRequest('/vendor/menus/categories', {
-    token,
-    signal,
-    query: { vendor_id: vendorId, page, limit },
-    cache: 'no-store',
-  });
-}
-
 export function listVendorMenuCatalog(vendorId, { token, page = 1, limit = 8, signal } = {}) {
-  return apiRequest('/vendor/menus/catalog', {
+  return apiRequest('/vendor/menu/catalog-items', {
     token,
     signal,
     query: { vendor_id: vendorId, page, limit },
     cache: 'no-store',
-  });
-}
-
-export function createVendorMenuPlan(payload, { token, signal } = {}) {
-  return apiRequest('/vendor/menus', { method: 'POST', token, signal, body: payload });
-}
-
-export function updateVendorMenuPlan(menuId, payload, { token, signal } = {}) {
-  return apiRequest(`/vendor/menus/${menuId}`, { method: 'PATCH', token, signal, body: payload });
-}
-
-export function copyVendorMenuPlan(menuId, payload, { token, signal } = {}) {
-  return apiRequest(`/vendor/menus/${menuId}/copy`, { method: 'POST', token, signal, body: payload });
-}
-
-export function addItemToVendorMenu(menuId, menuItemId, { token, signal } = {}) {
-  return apiRequest(`/vendor/menus/${menuId}/items`, {
-    method: 'POST',
-    token,
-    signal,
-    body: { menu_item_id: menuItemId },
-  });
-}
-
-export function removeItemFromVendorMenu(menuId, itemId, { token, signal } = {}) {
-  return apiRequest(`/vendor/menus/${menuId}/items/${itemId}`, { method: 'DELETE', token, signal });
-}
-
-export function updateVendorMenuItemStatus(menuId, itemId, status, { token, signal } = {}) {
-  return apiRequest(`/vendor/menus/${menuId}/items/${itemId}`, {
-    method: 'PATCH',
-    token,
-    signal,
-    body: { status },
   });
 }
 
@@ -133,8 +81,13 @@ export function updateVendorAvailability(itemId, payload, { token, signal } = {}
   return apiRequest(`/vendor/menu/items/${itemId}/availability`, { method: 'PATCH', token, signal, body: payload });
 }
 
-export function listVendorMenuCategories(vendorId, { token, signal } = {}) {
-  return apiRequest('/vendor/menu/categories', { token, signal, query: { vendor_id: vendorId }, cache: 'no-store' });
+export function listVendorMenuCategories(vendorId, { token, page, limit, signal } = {}) {
+  return apiRequest('/vendor/menu/categories', {
+    token,
+    signal,
+    query: { vendor_id: vendorId, page, limit },
+    cache: 'no-store',
+  });
 }
 
 export function createVendorMenuCategory(vendorId, payload, { token, signal } = {}) {
@@ -152,6 +105,15 @@ export function updateVendorMenuCategory(vendorId, categoryId, payload, { token,
     token,
     signal,
     body: { ...payload, vendor_id: vendorId },
+  });
+}
+
+export function deleteVendorMenuCategory(vendorId, categoryId, { token, signal } = {}) {
+  return apiRequest(`/vendor/menu/categories/${categoryId}`, {
+    method: 'DELETE',
+    token,
+    signal,
+    query: { vendor_id: vendorId },
   });
 }
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
-import { IconRefresh, IconShoppingBag, IconSoup, IconClockHour4, IconAlertTriangle, IconCalendar, IconUsers } from '@tabler/icons-react';
+import { IconRefresh, IconShoppingBag, IconSoup, IconClockHour4, IconAlertTriangle, IconList, IconUsers } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
@@ -10,7 +10,7 @@ import { listMyVendors, listVendorQueue, listVendorOperationsMenu, updateVendorO
 import { MenuItemCard, OrderCard, SummaryCard, VendorSection, formatTime } from './components/VendorDashboardComponents.jsx';
 import { MenuItemModal } from '../admin/VendorForms.jsx';
 import { archiveVendorMenuItem, createVendorMenuItem, listVendorMenuCategories, updateVendorMenuItem, uploadVendorMenuItemAsset } from '../../services/vendorApi.js';
-import VendorMenuPlanningPage from './VendorMenuPlanningPage.jsx';
+import VendorMenuManagementPage from './VendorMenuManagementPage.jsx';
 import VendorTeamManagementPage from './VendorTeamManagementPage.jsx';
 import { VendorDashboardSkeleton, VendorMenuItemsSkeleton, VendorQueueSkeleton, VendorSummarySkeleton } from './VendorLoadingSkeletons.jsx';
 import './vendor-operations.css';
@@ -34,9 +34,9 @@ export default function VendorOperationsPage() {
   const { session } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const token = session?.access_token;
-  const showingMenuPlanning = searchParams.get('view') === 'menus';
+  const showingMenuManagement = searchParams.get('view') === 'menus';
   const showingTeamManagement = searchParams.get('view') === 'team';
-  const showingManagerView = showingMenuPlanning || showingTeamManagement;
+  const showingManagerView = showingMenuManagement || showingTeamManagement;
   const [vendors, setVendors] = useState([]);
   const [vendorId, setVendorId] = useState('');
   const [vendorsState, setVendorsState] = useState('loading');
@@ -91,12 +91,12 @@ export default function VendorOperationsPage() {
   }, [token, vendorId]);
 
   useEffect(() => {
-    if (!vendorId) return undefined;
+    if (!vendorId || showingManagerView) return undefined;
     const controller = new AbortController(); setOrdersState('loading'); setMenuState('loading');
     loadOrders(controller.signal); loadMenu(controller.signal);
     const refresh = window.setInterval(() => { if (document.visibilityState === 'visible') loadOrders(); }, 20_000);
     return () => { controller.abort(); window.clearInterval(refresh); };
-  }, [vendorId, loadOrders, loadMenu]);
+  }, [vendorId, loadOrders, loadMenu, showingManagerView]);
 
   const selectedVendor = useMemo(() => vendors.find((vendor) => vendor.id === vendorId), [vendors, vendorId]);
   const visibleOrders = useMemo(() => orders.slice().sort((a, b) => collectionTime(a) - collectionTime(b)).filter((order) => {
@@ -179,9 +179,9 @@ export default function VendorOperationsPage() {
   }
 
   if (vendorsState === 'loading') {
-    if (showingMenuPlanning) {
+    if (showingMenuManagement) {
       return <PageContainer className="vendor-ops-page-container"><div className="vendor-ops-page">
-        <VendorMenuPlanningPage vendorId="" vendorName="" onBack={() => setSearchParams({})} />
+        <VendorMenuManagementPage vendorId="" vendorName="" onBack={() => setSearchParams({})} />
       </div></PageContainer>;
     }
     return <PageContainer className="vendor-ops-page-container"><div className="vendor-ops-page">
@@ -193,7 +193,7 @@ export default function VendorOperationsPage() {
     <div className="vendor-ops-header-actions">
       {vendors.length > 1 && <label className="vendor-ops-picker">Vendor<select value={vendorId} onChange={(event) => setVendorId(event.target.value)}>{vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}</select></label>}
       {selectedVendor?.role === 'manager' && !showingManagerView && <>
-        <PrimaryButton size="sm" icon={IconCalendar} onClick={() => setSearchParams({ view: 'menus' })}>Plan menus</PrimaryButton>
+        <PrimaryButton size="sm" icon={IconList} onClick={() => setSearchParams({ view: 'menus' })}>Manage menu</PrimaryButton>
         <PrimaryButton size="sm" icon={IconUsers} onClick={() => setSearchParams({ view: 'team' })}>Manage staff</PrimaryButton>
       </>}
     </div>
@@ -212,8 +212,8 @@ export default function VendorOperationsPage() {
         <SummaryCard label="Ready to collect" value={readyCount} detail="Waiting for customer pickup" Icon={IconSoup} tone="blue" />
         <SummaryCard label="Next collection" value={nextCollection ? formatTime(nextCollection.collection_slot?.starts_at) : '—'} detail={nextCollection?.order_reference || 'No scheduled orders'} Icon={IconClockHour4} />
       </div>}
-      {showingMenuPlanning
-        ? <VendorMenuPlanningPage
+      {showingMenuManagement
+        ? <VendorMenuManagementPage
           vendorId={vendorId}
           vendorName={selectedVendor.name}
           onBack={() => setSearchParams({})}

@@ -23,8 +23,11 @@ import {
   listMyVendorMenu,
   updateMyVendorAvailability,
   listMyVendorCategories,
+  listMyVendorCatalogItems,
   createMyVendorCategory,
   updateMyVendorCategory,
+  deleteMyVendorCategory,
+  createMyVendorCatalogItem,
   createMyVendorMenuItem,
   updateMyVendorMenuItem,
   deactivateMyVendorMenuItem,
@@ -34,18 +37,6 @@ import {
   listMyVendorInvitations,
   revokeMyVendorInvitation,
 } from '../controllers/vendorInvitationController.js';
-import {
-  listVendorMenuPlans,
-  listVendorMenuPlanCategories,
-  listVendorMenuCatalog,
-  createVendorMenuPlan,
-  createVendorCatalogItem,
-  updateVendorMenuPlan,
-  addVendorMenuItem,
-  removeVendorMenuItem,
-  updateVendorMenuItemStatus,
-  copyVendorMenuPlan,
-} from '../controllers/vendorMenuPlanningController.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { uploadVendorMenuItemAsset } from '../controllers/assetController.js';
 
@@ -70,16 +61,9 @@ vendorRouter.get('/vendor/menu', listMyVendorMenu);
 vendorRouter.get('/vendor/menu/categories', listMyVendorCategories);
 vendorRouter.post('/vendor/menu/categories', vendorMutations, createMyVendorCategory);
 vendorRouter.patch('/vendor/menu/categories/:categoryId', vendorMutations, updateMyVendorCategory);
-vendorRouter.get('/vendor/menus/categories', listVendorMenuPlanCategories);
-vendorRouter.get('/vendor/menus/catalog', listVendorMenuCatalog);
-vendorRouter.get('/vendor/menus', listVendorMenuPlans);
-vendorRouter.post('/vendor/menus', vendorMutations, createVendorMenuPlan);
-vendorRouter.post('/vendor/menus/:menuId/copy', vendorMutations, copyVendorMenuPlan);
-vendorRouter.patch('/vendor/menus/:menuId', vendorMutations, updateVendorMenuPlan);
-vendorRouter.post('/vendor/menus/:menuId/items', vendorMutations, addVendorMenuItem);
-vendorRouter.patch('/vendor/menus/:menuId/items/:itemId', vendorMutations, updateVendorMenuItemStatus);
-vendorRouter.delete('/vendor/menus/:menuId/items/:itemId', vendorMutations, removeVendorMenuItem);
-vendorRouter.post('/vendor/menu/catalog-items', vendorMutations, createVendorCatalogItem);
+vendorRouter.delete('/vendor/menu/categories/:categoryId', vendorMutations, deleteMyVendorCategory);
+vendorRouter.get('/vendor/menu/catalog-items', listMyVendorCatalogItems);
+vendorRouter.post('/vendor/menu/catalog-items', vendorMutations, createMyVendorCatalogItem);
 vendorRouter.post('/vendor/menu/items', vendorMutations, createMyVendorMenuItem);
 vendorRouter.post('/vendor/menu/items/:itemId/image', vendorMutations, uploadVendorMenuItemAsset);
 vendorRouter.patch('/vendor/menu/items/:itemId', vendorMutations, updateMyVendorMenuItem);
