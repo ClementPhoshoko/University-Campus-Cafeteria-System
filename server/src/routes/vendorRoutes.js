@@ -24,6 +24,7 @@ import {
   updateMyVendorAvailability,
   listMyVendorCategories,
   listMyVendorCatalogItems,
+  listMyVendorMenuSummary,
   createMyVendorCategory,
   updateMyVendorCategory,
   deleteMyVendorCategory,
@@ -58,6 +59,7 @@ vendorRouter.delete('/vendor/invitations/:invitationId', vendorMutations, revoke
 vendorRouter.get('/vendor/orders', listMyVendorOrders);
 vendorRouter.patch('/vendor/orders/:orderId/status', vendorMutations, updateMyVendorOrderStatus);
 vendorRouter.get('/vendor/menu', listMyVendorMenu);
+vendorRouter.get('/vendor/menu/summary', listMyVendorMenuSummary);
 vendorRouter.get('/vendor/menu/categories', listMyVendorCategories);
 vendorRouter.post('/vendor/menu/categories', vendorMutations, createMyVendorCategory);
 vendorRouter.patch('/vendor/menu/categories/:categoryId', vendorMutations, updateMyVendorCategory);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { IconArrowLeft, IconCategory, IconList, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconArrowLeft, IconCategory, IconChevronDown, IconChevronRight, IconList, IconPlus, IconTrash } from '@tabler/icons-react';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
@@ -15,6 +15,7 @@ import {
   updateVendorMenuItem,
   uploadVendorMenuItemAsset,
 } from '../../services/vendorApi.js';
+import { useVendorMenuSummary } from '../../hooks/useVendorMenuSummary.js';
 import { formatMoney } from './components/VendorDashboardComponents.jsx';
 import { MenuItemModal, CategoryModal } from '../admin/VendorForms.jsx';
 import './vendor-menu-management.css';
@@ -51,6 +52,11 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
   const [editingItem, setEditingItem] = useState(null);
   const [showNewItem, setShowNewItem] = useState(false);
   const [formCategories, setFormCategories] = useState([]);
+  const [categoriesExpanded, setCategoriesExpanded] = useState(false);
+  const [itemsExpanded, setItemsExpanded] = useState(false);
+  const [categoriesOpened, setCategoriesOpened] = useState(false);
+  const [itemsOpened, setItemsOpened] = useState(false);
+  const { counts, loading: summaryLoading, error: summaryError, refresh: refreshSummary } = useVendorMenuSummary(vendorId, { token });
 
   const loadCategories = useCallback(async (page, signal) => {
     if (!vendorId) return;
@@ -91,18 +97,18 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
   }, [token, vendorId]);
 
   useEffect(() => {
-    if (!vendorId) return undefined;
+    if (!vendorId || !categoriesExpanded) return undefined;
     const controller = new AbortController();
     loadCategories(categoriesPage, controller.signal);
     return () => controller.abort();
-  }, [categoriesPage, loadCategories, vendorId]);
+  }, [categoriesExpanded, categoriesPage, loadCategories, vendorId]);
 
   useEffect(() => {
-    if (!vendorId) return undefined;
+    if (!vendorId || !itemsExpanded) return undefined;
     const controller = new AbortController();
     loadItems(itemsPage, controller.signal);
     return () => controller.abort();
-  }, [itemsPage, loadItems, vendorId]);
+  }, [itemsExpanded, itemsPage, loadItems, vendorId]);
 
   async function loadFormCategories() {
     const first = await listVendorMenuCategories(vendorId, { token, page: 1, limit: 50 });
@@ -149,6 +155,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
       const page = editingItem ? itemsPage : 1;
       if (page !== itemsPage) setItemsPage(page);
       else await loadItems(page);
+      await refreshSummary();
       setEditingItem(null);
       setShowNewItem(false);
       setNotice(editingItem ? 'Menu item updated.' : 'Menu item added to the vendor catalogue.');
@@ -184,6 +191,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
       if (page !== categoriesPage) setCategoriesPage(page);
       else await loadCategories(page);
       if (editingCategory) await loadItems(itemsPage);
+      await refreshSummary();
       setEditingCategory(null);
       setShowNewCategory(false);
       setNotice(editingCategory ? 'Category updated.' : 'Category added.');
@@ -203,6 +211,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
       await deleteVendorMenuCategory(vendorId, category.id, { token });
       await loadCategories(categoriesPage);
       await loadItems(itemsPage);
+      await refreshSummary();
       setNotice(`${category.name} deleted.`);
     } catch (error) {
       setPageError(error.message || 'Could not delete this category.');
@@ -219,6 +228,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
     try {
       await archiveVendorMenuItem(item.id, { token });
       await loadItems(itemsPage);
+      await refreshSummary();
       setNotice(`${item.name} archived.`);
     } catch (error) {
       setPageError(error.message || 'Could not archive this menu item.');
@@ -227,8 +237,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
     }
   }
 
-  const initialLoading = categoriesState === 'loading' && itemsState === 'loading'
-    && !categories.length && !items.length;
+  const initialLoading = summaryLoading && !categories.length && !items.length;
 
   return <div className="vendor-menu-management">
     <header className="vendor-menu-management__heading">
@@ -245,55 +254,85 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
     {initialLoading ? <PageSkeleton /> : <>
       <section className="vendor-menu-management__section">
         <header className="vendor-menu-management__section-heading">
-          <div className="vendor-menu-management__section-title">
-            <span><IconCategory size={19} /></span>
-            <div><h3>Categories</h3><p>Organize your items so customers can browse them easily.</p></div>
-          </div>
-          <PrimaryButton size="sm" icon={IconPlus} disabled={busy} onClick={() => setShowNewCategory(true)}>Add category</PrimaryButton>
+          <button type="button" className="vendor-menu-management__accordion-toggle" aria-expanded={categoriesExpanded} onClick={() => { setCategoriesOpened(true); setCategoriesExpanded((current) => !current); }}>
+            <div className="vendor-menu-management__section-title">
+              <span><IconCategory size={19} /></span>
+              <div><h3>Categories</h3><p>Organize your items so customers can browse them easily.</p></div>
+            </div>
+            <div className="vendor-menu-management__count-chip" aria-label={`${counts.active_categories} active categories`}>
+              <span>{summaryLoading ? '…' : counts.active_categories}</span>
+              {categoriesExpanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+            </div>
+          </button>
         </header>
-        {categoriesState === 'error' && <p className="vendor-menu-management__inline-error" role="alert">{categoriesError} <button type="button" onClick={() => loadCategories(categoriesPage)}>Retry</button></p>}
-        {categoriesState === 'loading' && <PageSkeleton />}
-        {categoriesState === 'ready' && !categories.length && <p className="vendor-menu-management__empty">No categories yet. Add one to organize your menu items.</p>}
-        {categoriesState === 'ready' && categories.length > 0 && <>
-          <div className="vendor-menu-management__rows">
-            {categories.map((category) => <article className="vendor-menu-management__row" key={category.id}>
-              <div><strong>{category.name}</strong></div>
-              <div className="vendor-menu-management__actions">
-                <PrimaryButton size="sm" disabled={busy} onClick={() => setEditingCategory(category)}>Edit</PrimaryButton>
-                <PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" disabled={busy} onClick={() => deleteCategory(category)}><IconTrash size={15} /> Delete</PrimaryButton>
-              </div>
-            </article>)}
+        {summaryError && !categoriesExpanded && <p className="vendor-menu-management__inline-error" role="alert">{summaryError}</p>}
+        <div className={`vendor-menu-management__accordion-panel${categoriesExpanded ? ' is-open' : ''}`} aria-hidden={!categoriesExpanded} inert={!categoriesExpanded}>
+          <div className="vendor-menu-management__accordion-content">
+            {categoriesOpened && <>
+          <div className="vendor-menu-management__panel-actions">
+            <PrimaryButton size="sm" icon={IconPlus} disabled={busy} onClick={() => setShowNewCategory(true)}>Add category</PrimaryButton>
           </div>
-          <Pagination currentPage={categoriesPagination.page} totalPages={categoriesPagination.totalPages} totalItems={categoriesPagination.total} itemsPerPage={categoriesPagination.limit} label="categories" onPageChange={setCategoriesPage} />
-        </>}
+          {categoriesState === 'error' && <p className="vendor-menu-management__inline-error" role="alert">{categoriesError} <button type="button" onClick={() => loadCategories(categoriesPage)}>Retry</button></p>}
+          {categoriesState === 'loading' && <PageSkeleton />}
+          {categoriesState === 'ready' && !categories.length && <p className="vendor-menu-management__empty">No categories yet. Add one to organize your menu items.</p>}
+          {categoriesState === 'ready' && categories.length > 0 && <>
+            <div className="vendor-menu-management__rows">
+              {categories.map((category) => <article className="vendor-menu-management__row" key={category.id}>
+                <div><strong>{category.name}</strong></div>
+                <div className="vendor-menu-management__actions">
+                  <PrimaryButton size="sm" disabled={busy} onClick={() => setEditingCategory(category)}>Edit</PrimaryButton>
+                  <PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" disabled={busy} onClick={() => deleteCategory(category)}><IconTrash size={15} /> Delete</PrimaryButton>
+                </div>
+              </article>)}
+            </div>
+            <Pagination currentPage={categoriesPagination.page} totalPages={categoriesPagination.totalPages} totalItems={categoriesPagination.total} itemsPerPage={categoriesPagination.limit} label="categories" onPageChange={setCategoriesPage} />
+          </>}
+            </>}
+          </div>
+        </div>
       </section>
 
       <section className="vendor-menu-management__section">
         <header className="vendor-menu-management__section-heading">
-          <div className="vendor-menu-management__section-title">
-            <span><IconList size={19} /></span>
-            <div><h3>Menu items</h3><p>Add and maintain the reusable items belonging to this vendor.</p></div>
-          </div>
-          <PrimaryButton size="sm" icon={IconPlus} disabled={busy} onClick={() => openItemModal()}>Add item</PrimaryButton>
+          <button type="button" className="vendor-menu-management__accordion-toggle" aria-expanded={itemsExpanded} onClick={() => { setItemsOpened(true); setItemsExpanded((current) => !current); }}>
+            <div className="vendor-menu-management__section-title">
+              <span><IconList size={19} /></span>
+              <div><h3>Menu items</h3><p>Add and maintain the reusable items belonging to this vendor.</p></div>
+            </div>
+            <div className="vendor-menu-management__count-chip" aria-label={`${counts.active_menu_items} active menu items`}>
+              <span>{summaryLoading ? '…' : counts.active_menu_items}</span>
+              {itemsExpanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+            </div>
+          </button>
         </header>
-        {itemsState === 'error' && <p className="vendor-menu-management__inline-error" role="alert">{itemsError} <button type="button" onClick={() => loadItems(itemsPage)}>Retry</button></p>}
-        {itemsState === 'loading' && <PageSkeleton />}
-        {itemsState === 'ready' && !items.length && <p className="vendor-menu-management__empty">No menu items yet. Add an item to this vendor’s reusable catalogue.</p>}
-        {itemsState === 'ready' && items.length > 0 && <>
-          <div className="vendor-menu-management__items">
-            {items.map((item) => <article className="vendor-menu-management__row" key={item.id}>
-              <div className="vendor-menu-management__item-copy">
-                <strong>{item.name}</strong>
-                <span>{item.menu_categories?.name || 'Uncategorized'} · {formatMoney(item.base_price, item.currency)}</span>
-              </div>
-              <div className="vendor-menu-management__actions">
-                <PrimaryButton size="sm" disabled={busy} onClick={() => openItemModal(item)}>Edit</PrimaryButton>
-                <PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" disabled={busy} onClick={() => archiveItem(item)}><IconTrash size={15} /> Archive</PrimaryButton>
-              </div>
-            </article>)}
+        {summaryError && !itemsExpanded && <p className="vendor-menu-management__inline-error" role="alert">{summaryError}</p>}
+        <div className={`vendor-menu-management__accordion-panel${itemsExpanded ? ' is-open' : ''}`} aria-hidden={!itemsExpanded} inert={!itemsExpanded}>
+          <div className="vendor-menu-management__accordion-content">
+            {itemsOpened && <>
+          <div className="vendor-menu-management__panel-actions">
+            <PrimaryButton size="sm" icon={IconPlus} disabled={busy} onClick={() => openItemModal()}>Add item</PrimaryButton>
           </div>
-          <Pagination currentPage={itemsPagination.page} totalPages={itemsPagination.totalPages} totalItems={itemsPagination.total} itemsPerPage={itemsPagination.limit} label="menu items" onPageChange={setItemsPage} />
-        </>}
+          {itemsState === 'error' && <p className="vendor-menu-management__inline-error" role="alert">{itemsError} <button type="button" onClick={() => loadItems(itemsPage)}>Retry</button></p>}
+          {itemsState === 'loading' && <PageSkeleton />}
+          {itemsState === 'ready' && !items.length && <p className="vendor-menu-management__empty">No menu items yet. Add an item to this vendor’s reusable catalogue.</p>}
+          {itemsState === 'ready' && items.length > 0 && <>
+            <div className="vendor-menu-management__items">
+              {items.map((item) => <article className="vendor-menu-management__row" key={item.id}>
+                <div className="vendor-menu-management__item-copy">
+                  <strong>{item.name}</strong>
+                  <span>{item.menu_categories?.name || 'Uncategorized'} · {formatMoney(item.base_price, item.currency)}</span>
+                </div>
+                <div className="vendor-menu-management__actions">
+                  <PrimaryButton size="sm" disabled={busy} onClick={() => openItemModal(item)}>Edit</PrimaryButton>
+                  <PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" disabled={busy} onClick={() => archiveItem(item)}><IconTrash size={15} /> Archive</PrimaryButton>
+                </div>
+              </article>)}
+            </div>
+            <Pagination currentPage={itemsPagination.page} totalPages={itemsPagination.totalPages} totalItems={itemsPagination.total} itemsPerPage={itemsPagination.limit} label="menu items" onPageChange={setItemsPage} />
+          </>}
+            </>}
+          </div>
+        </div>
       </section>
     </>}
 

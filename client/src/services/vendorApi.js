@@ -60,10 +60,20 @@ export function listVendorOperationsMenu(vendorId, { token, signal, locationId }
 }
 
 export function listVendorMenuCatalog(vendorId, { token, page = 1, limit = 8, signal } = {}) {
+  const query = { vendor_id: vendorId, page, limit };
   return apiRequest('/vendor/menu/catalog-items', {
     token,
     signal,
-    query: { vendor_id: vendorId, page, limit },
+    query,
+    cache: 'no-store',
+  });
+}
+
+export function getVendorMenuSummary(vendorId, { token, signal } = {}) {
+  return apiRequest('/vendor/menu/summary', {
+    token,
+    signal,
+    query: { vendor_id: vendorId },
     cache: 'no-store',
   });
 }

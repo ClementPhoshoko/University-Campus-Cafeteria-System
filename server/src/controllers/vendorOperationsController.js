@@ -94,6 +94,34 @@ async function validateVendorCategory(vendorId, categoryId) {
   if (!data) throw new ApiError(400, 'INVALID_CATEGORY', 'Category does not belong to this vendor');
 }
 
+export async function getVendorMenuSummaryCounts(database, vendorId) {
+  const [categoryResult, menuResult] = await Promise.all([
+    database.from('menu_categories').select('id', { count: 'exact', head: true }).eq('vendor_id', vendorId).eq('is_active', true),
+    database.from('menu_items').select('id', { count: 'exact', head: true }).eq('vendor_id', vendorId).eq('is_active', true),
+  ]);
+
+  if (categoryResult.error) throw categoryResult.error;
+  if (menuResult.error) throw menuResult.error;
+
+  return {
+    active_categories: Number(categoryResult.count ?? 0),
+    active_menu_items: Number(menuResult.count ?? 0),
+  };
+}
+
+export async function listMyVendorMenuSummary(req, res) {
+  try {
+    const vendorId = String(req.query.vendor_id || '');
+    if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
+    await requireVendorManager(req.user.id, vendorId);
+    const counts = await getVendorMenuSummaryCounts(db(), vendorId);
+    return respond(req, res, {
+      success: true,
+      counts,
+    }, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
 export async function listMyVendorCategories(req, res) {
   try {
     const vendorId = String(req.query.vendor_id || '');
@@ -124,13 +152,15 @@ export async function listMyVendorCatalogItems(req, res) {
     const vendorId = String(req.query.vendor_id || '');
     if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
     await requireVendorManager(req.user.id, vendorId);
+    const categoryId = String(req.query.category_id || '');
+    if (categoryId && !isUuid(categoryId)) return sendError(res, 400, 'INVALID_UUID', 'A valid category_id is required when filtering by category');
     const { pageNum, limitNum, from, to } = parsePagination(req.query, { maxLimit: 50, defaultLimit: 8 });
-    const { data, count, error } = await db().from('menu_items')
+    let query = db().from('menu_items')
       .select(MENU_ITEM_SELECT, { count: 'exact' })
       .eq('vendor_id', vendorId)
-      .eq('is_active', true)
-      .order('name')
-      .range(from, to);
+      .eq('is_active', true);
+    if (categoryId) query = query.eq('category_id', categoryId);
+    const { data, count, error } = await query.order('name').range(from, to);
     if (error) throw error;
     const catalog = await Promise.all((data || []).map(async (item) => ({
       ...item,
