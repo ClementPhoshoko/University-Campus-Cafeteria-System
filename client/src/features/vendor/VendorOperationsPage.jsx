@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
-import { IconRefresh, IconShoppingBag, IconSoup, IconClockHour4, IconAlertTriangle, IconList, IconUsers } from '@tabler/icons-react';
+import { IconRefresh, IconShoppingBag, IconSoup, IconClockHour4, IconAlertTriangle } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
@@ -12,6 +12,7 @@ import { MenuItemModal } from '../admin/VendorForms.jsx';
 import { archiveVendorMenuItem, createVendorMenuItem, listVendorMenuCategories, updateVendorMenuItem, uploadVendorMenuItemAsset } from '../../services/vendorApi.js';
 import VendorMenuManagementPage from './VendorMenuManagementPage.jsx';
 import VendorTeamManagementPage from './VendorTeamManagementPage.jsx';
+import VendorWorkspaceLayout from './VendorWorkspaceLayout.jsx';
 import { VendorDashboardSkeleton, VendorMenuItemsSkeleton, VendorQueueSkeleton, VendorSummarySkeleton } from './VendorLoadingSkeletons.jsx';
 import './vendor-operations.css';
 
@@ -37,6 +38,7 @@ export default function VendorOperationsPage() {
   const showingMenuManagement = searchParams.get('view') === 'menus';
   const showingTeamManagement = searchParams.get('view') === 'team';
   const showingManagerView = showingMenuManagement || showingTeamManagement;
+  const activeView = showingMenuManagement ? 'menus' : showingTeamManagement ? 'team' : 'overview';
   const [vendors, setVendors] = useState([]);
   const [vendorId, setVendorId] = useState('');
   const [vendorsState, setVendorsState] = useState('loading');
@@ -179,23 +181,14 @@ export default function VendorOperationsPage() {
   }
 
   if (vendorsState === 'loading') {
-    if (showingMenuManagement) {
-      return <PageContainer className="vendor-ops-page-container"><div className="vendor-ops-page">
-        <VendorMenuManagementPage vendorId="" vendorName="" onBack={() => setSearchParams({})} />
-      </div></PageContainer>;
-    }
     return <PageContainer className="vendor-ops-page-container"><div className="vendor-ops-page">
       <VendorDashboardSkeleton />
     </div></PageContainer>;
   }
 
-  const headerActions = (vendors.length > 1 || (selectedVendor?.role === 'manager' && !showingManagerView)) && (
+  const headerActions = vendors.length > 1 && (
     <div className="vendor-ops-header-actions">
       {vendors.length > 1 && <label className="vendor-ops-picker">Vendor<select value={vendorId} onChange={(event) => setVendorId(event.target.value)}>{vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}</select></label>}
-      {selectedVendor?.role === 'manager' && !showingManagerView && <>
-        <PrimaryButton size="sm" icon={IconList} onClick={() => setSearchParams({ view: 'menus' })}>Manage menu</PrimaryButton>
-        <PrimaryButton size="sm" icon={IconUsers} onClick={() => setSearchParams({ view: 'team' })}>Manage staff</PrimaryButton>
-      </>}
     </div>
   );
 
@@ -203,7 +196,12 @@ export default function VendorOperationsPage() {
     <PageHeader eyebrow="Vendor workspace" title={selectedVendor?.name || 'Vendor operations'} subtitle="A clear view of what needs preparing and what customers can order today." actions={headerActions} />
     {vendorsState === 'error' && <div className="vendor-ops-alert" role="alert">{vendorError}</div>}
     {vendorsState === 'ready' && !vendors.length && <div className="vendor-ops-empty"><IconShoppingBag size={30} /><h3>No vendor access yet</h3><p>Your account is not assigned to a vendor. Ask an administrator to add you to the vendor team.</p></div>}
-    {selectedVendor && <>
+    {selectedVendor && <VendorWorkspaceLayout
+      vendorName={selectedVendor.name}
+      role={selectedVendor.role}
+      activeView={activeView}
+      onNavigate={(view) => setSearchParams(view === 'overview' ? {} : { view })}
+    >
       {notice && <p className="vendor-ops-notice" role="status">{notice}</p>}
       {!showingManagerView && ordersState === 'loading' && <VendorSummarySkeleton />}
       {!showingManagerView && ordersState !== 'loading' && <div className="vendor-ops-summary">
@@ -253,6 +251,6 @@ export default function VendorOperationsPage() {
       <p className="vendor-ops-footnote">Availability indicates whether an item can be ordered. Quantity-based stock is not enabled yet.</p>
       {editingItem && <MenuItemModal item={editingItem.isNew ? null : editingItem} categories={menuCategories} submitting={savingEditor} usePrimaryButtons onClose={() => setEditingItem(null)} onSubmit={handleMenuItemSave} />}
       </>}
-    </>}
+    </VendorWorkspaceLayout>}
   </div></PageContainer>;
 }

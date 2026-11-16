@@ -24,6 +24,12 @@ Dated and recurring menu planning are out of scope. Keep the existing `/vendor/m
 
 ## Implementation Plan
 
+### 0. Vendor workspace shell
+
+- Use the reusable, role-aware `VendorWorkspaceLayout` for vendor navigation.
+- Keep Overview available to staff and managers; show manager-only catalogue and team views only to managers.
+- Add future navigation entries only when the corresponding workflow is implemented and server authorization is in place.
+
 ### 1. Inventory and menu details
 
 - Add manager-scoped APIs and editor fields for dietary tags, allergens, and option groups, reusing existing tables and customer read paths.
