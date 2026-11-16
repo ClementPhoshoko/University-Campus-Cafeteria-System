@@ -763,9 +763,8 @@ Actions:
 - Extras/customisations.
 - Stock quantity.
 - Availability.
-- Schedule visibility.
 - Sold-out state.
-- Weekly menu / copy previous menu.
+- Availability on today's published menu.
 
 ### Collection Slot Management
 
@@ -1234,7 +1233,7 @@ GET    /support/cases/:caseId
 
 ## Vendor API namespace
 
-The vendor-operations slice includes membership discovery, a vendor-scoped active order queue, order status updates, today’s menu availability, and manager-only catalogue and dated-menu planning. Requests are checked against active `vendor_users` membership; menu planning and catalogue mutations require the active membership role to be `manager`.
+The vendor-operations slice includes membership discovery, a vendor-scoped active order queue, order status updates, availability on today’s published menu, and manager-only catalogue management. Requests are checked against active `vendor_users` membership; catalogue mutations require the active membership role to be `manager`.
 
 ```text
 GET    /vendor/orders
@@ -1248,13 +1247,6 @@ PATCH  /vendor/menu/categories/:categoryId
 POST   /vendor/menu/items
 PATCH  /vendor/menu/items/:itemId
 DELETE /vendor/menu/items/:itemId
-GET    /vendor/menus
-POST   /vendor/menus
-POST   /vendor/menus/:menuId/copy
-PATCH  /vendor/menus/:menuId
-POST   /vendor/menus/:menuId/items
-PATCH  /vendor/menus/:menuId/items/:itemId
-DELETE /vendor/menus/:menuId/items/:itemId
 POST   /vendor/menu/catalog-items
 ```
 
@@ -1267,7 +1259,7 @@ PATCH  /vendor/collection-slots/:slotId
 GET    /vendor/reports
 ```
 
-The vendor workspace keeps the staff order queue and daily availability controls, with manager-only menu planning and staff invitations embedded in the same page. Managers can invite staff only to their own vendor; admins continue to assign manager access. Menu planning maintains a reusable vendor catalogue and creates, copies, publishes, unpublishes, or archives location/date-specific menus. Menu availability is stored per menu item, and the customer menu and cart accept items only from the currently published menu; a draft or catalogue-only item is not orderable. Apply `server/src/docs/migrations/021_vendor_menu_planning.sql` before using dated menu planning and `server/src/docs/migrations/022_protect_vendor_manager_from_staff_invite.sql` before enabling manager-issued staff invitations; the latter enforces the staff-only invite role atomically and protects existing managers. The daily staff workspace and current employee/cart flow continue to use the first active vendor location. Image upload, dietary/allergen editing, option/customization management, recurring weekly templates, and quantity-based stock remain planned. Quantity-based stock is future work because the current cart and checkout do not reserve or enforce `menu_item_inventory` quantities.
+The vendor workspace keeps the staff order queue and daily availability controls, with manager-only reusable catalogue management and staff invitations. Managers can invite staff only to their own vendor; admins continue to assign manager access. Catalogue items are separate from the currently published menu: the daily staff workspace and employee/cart flow use the first active vendor location, and staff availability changes apply only to that location's published menu for today. The client `/vendor/menus` path is a compatibility redirect to catalogue management; dated or recurring menu planning is not part of this scope. Apply `server/src/docs/migrations/021_vendor_menu_planning.sql` for per-item availability on today's published menu and `server/src/docs/migrations/022_protect_vendor_manager_from_staff_invite.sql` before enabling manager-issued staff invitations; the latter enforces the staff-only invite role atomically and protects existing managers. Image upload is supported; dietary/allergen editing, option/customization management, and quantity-based stock remain planned. The schema includes `menu_item_inventory`, but the current cart and checkout do not reserve or enforce its quantities.
 
 ## Administration API namespace
 

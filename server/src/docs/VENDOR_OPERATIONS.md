@@ -2,7 +2,7 @@
 
 ## Menu management
 
-The daily vendor workspace remains focused on the first active location’s published menu and order queue. Staff and managers can update availability for items on today’s published menu. Managers can also maintain the reusable catalogue and plan menus for active locations and dates.
+The daily vendor workspace remains focused on the first active location’s published menu and order queue. Staff and managers can update availability for items on today’s published menu. Managers can maintain the reusable catalogue and categories. Dated and recurring menu planning are not part of this scope.
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -10,13 +10,6 @@ The daily vendor workspace remains focused on the first active location’s publ
 | `GET` | `/vendor/menu/categories?vendor_id={id}` | Read categories for the vendor |
 | `POST` | `/vendor/menu/categories` | Create a category for the manager’s vendor |
 | `PATCH` | `/vendor/menu/categories/{categoryId}` | Rename or archive a category owned by the manager’s vendor |
-| `GET` | `/vendor/menus?vendor_id={id}&from={date}&to={date}` | List locations, dated menus, catalogue items, and categories (manager only) |
-| `POST` | `/vendor/menus` | Create a draft menu for a location and date (manager only) |
-| `POST` | `/vendor/menus/{menuId}/copy` | Copy a menu to another date as a draft (manager only) |
-| `PATCH` | `/vendor/menus/{menuId}` | Rename, publish, unpublish, or archive a dated menu (manager only) |
-| `POST` | `/vendor/menus/{menuId}/items` | Add a catalogue item to a draft (manager only) |
-| `PATCH` | `/vendor/menus/{menuId}/items/{itemId}` | Set a draft item’s availability (manager only) |
-| `DELETE` | `/vendor/menus/{menuId}/items/{itemId}` | Remove an item from a draft (manager only) |
 | `POST` | `/vendor/menu/catalog-items` | Create a reusable catalogue item (manager only) |
 | `POST` | `/vendor/menu/items` | Create an item and attach it to today’s published menu |
 | `POST` | `/vendor/menu/items/{itemId}/image` | Upload or replace a menu item image (manager only) |
@@ -24,7 +17,7 @@ The daily vendor workspace remains focused on the first active location’s publ
 | `DELETE` | `/vendor/menu/items/{itemId}` | Archive an item (soft deactivation) |
 | `PATCH` | `/vendor/menu/items/{itemId}/availability` | Change item availability on today’s menu |
 
-Menu planning is available at `/vendor/menus`. Managers select an active vendor location and a date today through the next year, create a draft or copy a prior menu, add catalogue items, then publish when ready. Each menu item’s availability is stored on the menu-to-item link, so staff changes for today do not change future menus. Customers and cart validation only use items on the currently published menu; an unpublished menu or an unused catalogue item is not orderable.
+The reusable catalogue is separate from the daily published menu. The `/vendor/menus` client path is a compatibility redirect to catalogue management, not a dated-menu API. Staff availability updates apply only to items linked to today’s published menu at the first active vendor location.
 
 The legacy create request includes `vendor_id`, `menu_id`, `name`, and `base_price`, and attaches the item to today’s published menu. All item prices must be non-negative with no more than two decimal places. Ingredients are stored as up to 50 text values.
 
@@ -54,7 +47,7 @@ Admins retain the existing ability to invite either staff or managers. A staff i
 
 Apply `migrations/019_vendor_invitations.sql` and `migrations/020_confirm_invited_auth_email.sql` before enabling the admin invitation action. They create the invitation table, service-role-only RPCs for serialized creation and transactional redemption, and a constrained lookup used to confirm an existing account's email only when its owner presents a valid invitation link.
 
-Apply `migrations/021_vendor_menu_planning.sql` before enabling dated menu planning. It adds per-menu-item availability to `menu_menu_items` and initializes existing links from catalogue availability.
+Apply `migrations/021_vendor_menu_planning.sql` before enabling per-item availability on today’s published menu. It adds per-menu-item availability to `menu_menu_items` and initializes existing links from catalogue availability.
 
 Apply `migrations/022_protect_vendor_manager_from_staff_invite.sql` before enabling manager invitations. It adds the atomic manager-only, staff-only invitation RPC and prevents staff invitations from changing an existing manager membership.
 
