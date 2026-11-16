@@ -8,25 +8,27 @@ export default function NotFoundScreen() {
   return (
     <div className="session-expired-screen">
       <div className="session-expired-card">
-        <div className="session-expired-avatar-wrap">
-          <img
-            src={errorAvatar}
-            alt="Error illustration"
-            className="session-expired-avatar"
-          />
-        </div>
+        <div className="session-expired-content">
+          <div className="session-expired-visual">
+            <img
+              src={errorAvatar}
+              alt="Error illustration"
+              className="session-expired-avatar"
+            />
+          </div>
 
-        <span className="session-expired-badge">Page unavailable</span>
+          <div className="session-expired-copy">
+            <h1 className="session-expired-title">This page doesn’t exist</h1>
+            <p className="session-expired-body">
+              The link may be broken, or this route is no longer available. Head back to the campus home page.
+            </p>
 
-        <h1 className="session-expired-title">This page doesn’t exist</h1>
-        <p className="session-expired-body">
-          The link may be broken, or this route is no longer available. Head back to the campus home page.
-        </p>
-
-        <div className="session-expired-actions">
-          <PrimaryButton onClick={() => navigate('/', { replace: true })}>
-            Take me home
-          </PrimaryButton>
+            <div className="session-expired-actions">
+              <PrimaryButton onClick={() => navigate('/', { replace: true })}>
+                Take me home
+              </PrimaryButton>
+            </div>
+          </div>
         </div>
       </div>
     </div>
