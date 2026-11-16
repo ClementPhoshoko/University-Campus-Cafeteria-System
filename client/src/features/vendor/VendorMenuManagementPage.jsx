@@ -3,6 +3,7 @@ import { IconArrowLeft, IconCategory, IconChevronDown, IconChevronRight, IconLis
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
+import { getCache, invalidateCachePattern, setCache } from '../../services/cache.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import {
   archiveVendorMenuItem,
@@ -21,7 +22,12 @@ import { MenuItemModal, CategoryModal } from '../admin/VendorForms.jsx';
 import './vendor-menu-management.css';
 
 const PAGE_SIZE = 8;
+const MENU_PAGE_CACHE_TTL = 60_000;
 const EMPTY_PAGINATION = { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 };
+
+function menuCacheKey(userId, vendorId, collection, page) {
+  return `vendor-menu-management:${userId}:${vendorId}:${collection}:${page}`;
+}
 
 function PageSkeleton() {
   return <div className="vendor-menu-management__skeleton" role="status" aria-label="Loading menu management">
@@ -32,7 +38,7 @@ function PageSkeleton() {
 }
 
 export default function VendorMenuManagementPage({ vendorId, vendorName, onBack }) {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const token = session?.access_token;
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
@@ -58,43 +64,67 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
   const [itemsOpened, setItemsOpened] = useState(false);
   const { counts, loading: summaryLoading, error: summaryError, refresh: refreshSummary } = useVendorMenuSummary(vendorId, { token });
 
+  function invalidateMenuPages() {
+    if (user?.id) invalidateCachePattern(`vendor-menu-management:${user.id}:${vendorId}:`);
+  }
+
   const loadCategories = useCallback(async (page, signal) => {
     if (!vendorId) return;
+    const cacheKey = user?.id ? menuCacheKey(user.id, vendorId, 'categories', page) : null;
+    const cached = cacheKey ? getCache(cacheKey) : null;
+    if (cached && !cached.isStale) {
+      setCategories(cached.data.categories || []);
+      setCategoriesPagination(cached.data.pagination || EMPTY_PAGINATION);
+      setCategoriesState('ready');
+      setCategoriesError('');
+      return;
+    }
     setCategoriesState('loading');
     setCategoriesError('');
     try {
       const response = await listVendorMenuCategories(vendorId, { token, page, limit: PAGE_SIZE, signal });
+      if (cacheKey) setCache(cacheKey, response, MENU_PAGE_CACHE_TTL);
       setCategories(response.categories || []);
       setCategoriesPagination(response.pagination || EMPTY_PAGINATION);
       setCategoriesState('ready');
       const lastPage = Math.max(1, response.pagination?.totalPages || 1);
       setCategoriesPage((current) => current > lastPage ? lastPage : current);
     } catch (error) {
-      if (error.name !== 'AbortError') {
+      if (!signal?.aborted && error.name !== 'AbortError') {
         setCategoriesError(error.message || 'Could not load categories.');
         setCategoriesState('error');
       }
     }
-  }, [token, vendorId]);
+  }, [token, user?.id, vendorId]);
 
   const loadItems = useCallback(async (page, signal) => {
     if (!vendorId) return;
+    const cacheKey = user?.id ? menuCacheKey(user.id, vendorId, 'items', page) : null;
+    const cached = cacheKey ? getCache(cacheKey) : null;
+    if (cached && !cached.isStale) {
+      setItems(cached.data.catalog || []);
+      setItemsPagination(cached.data.pagination || EMPTY_PAGINATION);
+      setItemsState('ready');
+      setItemsError('');
+      return;
+    }
     setItemsState('loading');
     setItemsError('');
     try {
       const response = await listVendorMenuCatalog(vendorId, { token, page, limit: PAGE_SIZE, signal });
+      if (cacheKey) setCache(cacheKey, response, MENU_PAGE_CACHE_TTL);
       setItems(response.catalog || []);
       setItemsPagination(response.pagination || EMPTY_PAGINATION);
       setItemsState('ready');
       const lastPage = Math.max(1, response.pagination?.totalPages || 1);
       setItemsPage((current) => current > lastPage ? lastPage : current);
     } catch (error) {
-      if (error.name !== 'AbortError') {
+      if (!signal?.aborted && error.name !== 'AbortError') {
         setItemsError(error.message || 'Could not load menu items.');
         setItemsState('error');
       }
     }
-  }, [token, vendorId]);
+  }, [token, user?.id, vendorId]);
 
   useEffect(() => {
     if (!vendorId || !categoriesExpanded) return undefined;
@@ -147,6 +177,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
         itemId = response?.menuItem?.id;
       }
       saved = true;
+      invalidateMenuPages();
       if (imageFile) {
         if (!itemId) throw new Error('The saved item could not be identified for image upload.');
         imageUploadFailed = true;
@@ -187,6 +218,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
       } else {
         await createVendorMenuCategory(vendorId, payload, { token });
       }
+      invalidateMenuPages();
       const page = editingCategory ? categoriesPage : 1;
       if (page !== categoriesPage) setCategoriesPage(page);
       else await loadCategories(page);
@@ -209,6 +241,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
     setNotice('');
     try {
       await deleteVendorMenuCategory(vendorId, category.id, { token });
+      invalidateMenuPages();
       await loadCategories(categoriesPage);
       await loadItems(itemsPage);
       await refreshSummary();
@@ -227,6 +260,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
     setNotice('');
     try {
       await archiveVendorMenuItem(item.id, { token });
+      invalidateMenuPages();
       await loadItems(itemsPage);
       await refreshSummary();
       setNotice(`${item.name} archived.`);
@@ -246,7 +280,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
         <h2>Menu &amp; categories</h2>
         <span>Manage the reusable menu items and categories for {vendorName || 'your vendor'}.</span>
       </div>
-      <PrimaryButton size="sm" icon={IconArrowLeft} onClick={onBack}>Back to dashboard</PrimaryButton>
+      <PrimaryButton size="sm" icon={IconArrowLeft} className="primary-btn primary-btn--sm vendor-menu-management__back-button" onClick={onBack}>Back to dashboard</PrimaryButton>
     </header>
 
     {notice && <p className="vendor-menu-management__notice" role="status">{notice}</p>}
@@ -281,7 +315,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
                 <div><strong>{category.name}</strong></div>
                 <div className="vendor-menu-management__actions">
                   <PrimaryButton size="sm" disabled={busy} onClick={() => setEditingCategory(category)}>Edit</PrimaryButton>
-                  <PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" disabled={busy} onClick={() => deleteCategory(category)}><IconTrash size={15} /> Delete</PrimaryButton>
+                  <PrimaryButton size="sm" icon={IconTrash} className="primary-btn primary-btn--sm vendor-menu-danger-button" disabled={busy} onClick={() => deleteCategory(category)}>Delete</PrimaryButton>
                 </div>
               </article>)}
             </div>
@@ -324,7 +358,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
                 </div>
                 <div className="vendor-menu-management__actions">
                   <PrimaryButton size="sm" disabled={busy} onClick={() => openItemModal(item)}>Edit</PrimaryButton>
-                  <PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" disabled={busy} onClick={() => archiveItem(item)}><IconTrash size={15} /> Archive</PrimaryButton>
+                  <PrimaryButton size="sm" icon={IconTrash} className="primary-btn primary-btn--sm vendor-menu-danger-button" disabled={busy} onClick={() => archiveItem(item)}>Archive</PrimaryButton>
                 </div>
               </article>)}
             </div>
