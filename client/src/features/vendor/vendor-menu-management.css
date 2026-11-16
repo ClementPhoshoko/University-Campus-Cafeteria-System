@@ -20,7 +20,7 @@
   font-size: clamp(1.45rem, 3vw, 1.9rem);
   line-height: 1.2;
 }
-.vendor-menu-management__heading span {
+.vendor-menu-management__heading > div > span {
   display: block;
   margin-top: var(--space-2);
   color: var(--color-text-secondary);
