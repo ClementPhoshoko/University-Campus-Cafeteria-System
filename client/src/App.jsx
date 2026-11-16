@@ -16,6 +16,8 @@ import ForgotPassword from './features/auth/ForgotPassword.jsx';
 import AuthCallback from './features/auth/AuthCallback.jsx';
 import EmailConfirmation from './features/auth/EmailConfirmation.jsx';
 import PasswordRecovery from './features/auth/PasswordRecovery.jsx';
+import SessionExpiredScreen from './components/auth/SessionExpiredScreen.jsx';
+import NotFoundScreen from './components/auth/NotFoundScreen.jsx';
 import HomePage from './features/home/HomePage.jsx';
 import CafeteriaPage from './features/cafeteria/CafeteriaPage.jsx';
 import BrowseCafeteriaPage from './features/cafeteria/BrowseCafeteriaPage.jsx';
@@ -107,6 +109,8 @@ export default function App() {
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/auth/confirm" element={<EmailConfirmation />} />
       <Route path="/auth/recovery" element={<PasswordRecovery />} />
+      <Route path="/session-expired" element={<SessionExpiredScreen />} />
+      <Route path="*" element={<NotFoundScreen />} />
       <Route element={<AuthLayout />}>
         <Route path="/vendor-invitations/:token" element={<VendorInvitationPage />} />
       </Route>
@@ -152,7 +156,6 @@ export default function App() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
