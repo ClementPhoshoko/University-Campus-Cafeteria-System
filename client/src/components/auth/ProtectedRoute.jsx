@@ -1,5 +1,6 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
+import SessionExpiredScreen from './SessionExpiredScreen.jsx';
 import connectedAvatar from '../../assets/avatars/connected_avatar.webp';
 import notConnectedAvatar from '../../assets/avatars/not_connected_avatar.webp';
 import '../../features/auth/auth.css';
@@ -24,7 +25,7 @@ export default function ProtectedRoute() {
 
   if (!user) {
     const returnTo = `${location.pathname}${location.search}${location.hash}`;
-    return <Navigate to={`/login?returnTo=${encodeURIComponent(returnTo)}`} replace />;
+    return <SessionExpiredScreen redirectTo={`/login?returnTo=${encodeURIComponent(returnTo)}`} />;
   }
 
   return <Outlet />;

@@ -160,6 +160,165 @@
   animation: auth-page-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.session-expired-screen {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(153, 206, 255, 0.16), transparent 26%),
+    var(--color-bg-app);
+  overflow: hidden;
+}
+
+.session-expired-screen::before,
+.session-expired-screen::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.session-expired-screen::before {
+  width: 280px;
+  height: 280px;
+  top: -80px;
+  left: -40px;
+}
+
+.session-expired-screen::after {
+  width: 340px;
+  height: 340px;
+  right: -60px;
+  bottom: -120px;
+}
+
+.session-expired-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 520px);
+  padding: clamp(1.5rem, 2vw + 1rem, 2.5rem);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur-heavy));
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
+  text-align: center;
+}
+
+.session-expired-avatar-wrap {
+  display: grid;
+  place-items: center;
+  width: min(100%, 220px);
+  height: 220px;
+  margin: 0 auto var(--space-4);
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(228, 242, 255, 0.7) 52%, rgba(241, 248, 255, 0.4) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 12px 28px rgba(10, 140, 255, 0.08);
+}
+
+.session-expired-avatar {
+  width: 74%;
+  height: 74%;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 18px rgba(31, 41, 51, 0.08));
+}
+
+.session-expired-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-full);
+  background: rgba(10, 140, 255, 0.08);
+  border: 1px solid rgba(10, 140, 255, 0.12);
+  color: var(--color-action-primary);
+  font-size: 0.7rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.session-expired-title {
+  margin: var(--space-4) 0 var(--space-3);
+  color: var(--color-text-primary);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.session-expired-body {
+  margin: 0 auto;
+  max-width: 420px;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.session-expired-redirect {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  color: var(--color-text-primary);
+}
+
+.session-expired-redirect-label {
+  font-size: 0.9rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.session-expired-countdown {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(10, 140, 255, 0.14), rgba(10, 140, 255, 0.04));
+  border: 1px solid rgba(10, 140, 255, 0.14);
+  color: var(--color-action-primary);
+  font-size: 1.8rem;
+  font-weight: var(--font-weight-bold);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+.session-expired-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.session-expired-actions .primary-btn {
+  width: min(100%, 220px);
+  justify-content: center;
+}
+
+.session-expired-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-action-primary);
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.session-expired-link:hover {
+  text-decoration: underline;
+}
+
 @keyframes auth-page-in {
   from {
     opacity: 0;

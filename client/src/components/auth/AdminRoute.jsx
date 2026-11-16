@@ -1,6 +1,7 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useRoles } from '../../hooks/useRoles.js';
+import SessionExpiredScreen from './SessionExpiredScreen.jsx';
 import connectedAvatar from '../../assets/avatars/connected_avatar.webp';
 import notConnectedAvatar from '../../assets/avatars/not_connected_avatar.webp';
 import '../../features/auth/auth.css';
@@ -10,6 +11,7 @@ const ADMIN_ROLES = ['admin'];
 export default function AdminRoute() {
   const { user, initialized } = useAuth();
   const { roles, loading: rolesLoading } = useRoles();
+  const location = useLocation();
 
   if (!initialized || rolesLoading) {
     return (
@@ -26,7 +28,8 @@ export default function AdminRoute() {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    const returnTo = `${location.pathname}${location.search}${location.hash}`;
+    return <SessionExpiredScreen redirectTo={`/login?returnTo=${encodeURIComponent(returnTo)}`} />;
   }
 
   const isAdmin = roles.some((role) => ADMIN_ROLES.includes(role));
