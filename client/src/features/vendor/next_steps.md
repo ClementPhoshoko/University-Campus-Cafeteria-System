@@ -10,7 +10,7 @@ Dated and recurring menu planning are out of scope. Keep the existing `/vendor/m
 - Vendor staff can operate the active order queue and change availability on today's published menu.
 - Managers can manage reusable categories and catalogue items and invite or revoke staff invitations.
 - Admin tools can manage the active vendor roster and pause/resume generated collection slots. These APIs are admin-only today.
-- The vendor order API currently returns at most 100 records; the UI paginates that loaded subset locally.
+- Vendor order, daily menu, staff roster, and invitation lists use bounded server-side pages with total counts.
 - The admin reports UI uses mock data. There are no live vendor report or catering routes.
 
 ## Cross-surface Dependencies
@@ -40,9 +40,11 @@ Dated and recurring menu planning are out of scope. Keep the existing `/vendor/m
 
 ### 2. Queue pagination and vendor roster
 
-- Add server-side pagination, total counts, and supported status filters to `GET /vendor/orders`.
-- Define stable server-side ordering that preserves collection-time priority; add or confirm indexes for the queue query.
-- Replace client-only slicing of the first 100 orders with API-driven pagination or load-more behavior.
+- [x] Add server-side pagination, total counts, and supported status filters to `GET /vendor/orders`.
+- [x] Define stable server-side ordering that preserves collection-time priority and add a queue index.
+- [x] Replace client-only slicing of the first 100 orders with API-driven pagination.
+- [x] Paginate the daily menu, active staff roster, staff invitations, and vendor categories at the API boundary.
+- Apply `server/src/docs/migrations/024_vendor_order_queue_pagination.sql` before deploying queue pagination; apply migration 023 before enabling manager staff removal.
 - [x] Add a manager-scoped active-staff list and staff access deactivation endpoint. Managers can deactivate only staff in their own vendor; matching pending staff invitations are revoked and the change is audited atomically. Apply `server/src/docs/migrations/023_vendor_manager_staff_roster.sql` before enabling it.
 - Managers may manage staff membership only. They must not assign, edit, or remove manager access, and all actions must be vendor-scoped and audited.
 

@@ -25,11 +25,11 @@ export function listMyVendors({ token, signal } = {}) {
   return apiRequest('/vendor/me', { token, signal, cache: 'no-store' });
 }
 
-export function listMyVendorInvitations(vendorId, { token, signal } = {}) {
+export function listMyVendorInvitations(vendorId, { token, page = 1, limit = 8, signal } = {}) {
   return apiRequest('/vendor/invitations', {
     token,
     signal,
-    query: { vendor_id: vendorId },
+    query: { vendor_id: vendorId, page, limit },
     cache: 'no-store',
   });
 }
@@ -47,11 +47,11 @@ export function revokeMyVendorInvitation(invitationId, { token, signal } = {}) {
   return apiRequest(`/vendor/invitations/${invitationId}`, { method: 'DELETE', token, signal });
 }
 
-export function listMyVendorStaff(vendorId, { token, signal } = {}) {
+export function listMyVendorStaff(vendorId, { token, page = 1, limit = 8, signal } = {}) {
   return apiRequest('/vendor/staff', {
     token,
     signal,
-    query: { vendor_id: vendorId },
+    query: { vendor_id: vendorId, page, limit },
     cache: 'no-store',
   });
 }
@@ -65,16 +65,16 @@ export function deactivateMyVendorStaff(vendorId, userId, { token, signal } = {}
   });
 }
 
-export function listVendorQueue(vendorId, { token, signal } = {}) {
-  return apiRequest('/vendor/orders', { token, signal, query: { vendor_id: vendorId }, cache: 'no-store' });
+export function listVendorQueue(vendorId, { token, page = 1, limit = 5, filter = 'active', signal } = {}) {
+  return apiRequest('/vendor/orders', { token, signal, query: { vendor_id: vendorId, page, limit, filter }, cache: 'no-store' });
 }
 
 export function updateVendorOrderStatus(orderId, status, { token, reason, collectionCode, signal } = {}) {
   return apiRequest(`/vendor/orders/${orderId}/status`, { method: 'PATCH', token, signal, body: { status, reason, collection_code: collectionCode } });
 }
 
-export function listVendorOperationsMenu(vendorId, { token, signal, locationId } = {}) {
-  return apiRequest('/vendor/menu', { token, signal, query: { vendor_id: vendorId, location_id: locationId }, cache: 'no-store' });
+export function listVendorOperationsMenu(vendorId, { token, page = 1, limit = 5, signal, locationId } = {}) {
+  return apiRequest('/vendor/menu', { token, signal, query: { vendor_id: vendorId, location_id: locationId, page, limit }, cache: 'no-store' });
 }
 
 export function listVendorMenuCatalog(vendorId, { token, page = 1, limit = 8, signal } = {}) {

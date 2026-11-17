@@ -2,12 +2,12 @@
 
 ## Menu management
 
-The daily vendor workspace remains focused on the first active location’s published menu and order queue. Staff and managers can update availability for items on today’s published menu. Managers can maintain the reusable catalogue and categories. Dated and recurring menu planning are not part of this scope.
+The daily vendor workspace remains focused on the first active location’s published menu and order queue. Order and menu lists return server-paginated rows with totals. Orders accept `filter=active`, `filter=needs_attention`, or `filter=ready_for_collection`, default to five rows, and cap pages at 50. Queue order is collection start time, then order creation time and ID. The order endpoint also returns queue counts and the next collection summary. Staff and managers can update availability for items on today’s published menu. Managers can maintain the reusable catalogue and categories. Dated and recurring menu planning are not part of this scope.
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/vendor/menu?vendor_id={id}` | Read the selected vendor location’s published menu for today |
-| `GET` | `/vendor/menu/categories?vendor_id={id}` | Read categories for the vendor |
+| `GET` | `/vendor/menu?vendor_id={id}&page={n}&limit={n}` | Read one page of the selected vendor location’s published menu for today |
+| `GET` | `/vendor/menu/categories?vendor_id={id}&page={n}&limit={n}` | Read one page of active vendor categories |
 | `POST` | `/vendor/menu/categories` | Create a category for the manager’s vendor |
 | `PATCH` | `/vendor/menu/categories/{categoryId}` | Rename or archive a category owned by the manager’s vendor |
 | `POST` | `/vendor/menu/catalog-items` | Create a reusable catalogue item (manager only) |
@@ -37,7 +37,7 @@ Vendor managers can list, issue, and revoke only staff invitations for their own
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/vendor/invitations?vendor_id={id}` | List staff invitations (manager only) |
+| `GET` | `/vendor/invitations?vendor_id={id}&page={n}&limit={n}` | List one page of staff invitations (manager only) |
 | `POST` | `/vendor/invitations` | Invite an email as staff; `vendor_id` and `email` are accepted, role is server-set |
 | `DELETE` | `/vendor/invitations/{invitationId}` | Revoke a pending staff invitation (manager only) |
 
@@ -49,7 +49,7 @@ Active vendor managers can view and remove staff access for their own vendor. Ma
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/vendor/staff?vendor_id={id}` | List active staff for the manager's vendor |
+| `GET` | `/vendor/staff?vendor_id={id}&page={n}&limit={n}` | List one page of active staff for the manager's vendor |
 | `DELETE` | `/vendor/staff/{userId}?vendor_id={id}` | Deactivate a staff membership and revoke its pending invitations |
 
 ## Database migrations
@@ -61,6 +61,8 @@ Apply `migrations/021_vendor_menu_planning.sql` before enabling per-item availab
 Apply `migrations/022_protect_vendor_manager_from_staff_invite.sql` before enabling manager invitations. It adds the atomic manager-only, staff-only invitation RPC and prevents staff invitations from changing an existing manager membership.
 
 Apply `migrations/023_vendor_manager_staff_roster.sql` before enabling manager staff removal. It adds an atomic manager-scoped deactivation RPC that rejects manager targets, revokes matching pending staff invitations, and records audit entries.
+
+Apply `migrations/024_vendor_order_queue_pagination.sql` before deploying server-side order queue pagination. It adds the queue index and service-role-only function that filters, counts, orders, and pages active vendor orders in the database.
 
 ## Authorization and audit
 

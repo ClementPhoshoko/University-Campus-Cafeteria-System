@@ -2822,15 +2822,24 @@ paths:
   '/vendor/orders':
     get:
       tags: [Vendor Operations]
-      summary: List active orders for a vendor the signed-in user belongs to
+      summary: List a server-paginated order queue for a vendor the signed-in user belongs to
       security: [{ bearerAuth: [] }]
       parameters:
         - name: vendor_id
           in: query
           required: true
           schema: { type: string, format: uuid }
+        - name: filter
+          in: query
+          schema: { type: string, enum: [active, needs_attention, ready_for_collection], default: active }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 5 }
       responses:
-        '200': { description: Active orders with items and collection details }
+        '200': { description: Server-paginated orders with items, counts, and collection details }
         '403': { $ref: '#/components/responses/Forbidden' }
   '/vendor/orders/{orderId}/status':
     patch:
@@ -2867,8 +2876,14 @@ paths:
           in: query
           required: true
           schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 5 }
       responses:
-        '200': { description: Today’s menu items and their availability }
+        '200': { description: Server-paginated menu items and their availability }
         '403': { $ref: '#/components/responses/Forbidden' }
   '/vendor/menu/categories':
     get:
@@ -2880,8 +2895,14 @@ paths:
           in: query
           required: true
           schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 50 }
       responses:
-        '200': { description: Vendor menu categories }
+        '200': { description: Server-paginated vendor menu categories }
         '403': { $ref: '#/components/responses/Forbidden' }
   '/vendor/menu/items':
     post:

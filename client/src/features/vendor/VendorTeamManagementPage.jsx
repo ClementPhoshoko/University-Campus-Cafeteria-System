@@ -2,8 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { IconArrowLeft, IconRefresh, IconUserPlus } from '@tabler/icons-react';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import { useConfirm } from '../../components/confirmation/ConfirmProvider.jsx';
+import Pagination from '../../components/ui/Pagination.jsx';
 import { VendorTeamInvitationsSkeleton } from './VendorLoadingSkeletons.jsx';
 import { deactivateMyVendorStaff, inviteVendorStaff, listMyVendorInvitations, listMyVendorStaff, revokeMyVendorInvitation } from '../../services/vendorApi.js';
+
+const TEAM_PAGE_SIZE = 8;
+const emptyPagination = { page: 1, limit: TEAM_PAGE_SIZE, total: 0, totalPages: 0 };
 
 function formatExpiry(value) {
   return new Intl.DateTimeFormat('en-ZA', {
@@ -17,6 +21,10 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
   const [email, setEmail] = useState('');
   const [invitations, setInvitations] = useState([]);
   const [staff, setStaff] = useState([]);
+  const [staffPage, setStaffPage] = useState(1);
+  const [staffPagination, setStaffPagination] = useState(emptyPagination);
+  const [invitationPage, setInvitationPage] = useState(1);
+  const [invitationPagination, setInvitationPagination] = useState(emptyPagination);
   const [loading, setLoading] = useState(true);
   const [staffLoading, setStaffLoading] = useState(true);
   const [staffError, setStaffError] = useState('');
@@ -26,10 +34,11 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
-  const loadInvitations = useCallback(async (signal) => {
+  const loadInvitations = useCallback(async (page, signal) => {
     try {
-      const response = await listMyVendorInvitations(vendorId, { token, signal });
+      const response = await listMyVendorInvitations(vendorId, { token, page, limit: TEAM_PAGE_SIZE, signal });
       setInvitations(response.invitations || []);
+      setInvitationPagination(response.pagination || emptyPagination);
       setLoadError('');
     } catch (loadFailure) {
       if (loadFailure.name !== 'AbortError') {
@@ -40,10 +49,11 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
     }
   }, [token, vendorId]);
 
-  const loadStaff = useCallback(async (signal) => {
+  const loadStaff = useCallback(async (page, signal) => {
     try {
-      const response = await listMyVendorStaff(vendorId, { token, signal });
+      const response = await listMyVendorStaff(vendorId, { token, page, limit: TEAM_PAGE_SIZE, signal });
       setStaff(response.staff || []);
+      setStaffPagination(response.pagination || emptyPagination);
       setStaffError('');
     } catch (loadFailure) {
       if (loadFailure.name !== 'AbortError') setStaffError(loadFailure.message || 'Could not load active vendor staff.');
@@ -56,10 +66,15 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
     const controller = new AbortController();
     setLoading(true);
     setStaffLoading(true);
-    loadInvitations(controller.signal);
-    loadStaff(controller.signal);
+    loadInvitations(invitationPage, controller.signal);
+    loadStaff(staffPage, controller.signal);
     return () => controller.abort();
-  }, [loadInvitations, loadStaff]);
+  }, [loadInvitations, loadStaff, invitationPage, staffPage]);
+
+  useEffect(() => {
+    setStaffPage(1);
+    setInvitationPage(1);
+  }, [vendorId]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -70,10 +85,12 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
     setNotice('');
     try {
       const response = await inviteVendorStaff(vendorId, inviteEmail, { token });
+      if (invitationPage !== 1) setInvitationPage(1);
       setInvitations((current) => [
         response.invitation,
         ...current.filter((item) => item.email !== response.invitation.email || item.status !== 'pending'),
-      ].slice(0, 30));
+      ].slice(0, TEAM_PAGE_SIZE));
+      setInvitationPagination((current) => ({ ...current, page: 1, total: current.total + 1, totalPages: Math.ceil((current.total + 1) / TEAM_PAGE_SIZE) }));
       setEmail('');
       setNotice(`Staff invitation sent to ${response.invitation.email}.`);
     } catch (submitError) {
@@ -108,6 +125,10 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
     try {
       const response = await deactivateMyVendorStaff(vendorId, member.user_id, { token });
       setStaff((current) => current.filter((staffMember) => staffMember.user_id !== member.user_id));
+      const total = Math.max(0, staffPagination.total - 1);
+      const totalPages = Math.ceil(total / TEAM_PAGE_SIZE);
+      setStaffPagination((current) => ({ ...current, total, totalPages }));
+      if (staff.length === 1 && staffPage > Math.max(1, totalPages)) setStaffPage(Math.max(1, totalPages));
       if (response.staff_member?.revoked_pending_invitations) {
         setInvitations((current) => current.map((invitation) => (
           invitation.email.trim().toLowerCase() === (member.email || '').trim().toLowerCase() && invitation.status === 'pending'
@@ -164,7 +185,7 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
           <h3 id="vendor-team-staff-title">Active staff</h3>
           <p>Managers can remove staff access. Manager access remains admin-controlled.</p>
         </div>
-        <button className="vendor-team__refresh" type="button" onClick={() => { setStaffLoading(true); loadStaff(); }} disabled={staffLoading} aria-label="Refresh active staff">
+        <button className="vendor-team__refresh" type="button" onClick={() => { setStaffLoading(true); loadStaff(staffPage); }} disabled={staffLoading} aria-label="Refresh active staff">
           <IconRefresh size={17} />
         </button>
       </header>
@@ -188,6 +209,7 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
           </button>
         </article>
       ))}
+      {!staffLoading && <Pagination currentPage={staffPage} totalPages={staffPagination.totalPages} totalItems={staffPagination.total} itemsPerPage={TEAM_PAGE_SIZE} label="staff members" onPageChange={(page) => { setStaffLoading(true); setStaffPage(page); }} />}
     </section>
 
     <section className="vendor-team__list" aria-labelledby="vendor-team-invitations-title">
@@ -215,6 +237,7 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
           )}
         </article>
       ))}
+      {!loading && <Pagination currentPage={invitationPage} totalPages={invitationPagination.totalPages} totalItems={invitationPagination.total} itemsPerPage={TEAM_PAGE_SIZE} label="invitations" onPageChange={(page) => { setLoading(true); setInvitationPage(page); }} />}
     </section>
   </section>;
 }

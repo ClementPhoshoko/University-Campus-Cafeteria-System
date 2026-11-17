@@ -22,10 +22,7 @@ const QUEUE_FILTERS = [
   { value: 'ready_for_collection', label: 'Ready for collection' },
 ];
 const VENDOR_LIST_PAGE_SIZE = 5;
-function collectionTime(order) {
-  return order.collection_slot?.starts_at ? new Date(order.collection_slot.starts_at).getTime() : Number.MAX_SAFE_INTEGER;
-}
-
+const emptyServerPagination = { page: 1, limit: VENDOR_LIST_PAGE_SIZE, total: 0, totalPages: 0 };
 function isUrgent(order, now) {
   if (!order.collection_slot?.starts_at || ['ready_for_collection'].includes(order.status)) return false;
   const minutes = (new Date(order.collection_slot.starts_at).getTime() - now) / 60000;
@@ -46,7 +43,11 @@ export default function VendorOperationsPage() {
   const [vendorsState, setVendorsState] = useState('loading');
   const [vendorError, setVendorError] = useState('');
   const [orders, setOrders] = useState([]);
+  const [queuePagination, setQueuePagination] = useState(emptyServerPagination);
+  const [queueCounts, setQueueCounts] = useState({ active: 0, urgent: 0, needs_attention: 0, ready_for_collection: 0 });
+  const [nextCollection, setNextCollection] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
+  const [menuPagination, setMenuPagination] = useState(emptyServerPagination);
   const [menu, setMenu] = useState(null);
   const [menuCategories, setMenuCategories] = useState([]);
   const [ordersState, setOrdersState] = useState('loading');
@@ -79,20 +80,27 @@ export default function VendorOperationsPage() {
 
   const loadOrders = useCallback(async (signal) => {
     if (!vendorId) return;
-    try { const response = await listVendorQueue(vendorId, { token, signal }); setOrders(response.orders || []); setOrdersState('ready'); setOrdersError(''); }
+    try {
+      const response = await listVendorQueue(vendorId, { token, page: queuePage, limit: VENDOR_LIST_PAGE_SIZE, filter, signal });
+      setOrders(response.orders || []);
+      setQueuePagination(response.pagination || emptyServerPagination);
+      setQueueCounts(response.counts || { active: 0, urgent: 0, needs_attention: 0, ready_for_collection: 0 });
+      setNextCollection(response.next_collection || null);
+      if (response.pagination?.page && response.pagination.page !== queuePage) setQueuePage(response.pagination.page);
+      setOrdersState('ready'); setOrdersError('');
+    }
     catch (error) { if (error.name !== 'AbortError') { setOrdersError(error.message || 'Could not refresh the order queue.'); setOrdersState((current) => current === 'loading' ? 'error' : 'ready'); } }
-  }, [token, vendorId]);
+  }, [token, vendorId, queuePage, filter]);
 
   const loadMenu = useCallback(async (signal) => {
     if (!vendorId) return;
     try {
-      const [response, categoryResponse] = await Promise.all([
-        listVendorOperationsMenu(vendorId, { token, signal }), listVendorMenuCategories(vendorId, { token, signal }),
-      ]);
-      setMenuItems(response.items || []); setMenu(response.menu || null); setMenuCategories(categoryResponse.categories || []); setMenuState('ready'); setMenuError('');
+      const response = await listVendorOperationsMenu(vendorId, { token, page: menuPage, limit: VENDOR_LIST_PAGE_SIZE, signal });
+      setMenuItems(response.items || []); setMenuPagination(response.pagination || emptyServerPagination); setMenu(response.menu || null); setMenuState('ready'); setMenuError('');
+      if (response.pagination?.page && response.pagination.page !== menuPage) setMenuPage(response.pagination.page);
     }
     catch (error) { if (error.name !== 'AbortError') { setMenuError(error.message || 'Could not load today’s menu.'); setMenuState((current) => current === 'loading' ? 'error' : 'ready'); } }
-  }, [token, vendorId]);
+  }, [token, vendorId, menuPage]);
 
   useEffect(() => {
     if (!vendorId || showingManagerView) return undefined;
@@ -103,20 +111,15 @@ export default function VendorOperationsPage() {
   }, [vendorId, loadOrders, loadMenu, showingManagerView]);
 
   const selectedVendor = useMemo(() => vendors.find((vendor) => vendor.id === vendorId), [vendors, vendorId]);
-  const visibleOrders = useMemo(() => orders.slice().sort((a, b) => collectionTime(a) - collectionTime(b)).filter((order) => {
-    if (filter === 'ready_for_collection') return order.status === filter;
-    if (filter === 'needs_attention') return isUrgent(order, now) || order.status === 'payment_confirmed';
-    return true;
-  }), [orders, filter, now]);
-  const queueTotalPages = Math.max(1, Math.ceil(visibleOrders.length / VENDOR_LIST_PAGE_SIZE));
-  const safeQueuePage = Math.min(queuePage, queueTotalPages);
-  const pagedOrders = visibleOrders.slice((safeQueuePage - 1) * VENDOR_LIST_PAGE_SIZE, safeQueuePage * VENDOR_LIST_PAGE_SIZE);
-  const menuTotalPages = Math.max(1, Math.ceil(menuItems.length / VENDOR_LIST_PAGE_SIZE));
-  const safeMenuPage = Math.min(menuPage, menuTotalPages);
-  const pagedMenuItems = menuItems.slice((safeMenuPage - 1) * VENDOR_LIST_PAGE_SIZE, safeMenuPage * VENDOR_LIST_PAGE_SIZE);
-  const urgentCount = orders.filter((order) => isUrgent(order, now)).length;
-  const readyCount = orders.filter((order) => order.status === 'ready_for_collection').length;
-  const nextCollection = orders.filter((order) => order.collection_slot?.starts_at).sort((a, b) => collectionTime(a) - collectionTime(b))[0];
+  const visibleOrders = orders;
+  const pagedOrders = orders;
+  const safeQueuePage = queuePagination.page || queuePage;
+  const queueTotalPages = queuePagination.totalPages || 1;
+  const pagedMenuItems = menuItems;
+  const safeMenuPage = menuPagination.page || menuPage;
+  const menuTotalPages = menuPagination.totalPages || 1;
+  const urgentCount = queueCounts.urgent;
+  const readyCount = queueCounts.ready_for_collection;
 
   useEffect(() => { setQueuePage(1); }, [filter, vendorId]);
   useEffect(() => { setMenuPage(1); }, [vendorId]);
@@ -170,6 +173,22 @@ export default function VendorOperationsPage() {
     finally { setSavingEditor(false); }
   }
 
+  async function openMenuItemEditor(item) {
+    setMenuError('');
+    try {
+      const first = await listVendorMenuCategories(vendorId, { token, page: 1, limit: 50 });
+      const categories = first.categories || [];
+      for (let page = 2; page <= (first.pagination?.totalPages || 1); page += 1) {
+        const response = await listVendorMenuCategories(vendorId, { token, page, limit: 50 });
+        categories.push(...(response.categories || []));
+      }
+      setMenuCategories(categories);
+      setEditingItem(item);
+    } catch (error) {
+      setMenuError(error.message || 'Could not load categories for the menu item form.');
+    }
+  }
+
   async function handleArchiveMenuItem(item) {
     if (!await confirm({ title: 'Archive this menu item?', message: `“${item.name}” will no longer appear on customer menus.`, confirmLabel: 'Archive item', tone: 'danger' })) return;
     setBusyItem(item.id); setNotice('');
@@ -207,10 +226,10 @@ export default function VendorOperationsPage() {
       {notice && <p className="vendor-ops-notice" role="status">{notice}</p>}
       {!showingManagerView && ordersState === 'loading' && <VendorSummarySkeleton />}
       {!showingManagerView && ordersState !== 'loading' && <div className="vendor-ops-summary">
-        <SummaryCard label="Active orders" value={orders.length} detail="In your live queue" Icon={IconShoppingBag} />
+        <SummaryCard label="Active orders" value={queueCounts.active} detail="In your live queue" Icon={IconShoppingBag} />
         <SummaryCard label="Needs attention" value={urgentCount} detail="Collection within 15 minutes" Icon={IconAlertTriangle} tone={urgentCount ? 'warning' : ''} />
         <SummaryCard label="Ready to collect" value={readyCount} detail="Waiting for customer pickup" Icon={IconSoup} tone="blue" />
-        <SummaryCard label="Next collection" value={nextCollection ? formatTime(nextCollection.collection_slot?.starts_at) : '—'} detail={nextCollection?.order_reference || 'No scheduled orders'} Icon={IconClockHour4} />
+        <SummaryCard label="Next collection" value={nextCollection ? formatTime(nextCollection.starts_at) : '—'} detail={nextCollection?.order_reference || 'No scheduled orders'} Icon={IconClockHour4} />
       </div>}
       {showingMenuManagement
         ? <VendorMenuManagementPage
@@ -233,20 +252,20 @@ export default function VendorOperationsPage() {
             {ordersState === 'loading' && <VendorQueueSkeleton />}
             {ordersError && ordersState !== 'error' && <div className="vendor-ops-inline-error" role="status">Queue refresh failed: {ordersError} Showing the last loaded orders.</div>}
             {ordersState === 'error' && <div className="vendor-ops-inline-error" role="alert">{ordersError}</div>}
-            {ordersState === 'ready' && !visibleOrders.length && <div className="vendor-ops-section-empty">{orders.length ? 'No orders match this filter.' : 'No active orders. New paid orders will appear here.'}</div>}
+            {ordersState === 'ready' && !visibleOrders.length && <div className="vendor-ops-section-empty">{filter !== 'active' && queueCounts.active ? 'No orders match this filter.' : 'No active orders. New paid orders will appear here.'}</div>}
             {ordersState === 'ready' && pagedOrders.map((order) => <OrderCard key={order.id} order={order} busy={busyOrder === order.id} urgent={isUrgent(order, now)} onStatus={handleOrderStatus} />)}
-            <div className="vendor-list-pagination-slot"><Pagination currentPage={safeQueuePage} totalPages={queueTotalPages} totalItems={visibleOrders.length} itemsPerPage={VENDOR_LIST_PAGE_SIZE} label="orders" onPageChange={setQueuePage} /></div>
+            <div className="vendor-list-pagination-slot"><Pagination currentPage={safeQueuePage} totalPages={queueTotalPages} totalItems={queuePagination.total} itemsPerPage={VENDOR_LIST_PAGE_SIZE} label="orders" onPageChange={setQueuePage} /></div>
           </div>
         </VendorSection>
-        <VendorSection title="Today’s menu" description="Manage the items customers can order today" Icon={IconSoup} className="vendor-ops-section--menu" action={selectedVendor.role === 'manager' && menu ? <PrimaryButton onClick={() => setEditingItem({ isNew: true })}>Add item</PrimaryButton> : null}>
+        <VendorSection title="Today’s menu" description="Manage the items customers can order today" Icon={IconSoup} className="vendor-ops-section--menu" action={selectedVendor.role === 'manager' && menu ? <PrimaryButton onClick={() => openMenuItemEditor({ isNew: true })}>Add item</PrimaryButton> : null}>
           <div className="vendor-menu-list">
             {menuState === 'loading' && <VendorMenuItemsSkeleton />}
             {menuError && menuState !== 'error' && <div className="vendor-ops-inline-error" role="status">Menu refresh failed: {menuError}</div>}
             {menuState === 'error' && <div className="vendor-ops-inline-error" role="alert">{menuError}</div>}
             {menuState === 'ready' && !menu && <div className="vendor-ops-section-empty">There is no published menu for today. Ask an administrator to publish the menu before adding items.</div>}
-            {menuState === 'ready' && menu && !menuItems.length && <div className="vendor-ops-section-empty">No items are on a published menu today.</div>}
-            {menuState === 'ready' && pagedMenuItems.map((item) => <div className="vendor-menu-item-wrap" key={item.id}><MenuItemCard item={item} busy={busyItem === item.id} onSave={handleAvailability} />{selectedVendor.role === 'manager' && <div className="vendor-menu-item-wrap__actions"><PrimaryButton size="sm" onClick={() => setEditingItem(item)}>Edit details</PrimaryButton><PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" onClick={() => handleArchiveMenuItem(item)} disabled={busyItem === item.id}>Archive</PrimaryButton></div>}</div>)}
-            <div className="vendor-list-pagination-slot"><Pagination currentPage={safeMenuPage} totalPages={menuTotalPages} totalItems={menuItems.length} itemsPerPage={VENDOR_LIST_PAGE_SIZE} label="menu items" onPageChange={setMenuPage} /></div>
+            {menuState === 'ready' && menu && !menuPagination.total && <div className="vendor-ops-section-empty">No items are on a published menu today.</div>}
+            {menuState === 'ready' && pagedMenuItems.map((item) => <div className="vendor-menu-item-wrap" key={item.id}><MenuItemCard item={item} busy={busyItem === item.id} onSave={handleAvailability} />{selectedVendor.role === 'manager' && <div className="vendor-menu-item-wrap__actions"><PrimaryButton size="sm" onClick={() => openMenuItemEditor(item)}>Edit details</PrimaryButton><PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" onClick={() => handleArchiveMenuItem(item)} disabled={busyItem === item.id}>Archive</PrimaryButton></div>}</div>)}
+            <div className="vendor-list-pagination-slot"><Pagination currentPage={safeMenuPage} totalPages={menuTotalPages} totalItems={menuPagination.total} itemsPerPage={VENDOR_LIST_PAGE_SIZE} label="menu items" onPageChange={setMenuPage} /></div>
         </div>
         </VendorSection>
       </div>

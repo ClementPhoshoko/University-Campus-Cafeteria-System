@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase.js';
 import * as auth from '../services/auth.js';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -157,10 +159,14 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       await auth.signOut();
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      navigate('/login', { replace: true });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [navigate]);
 
   const value = {
     session,

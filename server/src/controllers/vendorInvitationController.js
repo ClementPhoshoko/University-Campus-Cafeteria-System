@@ -8,6 +8,7 @@ import { ApiError, sendError, sendInternalError } from '../utils/errors.js';
 import { writeAudit } from '../utils/audit.js';
 import { respond } from '../utils/http.js';
 import { isUuid } from '../validators/vendorValidators.js';
+import { buildPagination, parsePagination } from '../utils/pagination.js';
 
 const db = () => supabaseAdmin;
 
@@ -199,15 +200,16 @@ export async function listMyVendorInvitations(req, res) {
     const vendorId = String(req.query.vendor_id || '');
     if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid vendor id');
     await requireVendorManager(req.user.id, vendorId);
-    const { data, error } = await db()
+    const { pageNum, limitNum, from, to } = parsePagination(req.query, { maxLimit: 50, defaultLimit: 8 });
+    const { data, count, error } = await db()
       .from('vendor_invitations')
-      .select('id, email, role, status, expires_at, created_at')
+      .select('id, email, role, status, expires_at, created_at', { count: 'exact' })
       .eq('vendor_id', vendorId)
       .eq('role', 'staff')
       .order('created_at', { ascending: false })
-      .limit(30);
+      .range(from, to);
     if (error) throw error;
-    return respond(req, res, { success: true, invitations: data || [] }, { cacheControl: 'private, no-store' });
+    return respond(req, res, { success: true, invitations: data || [], pagination: buildPagination(count, pageNum, limitNum) }, { cacheControl: 'private, no-store' });
   } catch (error) {
     return handleError(res, error);
   }
@@ -218,14 +220,15 @@ export async function listMyVendorStaff(req, res) {
     const vendorId = String(req.query.vendor_id || '');
     if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid vendor id');
     await requireVendorManager(req.user.id, vendorId);
-    const { data, error } = await db()
+    const { pageNum, limitNum, from, to } = parsePagination(req.query, { maxLimit: 50, defaultLimit: 8 });
+    const { data, count, error } = await db()
       .from('vendor_users')
-      .select('user_id, role, is_active, created_at, profiles!vendor_users_user_id_fkey(full_name, email, employee_number)')
+      .select('user_id, role, is_active, created_at, profiles!vendor_users_user_id_fkey(full_name, email, employee_number)', { count: 'exact' })
       .eq('vendor_id', vendorId)
       .eq('role', 'staff')
       .eq('is_active', true)
       .order('created_at', { ascending: true })
-      .limit(100);
+      .range(from, to);
     if (error) throw error;
     const staff = (data || []).map((member) => ({
       user_id: member.user_id,
@@ -236,7 +239,7 @@ export async function listMyVendorStaff(req, res) {
       email: member.profiles?.email || null,
       employee_number: member.profiles?.employee_number || null,
     }));
-    return respond(req, res, { success: true, staff }, { cacheControl: 'private, no-store' });
+    return respond(req, res, { success: true, staff, pagination: buildPagination(count, pageNum, limitNum) }, { cacheControl: 'private, no-store' });
   } catch (error) {
     return handleError(res, error);
   }

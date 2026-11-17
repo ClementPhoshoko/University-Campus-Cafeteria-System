@@ -13,7 +13,6 @@ import {
 } from '../utils/vendorOrderWorkflow.js';
 
 const db = () => supabaseAdmin;
-const ACTIVE_STATUSES = ['payment_confirmed', 'received_by_vendor', 'accepted', 'preparing', 'ready_for_collection'];
 const ORDER_SELECT = 'id, order_reference, vendor_id, vendor_location_id, status, payment_status, order_type, total, currency, notes, created_at, collection_slot_id, collection_points(name), profiles!orders_user_id_fkey(full_name), collection_slots(starts_at, ends_at)';
 const MENU_ITEM_SELECT = 'id, vendor_id, category_id, name, description, image_url, ingredients, portion_description, base_price, currency, prep_minutes, status, is_active, menu_categories(id, name)';
 
@@ -126,23 +125,21 @@ export async function listMyVendorCategories(req, res) {
   try {
     const vendorId = String(req.query.vendor_id || '');
     if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
-    const pagination = req.query.page !== undefined || req.query.limit !== undefined
-      ? parsePagination(req.query, { maxLimit: 50, defaultLimit: 8 })
-      : null;
-    if (pagination) await requireVendorManager(req.user.id, vendorId);
-    else await membership(req.user.id, vendorId);
+    const pagination = parsePagination(req.query, { maxLimit: 50, defaultLimit: 50 });
+    await membership(req.user.id, vendorId);
     let query = db().from('menu_categories')
-      .select('id, name, description, sort_order, is_active', pagination ? { count: 'exact' } : {})
+      .select('id, name, description, sort_order, is_active', { count: 'exact' })
       .eq('vendor_id', vendorId)
+      .eq('is_active', true)
       .order('sort_order')
-      .order('name');
-    if (pagination) query = query.eq('is_active', true).range(pagination.from, pagination.to);
+      .order('name')
+      .range(pagination.from, pagination.to);
     const { data, error, count } = await query;
     if (error) throw error;
     return respond(req, res, {
       success: true,
       categories: data || [],
-      ...(pagination ? { pagination: buildPagination(count, pagination.pageNum, pagination.limitNum) } : {}),
+      pagination: buildPagination(count, pagination.pageNum, pagination.limitNum),
     }, { cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
 }
@@ -387,22 +384,42 @@ export async function listMyVendorOrders(req, res) {
     const vendorId = String(req.query.vendor_id || '');
     if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
     await membership(req.user.id, vendorId);
-    const { data: orders, error } = await db().from('orders').select(ORDER_SELECT).eq('vendor_id', vendorId).in('status', ACTIVE_STATUSES).order('created_at', { ascending: true }).limit(100);
-    if (error) throw error;
-    const ids = (orders || []).map((order) => order.id);
+    const { pageNum, limitNum } = parsePagination(req.query, { maxLimit: 50, defaultLimit: 5 });
+    const filter = String(req.query.filter || 'active');
+    if (!['active', 'needs_attention', 'ready_for_collection'].includes(filter)) return sendError(res, 400, 'INVALID_QUEUE_FILTER', 'Unsupported order queue filter');
+    const { data: queuePage, error: queueError } = await db().rpc('get_vendor_order_queue_page', {
+      p_vendor_id: vendorId,
+      p_filter: filter,
+      p_page: pageNum,
+      p_limit: limitNum,
+      p_attention_cutoff: new Date(Date.now() + 15 * 60_000).toISOString(),
+    });
+    if (queueError) throw queueError;
+    const pageIds = queuePage?.order_ids || [];
+    const { data: orders, error: orderError } = pageIds.length
+      ? await db().from('orders').select(ORDER_SELECT).eq('vendor_id', vendorId).in('id', pageIds)
+      : { data: [], error: null };
+    if (orderError) throw orderError;
+    const orderMap = new Map((orders || []).map((order) => [order.id, order]));
+    const orderedPage = pageIds.map((id) => orderMap.get(id)).filter(Boolean);
+    const ids = orderedPage.map((order) => order.id);
     const { data: items, error: itemError } = ids.length
       ? await db().from('order_items').select('order_id, item_name_snapshot, quantity, unit_price_snapshot, line_total, special_instructions, customization_snapshot, dietary_snapshot').in('order_id', ids).order('created_at')
       : { data: [], error: null };
     if (itemError) throw itemError;
     const itemsByOrder = {};
     (items || []).forEach((item) => { (itemsByOrder[item.order_id] ||= []).push(item); });
-    return respond(req, res, { success: true, orders: (orders || []).map((order) => ({
+    return respond(req, res, { success: true, orders: orderedPage.map((order) => ({
       ...order,
       customer_name: order.profiles?.full_name || 'Customer',
       collection_point_name: order.collection_points?.name || null,
       collection_slot: order.collection_slots || null,
       items: itemsByOrder[order.id] || [],
-    })) }, { cacheControl: 'private, no-store' });
+    })),
+    pagination: queuePage.pagination,
+    counts: queuePage.counts,
+    next_collection: queuePage.next_collection,
+    }, { cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
 }
 
@@ -469,24 +486,54 @@ export async function listMyVendorMenu(req, res) {
       : { data: [], error: null };
     if (menuError) throw menuError;
     const menuIds = (menus || []).map((menu) => menu.id);
-    const { data: items, error: itemError } = await db().from('menu_items').select('id, name, description, image_url, category_id, ingredients, portion_description, prep_minutes, base_price, currency, status, is_active, menu_categories(id, name)').eq('vendor_id', vendorId).eq('is_active', true).order('name');
-    if (itemError) throw itemError;
-    const links = menuIds.length
-      ? await db().from('menu_menu_items').select('menu_id, menu_item_id, status').in('menu_id', menuIds)
-      : { data: [], error: null };
-    if (links.error) throw links.error;
-    const linkedItemIds = new Set((links.data || []).map((row) => row.menu_item_id));
+    const { pageNum: requestedPage, limitNum } = parsePagination(req.query, { maxLimit: 50, defaultLimit: 5 });
+    let pageNum = requestedPage;
+    let from = (pageNum - 1) * limitNum;
+    let to = from + limitNum - 1;
     const menu = menus?.[0] || null;
+    let links = menu
+      ? await db().from('menu_menu_items')
+        .select('menu_item_id, status, display_order, menu_items!inner(is_active)', { count: 'exact' })
+        .eq('menu_id', menu.id)
+        .eq('menu_items.is_active', true)
+        .order('display_order', { ascending: true })
+        .order('menu_item_id', { ascending: true })
+        .range(from, to)
+      : { data: [], count: 0, error: null };
+    if (links.error) throw links.error;
+    const totalPages = Math.ceil((links.count || 0) / limitNum);
+    pageNum = Math.max(1, Math.min(requestedPage, totalPages || 1));
+    if (pageNum !== requestedPage && menu) {
+      from = (pageNum - 1) * limitNum;
+      to = from + limitNum - 1;
+      links = await db().from('menu_menu_items')
+        .select('menu_item_id, status, display_order, menu_items!inner(is_active)', { count: 'exact' })
+        .eq('menu_id', menu.id)
+        .eq('menu_items.is_active', true)
+        .order('display_order', { ascending: true })
+        .order('menu_item_id', { ascending: true })
+        .range(from, to);
+      if (links.error) throw links.error;
+    }
+    const pageLinks = links.data || [];
+    const linkedItemIds = pageLinks.map((row) => row.menu_item_id);
+    const { data: items, error: itemError } = linkedItemIds.length
+      ? await db().from('menu_items').select('id, name, description, image_url, category_id, ingredients, portion_description, prep_minutes, base_price, currency, status, is_active, menu_categories(id, name)').eq('vendor_id', vendorId).eq('is_active', true).in('id', linkedItemIds)
+      : { data: [], error: null };
+    if (itemError) throw itemError;
+    const linkByItem = new Map(pageLinks.map((link) => [link.menu_item_id, link]));
+    const orderedItems = linkedItemIds.map((id) => (items || []).find((item) => item.id === id)).filter(Boolean);
     return respond(req, res, {
       success: true,
       date: day,
       menu: menu ? { id: menu.id, name: menu.name, vendor_location_id: menu.vendor_location_id } : null,
-      items: menu ? await Promise.all((items || []).filter((item) => linkedItemIds.has(item.id)).map(async (item) => ({
+      items: menu ? await Promise.all(orderedItems.map(async (item) => ({
         ...item,
         image_url: await resolveAssetUrl(item.image_url, { size: 'thumb' }),
         menu_id: menu.id,
-        status: links.data.find((link) => link.menu_item_id === item.id)?.status || item.status,
+        status: linkByItem.get(item.id)?.status || item.status,
       }))) : [],
+      pagination: buildPagination(links.count, pageNum, limitNum),
     }, { cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
 }
