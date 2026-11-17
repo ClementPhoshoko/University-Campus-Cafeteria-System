@@ -37,6 +37,8 @@ import {
   createMyVendorStaffInvitation,
   listMyVendorInvitations,
   revokeMyVendorInvitation,
+  listMyVendorStaff,
+  deactivateMyVendorStaff,
 } from '../controllers/vendorInvitationController.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { uploadVendorMenuItemAsset } from '../controllers/assetController.js';
@@ -56,6 +58,8 @@ vendorRouter.get('/vendor/me', listMyVendors);
 vendorRouter.get('/vendor/invitations', listMyVendorInvitations);
 vendorRouter.post('/vendor/invitations', vendorMutations, createMyVendorStaffInvitation);
 vendorRouter.delete('/vendor/invitations/:invitationId', vendorMutations, revokeMyVendorInvitation);
+vendorRouter.get('/vendor/staff', listMyVendorStaff);
+vendorRouter.delete('/vendor/staff/:userId', vendorMutations, deactivateMyVendorStaff);
 vendorRouter.get('/vendor/orders', listMyVendorOrders);
 vendorRouter.patch('/vendor/orders/:orderId/status', vendorMutations, updateMyVendorOrderStatus);
 vendorRouter.get('/vendor/menu', listMyVendorMenu);

@@ -43,7 +43,7 @@ Dated and recurring menu planning are out of scope. Keep the existing `/vendor/m
 - Add server-side pagination, total counts, and supported status filters to `GET /vendor/orders`.
 - Define stable server-side ordering that preserves collection-time priority; add or confirm indexes for the queue query.
 - Replace client-only slicing of the first 100 orders with API-driven pagination or load-more behavior.
-- Add a manager-scoped active-staff list and staff access removal/deactivation endpoint.
+- [x] Add a manager-scoped active-staff list and staff access deactivation endpoint. Managers can deactivate only staff in their own vendor; matching pending staff invitations are revoked and the change is audited atomically. Apply `server/src/docs/migrations/023_vendor_manager_staff_roster.sql` before enabling it.
 - Managers may manage staff membership only. They must not assign, edit, or remove manager access, and all actions must be vendor-scoped and audited.
 
 ### 3. Vendor collection-slot controls

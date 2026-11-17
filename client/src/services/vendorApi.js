@@ -47,6 +47,24 @@ export function revokeMyVendorInvitation(invitationId, { token, signal } = {}) {
   return apiRequest(`/vendor/invitations/${invitationId}`, { method: 'DELETE', token, signal });
 }
 
+export function listMyVendorStaff(vendorId, { token, signal } = {}) {
+  return apiRequest('/vendor/staff', {
+    token,
+    signal,
+    query: { vendor_id: vendorId },
+    cache: 'no-store',
+  });
+}
+
+export function deactivateMyVendorStaff(vendorId, userId, { token, signal } = {}) {
+  return apiRequest(`/vendor/staff/${userId}`, {
+    method: 'DELETE',
+    token,
+    signal,
+    query: { vendor_id: vendorId },
+  });
+}
+
 export function listVendorQueue(vendorId, { token, signal } = {}) {
   return apiRequest('/vendor/orders', { token, signal, query: { vendor_id: vendorId }, cache: 'no-store' });
 }

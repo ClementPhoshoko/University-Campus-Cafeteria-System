@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { IconArrowLeft, IconUserPlus } from '@tabler/icons-react';
+import { IconArrowLeft, IconRefresh, IconUserPlus } from '@tabler/icons-react';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
+import { useConfirm } from '../../components/confirmation/ConfirmProvider.jsx';
 import { VendorTeamInvitationsSkeleton } from './VendorLoadingSkeletons.jsx';
-import { inviteVendorStaff, listMyVendorInvitations, revokeMyVendorInvitation } from '../../services/vendorApi.js';
+import { deactivateMyVendorStaff, inviteVendorStaff, listMyVendorInvitations, listMyVendorStaff, revokeMyVendorInvitation } from '../../services/vendorApi.js';
 
 function formatExpiry(value) {
   return new Intl.DateTimeFormat('en-ZA', {
@@ -12,10 +13,15 @@ function formatExpiry(value) {
 }
 
 export default function VendorTeamManagementPage({ vendorId, vendorName, token, onBack }) {
+  const confirm = useConfirm();
   const [email, setEmail] = useState('');
   const [invitations, setInvitations] = useState([]);
+  const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [staffLoading, setStaffLoading] = useState(true);
+  const [staffError, setStaffError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [removingStaffId, setRemovingStaffId] = useState('');
   const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -34,12 +40,26 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
     }
   }, [token, vendorId]);
 
+  const loadStaff = useCallback(async (signal) => {
+    try {
+      const response = await listMyVendorStaff(vendorId, { token, signal });
+      setStaff(response.staff || []);
+      setStaffError('');
+    } catch (loadFailure) {
+      if (loadFailure.name !== 'AbortError') setStaffError(loadFailure.message || 'Could not load active vendor staff.');
+    } finally {
+      if (!signal?.aborted) setStaffLoading(false);
+    }
+  }, [token, vendorId]);
+
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
+    setStaffLoading(true);
     loadInvitations(controller.signal);
+    loadStaff(controller.signal);
     return () => controller.abort();
-  }, [loadInvitations]);
+  }, [loadInvitations, loadStaff]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -64,7 +84,7 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
   }
 
   async function handleRevoke(invitation) {
-    if (!window.confirm(`Revoke the staff invitation for ${invitation.email}?`)) return;
+    if (!await confirm({ title: 'Revoke staff invitation?', message: `The invitation sent to ${invitation.email} will no longer be usable.`, confirmLabel: 'Revoke invitation', tone: 'danger' })) return;
     setBusy(true);
     setError('');
     setNotice('');
@@ -76,6 +96,30 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
       setError(revokeError.message || 'Could not revoke this invitation.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleRemoveStaff(member) {
+    const label = member.full_name || member.email || 'this staff member';
+    if (!await confirm({ title: 'Remove staff access?', message: `${label} will lose access to ${vendorName || 'this vendor'}.`, confirmLabel: 'Remove access', tone: 'danger' })) return;
+    setRemovingStaffId(member.user_id);
+    setError('');
+    setNotice('');
+    try {
+      const response = await deactivateMyVendorStaff(vendorId, member.user_id, { token });
+      setStaff((current) => current.filter((staffMember) => staffMember.user_id !== member.user_id));
+      if (response.staff_member?.revoked_pending_invitations) {
+        setInvitations((current) => current.map((invitation) => (
+          invitation.email.trim().toLowerCase() === (member.email || '').trim().toLowerCase() && invitation.status === 'pending'
+            ? { ...invitation, status: 'revoked' }
+            : invitation
+        )));
+      }
+      setNotice(`${label}'s vendor access was removed.`);
+    } catch (removeError) {
+      setError(removeError.message || 'Could not remove this staff member.');
+    } finally {
+      setRemovingStaffId('');
     }
   }
 
@@ -113,6 +157,38 @@ export default function VendorTeamManagementPage({ vendorId, vendorName, token, 
         {busy ? 'Sending…' : 'Invite staff'}
       </PrimaryButton>
     </form>
+
+    <section className="vendor-team__list" aria-labelledby="vendor-team-staff-title">
+      <header className="vendor-team__list-heading">
+        <div>
+          <h3 id="vendor-team-staff-title">Active staff</h3>
+          <p>Managers can remove staff access. Manager access remains admin-controlled.</p>
+        </div>
+        <button className="vendor-team__refresh" type="button" onClick={() => { setStaffLoading(true); loadStaff(); }} disabled={staffLoading} aria-label="Refresh active staff">
+          <IconRefresh size={17} />
+        </button>
+      </header>
+      {staffError && <p className="vendor-ops-inline-error" role="alert">{staffError}</p>}
+      {staffLoading && <VendorTeamInvitationsSkeleton label="Loading active vendor staff" />}
+      {!staffLoading && !staffError && staff.length === 0 && <p className="vendor-team__empty">No active staff accounts yet.</p>}
+      {!staffLoading && staff.map((member) => (
+        <article className="vendor-team__member" key={member.user_id}>
+          <div>
+            <strong>{member.full_name || member.email || member.user_id}</strong>
+            <span>{member.email || 'No email on file'}{member.employee_number ? ` · ${member.employee_number}` : ''}</span>
+          </div>
+          <button
+            className="vendor-team__remove"
+            type="button"
+            onClick={() => handleRemoveStaff(member)}
+            disabled={Boolean(removingStaffId)}
+            aria-label={`Remove ${member.full_name || member.email || 'staff member'} from this vendor`}
+          >
+            {removingStaffId === member.user_id ? 'Removing…' : 'Remove access'}
+          </button>
+        </article>
+      ))}
+    </section>
 
     <section className="vendor-team__list" aria-labelledby="vendor-team-invitations-title">
       <header>

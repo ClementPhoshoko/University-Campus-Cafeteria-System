@@ -50,9 +50,11 @@ function handleError(res, error) {
   if (error?.code === 'P0001') {
     const databaseErrors = {
       VENDOR_NOT_APPROVED: [409, 'VENDOR_NOT_APPROVED', 'Approve the vendor before inviting staff'],
-      VENDOR_MANAGER_REQUIRED: [403, 'VENDOR_MANAGER_REQUIRED', 'A vendor manager role is required to invite staff'],
+      VENDOR_MANAGER_REQUIRED: [403, 'VENDOR_MANAGER_REQUIRED', 'A vendor manager role is required to manage vendor staff'],
       MANAGER_ROLE_PROTECTED: [409, 'MANAGER_ROLE_PROTECTED', 'An existing vendor manager cannot be changed by a staff invitation'],
       MANAGER_INVITATION_EXISTS: [409, 'MANAGER_INVITATION_EXISTS', 'An administrator already has a pending manager invitation for this email'],
+      STAFF_MEMBER_NOT_FOUND: [404, 'STAFF_MEMBER_NOT_FOUND', 'Active staff member not found for this vendor'],
+      VENDOR_MANAGER_PROTECTED: [409, 'VENDOR_MANAGER_PROTECTED', 'Vendor managers can only remove staff access'],
     };
     const mapped = databaseErrors[error.message];
     if (mapped) return sendError(res, ...mapped);
@@ -120,7 +122,7 @@ async function requireVendorManager(userId, vendorId) {
     .maybeSingle();
   if (error) throw error;
   if (data?.role !== 'manager') {
-    throw new ApiError(403, 'VENDOR_MANAGER_REQUIRED', 'A vendor manager role is required to manage staff invitations');
+    throw new ApiError(403, 'VENDOR_MANAGER_REQUIRED', 'A vendor manager role is required to manage vendor staff');
   }
 }
 
@@ -206,6 +208,54 @@ export async function listMyVendorInvitations(req, res) {
       .limit(30);
     if (error) throw error;
     return respond(req, res, { success: true, invitations: data || [] }, { cacheControl: 'private, no-store' });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+export async function listMyVendorStaff(req, res) {
+  try {
+    const vendorId = String(req.query.vendor_id || '');
+    if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid vendor id');
+    await requireVendorManager(req.user.id, vendorId);
+    const { data, error } = await db()
+      .from('vendor_users')
+      .select('user_id, role, is_active, created_at, profiles!vendor_users_user_id_fkey(full_name, email, employee_number)')
+      .eq('vendor_id', vendorId)
+      .eq('role', 'staff')
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .limit(100);
+    if (error) throw error;
+    const staff = (data || []).map((member) => ({
+      user_id: member.user_id,
+      role: member.role,
+      is_active: member.is_active,
+      created_at: member.created_at,
+      full_name: member.profiles?.full_name || null,
+      email: member.profiles?.email || null,
+      employee_number: member.profiles?.employee_number || null,
+    }));
+    return respond(req, res, { success: true, staff }, { cacheControl: 'private, no-store' });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+export async function deactivateMyVendorStaff(req, res) {
+  try {
+    const vendorId = String(req.query.vendor_id || '');
+    const { userId } = req.params;
+    if (!isUuid(vendorId) || !isUuid(userId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid vendor or user id');
+    await requireVendorManager(req.user.id, vendorId);
+    const { data, error } = await db().rpc('deactivate_vendor_staff_member', {
+      p_vendor_id: vendorId,
+      p_user_id: userId,
+      p_actor_id: req.user.id,
+    });
+    if (error) throw error;
+    if (!data?.success) throw new ApiError(409, 'STAFF_ACCESS_NOT_REMOVED', 'Staff access could not be removed');
+    return respond(req, res, { success: true, staff_member: data });
   } catch (error) {
     return handleError(res, error);
   }

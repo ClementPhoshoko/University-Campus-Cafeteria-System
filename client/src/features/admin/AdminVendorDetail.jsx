@@ -23,6 +23,7 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
+import { useConfirm } from '../../components/confirmation/ConfirmProvider.jsx';
 import { addVendorUser, adminRequest, createVendorLocation, listMenuItems, listVendorCategories, createMenuItem, updateMenuItem, deleteMenuItem, createVendorCategory, updateVendorCategory, deleteVendorCategory, removeVendorUser, updateVendor, updateVendorApproval, updateVendorLocation, uploadAdminAsset, createVendorInvitation, listVendorInvitations, revokeVendorInvitation } from '../../services/adminApi.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
@@ -101,6 +102,7 @@ function getVendorDetails(vendor) {
 }
 
 export default function AdminVendorDetail() {
+  const confirm = useConfirm();
   const { vendorId } = useParams();
   const { session } = useAuth();
   const token = session?.access_token;
@@ -333,7 +335,7 @@ export default function AdminVendorDetail() {
   };
 
   const handleInvitationRevoke = async (invitation) => {
-    if (!window.confirm(`Revoke the invitation for ${invitation.email}?`)) return;
+    if (!await confirm({ title: 'Revoke this invitation?', message: `The invitation sent to ${invitation.email} will no longer be usable.`, confirmLabel: 'Revoke invitation', tone: 'danger' })) return;
     setActionLoading(true);
     setInvitationNotice('');
     try {
@@ -344,7 +346,7 @@ export default function AdminVendorDetail() {
   };
 
   const handleStaffRemove = async (userId) => {
-    if (!window.confirm('Remove this staff member from the vendor?')) return;
+    if (!await confirm({ title: 'Remove vendor staff member?', message: 'This staff member will lose access to the vendor.', confirmLabel: 'Remove staff', tone: 'danger' })) return;
     setActionLoading(true);
     try {
       await removeVendorUser(token, vendorId, userId);
@@ -379,7 +381,7 @@ export default function AdminVendorDetail() {
   };
 
   const handleMenuItemDelete = async (itemId) => {
-    if (!window.confirm('Delete this menu item? This cannot be undone.')) return;
+    if (!await confirm({ title: 'Delete this menu item?', message: 'This action cannot be undone.', confirmLabel: 'Delete item', tone: 'danger' })) return;
     setActionLoading(true);
     try {
       await deleteMenuItem(token, itemId);
@@ -406,7 +408,7 @@ export default function AdminVendorDetail() {
   };
 
   const handleCategoryDelete = async (categoryId) => {
-    if (!window.confirm('Delete this category? Items in it will become uncategorized.')) return;
+    if (!await confirm({ title: 'Delete this category?', message: 'Items in it will become uncategorized.', confirmLabel: 'Delete category', tone: 'danger' })) return;
     setActionLoading(true);
     try {
       await deleteVendorCategory(token, categoryId);

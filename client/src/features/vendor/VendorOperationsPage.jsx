@@ -5,6 +5,7 @@ import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
+import { useConfirm } from '../../components/confirmation/ConfirmProvider.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { listMyVendors, listVendorQueue, listVendorOperationsMenu, updateVendorOrderStatus, updateVendorAvailability } from '../../services/vendorApi.js';
 import { MenuItemCard, OrderCard, SummaryCard, VendorSection, formatTime } from './components/VendorDashboardComponents.jsx';
@@ -32,6 +33,7 @@ function isUrgent(order, now) {
 }
 
 export default function VendorOperationsPage() {
+  const confirm = useConfirm();
   const { session } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const token = session?.access_token;
@@ -169,7 +171,7 @@ export default function VendorOperationsPage() {
   }
 
   async function handleArchiveMenuItem(item) {
-    if (!window.confirm(`Archive “${item.name}”? It will no longer appear on customer menus.`)) return;
+    if (!await confirm({ title: 'Archive this menu item?', message: `“${item.name}” will no longer appear on customer menus.`, confirmLabel: 'Archive item', tone: 'danger' })) return;
     setBusyItem(item.id); setNotice('');
     try { await archiveVendorMenuItem(item.id, { token }); await loadMenu(); setNotice(`${item.name} archived.`); }
     catch (error) { setNotice(error.message || 'Could not archive that item.'); }

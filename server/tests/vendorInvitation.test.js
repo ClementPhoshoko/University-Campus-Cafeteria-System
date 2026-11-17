@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import * as invitationController from '../src/controllers/vendorInvitationController.js';
 import * as assetController from '../src/controllers/assetController.js';
 import * as invitationRoutes from '../src/routes/vendorInvitationRoutes.js';
 import * as vendorOperationsRoutes from '../src/routes/vendorRoutes.js';
 
-test('invitation controller exposes creation, listing, revocation, preview, and redemption endpoints', () => {
+test('invitation controller exposes invitation and manager staff access endpoints', () => {
   for (const name of [
     'createVendorInvitation',
     'createMyVendorStaffInvitation',
@@ -13,6 +14,8 @@ test('invitation controller exposes creation, listing, revocation, preview, and 
     'listMyVendorInvitations',
     'revokeVendorInvitation',
     'revokeMyVendorInvitation',
+    'listMyVendorStaff',
+    'deactivateMyVendorStaff',
     'getPublicVendorInvitation',
     'acceptVendorInvitation',
     'registerAndAcceptVendorInvitation',
@@ -20,6 +23,16 @@ test('invitation controller exposes creation, listing, revocation, preview, and 
     assert.equal(typeof invitationController[name], 'function', `${name} should be exported`);
   }
   assert.equal(typeof invitationRoutes.default, 'function');
+});
+
+test('staff access migration limits managers to deactivating staff and audits the transaction', async () => {
+  const sql = await readFile(new URL('../src/docs/migrations/023_vendor_manager_staff_roster.sql', import.meta.url), 'utf8');
+  assert.match(sql, /v_actor\.role <> 'manager'::public\.vendor_member_role/);
+  assert.match(sql, /v_member\.role <> 'staff'::public\.vendor_member_role/);
+  assert.match(sql, /set is_active = false/);
+  assert.match(sql, /role = 'staff'::public\.vendor_member_role[\s\S]*?status = 'pending'/);
+  assert.match(sql, /insert into public\.audit_logs/);
+  assert.match(sql, /grant execute on function public\.deactivate_vendor_staff_member\(uuid, uuid, uuid\)[\s\S]*?to service_role/);
 });
 
 test('invitation registration validates name and password without accepting client-supplied email or role', () => {
@@ -82,6 +95,8 @@ test('vendor staff invitation routes are registered for list, create, and revoke
   assert.ok(routes.some((route) => route.path === '/vendor/invitations' && route.methods.get));
   assert.ok(routes.some((route) => route.path === '/vendor/invitations' && route.methods.post));
   assert.ok(routes.some((route) => route.path === '/vendor/invitations/:invitationId' && route.methods.delete));
+  assert.ok(routes.some((route) => route.path === '/vendor/staff' && route.methods.get));
+  assert.ok(routes.some((route) => route.path === '/vendor/staff/:userId' && route.methods.delete));
 });
 
 test('vendor menu item image upload is registered through the vendor route', () => {

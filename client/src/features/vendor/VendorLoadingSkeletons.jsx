@@ -124,8 +124,8 @@ export function VendorDashboardSkeleton() {
   </div>;
 }
 
-export function VendorTeamInvitationsSkeleton() {
-  return <div className="vendor-team__loading" role="status" aria-label="Loading staff invitations">
+export function VendorTeamInvitationsSkeleton({ label = 'Loading staff invitations' }) {
+  return <div className="vendor-team__loading" role="status" aria-label={label}>
     {Array.from({ length: 3 }, (_, index) => <article className="vendor-team__invitation" key={index} aria-hidden="true">
       <div><LoadingLine width="min(100%, 188px)" height={13} /><LoadingLine width="min(100%, 232px)" height={11} /></div>
       <Skeleton className="vendor-loading-button home_card-skeleton-shimmer" />

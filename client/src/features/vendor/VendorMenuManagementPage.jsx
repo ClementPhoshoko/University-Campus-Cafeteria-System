@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { IconArrowLeft, IconCategory, IconChevronDown, IconChevronRight, IconList, IconPlus, IconTrash } from '@tabler/icons-react';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
+import { useConfirm } from '../../components/confirmation/ConfirmProvider.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
 import { getCache, invalidateCachePattern, setCache } from '../../services/cache.js';
@@ -38,6 +39,7 @@ function PageSkeleton() {
 }
 
 export default function VendorMenuManagementPage({ vendorId, vendorName, onBack }) {
+  const confirm = useConfirm();
   const { session, user } = useAuth();
   const token = session?.access_token;
   const [categories, setCategories] = useState([]);
@@ -235,7 +237,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
   }
 
   async function deleteCategory(category) {
-    if (!window.confirm(`Delete “${category.name}”? Items in it will become uncategorized.`)) return;
+    if (!await confirm({ title: 'Delete this category?', message: `“${category.name}” will be deleted. Items in it will become uncategorized.`, confirmLabel: 'Delete category', tone: 'danger' })) return;
     setBusy(true);
     setPageError('');
     setNotice('');
@@ -254,7 +256,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
   }
 
   async function archiveItem(item) {
-    if (!window.confirm(`Archive “${item.name}”? It will no longer be available for future menus.`)) return;
+    if (!await confirm({ title: 'Archive this menu item?', message: `“${item.name}” will no longer be available for future menus.`, confirmLabel: 'Archive item', tone: 'danger' })) return;
     setBusy(true);
     setPageError('');
     setNotice('');

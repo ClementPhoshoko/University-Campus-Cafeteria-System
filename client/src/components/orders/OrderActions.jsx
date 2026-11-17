@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useConfirm } from '../confirmation/ConfirmProvider.jsx';
 
 const ORDER_STATUSES = {
   PAYMENT_PENDING: 'payment_pending',
@@ -17,6 +18,7 @@ const ORDER_STATUSES = {
 };
 
 export default function OrderActions({ order, onCancel, onReorder, onRate }) {
+  const confirm = useConfirm();
   const [isCancelling, setIsCancelling] = useState(false);
 
   const canCancel = [
@@ -32,7 +34,7 @@ export default function OrderActions({ order, onCancel, onReorder, onRate }) {
   const isCollected = order.status === ORDER_STATUSES.COLLECTED || order.status === ORDER_STATUSES.COMPLETED;
 
   const handleCancel = async () => {
-    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    if (!await confirm({ title: 'Cancel this order?', message: 'This will request cancellation of your order.', confirmLabel: 'Cancel order', tone: 'danger' })) return;
     setIsCancelling(true);
     try {
       await onCancel?.(order.id, 'User requested cancellation');

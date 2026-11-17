@@ -43,6 +43,15 @@ Vendor managers can list, issue, and revoke only staff invitations for their own
 
 Admins retain the existing ability to invite either staff or managers. A staff invitation cannot demote an existing manager, including if their membership changes while the invitation is pending.
 
+## Manager staff access
+
+Active vendor managers can view and remove staff access for their own vendor. Manager memberships remain administrator-controlled. Removing a staff member deactivates their `vendor_users` membership, revokes any pending staff invitation for the same vendor and email, and writes an actor-attributed audit entry in one database transaction.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/vendor/staff?vendor_id={id}` | List active staff for the manager's vendor |
+| `DELETE` | `/vendor/staff/{userId}?vendor_id={id}` | Deactivate a staff membership and revoke its pending invitations |
+
 ## Database migrations
 
 Apply `migrations/019_vendor_invitations.sql` and `migrations/020_confirm_invited_auth_email.sql` before enabling the admin invitation action. They create the invitation table, service-role-only RPCs for serialized creation and transactional redemption, and a constrained lookup used to confirm an existing account's email only when its owner presents a valid invitation link.
@@ -50,6 +59,8 @@ Apply `migrations/019_vendor_invitations.sql` and `migrations/020_confirm_invite
 Apply `migrations/021_vendor_menu_planning.sql` before enabling per-item availability on today’s published menu. It adds per-menu-item availability to `menu_menu_items` and initializes existing links from catalogue availability.
 
 Apply `migrations/022_protect_vendor_manager_from_staff_invite.sql` before enabling manager invitations. It adds the atomic manager-only, staff-only invitation RPC and prevents staff invitations from changing an existing manager membership.
+
+Apply `migrations/023_vendor_manager_staff_roster.sql` before enabling manager staff removal. It adds an atomic manager-scoped deactivation RPC that rejects manager targets, revokes matching pending staff invitations, and records audit entries.
 
 ## Authorization and audit
 
