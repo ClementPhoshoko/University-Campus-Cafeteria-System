@@ -2216,6 +2216,83 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  '/admin/catalogue-metadata':
+    get:
+      tags: [Administration]
+      summary: List shared dietary and allergen labels
+      description: Requires the admin role. Includes active and inactive registry rows.
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Shared menu labels
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  dietary_tags:
+                    type: array
+                    items: { $ref: '#/components/schemas/CatalogueMetadataEntry' }
+                  allergens:
+                    type: array
+                    items: { $ref: '#/components/schemas/CatalogueMetadataEntry' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Administration]
+      summary: Create a shared dietary tag or allergen
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, name]
+              properties:
+                type: { type: string, enum: [dietary_tag, allergen] }
+                name: { type: string, maxLength: 100 }
+                description: { type: string, nullable: true, maxLength: 500 }
+      responses:
+        '201': { description: Shared label created }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: A label with this name already exists }
+
+  '/admin/catalogue-metadata/{type}/{id}':
+    patch:
+      tags: [Administration]
+      summary: Edit, activate, or deactivate a shared menu label
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema: { type: string, enum: [dietary_tag, allergen] }
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 100 }
+                description: { type: string, nullable: true, maxLength: 500 }
+                is_active: { type: boolean }
+      responses:
+        '200': { description: Shared label updated }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { description: A label with this name already exists }
+
   '/admin/vendor-categories/{categoryId}':
     patch:
       tags: [Administration]
@@ -2949,6 +3026,10 @@ paths:
           in: query
           required: true
           schema: { type: string, format: uuid }
+        - name: type
+          in: query
+          description: Return only one metadata registry for the active modal section.
+          schema: { type: string, enum: [dietary_tag, allergen] }
       responses:
         '200': { description: Active shared dietary tags and allergens }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -3009,20 +3090,25 @@ paths:
   '/vendor/menu/items/{itemId}/configuration':
     get:
       tags: [Vendor Operations]
-      summary: Read dietary, allergen, and option group assignments
+      summary: Read item configuration, optionally scoped to one section
       security: [{ bearerAuth: [] }]
       parameters:
         - name: itemId
           in: path
           required: true
           schema: { type: string, format: uuid }
+        - name: section
+          in: query
+          description: Return only the active modal section; omit for all configuration.
+          schema: { type: string, enum: [dietary, allergens, options] }
       responses:
         '200': { description: Current vendor manager item configuration }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Menu item not found }
     put:
       tags: [Vendor Operations]
-      summary: Replace dietary, allergen, and option group assignments atomically
+      summary: Save item configuration atomically
+      description: Send a `section` value of dietary, allergens, or options to update only that section. Omitting section preserves the legacy all-sections update.
       security: [{ bearerAuth: [] }]
       parameters:
         - name: itemId
@@ -3033,7 +3119,20 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/VendorMenuItemConfigurationInput' }
+            schema:
+              type: object
+              properties:
+                section: { type: string, enum: [dietary, allergens, options] }
+                dietary_tag_ids: { type: array, items: { type: string, format: uuid } }
+                allergens:
+                  type: array
+                  items:
+                    type: object
+                    required: [id]
+                    properties:
+                      id: { type: string, format: uuid }
+                      vendor_notice: { type: string, nullable: true, maxLength: 500 }
+                option_group_ids: { type: array, items: { type: string, format: uuid } }
       responses:
         '200': { description: Configuration saved and audited }
         '400': { description: Invalid or inactive label/group assignment }
@@ -3856,6 +3955,15 @@ components:
           type: integer
         location:
           $ref: '#/components/schemas/VendorLocation'
+
+    CatalogueMetadataEntry:
+      type: object
+      required: [id, name, is_active]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, maxLength: 100 }
+        description: { type: string, nullable: true, maxLength: 500 }
+        is_active: { type: boolean }
 
     VendorCategory:
       type: object

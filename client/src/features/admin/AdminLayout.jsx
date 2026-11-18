@@ -13,6 +13,7 @@ import {
   IconSettings,
   IconLogout,
   IconTag,
+  IconTools,
 } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import AdminBackground from '../../components/AdminBackground.jsx';
@@ -34,6 +35,7 @@ const ICON_MAP = {
   IconShieldCheck,
   IconSettings,
   IconTag,
+  IconTools,
 };
 
 function NavItem({ item }) {

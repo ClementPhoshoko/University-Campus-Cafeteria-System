@@ -65,6 +65,7 @@ function affectsEmployeeCatalog(path, body) {
   if (['vendor-locations', 'menu-items', 'menu-categories', 'sites', 'buildings'].includes(segments[1])) {
     return true;
   }
+  if (segments[1] === 'catalogue-metadata') return true;
   if (segments[1] === 'vendor-categories') return true;
 
   return segments[1] === 'assets'
@@ -368,6 +369,18 @@ export function createVendorCategoryCatalogEntry(token, payload, options) {
 
 export function updateVendorCategoryCatalogEntry(token, categoryId, payload, options) {
   return adminRequest(`/admin/vendor-categories/${categoryId}`, { method: 'PATCH', token, body: payload, ...options });
+}
+
+export function listCatalogueMetadata(token, options) {
+  return adminRequest('/admin/catalogue-metadata', { token, ...options });
+}
+
+export function createCatalogueMetadata(token, payload, options) {
+  return adminRequest('/admin/catalogue-metadata', { method: 'POST', token, body: payload, ...options });
+}
+
+export function updateCatalogueMetadata(token, type, id, payload, options) {
+  return adminRequest(`/admin/catalogue-metadata/${type}/${id}`, { method: 'PATCH', token, body: payload, ...options });
 }
 
 export function listMenuItems(token, vendorId, params, options) {

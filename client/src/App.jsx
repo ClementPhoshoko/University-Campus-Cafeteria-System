@@ -43,6 +43,7 @@ import AdminComplaintDetail from './features/admin/AdminComplaintDetail.jsx';
 import AdminAnnouncementsPage from './features/admin/AdminAnnouncementsPage.jsx';
 import AdminAnnouncementDetail from './features/admin/AdminAnnouncementDetail.jsx';
 import AdminSettingsPage from './features/admin/AdminSettingsPage.jsx';
+import AdminCatalogueMetadataPage from './features/admin/AdminCatalogueMetadataPage.jsx';
 import VendorOperationsPage from './features/vendor/VendorOperationsPage.jsx';
 import VendorInvitationPage from './features/vendor/VendorInvitationPage.jsx';
 import './features/auth/auth.css';
@@ -148,6 +149,7 @@ export default function App() {
           <Route path="/admin/announcements/:announcementId" element={<AdminAnnouncementDetail />} />
           <Route path="/admin/audit" element={<AdminAuditLogPage />} />
           <Route path="/admin/settings" element={<AdminSettingsPage />} />
+          <Route path="/admin/catalogue-metadata" element={<AdminCatalogueMetadataPage />} />
           <Route path="/finance" element={<PlaceholderPage title="Finance" />} />
           <Route path="/support" element={<PlaceholderPage title="Support Centre" />} />
           <Route path="/audit" element={<PlaceholderPage title="Audit Logs" />} />

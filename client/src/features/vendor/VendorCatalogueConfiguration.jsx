@@ -6,161 +6,16 @@ import PrimaryButton from '../../components/PrimaryButton.jsx';
 import { useConfirm } from '../../components/confirmation/ConfirmProvider.jsx';
 import {
   createVendorOptionGroup,
-  getVendorMenuItemConfiguration,
-  listVendorMenuMetadataOptions,
   listVendorOptionGroups,
-  updateVendorMenuItemConfiguration,
   updateVendorOptionGroup,
 } from '../../services/vendorApi.js';
 import './vendor-catalogue-configuration.css';
 
 const GROUP_PAGE_SIZE = 8;
-const GROUP_ASSIGNMENT_PAGE_SIZE = 8;
 const statusValue = (value) => ({ id: value, name: value === 'single' ? 'Choose one' : 'Choose multiple' });
 
 function FieldLabel({ children, htmlFor }) {
   return <label className="vendor-config-field__label" htmlFor={htmlFor}>{children}</label>;
-}
-
-export function VendorMenuItemConfigurationModal({ item, token, onClose, onSaved }) {
-  const [metadata, setMetadata] = useState({ dietary_tags: [], allergens: [] });
-  const [groups, setGroups] = useState([]);
-  const [groupsPagination, setGroupsPagination] = useState({ page: 1, limit: GROUP_ASSIGNMENT_PAGE_SIZE, total: 0, totalPages: 1 });
-  const [groupPage, setGroupPage] = useState(1);
-  const [groupsLoading, setGroupsLoading] = useState(true);
-  const [dietaryIds, setDietaryIds] = useState([]);
-  const [allergens, setAllergens] = useState([]);
-  const [groupIds, setGroupIds] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    const controller = new AbortController();
-    async function load() {
-      setLoading(true);
-      setError('');
-      try {
-        const [metadataResponse, configurationResponse] = await Promise.all([
-          listVendorMenuMetadataOptions(item.vendor_id, { token, signal: controller.signal }),
-          getVendorMenuItemConfiguration(item.id, { token, signal: controller.signal }),
-        ]);
-        const configuration = configurationResponse.configuration || {};
-        setMetadata({ dietary_tags: metadataResponse.dietary_tags || [], allergens: metadataResponse.allergens || [] });
-        setDietaryIds((configuration.dietary_tags || []).map((tag) => tag.id));
-        setAllergens((configuration.allergens || []).map((allergen) => ({ id: allergen.id, vendor_notice: allergen.vendor_notice || '' })));
-        setGroupIds((configuration.option_groups || []).filter((group) => group.is_active).map((group) => group.id));
-      } catch (loadError) {
-        if (loadError.name !== 'AbortError') setError(loadError.message || 'Could not load item configuration.');
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
-    }
-    load();
-    return () => controller.abort();
-  }, [item.id, item.vendor_id, token]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setGroupsLoading(true);
-    listVendorOptionGroups(item.vendor_id, { token, page: groupPage, limit: GROUP_ASSIGNMENT_PAGE_SIZE, signal: controller.signal })
-      .then((response) => {
-        setGroups(response.option_groups || []);
-        setGroupsPagination(response.pagination || { page: groupPage, limit: GROUP_ASSIGNMENT_PAGE_SIZE, total: 0, totalPages: 1 });
-      })
-      .catch((loadError) => {
-        if (loadError.name !== 'AbortError') setError(loadError.message || 'Could not load option groups.');
-      })
-      .finally(() => { if (!controller.signal.aborted) setGroupsLoading(false); });
-    return () => controller.abort();
-  }, [item.vendor_id, token, groupPage]);
-
-  function toggleValue(values, setValues, value) {
-    setValues((current) => current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value]);
-  }
-
-  function toggleAllergen(id) {
-    setAllergens((current) => current.some((row) => row.id === id)
-      ? current.filter((row) => row.id !== id)
-      : [...current, { id, vendor_notice: '' }]);
-  }
-
-  async function save(event) {
-    event.preventDefault();
-    if (saving || loading) return;
-    setSaving(true);
-    setError('');
-    try {
-      await updateVendorMenuItemConfiguration(item.id, {
-        dietary_tag_ids: dietaryIds,
-        allergens,
-        option_group_ids: groupIds,
-      }, { token });
-      onSaved?.();
-      onClose();
-    } catch (saveError) {
-      setError(saveError.message || 'Could not save item configuration.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return <div className="admin-modal" role="dialog" aria-modal="true" aria-labelledby="vendor-item-config-title">
-    <button type="button" className="admin-modal__overlay" aria-label="Close item configuration" onClick={onClose} />
-    <form className="admin-modal__card admin-modal__card--lg vendor-config-modal" onSubmit={save}>
-      <header className="admin-modal__head">
-        <div><h3 className="admin-modal__title" id="vendor-item-config-title">Item details</h3><p className="admin-modal__sub">Dietary information and customer options for {item.name}.</p></div>
-      </header>
-      <div className="admin-modal__body admin-modal__body--single">
-        {error && <p className="vendor-config-error" role="alert">{error}</p>}
-        {loading ? <p className="vendor-config-loading" role="status">Loading item details…</p> : <>
-          <section className="vendor-config-section">
-            <div className="vendor-config-section__heading"><h4>Dietary</h4><p>Choose all labels that describe this item.</p></div>
-            {metadata.dietary_tags.length ? <div className="vendor-config-check-list">
-              {metadata.dietary_tags.map((tag) => <label className="vendor-config-check" key={tag.id}>
-                <input type="checkbox" checked={dietaryIds.includes(tag.id)} disabled={saving} onChange={() => toggleValue(dietaryIds, setDietaryIds, tag.id)} />
-                <span><strong>{tag.name}</strong>{tag.description && <small>{tag.description}</small>}</span>
-              </label>)}
-            </div> : <p className="vendor-config-empty">No dietary labels are configured. Ask an administrator to add the required shared labels.</p>}
-          </section>
-
-          <section className="vendor-config-section">
-            <div className="vendor-config-section__heading"><h4>Allergens</h4><p>Add a clear notice where customers need extra guidance.</p></div>
-            {metadata.allergens.length ? <div className="vendor-config-check-list">
-              {metadata.allergens.map((allergen) => {
-                const selected = allergens.find((row) => row.id === allergen.id);
-                return <div className={`vendor-config-allergen${selected ? ' is-selected' : ''}`} key={allergen.id}>
-                  <label className="vendor-config-check">
-                    <input type="checkbox" checked={Boolean(selected)} disabled={saving} onChange={() => toggleAllergen(allergen.id)} />
-                    <span><strong>{allergen.name}</strong>{allergen.description && <small>{allergen.description}</small>}</span>
-                  </label>
-                  {selected && <input className="admin-input vendor-config-allergen__notice" maxLength={500} aria-label={`${allergen.name} vendor notice`} placeholder="Optional notice for customers" value={selected.vendor_notice} disabled={saving} onChange={(event) => setAllergens((current) => current.map((row) => row.id === allergen.id ? { ...row, vendor_notice: event.target.value } : row))} />}
-                </div>;
-              })}
-            </div> : <p className="vendor-config-empty">No allergens are configured. Ask an administrator to add the required shared labels.</p>}
-          </section>
-
-          <section className="vendor-config-section">
-            <div className="vendor-config-section__heading"><h4>Customer options</h4><p>Choose reusable option groups for this item.</p></div>
-            {groupsLoading ? <p className="vendor-config-loading" role="status">Loading option groups…</p> : groups.length ? <div className="vendor-config-check-list">
-              {groups.map((group) => <label className="vendor-config-check" key={group.id}>
-                <input type="checkbox" checked={groupIds.includes(group.id)} disabled={saving} onChange={() => toggleValue(groupIds, setGroupIds, group.id)} />
-                <span>
-                  <strong>{group.name}</strong>
-                  <small>{group.selection_type === 'single' ? 'Choose one' : 'Choose multiple'}{group.is_required ? ' · Required' : ' · Optional'} · {group.options.length} options</small>
-                </span>
-              </label>)}
-            </div> : <p className="vendor-config-empty">Create an option group below before assigning customer choices to this item.</p>}
-            {groupsPagination.totalPages > 1 && <Pagination currentPage={groupsPagination.page} totalPages={groupsPagination.totalPages} totalItems={groupsPagination.total} itemsPerPage={groupsPagination.limit} label="option groups" onPageChange={setGroupPage} />}
-          </section>
-        </>}
-      </div>
-      <footer className="admin-modal__foot">
-        <PrimaryButton type="button" disabled={saving} onClick={onClose}>Cancel</PrimaryButton>
-        <PrimaryButton type="submit" disabled={loading || saving}>{saving ? 'Saving…' : 'Save item details'}</PrimaryButton>
-      </footer>
-    </form>
-  </div>;
 }
 
 function makeEmptyGroup() {
@@ -211,7 +66,7 @@ export function VendorOptionGroupEditor({ vendorId, token, group, onClose, onSav
   const typeOptions = ['single', 'multiple'].map(statusValue);
   return <div className="admin-modal" role="dialog" aria-modal="true" aria-labelledby="vendor-option-group-title">
     <button type="button" className="admin-modal__overlay" aria-label="Close option group editor" onClick={onClose} />
-    <form className="admin-modal__card admin-modal__card--lg vendor-config-modal" onSubmit={submit}>
+    <form className="admin-modal__card vendor-config-modal" onSubmit={submit}>
       <header className="admin-modal__head"><div><h3 className="admin-modal__title" id="vendor-option-group-title">{editing ? 'Edit option group' : 'Create option group'}</h3><p className="admin-modal__sub">Option groups are reusable. Changes affect every menu item assigned to this group.</p></div></header>
       <div className="admin-modal__body admin-modal__body--single">
         {error && <p className="vendor-config-error" role="alert">{error}</p>}

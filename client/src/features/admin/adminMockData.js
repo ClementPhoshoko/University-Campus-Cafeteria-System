@@ -1567,6 +1567,7 @@ export const ADMIN_NAV_ITEMS = [
   { id: 'announcements', label: 'Announcements', to: '/admin/announcements', icon: 'IconSpeakerphone' },
   { id: 'audit', label: 'Audit Logs', to: '/admin/audit', icon: 'IconShieldCheck' },
   { id: 'settings', label: 'Settings', to: '/admin/settings', icon: 'IconSettings' },
+  { id: 'catalogue-metadata', label: 'Menu Labels', to: '/admin/catalogue-metadata', icon: 'IconTools' },
 ];
 
 export const ADMIN_SITES = [

@@ -27,16 +27,24 @@ The catalogue editor supports name, description, category, price, preparation es
 
 ### Catalogue dietary details and options
 
-Apply `migrations/026_vendor_catalogue_details.sql` before deploying these routes. Registry entries remain centrally managed; vendors can assign active shared dietary/allergen rows but cannot create or rename compliance labels. Option groups and choices are vendor-owned. Configuration writes run through service-role-only database functions that re-check the manager membership, item/group ownership, active registry values, and selection limits inside the database transaction, and write actor-attributed audit rows.
+Apply migrations `026_vendor_catalogue_details.sql`, `027_admin_catalogue_metadata.sql`, and `028_vendor_item_configuration_sections.sql` in order. For an existing deployment, apply whichever numbered migrations have not already been run. Registry entries remain centrally managed; vendors can assign active shared dietary/allergen rows but cannot create or rename labels. Option groups and choices are vendor-owned. Configuration writes run through service-role-only database functions that re-check manager membership, item/group ownership, active registry values, and selection limits inside the database transaction, and write actor-attributed audit rows. The item-details modal loads Dietary, Allergens, and Customer options on demand; section saves leave the other sections untouched.
+
+Apply `migrations/027_admin_catalogue_metadata.sql` to seed the shared dietary and allergen registries. Admins manage these entries from `/admin/catalogue-metadata`; create and edit labels there, and deactivate labels instead of deleting them. Inactive labels are excluded from new vendor assignments while existing item/order references are retained. Dietary and allergen choices are platform-wide, not vendor-specific. The starter allergens are based on common categories named in South Africa’s [R146 food-labelling regulations](https://www.health.gov.za/wp-content/uploads/2025/07/Labelling-Regulations-R146-of-1-March-2010.pdf); this registry is a vendor reference, not a compliance checklist. Vendors remain responsible for accurate ingredient and cross-contact information, and allergen notices should identify specifics where needed.
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/vendor/menu/metadata-options?vendor_id={id}` | List active shared dietary tags and allergens (manager only) |
+| `GET` | `/admin/catalogue-metadata` | List active and inactive shared dietary tags and allergens (admin only) |
+| `POST` | `/admin/catalogue-metadata` | Create a shared label with `type` set to `dietary_tag` or `allergen` (admin only) |
+| `PATCH` | `/admin/catalogue-metadata/{type}/{id}` | Edit or activate/deactivate a shared label (admin only) |
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/vendor/menu/metadata-options?vendor_id={id}&type={dietary_tag\|allergen}` | List active shared dietary tags or allergens for the open section; omit `type` for both (manager only) |
 | `GET` | `/vendor/menu/option-groups?vendor_id={id}&page={n}&limit={n}` | List one page of active option groups and choices (manager only) |
 | `POST` | `/vendor/menu/option-groups` | Create a reusable group and its choices (manager only) |
 | `PATCH` | `/vendor/menu/option-groups/{groupId}` | Update or archive a group and its choices (manager only) |
-| `GET` | `/vendor/menu/items/{itemId}/configuration` | Read dietary, allergen, and option-group assignments (manager only) |
-| `PUT` | `/vendor/menu/items/{itemId}/configuration` | Replace item assignments transactionally (manager only) |
+| `GET` | `/vendor/menu/items/{itemId}/configuration?section={dietary\|allergens\|options}` | Read only the selected section; omit `section` for all configuration (manager only) |
+| `PUT` | `/vendor/menu/items/{itemId}/configuration` | Send a `section` plus its fields to update only that section transactionally; omit `section` for legacy all-section updates (manager only) |
 
 Option groups have a vendor-unique name, selection type (`single` or `multiple`), required flag, and selection bounds. Each active choice has a non-negative price delta and maximum quantity. Removed choices are deactivated instead of deleted, preserving historical order/cart references. Archiving a group removes it from active customer selection while retaining its assignment and records. Checkout snapshots the active dietary labels, allergen names/notices, and selected option names/prices on each order item.
 

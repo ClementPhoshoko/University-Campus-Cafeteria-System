@@ -93,6 +93,7 @@ function mapCatalogueConfigurationRpcError(error) {
       VENDOR_MANAGER_REQUIRED: [403, 'VENDOR_MANAGER_REQUIRED', 'A vendor manager role is required to manage catalogue details'],
       MENU_ITEM_NOT_FOUND: [404, 'MENU_ITEM_NOT_FOUND', 'Menu item not found'],
       INVALID_DIETARY_TAG: [400, 'INVALID_DIETARY_TAG', 'One or more dietary tags are no longer available'],
+      INVALID_CONFIGURATION_SECTION: [400, 'INVALID_CONFIGURATION_SECTION', 'Choose a valid item-details section'],
       INVALID_ALLERGEN: [400, 'INVALID_ALLERGEN', 'One or more allergens are no longer available'],
       INVALID_OPTION_GROUP: [400, 'INVALID_OPTION_GROUP', 'One or more option groups are not available for this vendor'],
       OPTION_GROUP_NOT_FOUND: [404, 'OPTION_GROUP_NOT_FOUND', 'Option group not found'],
@@ -112,6 +113,10 @@ function mapCatalogueConfigurationRpcError(error) {
       ALLERGEN_NOTICE_TOO_LONG: 'Allergen notices must be 500 characters or fewer',
       DUPLICATE_ALLERGEN: 'An allergen can only be selected once',
       CONFIGURATION_LIMIT_EXCEEDED: 'Too many catalogue details were submitted at once',
+      INVALID_DIETARY_TAG_LIST: 'Dietary tags must be sent as a list',
+      INVALID_OPTION_GROUP_LIST: 'Customer option groups must be sent as a list',
+      DUPLICATE_DIETARY_TAG: 'A dietary tag can only be selected once',
+      DUPLICATE_OPTION_GROUP: 'A customer option group can only be selected once',
     };
     const key = String(error.message || '').split(':')[0].trim();
     return new ApiError(400, 'VALIDATION_ERROR', messages[key] || 'Catalogue details are invalid');
@@ -520,9 +525,15 @@ export async function listMyVendorMenuMetadataOptions(req, res) {
     const vendorId = String(req.query.vendor_id || '');
     if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
     await requireVendorManager(req.user.id, vendorId);
+    const type = req.query.type;
+    if (type && !['dietary_tag', 'allergen'].includes(type)) return sendError(res, 400, 'INVALID_METADATA_TYPE', 'Type must be dietary_tag or allergen');
     const [dietaryResult, allergenResult] = await Promise.all([
-      db().from('dietary_tags').select('id, name, description').eq('is_active', true).order('name').limit(200),
-      db().from('allergens').select('id, name, description').eq('is_active', true).order('name').limit(200),
+      !type || type === 'dietary_tag'
+        ? db().from('dietary_tags').select('id, name, description').eq('is_active', true).order('name').limit(200)
+        : Promise.resolve({ data: [] }),
+      !type || type === 'allergen'
+        ? db().from('allergens').select('id, name, description').eq('is_active', true).order('name').limit(200)
+        : Promise.resolve({ data: [] }),
     ]);
     if (dietaryResult.error) throw dietaryResult.error;
     if (allergenResult.error) throw allergenResult.error;
@@ -556,10 +567,15 @@ export async function getMyVendorMenuItemConfiguration(req, res) {
     if (itemError) throw itemError;
     if (!item) throw new ApiError(404, 'MENU_ITEM_NOT_FOUND', 'Menu item not found');
     await requireVendorManager(req.user.id, item.vendor_id);
+    const section = req.query.section || 'all';
+    if (!['all', 'dietary', 'allergens', 'options'].includes(section)) return sendError(res, 400, 'INVALID_CONFIGURATION_SECTION', 'Section must be dietary, allergens, or options');
+    const includeDietary = section === 'all' || section === 'dietary';
+    const includeAllergens = section === 'all' || section === 'allergens';
+    const includeOptions = section === 'all' || section === 'options';
     const [dietaryResult, allergenResult, groupResult] = await Promise.all([
-      db().from('menu_item_dietary_tags').select('dietary_tag_id, dietary_tags(id, name)').eq('menu_item_id', itemId),
-      db().from('menu_item_allergens').select('allergen_id, vendor_notice, allergens(id, name)').eq('menu_item_id', itemId),
-      db().from('menu_item_option_groups').select('sort_order, option_groups(id, name, selection_type, is_required, min_select, max_select, is_active, options(id, name, price_delta, max_quantity, is_active))').eq('menu_item_id', itemId).order('sort_order'),
+      includeDietary ? db().from('menu_item_dietary_tags').select('dietary_tag_id, dietary_tags(id, name, is_active)').eq('menu_item_id', itemId) : Promise.resolve({ data: [] }),
+      includeAllergens ? db().from('menu_item_allergens').select('allergen_id, vendor_notice, allergens(id, name, is_active)').eq('menu_item_id', itemId) : Promise.resolve({ data: [] }),
+      includeOptions ? db().from('menu_item_option_groups').select('sort_order, option_groups(id, name, selection_type, is_required, min_select, max_select, is_active, options(id, name, price_delta, max_quantity, is_active))').eq('menu_item_id', itemId).order('sort_order') : Promise.resolve({ data: [] }),
     ]);
     if (dietaryResult.error) throw dietaryResult.error;
     if (allergenResult.error) throw allergenResult.error;
@@ -569,14 +585,14 @@ export async function getMyVendorMenuItemConfiguration(req, res) {
       configuration: {
         menu_item_id: item.id,
         vendor_id: item.vendor_id,
-        dietary_tags: (dietaryResult.data || []).map((row) => row.dietary_tags).filter(Boolean),
-        allergens: (allergenResult.data || []).map((row) => ({ ...row.allergens, vendor_notice: row.vendor_notice })).filter((row) => row.id),
-        option_groups: (groupResult.data || []).map((row) => ({
+        ...(includeDietary ? { dietary_tags: (dietaryResult.data || []).map((row) => row.dietary_tags).filter(Boolean) } : {}),
+        ...(includeAllergens ? { allergens: (allergenResult.data || []).map((row) => ({ ...row.allergens, vendor_notice: row.vendor_notice })).filter((row) => row.id) } : {}),
+        ...(includeOptions ? { option_groups: (groupResult.data || []).map((row) => ({
           ...row.option_groups,
           is_active: row.option_groups?.is_active ?? false,
           options: (row.option_groups?.options || []).filter((option) => option.is_active),
           sort_order: row.sort_order,
-        })).filter((group) => group.id),
+        })).filter((group) => group.id) } : {}),
       },
     }, { cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
@@ -590,6 +606,31 @@ export async function updateMyVendorMenuItemConfiguration(req, res) {
     if (itemError) throw itemError;
     if (!item) throw new ApiError(404, 'MENU_ITEM_NOT_FOUND', 'Menu item not found');
     await requireVendorManager(req.user.id, item.vendor_id);
+
+    const section = req.body?.section;
+    if (section != null) {
+      if (!['dietary', 'allergens', 'options'].includes(section)) return sendError(res, 400, 'INVALID_CONFIGURATION_SECTION', 'Section must be dietary, allergens, or options');
+      const payload = {};
+      if (section === 'dietary') payload.dietary_tag_ids = validateUuidList(req.body?.dietary_tag_ids, 'dietary_tag_ids');
+      if (section === 'options') payload.option_group_ids = validateUuidList(req.body?.option_group_ids, 'option_group_ids', 30);
+      if (section === 'allergens') {
+        const allergens = req.body?.allergens;
+        if (!Array.isArray(allergens) || allergens.length > 50 || allergens.some((row) => (
+          !row || typeof row !== 'object' || !isUuid(row.id)
+          || (row.vendor_notice != null && (typeof row.vendor_notice !== 'string' || row.vendor_notice.length > 500))
+        ))) return sendError(res, 400, 'VALIDATION_ERROR', 'Allergens must contain valid IDs and notices no longer than 500 characters');
+        payload.allergens = allergens.map((row) => ({ id: row.id, vendor_notice: row.vendor_notice?.trim() || null }));
+      }
+      const { data, error } = await db().rpc('save_vendor_menu_item_configuration_section', {
+        p_vendor_id: item.vendor_id,
+        p_menu_item_id: itemId,
+        p_actor_id: req.user.id,
+        p_section: section,
+        p_payload: payload,
+      });
+      if (error) throw mapCatalogueConfigurationRpcError(error);
+      return respond(req, res, { success: true, configuration: data?.configuration || {} }, { cacheControl: 'private, no-store' });
+    }
 
     const dietaryTagIds = validateUuidList(req.body?.dietary_tag_ids, 'dietary_tag_ids');
     const optionGroupIds = validateUuidList(req.body?.option_group_ids, 'option_group_ids', 30);

@@ -19,7 +19,8 @@ import {
 } from '../../services/vendorApi.js';
 import { useVendorMenuSummary } from '../../hooks/useVendorMenuSummary.js';
 import { formatMoney } from './components/VendorDashboardComponents.jsx';
-import VendorOptionGroupManager, { VendorMenuItemConfigurationModal } from './VendorCatalogueConfiguration.jsx';
+import VendorOptionGroupManager from './VendorCatalogueConfiguration.jsx';
+import VendorMenuItemConfigurationModal from './VendorMenuItemConfigurationModal.jsx';
 import { MenuItemModal, CategoryModal } from '../admin/VendorForms.jsx';
 import './vendor-menu-management.css';
 

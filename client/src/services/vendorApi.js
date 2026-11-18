@@ -96,11 +96,11 @@ export function getVendorMenuSummary(vendorId, { token, signal } = {}) {
   });
 }
 
-export function listVendorMenuMetadataOptions(vendorId, { token, signal } = {}) {
+export function listVendorMenuMetadataOptions(vendorId, { token, signal, type } = {}) {
   return apiRequest('/vendor/menu/metadata-options', {
     token,
     signal,
-    query: { vendor_id: vendorId },
+    query: { vendor_id: vendorId, type },
     cache: 'no-store',
   });
 }
@@ -132,8 +132,8 @@ export function updateVendorOptionGroup(vendorId, groupId, payload, { token, sig
   });
 }
 
-export function getVendorMenuItemConfiguration(itemId, { token, signal } = {}) {
-  return apiRequest(`/vendor/menu/items/${itemId}/configuration`, { token, signal, cache: 'no-store' });
+export function getVendorMenuItemConfiguration(itemId, { token, signal, section } = {}) {
+  return apiRequest(`/vendor/menu/items/${itemId}/configuration`, { token, signal, query: { section }, cache: 'no-store' });
 }
 
 export function updateVendorMenuItemConfiguration(itemId, payload, { token, signal } = {}) {
