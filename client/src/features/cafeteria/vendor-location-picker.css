@@ -1,0 +1,27 @@
+.vendor-location-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border-subtle, rgba(37, 55, 84, .12));
+  border-radius: var(--radius-lg, 16px);
+  background: var(--color-surface, rgba(255, 255, 255, .78));
+  box-shadow: var(--shadow-sm, 0 6px 20px rgba(24, 39, 62, .06));
+}
+
+.vendor-location-picker__copy { display: grid; gap: 3px; min-width: 0; }
+.vendor-location-picker__copy strong { color: var(--color-text-primary, #202b3c); font-size: .92rem; font-weight: 650; }
+.vendor-location-picker__copy span { color: var(--color-text-secondary, #687589); font-size: .8rem; line-height: 1.4; }
+.vendor-location-picker .custom-dropdown { width: min(390px, 58%); flex: 0 1 390px; }
+.view-food__location-picker { margin: var(--space-5) 0 0; }
+.view-food__location-required { display: grid; gap: var(--space-4); margin-top: var(--space-6); }
+.view-food__location-required h1 { margin: 0; color: var(--color-text-primary); font-size: clamp(1.35rem, 2vw, 1.8rem); }
+.view-food__location-required > p { max-width: 60ch; margin: 0; color: var(--color-text-secondary); line-height: 1.6; }
+.view-food__location-required .vendor-location-picker { max-width: 780px; }
+
+@media (max-width: 620px) {
+  .vendor-location-picker { align-items: stretch; flex-direction: column; gap: 11px; padding: 13px; }
+  .vendor-location-picker .custom-dropdown { width: 100%; flex-basis: auto; }
+}

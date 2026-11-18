@@ -4,6 +4,8 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
 import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
+import VendorLocationPicker from './VendorLocationPicker.jsx';
+import { resolveVendorLocationId } from './vendorLocationSelection.js';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import Breadcrumb from '../../components/ui/Breadcrumb.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
@@ -52,10 +54,10 @@ function ProductPageSkeleton() {
 
 export default function ViewFoodPage() {
   const { cafeteriaId, menuItemId } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const requestedVendorId = searchParams.get('vendorId');
   const vendorId = requestedVendorId || cafeteriaId;
-  const { session } = useAuth();
+  const { profile, session } = useAuth();
   const token = session?.access_token;
 
   const [quantity, setQuantity] = useState(1);
@@ -79,28 +81,46 @@ export default function ViewFoodPage() {
     transform: transformVendor,
   });
 
+  const vendor = vendorFeed.data?.id === vendorId ? vendorFeed.data : null;
+  const requestedLocationId = searchParams.get('locationId');
+  const selectedLocationId = resolveVendorLocationId(vendor?.locations, {
+    requestedLocationId,
+    preferredSiteId: profile?.preferred_site_id,
+    preferredBuildingId: profile?.preferred_building_id,
+  });
+  useEffect(() => {
+    if (!vendor || requestedLocationId === selectedLocationId) return;
+    const next = new URLSearchParams(searchParams);
+    if (selectedLocationId) next.set('locationId', selectedLocationId);
+    else next.delete('locationId');
+    setSearchParams(next, { replace: true });
+  }, [vendor, requestedLocationId, selectedLocationId, searchParams, setSearchParams]);
+
   const loadMenuItem = useCallback(({ signal }) => (
-    getMenuItem(vendorId, menuItemId, { token, signal, cache: 'no-cache' })
-  ), [token, vendorId, menuItemId]);
+    getMenuItem(vendorId, menuItemId, { token, signal, cache: 'no-cache', locationId: selectedLocationId })
+  ), [token, vendorId, menuItemId, selectedLocationId]);
   const transformMenuItem = useCallback((response) => ({
     vendorId,
     menuItemId,
+    locationId: selectedLocationId,
     menuItem: response?.menuItem || null,
-  }), [vendorId, menuItemId]);
+  }), [vendorId, menuItemId, selectedLocationId]);
   const itemFeed = useFetch(loadMenuItem, {
-    cacheKey: vendorId && menuItemId ? `employee:menu-item:${vendorId}:${menuItemId}` : null,
-    enabled: Boolean(token && vendorId && menuItemId),
+    cacheKey: vendorId && menuItemId && selectedLocationId ? `employee:menu-item:${vendorId}:${menuItemId}:${selectedLocationId}` : null,
+    enabled: Boolean(token && vendorId && menuItemId && selectedLocationId),
     staleTime: CACHE_TTL.employeeMenu,
     transform: transformMenuItem,
   });
 
-  const vendor = vendorFeed.data?.id === vendorId ? vendorFeed.data : null;
   const itemResponse = itemFeed.data?.vendorId === vendorId && itemFeed.data?.menuItemId === menuItemId
+    && itemFeed.data?.locationId === selectedLocationId
     ? itemFeed.data
     : null;
   const menuItem = itemResponse?.menuItem || null;
   const optionGroups = menuItem?.option_groups || [];
-  const itemLoading = itemFeed.isLoading && !itemResponse;
+  const itemLoadError = itemFeed.isError && itemFeed.data?.locationId === selectedLocationId;
+  const itemLoading = (vendorFeed.isLoading && !vendor)
+    || (Boolean(selectedLocationId) && !itemResponse && !itemLoadError);
   const vendorRefreshError = vendorFeed.error && vendor
     ? 'Cafeteria information could not be refreshed. Showing the last loaded details.'
     : null;
@@ -121,7 +141,7 @@ export default function ViewFoodPage() {
     setOptionError('');
     attemptedImageRefreshes.current.clear();
     if (addedTimer.current) window.clearTimeout(addedTimer.current);
-  }, [vendorId, menuItemId]);
+  }, [vendorId, menuItemId, selectedLocationId]);
 
   useEffect(() => () => {
     if (addedTimer.current) window.clearTimeout(addedTimer.current);
@@ -156,6 +176,7 @@ export default function ViewFoodPage() {
         token,
         cache: 'no-cache',
         refreshImages: true,
+        locationId: selectedLocationId,
       });
       const image = response?.menuItem?.image_url;
       if (!image || image === failedImage) {
@@ -172,7 +193,7 @@ export default function ViewFoodPage() {
   };
 
   const handleAddToCart = async () => {
-    if (!token || addingToCart || !menuItem) return;
+    if (!token || addingToCart || !menuItem || !selectedLocationId) return;
     const missingGroup = optionGroups.find((group) => {
       const selected = selectedOptions[group.id];
       const selectedCount = Array.isArray(selected) ? selected.length : selected ? 1 : 0;
@@ -200,6 +221,7 @@ export default function ViewFoodPage() {
       });
       await addToCart({
         menuItemId: menuItem.id,
+        vendorLocationId: selectedLocationId,
         quantity,
         options,
         specialInstructions: specialInstructions.trim() || null,
@@ -214,7 +236,7 @@ export default function ViewFoodPage() {
     }
   };
 
-  const isPurchasable = menuItem?.status === 'available' || menuItem?.status === 'limited';
+  const isPurchasable = Boolean(selectedLocationId) && (menuItem?.status === 'available' || menuItem?.status === 'limited');
 
   if (itemLoading) {
     return (
@@ -228,7 +250,32 @@ export default function ViewFoodPage() {
     );
   }
 
-  if (itemFeed.isError && !menuItem) {
+  if (vendor && !selectedLocationId) {
+    return (
+      <PageContainer className="view-food-page-container">
+        <ViewFoodBackground />
+        <main className="view-food-page">
+          <Breadcrumb items={[{ label: 'Cafeterias', to: '/cafeterias' }, { label: vendor.name, to: `/cafeterias/${cafeteriaId}` }, { label: 'Choose pickup location' }]} />
+          <div className="view-food__location-required">
+            <h1>Choose a pickup location</h1>
+            <p>This cafeteria serves more than one location. Choose where you plan to collect your order to continue.</p>
+            <VendorLocationPicker
+              locations={vendor.locations}
+              value={selectedLocationId}
+              onChange={(locationId) => {
+                const next = new URLSearchParams(searchParams);
+                next.set('locationId', locationId);
+                setSearchParams(next);
+              }}
+            />
+            <Link to={`/cafeterias/${cafeteriaId}`} className="view-food__back-link">Back to cafeteria menu</Link>
+          </div>
+        </main>
+      </PageContainer>
+    );
+  }
+
+  if (itemLoadError && !menuItem) {
     return (
       <PageContainer className="view-food-page-container">
         <ViewFoodBackground />
@@ -255,7 +302,7 @@ export default function ViewFoodPage() {
             <img src={emptyStateAvatar} alt="" className="view-food__empty-avatar" />
             <h2>Item not found</h2>
             <p>This menu item could not be found or is no longer available.</p>
-            <Link to={`/cafeterias/${cafeteriaId}`} className="view-food__back-link">Back to cafeteria menu</Link>
+            <Link to={`/cafeterias/${cafeteriaId}${selectedLocationId ? `?locationId=${encodeURIComponent(selectedLocationId)}` : ''}`} className="view-food__back-link">Back to cafeteria menu</Link>
           </div>
         </main>
       </PageContainer>
@@ -272,9 +319,20 @@ export default function ViewFoodPage() {
         <Breadcrumb
           items={[
             { label: 'Cafeterias', to: '/cafeterias' },
-            { label: cafeteriaName, to: `/cafeterias/${cafeteriaId}` },
+            { label: cafeteriaName, to: `/cafeterias/${cafeteriaId}${selectedLocationId ? `?locationId=${encodeURIComponent(selectedLocationId)}` : ''}` },
             { label: menuItem.name },
           ]}
+        />
+
+        <VendorLocationPicker
+          className="view-food__location-picker"
+          locations={vendor?.locations || []}
+          value={selectedLocationId}
+          onChange={(locationId) => {
+            const next = new URLSearchParams(searchParams);
+            next.set('locationId', locationId);
+            setSearchParams(next);
+          }}
         />
 
         {(vendorLoadError || vendorRefreshError || itemRefreshError) && (
@@ -449,7 +507,7 @@ export default function ViewFoodPage() {
                   name={item.name}
                   price={formatPrice(item.base_price)}
                   image={item.image_url}
-                  to={`/cafeterias/${cafeteriaId}/menu/${item.id}`}
+                  to={`/cafeterias/${cafeteriaId}/menu/${item.id}${selectedLocationId ? `?locationId=${encodeURIComponent(selectedLocationId)}` : ''}`}
                 />
               ))}
             </div>

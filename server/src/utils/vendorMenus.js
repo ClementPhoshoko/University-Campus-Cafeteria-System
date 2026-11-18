@@ -1,3 +1,5 @@
+import { requireActiveVendorLocation } from './vendorLocation.js';
+
 function johannesburgDate(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Africa/Johannesburg',
@@ -9,22 +11,8 @@ function johannesburgDate(now = new Date()) {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-export async function getFirstActiveVendorLocation(database, vendorId) {
-  const { data: location, error: locationError } = await database
-    .from('vendor_locations')
-    .select('id')
-    .eq('vendor_id', vendorId)
-    .eq('is_active', true)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (locationError) throw locationError;
-  return location?.id || null;
-}
-
-export async function getTodaysPublishedVendorMenu(database, vendorId) {
-  const locationId = await getFirstActiveVendorLocation(database, vendorId);
-  if (!locationId) return { locationId: null, menu: null };
+export async function getTodaysPublishedVendorMenu(database, vendorId, locationId) {
+  const location = await requireActiveVendorLocation(database, vendorId, locationId);
 
   const { data: menu, error: menuError } = await database
     .from('menus')
@@ -34,11 +22,11 @@ export async function getTodaysPublishedVendorMenu(database, vendorId) {
     .eq('status', 'published')
     .maybeSingle();
   if (menuError) throw menuError;
-  return { locationId, menu: menu || null };
+  return { locationId: location.id, menu: menu || null };
 }
 
-export async function getTodaysPublishedMenuItem(database, vendorId, itemId) {
-  const { locationId, menu } = await getTodaysPublishedVendorMenu(database, vendorId);
+export async function getTodaysPublishedMenuItem(database, vendorId, itemId, locationId) {
+  const { menu } = await getTodaysPublishedVendorMenu(database, vendorId, locationId);
   if (!menu) return { locationId, menuId: null, status: null };
 
   const { data: link, error } = await database

@@ -78,7 +78,7 @@ paths:
       tags:
         - Cart
       summary: Get the authenticated user's active carts
-      description: Returns one active cart per vendor location, each with its own items, totals, and collection slots. The worker sends a best-effort reminder during the final 20 minutes, then clears cart items and marks the cart expired.
+      description: Returns one active cart per vendor location, each with its own items, totals, readable pickup location, and collection slots. The worker sends a best-effort reminder during the final 20 minutes, then clears cart items and marks the cart expired.
       operationId: getCart
       security:
         - bearerAuth: []
@@ -111,6 +111,9 @@ paths:
                         vendorLocationId:
                           type: string
                           format: uuid
+                        pickupLocation:
+                          type: string
+                          description: Site, building, and collection point for this cart.
                         items:
                           type: array
                           items:
@@ -167,10 +170,15 @@ paths:
               type: object
               required:
                 - menuItemId
+                - vendorLocationId
               properties:
                 menuItemId:
                   type: string
                   format: uuid
+                vendorLocationId:
+                  type: string
+                  format: uuid
+                  description: Active location selected by the employee for this vendor
                 quantity:
                   type: integer
                   minimum: 1
@@ -2056,6 +2064,26 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  '/vendors/{vendorId}/menu':
+    get:
+      tags: [Menus]
+      summary: List active menu items for a selected vendor location
+      description: Requires an active vendor location belonging to the vendor. The current catalogue is shared across its locations; location scoping keeps menu, cart, pickup, and future location inventory on one selection.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+        - name: location_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: refresh_images
+          in: query
+          required: false
+          schema: { type: boolean }
+      responses:
+        '200': { description: Active catalogue items and the validated vendor location ID }
+        '400': { description: A valid location_id is required }
+        '404': { description: Vendor or active vendor location not found }
   '/vendors/{vendorId}/menu/{itemId}':
     get:
       tags: [Menus]
@@ -2068,6 +2096,12 @@ paths:
         - $ref: '#/components/parameters/VendorId'
         - name: itemId
           in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: location_id
+          in: query
           required: true
           schema:
             type: string
@@ -2092,6 +2126,7 @@ paths:
                     type: object
                     properties:
                       id: { type: string, format: uuid }
+                      vendor_location_id: { type: string, format: uuid }
                       name: { type: string }
                       description: { type: string, nullable: true }
                       image_url: { type: string, nullable: true }

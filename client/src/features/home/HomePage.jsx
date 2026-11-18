@@ -25,6 +25,7 @@ import HeroFoodShowcase from '../../components/hero/HeroFoodShowcase.jsx';
 import { getVendor, getPopularMenuItems, listVendors, listVendorMenu, listVendorCategoryCatalog } from '../../services/employeeApi.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import { useFetch } from '../../hooks/useFetch.js';
+import { resolveVendorLocationId } from '../cafeteria/vendorLocationSelection.js';
 import { mapVendorToCafeteriaCard, mapFeaturedMenuItems, mapMenuItemToMeal } from './homeTransform.js';
 import { deliveryImage, reviewsImage, heroImage, heroFoods } from './homeData.js';
 import './home.css';
@@ -114,12 +115,18 @@ export default function HomePage() {
     }
 
     const menuResponses = await Promise.all(
-      cafeteriaList.map((cafeteria) => cafeteria.id
-        ? listVendorMenu(cafeteria.id, { token, signal, cache: 'no-cache' }).catch((error) => {
+      cafeteriaList.map((cafeteria) => {
+        const locationId = resolveVendorLocationId(cafeteria.locations, {
+          preferredSiteId: profile?.preferred_site_id,
+          preferredBuildingId: profile?.preferred_building_id,
+        });
+        return cafeteria.id && locationId
+        ? listVendorMenu(cafeteria.id, { token, signal, cache: 'no-cache', locationId }).catch((error) => {
           console.error(`Failed to load menu for cafeteria ${cafeteria.id}:`, error);
           return { categories: [] };
         })
-        : Promise.resolve({ categories: [] }))
+        : Promise.resolve({ categories: [] });
+      })
     );
     const popularMeals = mapFeaturedMenuItems(menuResponses, cafeteriaList);
     return {
@@ -129,7 +136,7 @@ export default function HomePage() {
         ? 'Unable to load popular meals right now.'
         : null,
     };
-  }, [cafeteriaList, token]);
+  }, [cafeteriaList, profile?.preferred_site_id, profile?.preferred_building_id, token]);
   const mealsFeed = useFetch(loadMeals, {
     cacheKey: 'employee:home-meals',
     enabled: Boolean(token) && cafeteriaFeed.data !== null,
@@ -225,7 +232,14 @@ export default function HomePage() {
         console.error(`Unable to refresh featured feed image for menu item ${itemId}:`, error);
       }
       if (!image || image === failedImage) {
-        const menuResponse = await listVendorMenu(vendorId, { token, cache: 'no-cache', refreshImages: true });
+        const vendor = cafeteriaFeed.data?.cafeterias?.find((cafeteria) => cafeteria.id === vendorId);
+        const locationId = resolveVendorLocationId(vendor?.locations, {
+          preferredSiteId: profile?.preferred_site_id,
+          preferredBuildingId: profile?.preferred_building_id,
+        });
+        const menuResponse = locationId
+          ? await listVendorMenu(vendorId, { token, cache: 'no-cache', refreshImages: true, locationId })
+          : null;
         const menuImage = menuResponse?.categories
           ?.flatMap((category) => category.items || [])
           .find((item) => item.id === itemId)?.image_url;

@@ -55,6 +55,7 @@ export default function CartGroup({
               <div className="cart__vendor-details">
                 <h2 className="cart__vendor-name" id={`cart-vendor-${cart.id}`}>{vendorName}</h2>
                 <p className="cart__vendor-description">This cafeteria has a separate checkout.</p>
+                {cart.vendorLocationId && <p className="cart__vendor-location">Pickup at {cart.pickupLocation || 'Selected pickup location'}</p>}
               </div>
               {cart.expiresAt && (
                 <div className="cart__expiry">
@@ -72,7 +73,7 @@ export default function CartGroup({
                 <CartItem
                   key={item.id}
                   item={item}
-                  to={item.menuItem ? `/cafeterias/${cart.vendor?.id}/menu/${item.menuItem.id}` : '#'}
+                  to={item.menuItem ? `/cafeterias/${cart.vendor?.id}/menu/${item.menuItem.id}?locationId=${encodeURIComponent(cart.vendorLocationId)}` : '#'}
                   onUpdateQuantity={onUpdateQuantity}
                   onRemove={onRemoveItem}
                   onImageError={(itemId, image) => onImageError(cart.id, itemId, image)}

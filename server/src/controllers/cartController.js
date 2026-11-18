@@ -7,7 +7,7 @@ import { writeAudit } from '../utils/audit.js';
 import { calculateServiceFee } from '../utils/feeCalculator.js';
 import { resolveUnitPrice } from '../utils/pricing.js';
 import { expireCartIfExpired } from '../services/cartExpiry.js';
-import { getFirstActiveVendorLocation } from '../utils/vendorMenus.js';
+import { requireActiveVendorLocation } from '../utils/vendorLocation.js';
 
 const db = () => supabaseAdmin;
 
@@ -37,7 +37,7 @@ function sendValidation(res, errors) {
 async function findActiveCarts(userId) {
   const { data, error } = await db()
     .from('carts')
-    .select('*, vendors(id, name, slug, logo_url), vendor_locations(id, site_id, building_id, collection_point_id, sites(timezone))')
+    .select('*, vendors(id, name, slug, logo_url), vendor_locations(id, site_id, building_id, collection_point_id, sites(name, timezone), buildings(name), collection_points(name))')
     .eq('user_id', userId)
     .eq('status', 'active')
     .order('created_at');
@@ -284,6 +284,12 @@ export async function getCart(req, res) {
       const site = Array.isArray(cart.vendor_locations?.sites)
         ? cart.vendor_locations.sites[0]
         : cart.vendor_locations?.sites;
+      const building = Array.isArray(cart.vendor_locations?.buildings)
+        ? cart.vendor_locations.buildings[0]
+        : cart.vendor_locations?.buildings;
+      const collectionPoint = Array.isArray(cart.vendor_locations?.collection_points)
+        ? cart.vendor_locations.collection_points[0]
+        : cart.vendor_locations?.collection_points;
       const timeZone = site?.timezone || 'Africa/Johannesburg';
       const today = getLocalDateKey(new Date(), timeZone);
       const slots = allSlots
@@ -301,6 +307,7 @@ export async function getCart(req, res) {
           }
           : null,
         vendorLocationId: cart.vendor_location_id,
+        pickupLocation: [site?.name, building?.name, collectionPoint?.name].filter(Boolean).join(' · '),
         siteTimezone: timeZone,
         expiresAt: cart.expires_at,
         items,
@@ -336,9 +343,10 @@ export async function getCart(req, res) {
 export async function addToCart(req, res) {
   try {
     const userId = req.user.id;
-    const { menuItemId, quantity = 1, options = [], specialInstructions } = req.body || {};
+    const { menuItemId, vendorLocationId, quantity = 1, options = [], specialInstructions } = req.body || {};
 
     if (!menuItemId || !isUuid(menuItemId)) return sendValidation(res, ['menuItemId is required and must be a valid UUID']);
+    if (!vendorLocationId || !isUuid(vendorLocationId)) return sendValidation(res, ['vendorLocationId is required and must be a valid UUID']);
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) return sendValidation(res, ['quantity must be between 1 and 10']);
     if (specialInstructions !== undefined && specialInstructions !== null
       && (typeof specialInstructions !== 'string' || specialInstructions.length > 1000)) {
@@ -358,13 +366,11 @@ export async function addToCart(req, res) {
       ? specialInstructions.trim()
       : null;
 
-    const locationId = await getFirstActiveVendorLocation(db(), menuItem.vendor_id);
-    if (!locationId) throw new ApiError(400, 'VENDOR_UNAVAILABLE', 'Vendor has no active locations');
+    const vendorLoc = await requireActiveVendorLocation(db(), menuItem.vendor_id, vendorLocationId);
+    const locationId = vendorLoc.id;
     if (!['available', 'limited'].includes(menuItem.status)) {
       throw new ApiError(400, 'ITEM_UNAVAILABLE', 'Menu item is not currently available');
     }
-    const vendorLoc = { id: locationId };
-
     let cart = await findActiveCartForLocation(userId, menuItem.vendor_id, vendorLoc.id);
     if (!cart) {
       const { data: newCart, error: createError } = await db()

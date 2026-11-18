@@ -15,6 +15,8 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { listVendorMenu, getVendor, addToCart } from '../../services/employeeApi.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import { useFetch } from '../../hooks/useFetch.js';
+import VendorLocationPicker from './VendorLocationPicker.jsx';
+import { resolveVendorLocationId } from './vendorLocationSelection.js';
 import '../../components/cards/CardSkeletonShimmer.css';
 import './browse-cafeteria.css';
 
@@ -234,7 +236,7 @@ export default function BrowseCafeteriaPage() {
   const navigate = useNavigate();
   const { cafeteriaId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { session } = useAuth();
+  const { profile, session } = useAuth();
   const token = session?.access_token;
 
   const [activeCategory, setActiveCategory] = useState('All');
@@ -244,6 +246,7 @@ export default function BrowseCafeteriaPage() {
   const attemptedImageRefreshes = useRef(new Set());
 
   const isReviewsView = searchParams.get('view') === 'reviews';
+  const requestedLocationId = searchParams.get('locationId');
   const loadVendor = useCallback(async ({ signal }) => {
     const cafeteriaRes = await getVendor(cafeteriaId, { token, signal, cache: 'no-cache' });
     return cafeteriaRes?.vendor || null;
@@ -253,30 +256,44 @@ export default function BrowseCafeteriaPage() {
     enabled: Boolean(token && cafeteriaId),
     staleTime: CACHE_TTL.employeeVendorDetail,
   });
-  const loadMenu = useCallback(async ({ signal }) => {
-    const menuRes = await listVendorMenu(cafeteriaId, { token, signal, cache: 'no-cache' });
-    return { vendorId: cafeteriaId, categories: menuRes?.categories || [] };
-  }, [cafeteriaId, token]);
-  const menuFeed = useFetch(loadMenu, {
-    cacheKey: cafeteriaId ? `employee:menu:${cafeteriaId}` : null,
-    enabled: Boolean(token && cafeteriaId),
-    staleTime: CACHE_TTL.employeeMenu,
-  });
   const vendor = token && cafeteriaId && vendorFeed.data?.id === cafeteriaId
     ? vendorFeed.data
     : null;
-  const menuCatalog = token && cafeteriaId && menuFeed.data?.vendorId === cafeteriaId
+  const selectedLocationId = resolveVendorLocationId(vendor?.locations, {
+    requestedLocationId,
+    preferredSiteId: profile?.preferred_site_id,
+    preferredBuildingId: profile?.preferred_building_id,
+  });
+  const selectedLocation = vendor?.locations?.find((location) => location.id === selectedLocationId) || null;
+  useEffect(() => {
+    if (!vendor || requestedLocationId === selectedLocationId) return;
+    const next = new URLSearchParams(searchParams);
+    if (selectedLocationId) next.set('locationId', selectedLocationId);
+    else next.delete('locationId');
+    setSearchParams(next, { replace: true });
+  }, [vendor, requestedLocationId, selectedLocationId, searchParams, setSearchParams]);
+  const loadMenu = useCallback(async ({ signal }) => {
+    const menuRes = await listVendorMenu(cafeteriaId, { token, signal, cache: 'no-cache', locationId: selectedLocationId });
+    return { vendorId: cafeteriaId, locationId: selectedLocationId, categories: menuRes?.categories || [] };
+  }, [cafeteriaId, token, selectedLocationId]);
+  const menuFeed = useFetch(loadMenu, {
+    cacheKey: cafeteriaId && selectedLocationId ? `employee:menu:${cafeteriaId}:${selectedLocationId}` : null,
+    enabled: Boolean(token && cafeteriaId && selectedLocationId),
+    staleTime: CACHE_TTL.employeeMenu,
+  });
+  const menuCatalog = token && cafeteriaId && selectedLocationId && menuFeed.data?.vendorId === cafeteriaId
+    && menuFeed.data?.locationId === selectedLocationId
     ? menuFeed.data
     : null;
   const categories = menuCatalog?.categories || EMPTY_CATEGORIES;
   const vendorLoading = Boolean(token && cafeteriaId) && vendorFeed.isLoading && !vendor;
-  const menuLoading = Boolean(token && cafeteriaId) && menuFeed.isLoading && !menuCatalog;
   const vendorError = vendorFeed.error && !vendor
     ? vendorFeed.error?.message || 'Unable to load cafeteria details.'
     : null;
-  const menuError = menuFeed.error && !menuCatalog
+  const menuError = selectedLocationId && menuFeed.error && !menuCatalog
     ? menuFeed.error?.message || 'Failed to load menu'
     : null;
+  const menuLoading = Boolean(token && cafeteriaId && selectedLocationId) && !menuCatalog && !menuError;
   const catalogRefreshError = (vendorFeed.error && vendor) || (menuFeed.error && menuCatalog)
     ? 'Could not refresh the latest cafeteria information. Showing the last loaded information.'
     : null;
@@ -317,9 +334,9 @@ export default function BrowseCafeteriaPage() {
   const filteredReviews = useMemo(() => [], [selectedRating]);
 
   const addItem = async (itemId) => {
-    if (!token) return;
+    if (!token || !selectedLocationId) return;
     try {
-      await addToCart({ menuItemId: itemId, quantity: 1, options: [] }, { token });
+      await addToCart({ menuItemId: itemId, vendorLocationId: selectedLocationId, quantity: 1, options: [] }, { token });
       setAddedItems((current) => (current.includes(itemId) ? current : [...current, itemId]));
       setTimeout(() => setAddedItems((current) => current.filter((id) => id !== itemId)), 2000);
     } catch (err) {
@@ -351,7 +368,7 @@ export default function BrowseCafeteriaPage() {
     attemptedImageRefreshes.current.add(refreshKey);
 
     try {
-      const response = await listVendorMenu(vendorId, { token, cache: 'no-cache', refreshImages: true });
+      const response = await listVendorMenu(vendorId, { token, cache: 'no-cache', refreshImages: true, locationId: selectedLocationId });
       const freshItem = response?.categories
         ?.flatMap((category) => category.items || [])
         .find((item) => item.id === itemId);
@@ -379,7 +396,9 @@ export default function BrowseCafeteriaPage() {
   const showReviews = () => {
     setSelectedRating(null);
     setShowAddReview(false);
-    setSearchParams({ view: 'reviews' });
+    const next = new URLSearchParams(searchParams);
+    next.set('view', 'reviews');
+    setSearchParams(next);
   };
 
   const handleReviewSubmit = async (reviewData) => {
@@ -393,9 +412,9 @@ export default function BrowseCafeteriaPage() {
         name: vendor.name,
         description: vendor.description,
         image: vendor.logo_url,
-        status: vendor.service_status || 'closed',
+        status: selectedLocation?.service_status || vendor.service_status || 'closed',
         walkTime: '6 min',
-        prepWindow: vendor.estimated_prep_minutes ? `${vendor.estimated_prep_minutes} min` : '15 min',
+        prepWindow: (selectedLocation?.estimated_prep_minutes || vendor.estimated_prep_minutes) ? `${selectedLocation?.estimated_prep_minutes || vendor.estimated_prep_minutes} min` : '15 min',
         locations: vendor.locations || [],
       }
     : { id: cafeteriaId, name: 'Loading...', description: '', image: null, status: 'open', walkTime: '—', prepWindow: '—', locations: [] };
@@ -469,6 +488,16 @@ export default function BrowseCafeteriaPage() {
           </div>
         </header>
 
+        {!isReviewsView && vendor && <VendorLocationPicker
+          locations={vendor.locations}
+          value={selectedLocationId}
+          onChange={(locationId) => {
+            const next = new URLSearchParams(searchParams);
+            next.set('locationId', locationId);
+            setSearchParams(next);
+          }}
+        />}
+
         {!isReviewsView && (
           menuLoading
             ? <MenuControlsSkeleton />
@@ -487,7 +516,11 @@ export default function BrowseCafeteriaPage() {
             filteredReviews={filteredReviews}
             selectedRating={selectedRating}
             onRatingClick={setSelectedRating}
-            onClose={() => setSearchParams({})}
+            onClose={() => {
+              const next = new URLSearchParams(searchParams);
+              next.delete('view');
+              setSearchParams(next);
+            }}
             cafeteriaName={cafeteria.name}
             hasOrdered={hasOrdered}
             showAddReview={showAddReview}
@@ -508,7 +541,12 @@ export default function BrowseCafeteriaPage() {
                 <p>{catalogRefreshError}</p>
               </div>
             )}
-            {menuLoading ? (
+            {!selectedLocationId ? (
+              <div className="browse_cafeteria-empty" role="status">
+                <h2>Choose a pickup location</h2>
+                <p>Select where you plan to collect your order to view this cafeteria’s menu.</p>
+              </div>
+            ) : menuLoading ? (
               <div className="browse_cafeteria-item-list browse_cafeteria-menu-skeleton-list" role="status" aria-label="Loading menu items" aria-busy="true">
                 {Array.from({ length: 4 }, (_, index) => <MenuItemSkeleton key={index} />)}
               </div>
@@ -535,7 +573,7 @@ export default function BrowseCafeteriaPage() {
                     variant="browse"
                     added={addedItems.includes(item.id)}
                     onAdd={() => addItem(item.id)}
-                    to={`/cafeterias/${cafeteriaId}/menu/${item.id}`}
+                    to={`/cafeterias/${cafeteriaId}/menu/${item.id}?locationId=${encodeURIComponent(selectedLocationId)}`}
                   />
                 ))}
               </div>

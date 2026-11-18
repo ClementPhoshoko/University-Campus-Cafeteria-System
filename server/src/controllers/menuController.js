@@ -4,7 +4,7 @@ import { respond, CACHE } from '../utils/http.js';
 import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { rankFeaturedMenuItems, rankPopularMenuItems } from '../utils/popularMenuItems.js';
 import { isUuid } from '../validators/vendorValidators.js';
-import { getFirstActiveVendorLocation } from '../utils/vendorMenus.js';
+import { requireActiveVendorLocation } from '../utils/vendorLocation.js';
 
 const db = () => supabaseAdmin;
 
@@ -218,8 +218,8 @@ export async function listVendorMenu(req, res) {
 
     const vendor = await assertApprovedVendor(vendorId);
 
-    const locationId = await getFirstActiveVendorLocation(db(), vendorId);
-    if (!locationId) throw new ApiError(404, 'VENDOR_UNAVAILABLE', 'Vendor has no active locations');
+    const locationId = req.query.location_id;
+    await requireActiveVendorLocation(db(), vendorId, locationId);
     const { data: menuItems, error: itemsError } = await db()
       .from('menu_items')
       .select('id, vendor_id, category_id, name, description, image_url, base_price, currency, prep_minutes, status, created_at, menu_categories(name)')
@@ -233,6 +233,7 @@ export async function listVendorMenu(req, res) {
       return respond(req, res, {
         success: true,
         vendor: { id: vendor.id, name: vendor.name },
+        vendor_location_id: locationId,
         categories: [],
       }, { cacheControl: CACHE.publicOperational });
     }
@@ -287,6 +288,7 @@ export async function listVendorMenu(req, res) {
     return respond(req, res, {
       success: true,
       vendor: { id: vendor.id, name: vendor.name },
+      vendor_location_id: locationId,
       categories: allCategories,
     }, { cacheControl: CACHE.publicOperational });
   } catch (err) {
@@ -318,8 +320,9 @@ export async function getMenuItem(req, res) {
       .maybeSingle();
     if (itemError) throw itemError;
     if (!item) throw new ApiError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
-    const locationId = await getFirstActiveVendorLocation(db(), vendorId);
-    if (!locationId || !['available', 'limited'].includes(item.status)) {
+    const locationId = req.query.location_id;
+    await requireActiveVendorLocation(db(), vendorId, locationId);
+    if (!['available', 'limited'].includes(item.status)) {
       throw new ApiError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
     }
 
@@ -371,12 +374,13 @@ export async function getMenuItem(req, res) {
       success: true,
       menuItem: {
         id: item.id,
+        vendor_location_id: locationId,
         name: item.name,
         description: item.description,
         image_url: await resolveAssetUrl(item.image_url, { size: 'hero', refresh: refreshImages }),
         base_price: item.base_price,
         prep_minutes: item.prep_minutes,
-        status: availability,
+        status: item.status,
         ingredients: item.ingredients,
         portion_description: item.portion_description,
         dietary_tags,

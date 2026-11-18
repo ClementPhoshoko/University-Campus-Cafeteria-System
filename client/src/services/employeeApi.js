@@ -25,13 +25,13 @@ export function listVendorCategoryCatalog({ token, signal, cache, refreshImages 
 
 // ─── Menu ───────────────────────────────────────────────────────────
 
-export function listVendorMenu(vendorId, { token, signal, cache, refreshImages = false } = {}) {
-  return apiRequest(`/vendors/${vendorId}/menu`, { query: { refresh_images: refreshImages ? 'true' : undefined }, token, signal, cache });
+export function listVendorMenu(vendorId, { token, signal, cache, refreshImages = false, locationId } = {}) {
+  return apiRequest(`/vendors/${vendorId}/menu`, { query: { location_id: locationId, refresh_images: refreshImages ? 'true' : undefined }, token, signal, cache });
 }
 
-export function getMenuItem(vendorId, itemId, { token, signal, cache, refreshImages = false } = {}) {
+export function getMenuItem(vendorId, itemId, { token, signal, cache, refreshImages = false, locationId } = {}) {
   return apiRequest(`/vendors/${vendorId}/menu/${itemId}`, {
-    query: { refresh_images: refreshImages ? 'true' : undefined },
+    query: { location_id: locationId, refresh_images: refreshImages ? 'true' : undefined },
     token,
     signal,
     cache,
@@ -49,10 +49,10 @@ export function getCart({ token, signal, refreshImages = false, cache = 'no-cach
   });
 }
 
-export async function addToCart({ menuItemId, quantity, options, specialInstructions }, { token, signal } = {}) {
+export async function addToCart({ menuItemId, vendorLocationId, quantity, options, specialInstructions }, { token, signal } = {}) {
   const response = await apiRequest('/cart/items', {
     method: 'POST',
-    body: { menuItemId, quantity, options, specialInstructions },
+    body: { menuItemId, vendorLocationId, quantity, options, specialInstructions },
     token,
     signal,
   });

@@ -14,7 +14,8 @@
 - The vendor order queue, catalogue item list, categories, staff roster, and invitations are server-paginated.
 - Managers can create/edit/archive catalogue items and categories, invite staff, and remove staff. Staff can update catalogue status. Mutations are vendor-scoped and audited.
 - Customer menu detail already reads dietary tags, allergens, and configured option groups. The item page supports option selection; cart validation and `cart_item_options` persist selections.
-- Vendor managers now have scoped APIs and UI for assigning dietary tags/allergens, notices, and reusable vendor option groups. Checkout snapshots dietary/allergen details alongside existing option snapshots; migration 026 adds transactional, audited write functions. These changes still need migration deployment and environment verification before being considered rolled out.
+- Vendor managers now have scoped APIs and UI for assigning dietary tags/allergens, notices, and reusable vendor option groups. Checkout snapshots dietary/allergen details alongside existing option snapshots; migration 026 adds transactional, audited write functions and has been applied. API behavior still needs environment verification.
+- Customer menu browsing and item detail now carry an explicit active vendor location, resolved from the employee's preferred site/building only when it identifies one location or chosen directly. Cart creation validates and stores that location; slot listing and checkout use the cart's same location.
 - `menu_item_inventory` is currently keyed by `menu_id`; there is no live inventory reservation or release logic. It cannot serve as the new location-based stock model without a deliberate migration.
 - Admin tools can pause/resume generated collection slots. Vendor-scoped slot controls do not exist. Vendor catering and reporting endpoints do not exist; current admin reports use mock data.
 
@@ -28,7 +29,7 @@
 - [x] Use catalogue status for customer visibility, cart validation, and vendor availability.
 - [x] Preserve existing daily-menu tables and add migration 025 to carry current availability into the catalogue before deployment.
 
-### 1. Catalogue details and order snapshots — implementation complete; rollout pending
+### 1. Catalogue details and order snapshots — implementation complete; environment verification pending
 
 **Backend and authorization**
 
@@ -51,12 +52,12 @@
 - [x] Return snapshots through order history/vendor order details so later catalogue edits do not rewrite what was purchased.
 - Avoid a schema migration for these fields unless implementation shows the current JSON contract cannot represent the required stable snapshot.
 
-### 2. Location-aware inventory — after location resolution is agreed
+### 2. Location-aware inventory — location resolution complete; inventory design next
 
 **Resolve location first**
 
-- Replace implicit “first active vendor location” assumptions in customer menu/cart/checkout with an explicit, validated location derived from the user's campus/site choice or selected pickup location.
-- Ensure menu display, cart ownership, stock lookup, collection slots, and checkout all use the same `vendor_location_id`. Reject mismatches server-side.
+- [x] Replace implicit “first active vendor location” assumptions in customer menu/cart with an explicit, validated location derived from the user's preferred campus/site/building when unambiguous or selected pickup location.
+- [x] Ensure menu display, cart ownership, collection slots, and checkout all use the same `vendor_location_id`. Reject mismatches server-side.
 
 **Schema and transactional service**
 
@@ -92,7 +93,8 @@
 
 - Number new database migrations from 026 onward. Add tables/indexes/RPCs without dropping legacy tables; document deployment order and rollback limits.
 - Apply migrations before deploying dependent API code. Deploy server support before enabling manager/customer controls; keep new inventory enforcement behind a controlled rollout until checkout, payment, and release paths are ready together.
-- [ ] Apply migration 026 before deploying dependent API routes; confirm item metadata and option-group writes work in the target Supabase project.
+- [x] Apply migration 026 before deploying dependent API routes.
+- [ ] Confirm item metadata and option-group writes work in the target Supabase project.
 - [ ] Verify manager/staff/admin boundaries, cross-vendor denial, audit coverage, option validation, stable order snapshots, and pagination.
 - Stress-check concurrent checkout, retries, payment failure/expiry, cancellation, order rejection, and duplicate release/consume attempts against real database transactions.
 - Verify slot pause/full behavior against the employee picker and checkout. Reconcile stock reservations and slot counts in staging before enabling production traffic.
