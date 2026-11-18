@@ -96,6 +96,55 @@ export function getVendorMenuSummary(vendorId, { token, signal } = {}) {
   });
 }
 
+export function listVendorMenuMetadataOptions(vendorId, { token, signal } = {}) {
+  return apiRequest('/vendor/menu/metadata-options', {
+    token,
+    signal,
+    query: { vendor_id: vendorId },
+    cache: 'no-store',
+  });
+}
+
+export function listVendorOptionGroups(vendorId, { token, page = 1, limit = 50, signal } = {}) {
+  return apiRequest('/vendor/menu/option-groups', {
+    token,
+    signal,
+    query: { vendor_id: vendorId, page, limit },
+    cache: 'no-store',
+  });
+}
+
+export function createVendorOptionGroup(vendorId, payload, { token, signal } = {}) {
+  return apiRequest('/vendor/menu/option-groups', {
+    method: 'POST',
+    token,
+    signal,
+    body: { ...payload, vendor_id: vendorId },
+  });
+}
+
+export function updateVendorOptionGroup(vendorId, groupId, payload, { token, signal } = {}) {
+  return apiRequest(`/vendor/menu/option-groups/${groupId}`, {
+    method: 'PATCH',
+    token,
+    signal,
+    body: { ...payload, vendor_id: vendorId },
+  });
+}
+
+export function getVendorMenuItemConfiguration(itemId, { token, signal } = {}) {
+  return apiRequest(`/vendor/menu/items/${itemId}/configuration`, { token, signal, cache: 'no-store' });
+}
+
+export function updateVendorMenuItemConfiguration(itemId, payload, { token, signal } = {}) {
+  return apiRequest(`/vendor/menu/items/${itemId}/configuration`, {
+    method: 'PUT',
+    token,
+    signal,
+    body: payload,
+  });
+}
+
 export function createVendorCatalogItem(vendorId, payload, { token, signal } = {}) {
   return apiRequest('/vendor/menu/catalog-items', {
     method: 'POST',

@@ -1,5 +1,8 @@
 function OrderItemRow({ item }) {
   const customizations = item.customization_snapshot || [];
+  const dietarySnapshot = Array.isArray(item.dietary_snapshot) ? item.dietary_snapshot : [];
+  const dietaryTags = dietarySnapshot.filter((entry) => typeof entry === 'string' || entry?.type === 'dietary_tag').map((entry) => typeof entry === 'string' ? entry : entry.name).filter(Boolean);
+  const allergens = dietarySnapshot.filter((entry) => entry?.type === 'allergen' && entry.name);
 
   return (
     <div className="order-item">
@@ -11,6 +14,8 @@ function OrderItemRow({ item }) {
             {customizations.map((c) => `${c.name}${c.quantity > 1 ? ` × ${c.quantity}` : ''}`).join(', ')}
           </p>
         )}
+        {dietaryTags.length > 0 && <p className="order-item__dietary">Dietary: {dietaryTags.join(', ')}</p>}
+        {allergens.length > 0 && <p className="order-item__dietary">Contains: {allergens.map((allergen) => `${allergen.name}${allergen.vendor_notice ? ` (${allergen.vendor_notice})` : ''}`).join(', ')}</p>}
         {item.special_instructions && (
           <p className="order-item__instructions">“{item.special_instructions}”</p>
         )}

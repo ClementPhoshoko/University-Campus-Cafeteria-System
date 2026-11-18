@@ -991,6 +991,12 @@
   font-style: italic;
 }
 
+.order-item__dietary {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  font-size: .75rem;
+}
+
 .order-item__price {
   flex: 0 0 auto;
   font-size: 0.88rem;

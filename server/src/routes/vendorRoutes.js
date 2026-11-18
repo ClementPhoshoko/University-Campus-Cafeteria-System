@@ -32,6 +32,12 @@ import {
   createMyVendorMenuItem,
   updateMyVendorMenuItem,
   deactivateMyVendorMenuItem,
+  listMyVendorMenuMetadataOptions,
+  listMyVendorOptionGroups,
+  createMyVendorOptionGroup,
+  updateMyVendorOptionGroup,
+  getMyVendorMenuItemConfiguration,
+  updateMyVendorMenuItemConfiguration,
 } from '../controllers/vendorOperationsController.js';
 import {
   createMyVendorStaffInvitation,
@@ -69,10 +75,16 @@ vendorRouter.post('/vendor/menu/categories', vendorMutations, createMyVendorCate
 vendorRouter.patch('/vendor/menu/categories/:categoryId', vendorMutations, updateMyVendorCategory);
 vendorRouter.delete('/vendor/menu/categories/:categoryId', vendorMutations, deleteMyVendorCategory);
 vendorRouter.get('/vendor/menu/catalog-items', listMyVendorCatalogItems);
+vendorRouter.get('/vendor/menu/metadata-options', listMyVendorMenuMetadataOptions);
+vendorRouter.get('/vendor/menu/option-groups', listMyVendorOptionGroups);
+vendorRouter.post('/vendor/menu/option-groups', vendorMutations, createMyVendorOptionGroup);
+vendorRouter.patch('/vendor/menu/option-groups/:groupId', vendorMutations, updateMyVendorOptionGroup);
 vendorRouter.post('/vendor/menu/catalog-items', vendorMutations, createMyVendorCatalogItem);
 vendorRouter.post('/vendor/menu/items', vendorMutations, createMyVendorMenuItem);
 vendorRouter.post('/vendor/menu/items/:itemId/image', vendorMutations, uploadVendorMenuItemAsset);
 vendorRouter.patch('/vendor/menu/items/:itemId', vendorMutations, updateMyVendorMenuItem);
+vendorRouter.get('/vendor/menu/items/:itemId/configuration', getMyVendorMenuItemConfiguration);
+vendorRouter.put('/vendor/menu/items/:itemId/configuration', vendorMutations, updateMyVendorMenuItemConfiguration);
 vendorRouter.delete('/vendor/menu/items/:itemId', vendorMutations, deactivateMyVendorMenuItem);
 vendorRouter.patch('/vendor/menu/items/:itemId/availability', vendorMutations, updateMyVendorAvailability);
 

@@ -87,6 +87,45 @@ async function validateVendorCategory(vendorId, categoryId) {
   if (!data) throw new ApiError(400, 'INVALID_CATEGORY', 'Category does not belong to this vendor');
 }
 
+function mapCatalogueConfigurationRpcError(error) {
+  if (error?.code === 'P0001') {
+    const errors = {
+      VENDOR_MANAGER_REQUIRED: [403, 'VENDOR_MANAGER_REQUIRED', 'A vendor manager role is required to manage catalogue details'],
+      MENU_ITEM_NOT_FOUND: [404, 'MENU_ITEM_NOT_FOUND', 'Menu item not found'],
+      INVALID_DIETARY_TAG: [400, 'INVALID_DIETARY_TAG', 'One or more dietary tags are no longer available'],
+      INVALID_ALLERGEN: [400, 'INVALID_ALLERGEN', 'One or more allergens are no longer available'],
+      INVALID_OPTION_GROUP: [400, 'INVALID_OPTION_GROUP', 'One or more option groups are not available for this vendor'],
+      OPTION_GROUP_NOT_FOUND: [404, 'OPTION_GROUP_NOT_FOUND', 'Option group not found'],
+      OPTION_NOT_IN_GROUP: [400, 'INVALID_OPTION', 'An option does not belong to this option group'],
+    };
+    const mapped = errors[String(error.message || '').split(':')[0].trim()];
+    if (mapped) return new ApiError(...mapped);
+  }
+  if (error?.code === '22023') {
+    const messages = {
+      INVALID_OPTION_GROUP: 'Check the option group type, required selection count, and limits',
+      INVALID_OPTION_LIST: 'An active option group needs between 1 and 50 options',
+      INVALID_OPTION: 'Option names, prices, or quantity limits are invalid',
+      OPTION_GROUP_MAX_EXCEEDS_OPTION_COUNT: 'Maximum selections cannot exceed the number of active options',
+      OPTION_GROUP_MIN_EXCEEDS_OPTION_COUNT: 'Minimum selections cannot exceed the number of active options',
+      OPTION_GROUP_LIMIT_EXCEEDS_OPTION_COUNT: 'Selection limits cannot exceed the number of saved choices',
+      ALLERGEN_NOTICE_TOO_LONG: 'Allergen notices must be 500 characters or fewer',
+      DUPLICATE_ALLERGEN: 'An allergen can only be selected once',
+      CONFIGURATION_LIMIT_EXCEEDED: 'Too many catalogue details were submitted at once',
+    };
+    const key = String(error.message || '').split(':')[0].trim();
+    return new ApiError(400, 'VALIDATION_ERROR', messages[key] || 'Catalogue details are invalid');
+  }
+  return error;
+}
+
+function validateUuidList(value, label, max = 50) {
+  if (!Array.isArray(value) || value.length > max || value.some((id) => !isUuid(id))) {
+    throw new ApiError(400, 'VALIDATION_ERROR', `${label} must be a list of up to ${max} valid IDs`);
+  }
+  return value;
+}
+
 export async function getVendorMenuSummaryCounts(database, vendorId) {
   const [categoryResult, menuResult] = await Promise.all([
     database.from('menu_categories').select('id', { count: 'exact', head: true }).eq('vendor_id', vendorId).eq('is_active', true),
@@ -474,6 +513,180 @@ export async function listMyVendorMenu(req, res) {
       pagination: buildPagination(count, pageNum, limitNum),
     }, { cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
+}
+
+export async function listMyVendorMenuMetadataOptions(req, res) {
+  try {
+    const vendorId = String(req.query.vendor_id || '');
+    if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
+    await requireVendorManager(req.user.id, vendorId);
+    const [dietaryResult, allergenResult] = await Promise.all([
+      db().from('dietary_tags').select('id, name, description').eq('is_active', true).order('name').limit(200),
+      db().from('allergens').select('id, name, description').eq('is_active', true).order('name').limit(200),
+    ]);
+    if (dietaryResult.error) throw dietaryResult.error;
+    if (allergenResult.error) throw allergenResult.error;
+    return respond(req, res, { success: true, dietary_tags: dietaryResult.data || [], allergens: allergenResult.data || [] }, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
+export async function listMyVendorOptionGroups(req, res) {
+  try {
+    const vendorId = String(req.query.vendor_id || '');
+    if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
+    await requireVendorManager(req.user.id, vendorId);
+    const { pageNum, limitNum, from, to } = parsePagination(req.query, { maxLimit: 50, defaultLimit: 10 });
+    const { data, count, error } = await db().from('option_groups')
+      .select('id, vendor_id, name, selection_type, is_required, min_select, max_select, is_active, options(id, name, price_delta, max_quantity, is_active)', { count: 'exact' })
+      .eq('vendor_id', vendorId).eq('is_active', true).order('name').range(from, to);
+    if (error) throw error;
+    return respond(req, res, {
+      success: true,
+      option_groups: (data || []).map((group) => ({ ...group, options: (group.options || []).filter((option) => option.is_active) })),
+      pagination: buildPagination(count, pageNum, limitNum),
+    }, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
+export async function getMyVendorMenuItemConfiguration(req, res) {
+  try {
+    const { itemId } = req.params;
+    if (!isUuid(itemId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid menu item id');
+    const { data: item, error: itemError } = await db().from('menu_items').select('id, vendor_id, name').eq('id', itemId).maybeSingle();
+    if (itemError) throw itemError;
+    if (!item) throw new ApiError(404, 'MENU_ITEM_NOT_FOUND', 'Menu item not found');
+    await requireVendorManager(req.user.id, item.vendor_id);
+    const [dietaryResult, allergenResult, groupResult] = await Promise.all([
+      db().from('menu_item_dietary_tags').select('dietary_tag_id, dietary_tags(id, name)').eq('menu_item_id', itemId),
+      db().from('menu_item_allergens').select('allergen_id, vendor_notice, allergens(id, name)').eq('menu_item_id', itemId),
+      db().from('menu_item_option_groups').select('sort_order, option_groups(id, name, selection_type, is_required, min_select, max_select, is_active, options(id, name, price_delta, max_quantity, is_active))').eq('menu_item_id', itemId).order('sort_order'),
+    ]);
+    if (dietaryResult.error) throw dietaryResult.error;
+    if (allergenResult.error) throw allergenResult.error;
+    if (groupResult.error) throw groupResult.error;
+    return respond(req, res, {
+      success: true,
+      configuration: {
+        menu_item_id: item.id,
+        vendor_id: item.vendor_id,
+        dietary_tags: (dietaryResult.data || []).map((row) => row.dietary_tags).filter(Boolean),
+        allergens: (allergenResult.data || []).map((row) => ({ ...row.allergens, vendor_notice: row.vendor_notice })).filter((row) => row.id),
+        option_groups: (groupResult.data || []).map((row) => ({
+          ...row.option_groups,
+          is_active: row.option_groups?.is_active ?? false,
+          options: (row.option_groups?.options || []).filter((option) => option.is_active),
+          sort_order: row.sort_order,
+        })).filter((group) => group.id),
+      },
+    }, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
+export async function updateMyVendorMenuItemConfiguration(req, res) {
+  try {
+    const { itemId } = req.params;
+    if (!isUuid(itemId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid menu item id');
+    const { data: item, error: itemError } = await db().from('menu_items').select('id, vendor_id').eq('id', itemId).maybeSingle();
+    if (itemError) throw itemError;
+    if (!item) throw new ApiError(404, 'MENU_ITEM_NOT_FOUND', 'Menu item not found');
+    await requireVendorManager(req.user.id, item.vendor_id);
+
+    const dietaryTagIds = validateUuidList(req.body?.dietary_tag_ids, 'dietary_tag_ids');
+    const optionGroupIds = validateUuidList(req.body?.option_group_ids, 'option_group_ids', 30);
+    const allergens = req.body?.allergens;
+    if (!Array.isArray(allergens) || allergens.length > 50 || allergens.some((row) => (
+      !row || typeof row !== 'object' || !isUuid(row.id)
+      || (row.vendor_notice != null && (typeof row.vendor_notice !== 'string' || row.vendor_notice.length > 500))
+    ))) return sendError(res, 400, 'VALIDATION_ERROR', 'Allergens must contain valid IDs and notices no longer than 500 characters');
+
+    const { data, error } = await db().rpc('save_vendor_menu_item_configuration', {
+      p_vendor_id: item.vendor_id,
+      p_menu_item_id: itemId,
+      p_actor_id: req.user.id,
+      p_dietary_tag_ids: dietaryTagIds,
+      p_allergens: allergens.map((row) => ({ id: row.id, vendor_notice: row.vendor_notice?.trim() || null })),
+      p_option_group_ids: optionGroupIds,
+    });
+    if (error) throw mapCatalogueConfigurationRpcError(error);
+    return respond(req, res, { success: true, configuration: data?.configuration || {} }, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
+function validateOptionGroupPayload(body = {}) {
+  const errors = [];
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  const selectionType = body.selection_type;
+  const isRequired = body.is_required;
+  const minSelect = Number(body.min_select);
+  const maxSelect = Number(body.max_select);
+  const isActive = body.is_active === undefined ? true : body.is_active;
+  const options = body.options;
+  if (!name || name.length > 100) errors.push('name must be between 1 and 100 characters');
+  if (!['single', 'multiple'].includes(selectionType)) errors.push('selection_type must be single or multiple');
+  if (typeof isRequired !== 'boolean') errors.push('is_required must be a boolean');
+  if (!Number.isInteger(minSelect) || minSelect < 0 || !Number.isInteger(maxSelect) || maxSelect < 1 || minSelect > maxSelect) errors.push('selection limits are invalid');
+  if (selectionType === 'single' && maxSelect !== 1) errors.push('single selection groups must have max_select equal to 1');
+  if (isRequired === true && minSelect < 1) errors.push('required groups need min_select of at least 1');
+  if (typeof isActive !== 'boolean') errors.push('is_active must be a boolean');
+  if (isActive && (!Array.isArray(options) || options.length < 1 || options.length > 50)) errors.push('active groups need between 1 and 50 options');
+  if (Array.isArray(options)) {
+    const ids = [];
+    options.forEach((option, index) => {
+      if (!option || typeof option !== 'object') { errors.push(`options[${index}] must be an object`); return; }
+      if (option.id !== undefined && !isUuid(option.id)) errors.push(`options[${index}].id must be a valid UUID`);
+      if (option.id) ids.push(option.id);
+      if (typeof option.name !== 'string' || !option.name.trim() || option.name.trim().length > 100) errors.push(`options[${index}].name must be between 1 and 100 characters`);
+      const price = Number(option.price_delta ?? 0);
+      if (!Number.isFinite(price) || price < 0 || Math.abs(Math.round(price * 100) - price * 100) > 1e-8) errors.push(`options[${index}].price_delta must be a non-negative amount with up to two decimals`);
+      const maxQuantity = Number(option.max_quantity ?? 1);
+      if (!Number.isInteger(maxQuantity) || maxQuantity < 1 || maxQuantity > 99) errors.push(`options[${index}].max_quantity must be an integer from 1 to 99`);
+    });
+    if (new Set(ids).size !== ids.length) errors.push('option IDs must be unique');
+    if (maxSelect > options.length) errors.push('max_select cannot exceed the number of options');
+    if (isRequired && minSelect > options.length) errors.push('min_select cannot exceed the number of options');
+  }
+  return errors.length ? { errors } : { value: {
+    name, selectionType, isRequired, minSelect, maxSelect, isActive,
+    options: Array.isArray(options) ? options.map((option) => ({
+      ...(option.id ? { id: option.id } : {}),
+      name: option.name.trim(),
+      price_delta: Number(option.price_delta ?? 0),
+      max_quantity: Number(option.max_quantity ?? 1),
+    })) : [],
+  } };
+}
+
+async function saveMyVendorOptionGroup(req, res, groupId = null) {
+  try {
+    const vendorId = String(req.body?.vendor_id || '');
+    if (!isUuid(vendorId) || (groupId && !isUuid(groupId))) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id and option group ID are required');
+    await requireVendorManager(req.user.id, vendorId);
+    const parsed = validateOptionGroupPayload(req.body || {});
+    if (parsed.errors) return sendError(res, 400, 'VALIDATION_ERROR', parsed.errors.join('; '));
+    const { value } = parsed;
+    const { data, error } = await db().rpc('save_vendor_option_group', {
+      p_vendor_id: vendorId,
+      p_group_id: groupId,
+      p_actor_id: req.user.id,
+      p_name: value.name,
+      p_selection_type: value.selectionType,
+      p_is_required: value.isRequired,
+      p_min_select: value.minSelect,
+      p_max_select: value.maxSelect,
+      p_is_active: value.isActive,
+      p_options: value.options,
+    });
+    if (error) throw mapCatalogueConfigurationRpcError(error);
+    return respond(req, res, { success: true, optionGroup: data?.option_group }, { status: groupId ? 200 : 201, cacheControl: 'private, no-store' });
+  } catch (error) { return handleError(res, error); }
+}
+
+export async function createMyVendorOptionGroup(req, res) {
+  return saveMyVendorOptionGroup(req, res);
+}
+
+export async function updateMyVendorOptionGroup(req, res) {
+  return saveMyVendorOptionGroup(req, res, req.params.groupId);
 }
 
 export async function updateMyVendorAvailability(req, res) {

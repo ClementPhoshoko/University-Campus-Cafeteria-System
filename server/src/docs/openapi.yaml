@@ -2904,6 +2904,106 @@ paths:
       responses:
         '200': { description: Server-paginated vendor menu categories }
         '403': { $ref: '#/components/responses/Forbidden' }
+  '/vendor/menu/metadata-options':
+    get:
+      tags: [Vendor Operations]
+      summary: List active dietary and allergen labels for a vendor manager
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vendor_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Active shared dietary tags and allergens }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  '/vendor/menu/option-groups':
+    get:
+      tags: [Vendor Operations]
+      summary: List paginated active option groups owned by a vendor
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vendor_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        '200': { description: One page of option groups and active choices }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Vendor Operations]
+      summary: Create a vendor-owned option group and choices
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorOptionGroupInput'
+      responses:
+        '201': { description: Option group created and audited }
+        '400': { description: Invalid group or choice data }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  '/vendor/menu/option-groups/{groupId}':
+    patch:
+      tags: [Vendor Operations]
+      summary: Update or archive a vendor-owned option group
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorOptionGroupInput'
+      responses:
+        '200': { description: Option group updated and audited }
+        '400': { description: Invalid group or choice data }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Option group not found }
+  '/vendor/menu/items/{itemId}/configuration':
+    get:
+      tags: [Vendor Operations]
+      summary: Read dietary, allergen, and option group assignments
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Current vendor manager item configuration }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Menu item not found }
+    put:
+      tags: [Vendor Operations]
+      summary: Replace dietary, allergen, and option group assignments atomically
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VendorMenuItemConfigurationInput' }
+      responses:
+        '200': { description: Configuration saved and audited }
+        '400': { description: Invalid or inactive label/group assignment }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Menu item not found }
   '/vendor/menu/items':
     post:
       tags: [Vendor Operations]
@@ -3608,6 +3708,53 @@ components:
               type: string
             level_number:
               type: integer
+
+    VendorOptionChoiceInput:
+      type: object
+      required: [name]
+      properties:
+        id: { type: string, format: uuid, description: Existing choice ID when updating }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        price_delta: { type: number, minimum: 0, multipleOf: 0.01 }
+        max_quantity: { type: integer, minimum: 1, maximum: 99, default: 1 }
+
+    VendorOptionGroupInput:
+      type: object
+      required: [vendor_id, name, selection_type, is_required, min_select, max_select, options]
+      properties:
+        vendor_id: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        selection_type: { type: string, enum: [single, multiple] }
+        is_required: { type: boolean }
+        min_select: { type: integer, minimum: 0 }
+        max_select: { type: integer, minimum: 1 }
+        is_active: { type: boolean, default: true }
+        options:
+          type: array
+          maxItems: 50
+          items: { $ref: '#/components/schemas/VendorOptionChoiceInput' }
+
+    VendorMenuItemConfigurationInput:
+      type: object
+      required: [dietary_tag_ids, allergens, option_group_ids]
+      properties:
+        dietary_tag_ids:
+          type: array
+          maxItems: 50
+          items: { type: string, format: uuid }
+        allergens:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required: [id]
+            properties:
+              id: { type: string, format: uuid }
+              vendor_notice: { type: string, maxLength: 500, nullable: true }
+        option_group_ids:
+          type: array
+          maxItems: 30
+          items: { type: string, format: uuid }
 
     DeliveryLocationInput:
       type: object

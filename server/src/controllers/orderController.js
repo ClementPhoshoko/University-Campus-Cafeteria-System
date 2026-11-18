@@ -11,6 +11,7 @@ import { expireCartIfExpired } from '../services/cartExpiry.js';
 import { resolveUnitPrice } from '../utils/pricing.js';
 import { generateOrderReference } from '../utils/orderReference.js';
 import { isMockPaymentEnabled } from '../services/paymentMode.js';
+import { validateCartOptions } from './cartController.js';
 
 const db = () => supabaseAdmin;
 
@@ -117,10 +118,14 @@ export async function createOrder(req, res) {
 
     const { data: ci, error: ciError } = await db()
       .from('cart_items')
-      .select('*, menu_items(base_price, name, description, status), cart_item_options(option_id, quantity, price_delta_snapshot, options(name))')
+      .select('*, menu_items(base_price, name, description, status, dietary_tags:menu_item_dietary_tags(dietary_tags(name)), allergens:menu_item_allergens(vendor_notice, allergens(name))), cart_item_options(option_id, quantity, price_delta_snapshot, options(name))')
       .eq('cart_id', cart.id);
     if (ciError) throw ciError;
     if (!ci?.length) throw new ApiError(400, 'EMPTY_CART', 'No items to order');
+    await Promise.all(ci.map((item) => validateCartOptions(item.menu_item_id, (item.cart_item_options || []).map((option) => ({
+        optionId: option.option_id,
+        quantity: option.quantity,
+      })))));
     const cartItems = ci.map((item) => ({
       menuItemId: item.menu_item_id,
       quantity: item.quantity,
@@ -128,6 +133,11 @@ export async function createOrder(req, res) {
       name: item.menu_items?.name || 'Unknown item',
       description: item.menu_items?.description,
       status: item.menu_items?.status,
+      dietaryTags: (item.menu_items?.dietary_tags || []).map((row) => row.dietary_tags?.name).filter(Boolean),
+      allergens: (item.menu_items?.allergens || []).map((row) => ({
+        name: row.allergens?.name,
+        vendor_notice: row.vendor_notice || null,
+      })).filter((row) => row.name),
       options: (item.cart_item_options || []).map((option) => ({
         optionId: option.option_id,
         name: option.options?.name,
@@ -157,7 +167,14 @@ export async function createOrder(req, res) {
           price_delta: o.priceDelta,
           quantity: o.quantity,
         })),
-        dietary_snapshot: [],
+        dietary_snapshot: [
+          ...item.dietaryTags.map((name) => ({ type: 'dietary_tag', name })),
+          ...item.allergens.map((allergen) => ({
+            type: 'allergen',
+            name: allergen.name,
+            vendor_notice: allergen.vendor_notice,
+          })),
+        ],
         special_instructions: item.specialInstructions || null,
       };
     });

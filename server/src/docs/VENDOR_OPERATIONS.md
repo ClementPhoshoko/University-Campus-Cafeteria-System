@@ -21,7 +21,22 @@ The catalogue is the source of truth for item details and availability. `menu_it
 
 Archiving sets `is_active=false` and `status=unavailable`. It does not physically delete the row, so historical order items keep their foreign-key references and snapshots.
 
-The catalogue editor supports name, description, category, price, preparation estimate, portion, ingredients, default availability, and an item image. Image uploads are restricted to active managers of the vendor that owns the item. Dietary/allergen editing, option groups, recurring weekly templates, and quantity-based stock are not part of this API slice yet.
+The catalogue editor supports name, description, category, price, preparation estimate, portion, ingredients, default availability, and an item image. Image uploads are restricted to active managers of the vendor that owns the item. Managers can also assign shared dietary tags and allergens, add customer notices, and manage reusable vendor-owned option groups. Dietary/allergen names and notices are copied into order item snapshots at checkout, so later catalogue edits do not change order history. Recurring weekly templates and quantity-based stock are not part of this API slice yet.
+
+### Catalogue dietary details and options
+
+Apply `migrations/026_vendor_catalogue_details.sql` before deploying these routes. Registry entries remain centrally managed; vendors can assign active shared dietary/allergen rows but cannot create or rename compliance labels. Option groups and choices are vendor-owned. Configuration writes run through service-role-only database functions that re-check the manager membership, item/group ownership, active registry values, and selection limits inside the database transaction, and write actor-attributed audit rows.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/vendor/menu/metadata-options?vendor_id={id}` | List active shared dietary tags and allergens (manager only) |
+| `GET` | `/vendor/menu/option-groups?vendor_id={id}&page={n}&limit={n}` | List one page of active option groups and choices (manager only) |
+| `POST` | `/vendor/menu/option-groups` | Create a reusable group and its choices (manager only) |
+| `PATCH` | `/vendor/menu/option-groups/{groupId}` | Update or archive a group and its choices (manager only) |
+| `GET` | `/vendor/menu/items/{itemId}/configuration` | Read dietary, allergen, and option-group assignments (manager only) |
+| `PUT` | `/vendor/menu/items/{itemId}/configuration` | Replace item assignments transactionally (manager only) |
+
+Option groups have a vendor-unique name, selection type (`single` or `multiple`), required flag, and selection bounds. Each active choice has a non-negative price delta and maximum quantity. Removed choices are deactivated instead of deleted, preserving historical order/cart references. Archiving a group removes it from active customer selection while retaining its assignment and records. Checkout snapshots the active dietary labels, allergen names/notices, and selected option names/prices on each order item.
 
 ## Vendor invitations
 
@@ -63,6 +78,8 @@ Apply `migrations/023_vendor_manager_staff_roster.sql` before enabling manager s
 Apply `migrations/024_vendor_order_queue_pagination.sql` before deploying server-side order queue pagination. It adds the queue index and service-role-only function that filters, counts, orders, and pages active vendor orders in the database.
 
 Apply `migrations/025_catalogue_availability_source_of_truth.sql` before deploying catalogue-based availability. It copies today's published status for each item at the vendor's first active location into `menu_items.status`; items without a matching menu link retain their current catalogue status. It does not delete dated menus or links.
+
+Apply `migrations/026_vendor_catalogue_details.sql` before deploying manager dietary/allergen assignment, option-group management, and dietary/allergen order snapshots. It adds service-role-only transactional RPCs for vendor-manager-scoped writes; no tables or existing menu/order columns are removed.
 
 ## Authorization and audit
 

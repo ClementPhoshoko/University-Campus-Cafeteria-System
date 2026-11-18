@@ -1,79 +1,99 @@
-# Vendor Portal Next Steps
+# Vendor Portal Roadmap
 
-## Scope
+## Product and data rules
 
-Dated and recurring menu planning are out of scope. Keep the existing `/vendor/menus` client alias because it redirects to reusable catalogue management. Keep migration `021_vendor_menu_planning.sql` because it adds per-item availability for today's published menu; do not remove or roll it back.
+- The reusable `menu_items` catalogue is the source of truth for item details and global ordering status. `available` and `limited` can be ordered; `sold_out` and `unavailable` cannot.
+- Daily menus remain stored as legacy/planning data. Do not require a published daily menu for customer browsing, vendor availability changes, or cart validation. Keep the existing `/vendor/menus` alias and migrations 019–025; do not delete or roll them back.
+- Catalogue status is vendor-wide. Physical stock and collection capacity are location-specific. Customer menu, cart, checkout, stock, and pickup selection must resolve to the same authorized vendor location.
+- Managers may manage catalogue configuration and their own vendor's staff. Staff may process orders and update item availability. Only admins may assign, change, or remove manager access.
+- Use the existing `menu_categories`, dietary/allergen registries and joins, `option_groups`, `options`, and `menu_item_option_groups` where their current constraints fit. Never let vendor input assign records belonging to another vendor.
 
-## Existing Foundations
+## Current foundation
 
-- The schema includes `menu_item_inventory`, dietary/allergen associations, option groups, collection slots, corporate orders, quotes, and deliveries.
-- Vendor staff can operate the active order queue and change availability on today's published menu.
-- Managers can manage reusable categories and catalogue items and invite or revoke staff invitations.
-- Admin tools can manage the active vendor roster and pause/resume generated collection slots. These APIs are admin-only today.
-- Vendor order, daily menu, staff roster, and invitation lists use bounded server-side pages with total counts.
-- The admin reports UI uses mock data. There are no live vendor report or catering routes.
+- The role-aware vendor workspace is implemented. Staff and managers have the Overview; managers also have Menu & categories and Team access.
+- The vendor order queue, catalogue item list, categories, staff roster, and invitations are server-paginated.
+- Managers can create/edit/archive catalogue items and categories, invite staff, and remove staff. Staff can update catalogue status. Mutations are vendor-scoped and audited.
+- Customer menu detail already reads dietary tags, allergens, and configured option groups. The item page supports option selection; cart validation and `cart_item_options` persist selections.
+- Vendor managers now have scoped APIs and UI for assigning dietary tags/allergens, notices, and reusable vendor option groups. Checkout snapshots dietary/allergen details alongside existing option snapshots; migration 026 adds transactional, audited write functions. These changes still need migration deployment and environment verification before being considered rolled out.
+- `menu_item_inventory` is currently keyed by `menu_id`; there is no live inventory reservation or release logic. It cannot serve as the new location-based stock model without a deliberate migration.
+- Admin tools can pause/resume generated collection slots. Vendor-scoped slot controls do not exist. Vendor catering and reporting endpoints do not exist; current admin reports use mock data.
 
-## Cross-surface Dependencies
+## Implementation roadmap
 
-- Employee menu detail and cart must display dietary/allergen information and support configured options. Order item snapshots must preserve the selected options and relevant dietary/allergen details.
-- Employee menu and cart availability must reflect vendor stock and slot changes. Checkout must reserve inventory atomically, and cancellation/failure flows must release it safely.
-- Employee corporate request creation and any requester-facing status flow are required alongside vendor catering management. Confirm whether an admin approval workflow is required for each corporate order type before defining transitions.
-- Admin remains authoritative for assigning managers. Reuse its active vendor roster and generated-slot tools where possible; expose only staff-level access management and permitted slot controls to vendor managers.
-- Decide whether administrators also need catalogue, dietary/allergen, option, or inventory editing. Do not duplicate those controls unless an operational or compliance requirement calls for them.
-- If reports are needed in the admin portal, replace the current mock report sources with live reporting separately; vendor-scoped reports must not be derived from client mock data.
+### 0. Vendor workspace and operations — complete
 
-## Implementation Plan
+- [x] Keep navigation role-aware and restrict manager views server-side.
+- [x] Provide paginated order, catalogue, category, staff, and invitation lists.
+- [x] Support manager catalogue/category maintenance and team access management.
+- [x] Use catalogue status for customer visibility, cart validation, and vendor availability.
+- [x] Preserve existing daily-menu tables and add migration 025 to carry current availability into the catalogue before deployment.
 
-### 0. Vendor workspace shell
+### 1. Catalogue details and order snapshots — implementation complete; rollout pending
 
-- Use the reusable, role-aware `VendorWorkspaceLayout` for vendor navigation.
-- Keep Overview available to staff and managers; show manager-only catalogue and team views only to managers.
-- Add future navigation entries only when the corresponding workflow is implemented and server authorization is in place.
+**Backend and authorization**
 
-### 1. Inventory and menu details
+- [x] Add manager-only, vendor-scoped read/write handlers for item dietary-tag assignments, allergen assignments/notices, and option-group assignments.
+- [x] Provide list endpoints for shared dietary/allergen registries. Vendors assign existing entries; registry creation/renaming stays centrally controlled.
+- [x] Add vendor-scoped option-group and option management with server-side ownership and selection validation.
+- [x] Apply relationship updates transactionally and write actor-attributed audit records for metadata, group, option, and item-assignment changes.
 
-- Add manager-scoped APIs and editor fields for dietary tags, allergens, and option groups, reusing existing tables and customer read paths.
-- Update employee menu detail and cart UI to show dietary/allergen data and let customers select configured options; persist selections in order snapshots.
-- Add per-menu-item quantity management using `menu_item_inventory`.
-- Enforce stock reservation atomically during employee checkout. Reflect remaining availability in menu/cart, release reservations on cancellation or failed order completion, and prevent duplicate reservation on retries.
-- Add audit events for manager changes to item metadata and inventory.
+**Manager UI**
 
-### 2. Queue pagination and vendor roster
+- [x] Add a separate item-details editor for dietary/allergen metadata and option-group assignment, keeping the basic item form compact.
+- [x] Let managers configure reusable option groups with required/optional and min/max selection rules.
+- [x] Show save, validation, loading, and error states. Keep staff out of configuration controls.
 
-- [x] Add server-side pagination, total counts, and supported status filters to `GET /vendor/orders`.
-- [x] Define stable server-side ordering that preserves collection-time priority and add a queue index.
-- [x] Replace client-only slicing of the first 100 orders with API-driven pagination.
-- [x] Paginate the daily menu, active staff roster, staff invitations, and vendor categories at the API boundary.
-- Apply `server/src/docs/migrations/024_vendor_order_queue_pagination.sql` before deploying queue pagination; apply migration 023 before enabling manager staff removal.
-- [x] Add a manager-scoped active-staff list and staff access deactivation endpoint. Managers can deactivate only staff in their own vendor; matching pending staff invitations are revoked and the change is audited atomically. Apply `server/src/docs/migrations/023_vendor_manager_staff_roster.sql` before enabling it.
-- Managers may manage staff membership only. They must not assign, edit, or remove manager access, and all actions must be vendor-scoped and audited.
+**Customer and order data**
+
+- Keep customer menu detail as the read path and verify it filters inactive groups/options and inactive items consistently.
+- [x] Keep the existing cart option selection and server validation; revalidate saved selections against active groups/options and current required/max rules during checkout, so changes cannot leave a stale cart line silently orderable.
+- [x] At order creation, snapshot the dietary tags and allergen names/notices that applied at purchase time into the existing `order_items.dietary_snapshot` JSON. Preserve option labels and prices in the existing customization/order-option snapshots.
+- [x] Return snapshots through order history/vendor order details so later catalogue edits do not rewrite what was purchased.
+- Avoid a schema migration for these fields unless implementation shows the current JSON contract cannot represent the required stable snapshot.
+
+### 2. Location-aware inventory — after location resolution is agreed
+
+**Resolve location first**
+
+- Replace implicit “first active vendor location” assumptions in customer menu/cart/checkout with an explicit, validated location derived from the user's campus/site choice or selected pickup location.
+- Ensure menu display, cart ownership, stock lookup, collection slots, and checkout all use the same `vendor_location_id`. Reject mismatches server-side.
+
+**Schema and transactional service**
+
+- Add a new location-scoped stock table, for example `vendor_location_item_inventory`, keyed uniquely by `(vendor_location_id, menu_item_id)`, with non-negative on-hand and reserved quantities, an update timestamp, and a check that reserved quantity never exceeds on-hand quantity. Derive orderable quantity as on-hand minus reserved.
+- Add explicit per-order-item reservation rows with quantity, state (`reserved`, `consumed`, or `released`), expiry, and unique order-item linkage. Use them for idempotency and safe recovery.
+- Add an append-only inventory movement ledger for receipts, adjustments, reservations, releases, and consumption. Record quantity delta, actor/reason where applicable, linked reservation/order, and an idempotency key so stock can be reconciled without relying on mutable totals alone.
+- Leave the old menu-scoped `menu_item_inventory` table and rows untouched as legacy data. Do not backfill it blindly: menu-linked quantities may be duplicated across dates. Inspect production data and define a reviewed conversion only if meaningful live stock exists.
+- Implement service-role-only database RPCs for atomic stock adjustment, reservation, consumption, expiry, and release. Lock rows and validate quantities within the same transaction as checkout/order state changes. Add request idempotency so retries cannot reserve twice.
+- On payment failure/expiry or cancellation/rejection, release the hold exactly once. On confirmed fulfilment, consume it exactly once. Define expiry/reconciliation behavior before shipping the UI.
+- Audit manager adjustments with actor, location, item, quantity delta, and reason. Restrict managers to their own vendor locations.
+
+**Vendor/customer UI**
+
+- Add manager-only stock controls to the catalogue/location workflow with a clear distinction between on-hand, reserved, and currently orderable quantities.
+- Keep catalogue status as a global sale gate; calculate customer orderability from both the global status and selected-location stock. Do not overload `menu_items.status` with per-location quantity state.
+- Show useful sold-out/low-stock feedback on customer menu and cart, and revalidate at checkout to handle races.
 
 ### 3. Vendor collection-slot controls
 
-- Reuse the existing generated-slot schedule and admin pause/resume behavior.
-- Add vendor-manager-scoped APIs and UI for permitted schedule controls.
-- Decide explicitly whether managers may change capacity, interval, or preparation capacity; the current admin UI only supports pausing/resuming generated slots.
-- Protect reserved and already-started slots from unsafe edits, and keep reservation/capacity changes atomic.
-- Ensure the employee slot picker and checkout validation immediately respect paused, full, or changed slots.
+- Reuse the existing generated-slot schedule and admin pause/resume logic; add manager-only vendor-scoped read and pause/resume controls first.
+- Do not expose interval, preparation capacity, or capacity editing until product rules and reserved-slot behavior are defined.
+- Implement slot changes transactionally. Prevent unsafe changes to started/reserved slots, and ensure customer slot selection and checkout immediately enforce paused/full state.
+- Audit each manager action and validate slot ownership through the slot's vendor location.
 
-### 4. Catering and reporting
+### 4. Catering and reporting — separate product scope
 
-- Build vendor catering request views and actions against the existing corporate order, quote, and delivery schema.
-- Confirm or implement the employee corporate request-entry and requester status flows needed to create and track requests handled by vendors.
-- Confirm whether admin approval is required and connect vendor actions to the applicable approval flow.
-- Define vendor transitions for quoting, accepting/rejecting, dispatch, delivery confirmation, and audit history before implementing the UI.
-- Add real report endpoints based on order, order-item, status-history, and settlement data. Do not treat the current admin mock figures as report sources.
-- Scope reports by vendor and authorized date range; paginate detailed results and define export permissions.
-- If admin reports are in scope, update them to consume the same verified data definitions while retaining admin-wide access controls.
+- Map existing corporate order, quote, and delivery states before adding vendor actions. Define employee request creation/status tracking and whether each order type requires admin approval.
+- Specify allowed transitions for quote, accept/reject, dispatch, and delivery confirmation, with audit history and authorization rules, before building vendor screens.
+- Build live, vendor-scoped reporting from verified order, item, status-history, and settlement data. Define date boundaries, timezone, pagination, and export permissions.
+- Replace admin mock report sources separately; do not use client mock data for vendor reports.
 
-### 5. Verification and rollout
+### 5. Rollout and verification
 
-- Test cross-vendor access denial and staff-versus-manager permissions for every new route.
-- Test inventory reservation under concurrent checkouts, retries, cancellation, and failure recovery.
-- Test employee menu/cart rendering and order snapshots for options, dietary tags, allergens, and stock availability.
-- Test queue filters, pagination boundaries, stable ordering, and refresh after status changes.
-- Test slot capacity, pause/resume, and behavior for reserved or started slots.
-- Test employee slot selection and checkout after a slot is paused, filled, or changed.
-- Test catering state transitions, report totals against source records, and audit coverage.
-- Test requester, vendor, and any required admin approval flows end to end.
-- Apply and verify required migrations and background scheduler configuration in staging before enabling each feature.
+- Number new database migrations from 026 onward. Add tables/indexes/RPCs without dropping legacy tables; document deployment order and rollback limits.
+- Apply migrations before deploying dependent API code. Deploy server support before enabling manager/customer controls; keep new inventory enforcement behind a controlled rollout until checkout, payment, and release paths are ready together.
+- [ ] Apply migration 026 before deploying dependent API routes; confirm item metadata and option-group writes work in the target Supabase project.
+- [ ] Verify manager/staff/admin boundaries, cross-vendor denial, audit coverage, option validation, stable order snapshots, and pagination.
+- Stress-check concurrent checkout, retries, payment failure/expiry, cancellation, order rejection, and duplicate release/consume attempts against real database transactions.
+- Verify slot pause/full behavior against the employee picker and checkout. Reconcile stock reservations and slot counts in staging before enabling production traffic.
+- Update this roadmap as each phase ships; do not mark schema, API, UI, or rollout work complete until all dependent surfaces agree.

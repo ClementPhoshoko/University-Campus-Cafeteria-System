@@ -179,7 +179,7 @@ async function getOwnedActiveCartItem(itemId, userId) {
   return { cartItem, cart };
 }
 
-async function validateCartOptions(menuItemId, options) {
+export async function validateCartOptions(menuItemId, options) {
   if (!Array.isArray(options)) throw new ApiError(400, 'VALIDATION_ERROR', 'options must be an array');
 
   const { data, error } = await db()

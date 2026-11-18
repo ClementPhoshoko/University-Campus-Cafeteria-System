@@ -19,6 +19,7 @@ import {
 } from '../../services/vendorApi.js';
 import { useVendorMenuSummary } from '../../hooks/useVendorMenuSummary.js';
 import { formatMoney } from './components/VendorDashboardComponents.jsx';
+import VendorOptionGroupManager, { VendorMenuItemConfigurationModal } from './VendorCatalogueConfiguration.jsx';
 import { MenuItemModal, CategoryModal } from '../admin/VendorForms.jsx';
 import './vendor-menu-management.css';
 
@@ -59,6 +60,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [showNewItem, setShowNewItem] = useState(false);
+  const [configuringItem, setConfiguringItem] = useState(null);
   const [formCategories, setFormCategories] = useState([]);
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const [itemsExpanded, setItemsExpanded] = useState(false);
@@ -367,6 +369,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
                   </div>
                 </div>
                 <div className="vendor-menu-management__actions vendor-menu-item__actions">
+                  <button type="button" className="vendor-menu-item__action" disabled={busy} onClick={() => setConfiguringItem(item)}>Details</button>
                   <button type="button" className="vendor-menu-item__action" disabled={busy} onClick={() => openItemModal(item)}><IconPencil size={16} />Edit</button>
                   <button type="button" className="vendor-menu-item__action vendor-menu-item__action--archive" disabled={busy} onClick={() => archiveItem(item)}><IconArchive size={16} />Archive</button>
                 </div>
@@ -378,6 +381,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
           </div>
         </div>
       </section>
+      <VendorOptionGroupManager vendorId={vendorId} token={token} />
     </>}
 
     {(editingItem || showNewItem) && <MenuItemModal
@@ -397,6 +401,12 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
       usePrimaryButtons
       onClose={() => { setEditingCategory(null); setShowNewCategory(false); }}
       onSubmit={saveCategory}
+    />}
+    {configuringItem && <VendorMenuItemConfigurationModal
+      item={configuringItem}
+      token={token}
+      onClose={() => setConfiguringItem(null)}
+      onSaved={() => setNotice(`${configuringItem.name} details saved.`)}
     />}
   </div>;
 }

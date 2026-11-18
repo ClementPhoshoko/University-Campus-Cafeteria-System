@@ -53,10 +53,14 @@ export function OrderCard({ order, busy, urgent, onStatus }) {
   </form> : action.status === 'received_by_vendor' || action.status === 'accepted' || action.status === 'preparing' || action.status === 'ready_for_collection' ? <PrimaryButton key={action.status} size="md" className="primary-btn primary-btn--md vendor-order-card__receive-button" disabled={busy} onClick={() => onStatus(order, action.status)}>{busy ? 'Saving...' : action.label}</PrimaryButton> : <button key={action.status} className="vendor-ops-button" type="button" disabled={busy} onClick={() => onStatus(order, action.status)}>{busy ? 'Saving...' : action.label}</button>)}</div>;
   const itemList = <ul className="vendor-order-card__items">{(order.items || []).map((item, index) => {
     const itemTotal = item.line_total ?? (item.unit_price_snapshot != null ? Number(item.unit_price_snapshot) * Number(item.quantity || 0) : null);
+    const dietarySnapshot = Array.isArray(item.dietary_snapshot) ? item.dietary_snapshot : [];
+    const dietaryTags = dietarySnapshot.filter((entry) => typeof entry === 'string' || entry?.type === 'dietary_tag').map((entry) => typeof entry === 'string' ? entry : entry.name).filter(Boolean);
+    const allergenSnapshots = dietarySnapshot.filter((entry) => entry?.type === 'allergen' && entry.name);
     return <li key={`${order.id}-${index}`}>
       <div className="vendor-order-card__item-row"><span><b>{item.quantity}×</b> {item.item_name_snapshot}</span>{itemTotal != null && <strong>{formatMoney(itemTotal, order.currency)}</strong>}</div>
       {Array.isArray(item.customization_snapshot) && item.customization_snapshot.length > 0 && <small>Options: {item.customization_snapshot.map((option) => `${option.quantity > 1 ? `${option.quantity}× ` : ''}${option.name || option.label || option.option_name || 'Option'}`).join(', ')}</small>}
-      {Array.isArray(item.dietary_snapshot) && item.dietary_snapshot.length > 0 && <small>Dietary: {item.dietary_snapshot.join(', ')}</small>}
+      {dietaryTags.length > 0 && <small>Dietary: {dietaryTags.join(', ')}</small>}
+      {allergenSnapshots.length > 0 && <small>Contains: {allergenSnapshots.map((allergen) => `${allergen.name}${allergen.vendor_notice ? ` (${allergen.vendor_notice})` : ''}`).join(', ')}</small>}
       {item.special_instructions && <small>Note: {item.special_instructions}</small>}
     </li>;
   })}</ul>;
