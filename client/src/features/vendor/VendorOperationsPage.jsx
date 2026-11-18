@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { IconRefresh, IconShoppingBag, IconSoup, IconClockHour4, IconAlertTriangle } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
@@ -55,6 +55,7 @@ export default function VendorOperationsPage() {
   const [menuError, setMenuError] = useState('');
   const [busyOrder, setBusyOrder] = useState('');
   const [busyItem, setBusyItem] = useState('');
+  const busyItemRef = useRef('');
   const [editingItem, setEditingItem] = useState(null);
   const [savingEditor, setSavingEditor] = useState(false);
   const [notice, setNotice] = useState('');
@@ -133,10 +134,18 @@ export default function VendorOperationsPage() {
   }
 
   async function handleAvailability(item, status) {
+    if (busyItemRef.current) return false;
+    busyItemRef.current = item.id;
     setBusyItem(item.id); setNotice('');
-    try { await updateVendorAvailability(item.id, { status }, { token }); await loadMenu(); setNotice(`${item.name} availability updated.`); }
-    catch (error) { setNotice(error.message || 'Could not update menu availability.'); }
-    finally { setBusyItem(''); }
+    try {
+      await updateVendorAvailability(item.id, { status }, { token });
+      setMenuItems((current) => current.map((row) => row.id === item.id ? { ...row, status } : row));
+      await loadMenu();
+      setNotice(`${item.name} availability updated.`);
+      return true;
+    }
+    catch (error) { setNotice(error.message || 'Could not update menu availability.'); return false; }
+    finally { busyItemRef.current = ''; setBusyItem(''); }
   }
 
   async function handleMenuItemSave(payload) {
@@ -189,11 +198,19 @@ export default function VendorOperationsPage() {
   }
 
   async function handleArchiveMenuItem(item) {
-    if (!await confirm({ title: 'Archive this menu item?', message: `“${item.name}” will no longer appear on customer menus.`, confirmLabel: 'Archive item', tone: 'danger' })) return;
-    setBusyItem(item.id); setNotice('');
-    try { await archiveVendorMenuItem(item.id, { token }); await loadMenu(); setNotice(`${item.name} archived.`); }
+    if (busyItemRef.current) return;
+    busyItemRef.current = item.id;
+    setBusyItem(item.id);
+    try {
+      const approved = await confirm({ title: 'Archive this menu item?', message: `“${item.name}” will no longer appear on customer menus.`, confirmLabel: 'Archive item', tone: 'danger' });
+      if (!approved) return;
+      setNotice('');
+      await archiveVendorMenuItem(item.id, { token });
+      await loadMenu();
+      setNotice(`${item.name} archived.`);
+    }
     catch (error) { setNotice(error.message || 'Could not archive that item.'); }
-    finally { setBusyItem(''); }
+    finally { busyItemRef.current = ''; setBusyItem(''); }
   }
 
   if (showingManagerView && selectedVendor?.role !== 'manager' && vendorsState === 'ready') {
@@ -262,7 +279,7 @@ export default function VendorOperationsPage() {
             {menuError && menuState !== 'error' && <div className="vendor-ops-inline-error" role="status">Menu refresh failed: {menuError}</div>}
             {menuState === 'error' && <div className="vendor-ops-inline-error" role="alert">{menuError}</div>}
             {menuState === 'ready' && !menuPagination.total && <div className="vendor-ops-section-empty">No menu items have been added yet.</div>}
-            {menuState === 'ready' && pagedMenuItems.map((item) => <div className="vendor-menu-item-wrap" key={item.id}><MenuItemCard item={item} busy={busyItem === item.id} onSave={handleAvailability} />{selectedVendor.role === 'manager' && <div className="vendor-menu-item-wrap__actions"><PrimaryButton size="sm" onClick={() => openMenuItemEditor(item)}>Edit details</PrimaryButton><PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" onClick={() => handleArchiveMenuItem(item)} disabled={busyItem === item.id}>Archive</PrimaryButton></div>}</div>)}
+            {menuState === 'ready' && pagedMenuItems.map((item) => <div className="vendor-menu-item-wrap" key={item.id}><MenuItemCard item={item} busy={busyItem === item.id} onSave={handleAvailability} canManage={selectedVendor.role === 'manager'} onEdit={openMenuItemEditor} onArchive={handleArchiveMenuItem} /></div>)}
             <div className="vendor-list-pagination-slot"><Pagination currentPage={safeMenuPage} totalPages={menuTotalPages} totalItems={menuPagination.total} itemsPerPage={VENDOR_LIST_PAGE_SIZE} label="menu items" onPageChange={setMenuPage} /></div>
         </div>
         </VendorSection>

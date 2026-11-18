@@ -59,22 +59,30 @@ export function VendorQueueSkeleton() {
 function MenuRowSkeleton() {
   return <div className="vendor-menu-item-wrap" aria-hidden="true">
     <article className="vendor-menu-item">
-      <div className="vendor-menu-item__main">
-        <div className="vendor-loading-menu-copy">
-          <LoadingLine width="62%" height={15} />
-          <LoadingLine width="78%" height={11} />
+      <div className="vendor-menu-item__content">
+        <Skeleton className="vendor-menu-item__image home_card-skeleton-shimmer" />
+        <div className="vendor-menu-item__details">
+          <div className="vendor-menu-item__heading">
+            <div className="vendor-loading-menu-copy">
+              <LoadingLine width="62%" height={15} />
+              <LoadingLine width="78%" height={11} />
+            </div>
+            <Skeleton className="vendor-loading-status home_card-skeleton-shimmer" />
+          </div>
+          <div className="vendor-menu-item__availability">
+            <LoadingLine width="68px" height={10} />
+            <Skeleton className="vendor-loading-input home_card-skeleton-shimmer" />
+          </div>
         </div>
-        <Skeleton className="vendor-loading-status home_card-skeleton-shimmer" />
       </div>
-      <div className="vendor-menu-item__controls">
-        <div className="vendor-loading-menu-field"><LoadingLine width="68px" height={10} /><Skeleton className="vendor-loading-input home_card-skeleton-shimmer" /></div>
-        <Skeleton className="vendor-loading-button home_card-skeleton-shimmer" />
+      <div className="vendor-menu-item__footer">
+        <Skeleton className="vendor-loading-input home_card-skeleton-shimmer" />
+        <div className="vendor-menu-item__actions">
+          <Skeleton className="vendor-loading-button home_card-skeleton-shimmer" />
+          <Skeleton className="vendor-loading-button home_card-skeleton-shimmer" />
+        </div>
       </div>
     </article>
-    <div className="vendor-menu-item-wrap__actions">
-      <Skeleton className="vendor-loading-button home_card-skeleton-shimmer" />
-      <Skeleton className="vendor-loading-button home_card-skeleton-shimmer" />
-    </div>
   </div>;
 }
 
