@@ -118,7 +118,15 @@ export default function ViewFoodPage() {
     : null;
   const menuItem = itemResponse?.menuItem || null;
   const optionGroups = menuItem?.option_groups || [];
-  const itemLoadError = itemFeed.isError && itemFeed.data?.locationId === selectedLocationId;
+  // A failed first request has no data to carry the request's location key.
+  // Treat that as the current request's error so it doesn't leave the page
+  // rendering the loading skeleton forever.
+  const itemLoadError = itemFeed.isError && (
+    !itemFeed.data
+    || (itemFeed.data.vendorId === vendorId
+      && itemFeed.data.menuItemId === menuItemId
+      && itemFeed.data.locationId === selectedLocationId)
+  );
   const itemLoading = (vendorFeed.isLoading && !vendor)
     || (Boolean(selectedLocationId) && !itemResponse && !itemLoadError);
   const vendorRefreshError = vendorFeed.error && vendor
@@ -429,10 +437,11 @@ export default function ViewFoodPage() {
                       <CustomDropdown
                         label=""
                         placeholder={`Select ${group.name.toLowerCase()}`}
-                        options={group.options}
+                        options={group.options.map((option) => ({ ...option, available: true }))}
                         value={selectedOptions[group.id]}
                         onChange={(value) => handleOptionChange(group.id, value)}
                         multiple={group.selection_type === 'multiple'}
+                        showAvailabilityStatus={false}
                       />
                     </div>
                   ))}
