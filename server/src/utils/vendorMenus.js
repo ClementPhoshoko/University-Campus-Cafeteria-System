@@ -9,7 +9,7 @@ function johannesburgDate(now = new Date()) {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-export async function getTodaysPublishedVendorMenu(database, vendorId) {
+export async function getFirstActiveVendorLocation(database, vendorId) {
   const { data: location, error: locationError } = await database
     .from('vendor_locations')
     .select('id')
@@ -19,17 +19,22 @@ export async function getTodaysPublishedVendorMenu(database, vendorId) {
     .limit(1)
     .maybeSingle();
   if (locationError) throw locationError;
-  if (!location) return { locationId: null, menu: null };
+  return location?.id || null;
+}
+
+export async function getTodaysPublishedVendorMenu(database, vendorId) {
+  const locationId = await getFirstActiveVendorLocation(database, vendorId);
+  if (!locationId) return { locationId: null, menu: null };
 
   const { data: menu, error: menuError } = await database
     .from('menus')
     .select('id, name, menu_date')
-    .eq('vendor_location_id', location.id)
+    .eq('vendor_location_id', locationId)
     .eq('menu_date', johannesburgDate())
     .eq('status', 'published')
     .maybeSingle();
   if (menuError) throw menuError;
-  return { locationId: location.id, menu: menu || null };
+  return { locationId, menu: menu || null };
 }
 
 export async function getTodaysPublishedMenuItem(database, vendorId, itemId) {

@@ -2869,7 +2869,7 @@ paths:
   '/vendor/menu':
     get:
       tags: [Vendor Operations]
-      summary: List today’s published menu for a vendor membership
+      summary: List active catalogue items for a vendor membership
       security: [{ bearerAuth: [] }]
       parameters:
         - name: vendor_id
@@ -2883,7 +2883,7 @@ paths:
           in: query
           schema: { type: integer, minimum: 1, maximum: 50, default: 5 }
       responses:
-        '200': { description: Server-paginated menu items and their availability }
+        '200': { description: Server-paginated catalogue items and their global availability }
         '403': { $ref: '#/components/responses/Forbidden' }
   '/vendor/menu/categories':
     get:
@@ -2907,8 +2907,8 @@ paths:
   '/vendor/menu/items':
     post:
       tags: [Vendor Operations]
-      summary: Add an item to a published menu (vendor managers only)
-      description: Creates an active vendor menu item and links it to the specified published menu for the current Johannesburg date. Uses existing menu item, category, and menu link tables; no migration is required.
+      summary: Create a vendor catalogue item (vendor managers only)
+      description: Creates an active vendor catalogue item. It is immediately visible to customers when its status is available or limited; no dated menu is required.
       security: [{ bearerAuth: [] }]
       requestBody:
         required: true
@@ -2916,10 +2916,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [vendor_id, menu_id, name, base_price]
+              required: [vendor_id, name, base_price]
               properties:
                 vendor_id: { type: string, format: uuid }
-                menu_id: { type: string, format: uuid }
                 name: { type: string, minLength: 1, maxLength: 120 }
                 description: { type: string, maxLength: 2000, nullable: true }
                 category_id: { type: string, format: uuid, nullable: true }
@@ -2929,10 +2928,9 @@ paths:
                 portion_description: { type: string, maxLength: 120, nullable: true }
                 ingredients: { type: array, maxItems: 50, items: { type: string, maxLength: 100 } }
       responses:
-        '201': { description: Menu item created and attached to the published menu }
+        '201': { description: Catalogue item created }
         '400': { description: Invalid item fields or category }
         '403': { description: Active vendor manager membership is required }
-        '409': { description: The menu is not published for today at an active vendor location }
   '/vendor/menu/items/{itemId}':
     patch:
       tags: [Vendor Operations]
@@ -2979,7 +2977,7 @@ paths:
   '/vendor/menu/items/{itemId}/availability':
     patch:
       tags: [Vendor Operations]
-      summary: Update availability for an item on today’s published menu
+      summary: Update catalogue item availability
       security: [{ bearerAuth: [] }]
       parameters:
         - name: itemId
@@ -2992,14 +2990,12 @@ paths:
           application/json:
             schema:
               type: object
-              required: [status, menu_id]
+              required: [status]
               properties:
                 status: { type: string, enum: [available, limited, sold_out, unavailable] }
-                menu_id: { type: string, format: uuid, description: Published menu id returned with the vendor menu response }
       responses:
-        '200': { description: Availability updated }
+        '200': { description: Catalogue item availability updated }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { description: No menu is published today }
 
   '/admin/vendors/{vendorId}/menu-items':
     get:

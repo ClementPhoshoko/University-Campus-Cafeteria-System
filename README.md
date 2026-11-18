@@ -764,7 +764,7 @@ Actions:
 - Stock quantity.
 - Availability.
 - Sold-out state.
-- Availability on today's published menu.
+- Catalogue availability state shared across the vendor's locations.
 
 ### Collection Slot Management
 
@@ -1233,7 +1233,7 @@ GET    /support/cases/:caseId
 
 ## Vendor API namespace
 
-The vendor-operations slice includes membership discovery, a vendor-scoped active order queue, order status updates, availability on today’s published menu, and manager-only catalogue management. Requests are checked against active `vendor_users` membership; catalogue mutations require the active membership role to be `manager`.
+The vendor-operations slice includes membership discovery, a vendor-scoped active order queue, order status updates, catalogue item availability, and manager-only catalogue management. Requests are checked against active `vendor_users` membership; catalogue creation and detail mutations require the active membership role to be `manager`.
 
 ```text
 GET    /vendor/orders?vendor_id={id}&filter={active|needs_attention|ready_for_collection}&page={n}&limit={n} (server-paginated)
@@ -1262,7 +1262,7 @@ PATCH  /vendor/collection-slots/:slotId
 GET    /vendor/reports
 ```
 
-The vendor workspace keeps the staff order queue and daily availability controls, with manager-only reusable catalogue management, invitations, and staff access removal. Vendor order, daily menu, category, invitation, and staff lists are paginated by the backend; the browser requests only the visible page. Managers can view, invite, and deactivate staff only for their own vendor; admins continue to assign manager access. Staff removal deactivates the membership, revokes any matching pending staff invitations, and records an audit entry atomically. Catalogue items are separate from the currently published menu: the daily staff workspace and employee/cart flow use the first active vendor location, and staff availability changes apply only to that location's published menu for today. The client `/vendor/menus` path is a compatibility redirect to catalogue management; dated or recurring menu planning is not part of this scope. Apply `server/src/docs/migrations/021_vendor_menu_planning.sql` for per-item availability on today's published menu, `server/src/docs/migrations/022_protect_vendor_manager_from_staff_invite.sql` before enabling manager-issued staff invitations, `server/src/docs/migrations/023_vendor_manager_staff_roster.sql` before enabling manager staff removal, and `server/src/docs/migrations/024_vendor_order_queue_pagination.sql` before deploying server-side order queue pagination. Image upload is supported; dietary/allergen editing, option/customization management, and quantity-based stock remain planned. The schema includes `menu_item_inventory`, but the current cart and checkout do not reserve or enforce its quantities.
+The vendor workspace keeps the staff order queue and catalogue availability controls, with manager-only catalogue editing, invitations, and staff access removal. Vendor order, item, category, invitation, and staff lists are paginated by the backend; the browser requests only the visible page. Managers can view, invite, and deactivate staff only for their own vendor; admins continue to assign manager access. Staff removal deactivates the membership, revokes any matching pending staff invitations, and records an audit entry atomically. `menu_items.status` is the source of truth for customer visibility and cart eligibility: active `available` and `limited` items can be ordered, and `sold_out` or `unavailable` items cannot. Availability is shared across the vendor's locations. Dated menu tables are retained but no longer gate the live vendor, restaurant, or cart flows. Apply `server/src/docs/migrations/025_catalogue_availability_source_of_truth.sql` once before deploying the catalogue availability handlers; it carries today's published per-menu statuses into the catalogue. Apply `server/src/docs/migrations/022_protect_vendor_manager_from_staff_invite.sql` before enabling manager-issued staff invitations, `server/src/docs/migrations/023_vendor_manager_staff_roster.sql` before enabling manager staff removal, and `server/src/docs/migrations/024_vendor_order_queue_pagination.sql` before deploying server-side order queue pagination. Image upload is supported; dietary/allergen editing, option/customization management, and quantity-based stock remain planned. The schema includes `menu_item_inventory`, but the current cart and checkout do not reserve or enforce its quantities.
 
 ## Administration API namespace
 

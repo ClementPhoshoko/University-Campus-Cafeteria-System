@@ -4,7 +4,7 @@ import { respond, CACHE } from '../utils/http.js';
 import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { rankFeaturedMenuItems, rankPopularMenuItems } from '../utils/popularMenuItems.js';
 import { isUuid } from '../validators/vendorValidators.js';
-import { getTodaysPublishedMenuItem, getTodaysPublishedVendorMenu } from '../utils/vendorMenus.js';
+import { getFirstActiveVendorLocation } from '../utils/vendorMenus.js';
 
 const db = () => supabaseAdmin;
 
@@ -207,7 +207,7 @@ export async function listPopularMenuItems(req, res) {
 
 // ---------------------------------------------------------------------------
 // GET /vendors/:vendorId/menu
-// Today's published menu items grouped by category
+// Active catalogue items grouped by category
 // ---------------------------------------------------------------------------
 
 export async function listVendorMenu(req, res) {
@@ -218,43 +218,16 @@ export async function listVendorMenu(req, res) {
 
     const vendor = await assertApprovedVendor(vendorId);
 
-    let menuItems = [];
-    const { locationId, menu } = await getTodaysPublishedVendorMenu(db(), vendorId);
-    if (menu) {
-      const { data: links, error: linkError } = await db()
-        .from('menu_menu_items')
-        .select('menu_items!inner(*), display_order, status')
-        .eq('menu_id', menu.id)
-        .eq('menu_items.is_active', true)
-        .in('status', ['available', 'limited'])
-        .order('display_order');
-      if (linkError) throw linkError;
-      menuItems = (links || []).map((link) => ({ ...link.menu_items, status: link.status }));
-    }
-
-    let canUseCatalogueFallback = !menu;
-    if (menu && !menuItems.length) {
-      const { count, error: linkCountError } = await db()
-        .from('menu_menu_items')
-        .select('menu_item_id', { count: 'exact', head: true })
-        .eq('menu_id', menu.id);
-      if (linkCountError) throw linkCountError;
-      canUseCatalogueFallback = count === 0;
-    }
-
-    if (locationId && canUseCatalogueFallback) {
-      // Preserve the established restaurant menu behavior until a daily menu
-      // has been published with any item links for this vendor location.
-      const { data: items, error: itemsError } = await db()
-        .from('menu_items')
-        .select('id, vendor_id, category_id, name, description, image_url, base_price, currency, prep_minutes, status, created_at, menu_categories(name)')
-        .eq('vendor_id', vendorId)
-        .eq('is_active', true)
-        .in('status', ['available', 'limited'])
-        .order('name');
-      if (itemsError) throw itemsError;
-      menuItems = items || [];
-    }
+    const locationId = await getFirstActiveVendorLocation(db(), vendorId);
+    if (!locationId) throw new ApiError(404, 'VENDOR_UNAVAILABLE', 'Vendor has no active locations');
+    const { data: menuItems, error: itemsError } = await db()
+      .from('menu_items')
+      .select('id, vendor_id, category_id, name, description, image_url, base_price, currency, prep_minutes, status, created_at, menu_categories(name)')
+      .eq('vendor_id', vendorId)
+      .eq('is_active', true)
+      .in('status', ['available', 'limited'])
+      .order('name');
+    if (itemsError) throw itemsError;
 
     if (!menuItems.length) {
       return respond(req, res, {
@@ -345,9 +318,8 @@ export async function getMenuItem(req, res) {
       .maybeSingle();
     if (itemError) throw itemError;
     if (!item) throw new ApiError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
-    const currentItem = await getTodaysPublishedMenuItem(db(), vendorId, itemId);
-    const availability = currentItem.menuId && !currentItem.menuEmpty ? currentItem.status : item.status;
-    if (!currentItem.locationId || !['available', 'limited'].includes(availability)) {
+    const locationId = await getFirstActiveVendorLocation(db(), vendorId);
+    if (!locationId || !['available', 'limited'].includes(item.status)) {
       throw new ApiError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
     }
 

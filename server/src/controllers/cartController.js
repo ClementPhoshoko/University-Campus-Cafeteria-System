@@ -7,7 +7,7 @@ import { writeAudit } from '../utils/audit.js';
 import { calculateServiceFee } from '../utils/feeCalculator.js';
 import { resolveUnitPrice } from '../utils/pricing.js';
 import { expireCartIfExpired } from '../services/cartExpiry.js';
-import { getTodaysPublishedMenuItem } from '../utils/vendorMenus.js';
+import { getFirstActiveVendorLocation } from '../utils/vendorMenus.js';
 
 const db = () => supabaseAdmin;
 
@@ -358,15 +358,12 @@ export async function addToCart(req, res) {
       ? specialInstructions.trim()
       : null;
 
-    const publishedMenuItem = await getTodaysPublishedMenuItem(db(), menuItem.vendor_id, menuItem.id);
-    if (!publishedMenuItem.locationId) throw new ApiError(400, 'VENDOR_UNAVAILABLE', 'Vendor has no active locations');
-    const availability = publishedMenuItem.menuId && !publishedMenuItem.menuEmpty
-      ? publishedMenuItem.status
-      : menuItem.status;
-    if (!['available', 'limited'].includes(availability)) {
-      throw new ApiError(400, 'ITEM_UNAVAILABLE', 'Menu item is not available on today’s published menu');
+    const locationId = await getFirstActiveVendorLocation(db(), menuItem.vendor_id);
+    if (!locationId) throw new ApiError(400, 'VENDOR_UNAVAILABLE', 'Vendor has no active locations');
+    if (!['available', 'limited'].includes(menuItem.status)) {
+      throw new ApiError(400, 'ITEM_UNAVAILABLE', 'Menu item is not currently available');
     }
-    const vendorLoc = { id: publishedMenuItem.locationId };
+    const vendorLoc = { id: locationId };
 
     let cart = await findActiveCartForLocation(userId, menuItem.vendor_id, vendorLoc.id);
     if (!cart) {

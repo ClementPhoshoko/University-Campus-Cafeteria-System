@@ -7,10 +7,10 @@ import Pagination from '../../components/ui/Pagination.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import { useConfirm } from '../../components/confirmation/ConfirmProvider.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
-import { listMyVendors, listVendorQueue, listVendorOperationsMenu, updateVendorOrderStatus, updateVendorAvailability } from '../../services/vendorApi.js';
+import { listMyVendors, listVendorQueue, listVendorOperationsMenu, updateVendorOrderStatus, updateVendorAvailability, createVendorCatalogItem } from '../../services/vendorApi.js';
 import { MenuItemCard, OrderCard, SummaryCard, VendorSection, formatTime } from './components/VendorDashboardComponents.jsx';
 import { MenuItemModal } from '../admin/VendorForms.jsx';
-import { archiveVendorMenuItem, createVendorMenuItem, listVendorMenuCategories, updateVendorMenuItem, uploadVendorMenuItemAsset } from '../../services/vendorApi.js';
+import { archiveVendorMenuItem, listVendorMenuCategories, updateVendorMenuItem, uploadVendorMenuItemAsset } from '../../services/vendorApi.js';
 import VendorMenuManagementPage from './VendorMenuManagementPage.jsx';
 import VendorTeamManagementPage from './VendorTeamManagementPage.jsx';
 import VendorWorkspaceLayout from './VendorWorkspaceLayout.jsx';
@@ -48,7 +48,6 @@ export default function VendorOperationsPage() {
   const [nextCollection, setNextCollection] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [menuPagination, setMenuPagination] = useState(emptyServerPagination);
-  const [menu, setMenu] = useState(null);
   const [menuCategories, setMenuCategories] = useState([]);
   const [ordersState, setOrdersState] = useState('loading');
   const [menuState, setMenuState] = useState('loading');
@@ -96,10 +95,10 @@ export default function VendorOperationsPage() {
     if (!vendorId) return;
     try {
       const response = await listVendorOperationsMenu(vendorId, { token, page: menuPage, limit: VENDOR_LIST_PAGE_SIZE, signal });
-      setMenuItems(response.items || []); setMenuPagination(response.pagination || emptyServerPagination); setMenu(response.menu || null); setMenuState('ready'); setMenuError('');
+      setMenuItems(response.items || []); setMenuPagination(response.pagination || emptyServerPagination); setMenuState('ready'); setMenuError('');
       if (response.pagination?.page && response.pagination.page !== menuPage) setMenuPage(response.pagination.page);
     }
-    catch (error) { if (error.name !== 'AbortError') { setMenuError(error.message || 'Could not load today’s menu.'); setMenuState((current) => current === 'loading' ? 'error' : 'ready'); } }
+    catch (error) { if (error.name !== 'AbortError') { setMenuError(error.message || 'Could not load menu items.'); setMenuState((current) => current === 'loading' ? 'error' : 'ready'); } }
   }, [token, vendorId, menuPage]);
 
   useEffect(() => {
@@ -135,7 +134,7 @@ export default function VendorOperationsPage() {
 
   async function handleAvailability(item, status) {
     setBusyItem(item.id); setNotice('');
-    try { await updateVendorAvailability(item.id, { status, menu_id: item.menu_id }, { token }); await loadMenu(); setNotice(`${item.name} availability updated.`); }
+    try { await updateVendorAvailability(item.id, { status }, { token }); await loadMenu(); setNotice(`${item.name} availability updated.`); }
     catch (error) { setNotice(error.message || 'Could not update menu availability.'); }
     finally { setBusyItem(''); }
   }
@@ -150,7 +149,7 @@ export default function VendorOperationsPage() {
       if (editing) {
         await updateVendorMenuItem(itemId, itemPayload, { token });
       } else {
-        const response = await createVendorMenuItem(vendorId, { ...itemPayload, menu_id: menu.id }, { token });
+        const response = await createVendorCatalogItem(vendorId, itemPayload, { token });
         itemId = response?.menuItem?.id;
       }
       saved = true;
@@ -160,7 +159,7 @@ export default function VendorOperationsPage() {
       }
       await loadMenu();
       setEditingItem(null);
-      setNotice(editing ? 'Menu item updated.' : 'Menu item added to today’s published menu.');
+      setNotice(editing ? 'Menu item updated.' : 'Menu item added to the catalogue.');
     } catch (error) {
       if (saved) {
         await loadMenu();
@@ -257,13 +256,12 @@ export default function VendorOperationsPage() {
             <div className="vendor-list-pagination-slot"><Pagination currentPage={safeQueuePage} totalPages={queueTotalPages} totalItems={queuePagination.total} itemsPerPage={VENDOR_LIST_PAGE_SIZE} label="orders" onPageChange={setQueuePage} /></div>
           </div>
         </VendorSection>
-        <VendorSection title="Today’s menu" description="Manage the items customers can order today" Icon={IconSoup} className="vendor-ops-section--menu" action={selectedVendor.role === 'manager' && menu ? <PrimaryButton onClick={() => openMenuItemEditor({ isNew: true })}>Add item</PrimaryButton> : null}>
+        <VendorSection title="Menu items" description="Manage catalogue items and their customer availability" Icon={IconSoup} className="vendor-ops-section--menu" action={selectedVendor.role === 'manager' ? <PrimaryButton onClick={() => openMenuItemEditor({ isNew: true })}>Add item</PrimaryButton> : null}>
           <div className="vendor-menu-list">
             {menuState === 'loading' && <VendorMenuItemsSkeleton />}
             {menuError && menuState !== 'error' && <div className="vendor-ops-inline-error" role="status">Menu refresh failed: {menuError}</div>}
             {menuState === 'error' && <div className="vendor-ops-inline-error" role="alert">{menuError}</div>}
-            {menuState === 'ready' && !menu && <div className="vendor-ops-section-empty">There is no published menu for today. Ask an administrator to publish the menu before adding items.</div>}
-            {menuState === 'ready' && menu && !menuPagination.total && <div className="vendor-ops-section-empty">No items are on a published menu today.</div>}
+            {menuState === 'ready' && !menuPagination.total && <div className="vendor-ops-section-empty">No menu items have been added yet.</div>}
             {menuState === 'ready' && pagedMenuItems.map((item) => <div className="vendor-menu-item-wrap" key={item.id}><MenuItemCard item={item} busy={busyItem === item.id} onSave={handleAvailability} />{selectedVendor.role === 'manager' && <div className="vendor-menu-item-wrap__actions"><PrimaryButton size="sm" onClick={() => openMenuItemEditor(item)}>Edit details</PrimaryButton><PrimaryButton size="sm" className="primary-btn primary-btn--sm vendor-menu-danger-button" onClick={() => handleArchiveMenuItem(item)} disabled={busyItem === item.id}>Archive</PrimaryButton></div>}</div>)}
             <div className="vendor-list-pagination-slot"><Pagination currentPage={safeMenuPage} totalPages={menuTotalPages} totalItems={menuPagination.total} itemsPerPage={VENDOR_LIST_PAGE_SIZE} label="menu items" onPageChange={setMenuPage} /></div>
         </div>

@@ -2,24 +2,22 @@
 
 ## Menu management
 
-The daily vendor workspace remains focused on the first active location’s published menu and order queue. Order and menu lists return server-paginated rows with totals. Orders accept `filter=active`, `filter=needs_attention`, or `filter=ready_for_collection`, default to five rows, and cap pages at 50. Queue order is collection start time, then order creation time and ID. The order endpoint also returns queue counts and the next collection summary. Staff and managers can update availability for items on today’s published menu. Managers can maintain the reusable catalogue and categories. Dated and recurring menu planning are not part of this scope.
+The vendor workspace shows the active catalogue and the order queue. Order and menu-item lists return server-paginated rows with totals. Orders accept `filter=active`, `filter=needs_attention`, or `filter=ready_for_collection`, default to five rows, and cap pages at 50. Queue order is collection start time, then order creation time and ID. The order endpoint also returns queue counts and the next collection summary. Staff and managers can update catalogue availability; managers can create, edit, and archive catalogue items and manage categories. Customer menus and cart validation use active catalogue items whose status is `available` or `limited`. Dated menu tables remain in the database for retained data, but do not gate current ordering.
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/vendor/menu?vendor_id={id}&page={n}&limit={n}` | Read one page of the selected vendor location’s published menu for today |
+| `GET` | `/vendor/menu?vendor_id={id}&page={n}&limit={n}` | Read one page of active catalogue items |
 | `GET` | `/vendor/menu/categories?vendor_id={id}&page={n}&limit={n}` | Read one page of active vendor categories |
 | `POST` | `/vendor/menu/categories` | Create a category for the manager’s vendor |
 | `PATCH` | `/vendor/menu/categories/{categoryId}` | Rename or archive a category owned by the manager’s vendor |
-| `POST` | `/vendor/menu/catalog-items` | Create a reusable catalogue item (manager only) |
-| `POST` | `/vendor/menu/items` | Create an item and attach it to today’s published menu |
+| `POST` | `/vendor/menu/catalog-items` | Create a catalogue item (manager only) |
+| `POST` | `/vendor/menu/items` | Compatibility route that creates a catalogue item (manager only) |
 | `POST` | `/vendor/menu/items/{itemId}/image` | Upload or replace a menu item image (manager only) |
 | `PATCH` | `/vendor/menu/items/{itemId}` | Update item details |
 | `DELETE` | `/vendor/menu/items/{itemId}` | Archive an item (soft deactivation) |
-| `PATCH` | `/vendor/menu/items/{itemId}/availability` | Change item availability on today’s menu |
+| `PATCH` | `/vendor/menu/items/{itemId}/availability` | Change catalogue item availability |
 
-The reusable catalogue is separate from the daily published menu. The `/vendor/menus` client path is a compatibility redirect to catalogue management, not a dated-menu API. Staff availability updates apply only to items linked to today’s published menu at the first active vendor location. For compatibility, customer restaurant pages show active, available catalogue items when no daily menu exists or today’s published menu has no item links. Once a menu has item links, only linked items and their per-menu availability are shown and accepted into carts.
-
-The legacy create request includes `vendor_id`, `menu_id`, `name`, and `base_price`, and attaches the item to today’s published menu. All item prices must be non-negative with no more than two decimal places. Ingredients are stored as up to 50 text values.
+The catalogue is the source of truth for item details and availability. `menu_items.status` is shared across a vendor's locations: `available` and `limited` items can be ordered; `sold_out` and `unavailable` items cannot. The `/vendor/menus` client path remains a compatibility redirect to catalogue management. New item requests require `vendor_id`, `name`, and `base_price`; `menu_id` is not required or used. All item prices must be non-negative with no more than two decimal places. Ingredients are stored as up to 50 text values.
 
 Archiving sets `is_active=false` and `status=unavailable`. It does not physically delete the row, so historical order items keep their foreign-key references and snapshots.
 
@@ -56,7 +54,7 @@ Active vendor managers can view and remove staff access for their own vendor. Ma
 
 Apply `migrations/019_vendor_invitations.sql` and `migrations/020_confirm_invited_auth_email.sql` before enabling the admin invitation action. They create the invitation table, service-role-only RPCs for serialized creation and transactional redemption, and a constrained lookup used to confirm an existing account's email only when its owner presents a valid invitation link.
 
-Apply `migrations/021_vendor_menu_planning.sql` before enabling per-item availability on today’s published menu. It adds per-menu-item availability to `menu_menu_items` and initializes existing links from catalogue availability.
+`migrations/021_vendor_menu_planning.sql` added per-menu availability for the earlier daily-menu flow. Keep the migration and its data; the current live flow no longer reads or writes that status.
 
 Apply `migrations/022_protect_vendor_manager_from_staff_invite.sql` before enabling manager invitations. It adds the atomic manager-only, staff-only invitation RPC and prevents staff invitations from changing an existing manager membership.
 
@@ -64,6 +62,8 @@ Apply `migrations/023_vendor_manager_staff_roster.sql` before enabling manager s
 
 Apply `migrations/024_vendor_order_queue_pagination.sql` before deploying server-side order queue pagination. It adds the queue index and service-role-only function that filters, counts, orders, and pages active vendor orders in the database.
 
+Apply `migrations/025_catalogue_availability_source_of_truth.sql` before deploying catalogue-based availability. It copies today's published status for each item at the vendor's first active location into `menu_items.status`; items without a matching menu link retain their current catalogue status. It does not delete dated menus or links.
+
 ## Authorization and audit
 
-Every vendor operations route requires authentication and verifies active vendor membership. Order processing and daily availability updates are available to active staff and managers; menu planning, catalogue creation, item detail edits, and archiving additionally require the manager membership role. Order status transitions are validated server-side, rejection reasons are required and capped at 500 characters, and collection completion requires the order's matching four-character code. Mutations write application audit entries. Invitation creation and redemption record explicit actor-attributed audit entries.
+Every vendor operations route requires authentication and verifies active vendor membership. Order processing and catalogue availability updates are available to active staff and managers; catalogue creation, item detail edits, and archiving additionally require the manager membership role. Order status transitions are validated server-side, rejection reasons are required and capped at 500 characters, and collection completion requires the order's matching four-character code. Mutations write application audit entries. Invitation creation and redemption record explicit actor-attributed audit entries.

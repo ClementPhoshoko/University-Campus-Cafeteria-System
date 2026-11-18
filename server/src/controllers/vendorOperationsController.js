@@ -16,12 +16,6 @@ const db = () => supabaseAdmin;
 const ORDER_SELECT = 'id, order_reference, vendor_id, vendor_location_id, status, payment_status, order_type, total, currency, notes, created_at, collection_slot_id, collection_points(name), profiles!orders_user_id_fkey(full_name), collection_slots(starts_at, ends_at)';
 const MENU_ITEM_SELECT = 'id, vendor_id, category_id, name, description, image_url, ingredients, portion_description, base_price, currency, prep_minutes, status, is_active, menu_categories(id, name)';
 
-function johannesburgDate() {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
-  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
-  return `${values.year}-${values.month}-${values.day}`;
-}
-
 function handleError(res, error) {
   if (error instanceof ApiError) return sendError(res, error.status, error.code, error.message);
   if (error?.code) {
@@ -287,21 +281,11 @@ export async function createMyVendorMenuItem(req, res) {
     await requireVendorManager(req.user.id, vendorId);
     const parsed = validateMenuItem(req.body || {});
     if (parsed.errors) return sendError(res, 400, 'VALIDATION_ERROR', parsed.errors.join('; '));
-    const menuId = String(req.body?.menu_id || '');
-    if (!isUuid(menuId)) return sendError(res, 400, 'INVALID_UUID', 'A valid published menu_id is required');
-    const { data: menu, error: menuError } = await db().from('menus').select('id, vendor_location_id, vendor_locations!inner(vendor_id, is_active)').eq('id', menuId).eq('menu_date', johannesburgDate()).eq('status', 'published').maybeSingle();
-    if (menuError) throw menuError;
-    if (!menu || menu.vendor_locations?.vendor_id !== vendorId || !menu.vendor_locations?.is_active) throw new ApiError(409, 'NO_PUBLISHED_MENU', 'Choose a published menu for an active vendor location');
     await validateVendorCategory(vendorId, parsed.value.category_id);
     const payload = { ...parsed.value, vendor_id: vendorId, currency: 'ZAR', is_active: true, created_by: req.user.id };
     const { data, error } = await db().from('menu_items').insert(payload).select(MENU_ITEM_SELECT).single();
     if (error) throw error;
-    const { error: linkError } = await db().from('menu_menu_items').insert({ menu_id: menuId, menu_item_id: data.id });
-    if (linkError) {
-      await db().from('menu_items').delete().eq('id', data.id).eq('vendor_id', vendorId);
-      throw linkError;
-    }
-    await writeAudit(req, { action: 'INSERT', tableName: 'public.menu_items', recordKey: data.id, newData: { vendor_id: vendorId, name: data.name, base_price: data.base_price, status: data.status }, reason: 'Vendor manager created menu item', category: 'config' });
+    await writeAudit(req, { action: 'INSERT', tableName: 'public.menu_items', recordKey: data.id, newData: { vendor_id: vendorId, name: data.name, base_price: data.base_price, status: data.status }, reason: 'Vendor manager created catalogue item', category: 'config' });
     return respond(req, res, { success: true, menuItem: data }, { status: 201, cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
 }
@@ -472,68 +456,22 @@ export async function listMyVendorMenu(req, res) {
     const vendorId = String(req.query.vendor_id || '');
     if (!isUuid(vendorId)) return sendError(res, 400, 'INVALID_UUID', 'A valid vendor_id is required');
     await membership(req.user.id, vendorId);
-    const { data: locations, error: locationError } = await db().from('vendor_locations').select('id').eq('vendor_id', vendorId).eq('is_active', true).order('created_at');
-    if (locationError) throw locationError;
-    const locationIds = (locations || []).map((location) => location.id);
-    const day = johannesburgDate();
-    const requestedLocationId = String(req.query.location_id || '');
-    if (requestedLocationId && (!isUuid(requestedLocationId) || !locationIds.includes(requestedLocationId))) {
-      return sendError(res, 403, 'VENDOR_LOCATION_ACCESS_DENIED', 'You do not have access to this vendor location');
-    }
-    const activeLocationIds = requestedLocationId ? [requestedLocationId] : locationIds.slice(0, 1);
-    const { data: menus, error: menuError } = activeLocationIds.length
-      ? await db().from('menus').select('id, vendor_location_id, menu_date, name, status').in('vendor_location_id', activeLocationIds).eq('menu_date', day).eq('status', 'published')
-      : { data: [], error: null };
-    if (menuError) throw menuError;
-    const menuIds = (menus || []).map((menu) => menu.id);
-    const { pageNum: requestedPage, limitNum } = parsePagination(req.query, { maxLimit: 50, defaultLimit: 5 });
-    let pageNum = requestedPage;
-    let from = (pageNum - 1) * limitNum;
-    let to = from + limitNum - 1;
-    const menu = menus?.[0] || null;
-    let links = menu
-      ? await db().from('menu_menu_items')
-        .select('menu_item_id, status, display_order, menu_items!inner(is_active)', { count: 'exact' })
-        .eq('menu_id', menu.id)
-        .eq('menu_items.is_active', true)
-        .order('display_order', { ascending: true })
-        .order('menu_item_id', { ascending: true })
-        .range(from, to)
-      : { data: [], count: 0, error: null };
-    if (links.error) throw links.error;
-    const totalPages = Math.ceil((links.count || 0) / limitNum);
-    pageNum = Math.max(1, Math.min(requestedPage, totalPages || 1));
-    if (pageNum !== requestedPage && menu) {
-      from = (pageNum - 1) * limitNum;
-      to = from + limitNum - 1;
-      links = await db().from('menu_menu_items')
-        .select('menu_item_id, status, display_order, menu_items!inner(is_active)', { count: 'exact' })
-        .eq('menu_id', menu.id)
-        .eq('menu_items.is_active', true)
-        .order('display_order', { ascending: true })
-        .order('menu_item_id', { ascending: true })
-        .range(from, to);
-      if (links.error) throw links.error;
-    }
-    const pageLinks = links.data || [];
-    const linkedItemIds = pageLinks.map((row) => row.menu_item_id);
-    const { data: items, error: itemError } = linkedItemIds.length
-      ? await db().from('menu_items').select('id, name, description, image_url, category_id, ingredients, portion_description, prep_minutes, base_price, currency, status, is_active, menu_categories(id, name)').eq('vendor_id', vendorId).eq('is_active', true).in('id', linkedItemIds)
-      : { data: [], error: null };
+    const { pageNum, limitNum, from, to } = parsePagination(req.query, { maxLimit: 50, defaultLimit: 5 });
+    const { data: items, count, error: itemError } = await db().from('menu_items')
+      .select(MENU_ITEM_SELECT, { count: 'exact' })
+      .eq('vendor_id', vendorId)
+      .eq('is_active', true)
+      .order('name', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to);
     if (itemError) throw itemError;
-    const linkByItem = new Map(pageLinks.map((link) => [link.menu_item_id, link]));
-    const orderedItems = linkedItemIds.map((id) => (items || []).find((item) => item.id === id)).filter(Boolean);
     return respond(req, res, {
       success: true,
-      date: day,
-      menu: menu ? { id: menu.id, name: menu.name, vendor_location_id: menu.vendor_location_id } : null,
-      items: menu ? await Promise.all(orderedItems.map(async (item) => ({
+      items: await Promise.all((items || []).map(async (item) => ({
         ...item,
         image_url: await resolveAssetUrl(item.image_url, { size: 'thumb' }),
-        menu_id: menu.id,
-        status: linkByItem.get(item.id)?.status || item.status,
-      }))) : [],
-      pagination: buildPagination(links.count, pageNum, limitNum),
+      }))),
+      pagination: buildPagination(count, pageNum, limitNum),
     }, { cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
 }
@@ -541,25 +479,16 @@ export async function listMyVendorMenu(req, res) {
 export async function updateMyVendorAvailability(req, res) {
   try {
     const { itemId } = req.params;
-    const { status, menu_id: menuId } = req.body || {};
+    const { status } = req.body || {};
     if (!isUuid(itemId)) return sendError(res, 400, 'INVALID_UUID', 'Invalid menu item id');
-    if (!isUuid(menuId)) return sendError(res, 400, 'INVALID_UUID', 'A valid menu_id is required');
     if (!['available', 'limited', 'sold_out', 'unavailable'].includes(status)) return sendError(res, 400, 'VALIDATION_ERROR', 'Invalid availability status');
-    const { data: item, error: itemError } = await db().from('menu_items').select('id, vendor_id, status').eq('id', itemId).maybeSingle();
+    const { data: item, error: itemError } = await db().from('menu_items').select('id, vendor_id, name, status').eq('id', itemId).maybeSingle();
     if (itemError) throw itemError;
     if (!item) throw new ApiError(404, 'MENU_ITEM_NOT_FOUND', 'Menu item not found');
     await membership(req.user.id, item.vendor_id);
-    const day = johannesburgDate();
-    const { data: menu, error: menuError } = await db().from('menus').select('id, vendor_location_id, menu_date, status, vendor_locations!inner(vendor_id, is_active)').eq('id', menuId).maybeSingle();
-    if (menuError) throw menuError;
-    if (!menu || menu.vendor_locations?.vendor_id !== item.vendor_id || !menu.vendor_locations?.is_active) throw new ApiError(403, 'VENDOR_MENU_ACCESS_DENIED', 'This menu does not belong to your vendor');
-    if (menu.menu_date !== day || menu.status !== 'published') throw new ApiError(409, 'NO_PUBLISHED_MENU', 'This is not today’s published menu');
-    const { data: links, error: linksError } = await db().from('menu_menu_items').select('menu_id, status').eq('menu_item_id', itemId).eq('menu_id', menuId).maybeSingle();
-    if (linksError) throw linksError;
-    if (!links) throw new ApiError(404, 'MENU_ITEM_NOT_ON_TODAYS_MENU', 'This item is not on this menu');
-    const { data: updated, error } = await db().from('menu_menu_items').update({ status }).eq('menu_id', menuId).eq('menu_item_id', itemId).select('menu_item_id, status').single();
+    const { data: updated, error } = await db().from('menu_items').update({ status, updated_at: new Date().toISOString() }).eq('id', itemId).eq('vendor_id', item.vendor_id).select('id, status').single();
     if (error) throw error;
-    await writeAudit(req, { action: 'UPDATE', tableName: 'public.menu_menu_items', recordKey: `${menuId}:${itemId}`, oldData: { status: links.status }, newData: { status }, reason: 'Vendor updated menu availability', category: 'config' });
-    return respond(req, res, { success: true, item: { id: updated.menu_item_id, status: updated.status } }, { cacheControl: 'private, no-store' });
+    await writeAudit(req, { action: 'UPDATE', tableName: 'public.menu_items', recordKey: itemId, oldData: { name: item.name, status: item.status }, newData: { name: item.name, status: updated.status }, reason: 'Vendor updated catalogue item availability', category: 'config' });
+    return respond(req, res, { success: true, item: { id: updated.id, status: updated.status } }, { cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
 }
