@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { IconAlertTriangle, IconArchive, IconClockHour4, IconMapPin, IconPencil } from '@tabler/icons-react';
 import PrimaryButton from '../../../components/PrimaryButton.jsx';
+import CustomDropdown from '../../../components/ui/CustomDropdown.jsx';
 
 export const formatMoney = (amount, currency = 'ZAR') => new Intl.NumberFormat('en-ZA', { style: 'currency', currency }).format(Number(amount || 0));
 export const formatStatus = (status = '') => status.replaceAll('_', ' ');
@@ -92,8 +93,8 @@ export function OrderCard({ order, busy, urgent, onStatus }) {
 export function MenuItemCard({ item, busy, onSave, onEdit, onArchive, canManage = false }) {
   const [status, setStatus] = useState(item.status);
   useEffect(() => setStatus(item.status), [item.status]);
-  const isTakingOrders = ['available', 'limited'].includes(item.status);
   const saveStatus = async (nextStatus) => {
+    setStatus(nextStatus);
     const saved = await onSave(item, nextStatus);
     if (saved === false) setStatus(item.status);
   };
@@ -109,32 +110,18 @@ export function MenuItemCard({ item, busy, onSave, onEdit, onArchive, canManage 
           </div>
           <StatusBadge status={item.status} />
         </div>
-        <div className="vendor-menu-item__availability">
-          <label htmlFor={`vendor-item-availability-${item.id}`}>Availability</label>
-          <div className={`vendor-menu-item__select-wrap vendor-menu-item__select-wrap--${status}`}>
-            <span className="vendor-menu-item__status-dot" aria-hidden="true" />
-            <select id={`vendor-item-availability-${item.id}`} value={status} disabled={busy} onChange={(event) => setStatus(event.target.value)}>
-              {['available', 'limited', 'sold_out', 'unavailable'].map((value) => <option key={value} value={value}>{formatStatus(value)}</option>)}
-            </select>
-            <button type="button" className="vendor-menu-item__save" disabled={busy || status === item.status} onClick={() => saveStatus(status)}>
-              {busy ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-        </div>
       </div>
     </div>
     <footer className="vendor-menu-item__footer">
-      <div className="vendor-menu-item__quick-status">
-        <button
-          type="button"
-          className="vendor-menu-item__switch"
-          role="switch"
-          aria-checked={isTakingOrders}
-          aria-label={`${isTakingOrders ? 'Pause' : 'Enable'} ${item.name} ordering`}
+      <div className={`vendor-menu-item__availability vendor-menu-item__availability--${status}`}>
+        <CustomDropdown
+          ariaLabel="Availability"
+          value={{ id: status, name: formatStatus(status) }}
+          options={['available', 'limited', 'sold_out', 'unavailable'].map((value) => ({ id: value, name: formatStatus(value), available: true }))}
           disabled={busy}
-          onClick={() => saveStatus(isTakingOrders ? 'unavailable' : 'available')}
-        ><span /></button>
-        <span>{isTakingOrders ? 'Accepting orders' : 'Not accepting orders'}</span>
+          showAvailabilityStatus={false}
+          onChange={(option) => { if (option.id !== status) saveStatus(option.id); }}
+        />
       </div>
       {canManage && <div className="vendor-menu-item__actions">
         <button type="button" className="vendor-menu-item__action" onClick={() => onEdit(item)} disabled={busy}><IconPencil size={16} />Edit</button>

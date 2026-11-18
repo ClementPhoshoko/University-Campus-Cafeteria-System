@@ -147,8 +147,13 @@
   font-size: .88rem;
   font-weight: var(--font-weight-semibold);
 }
-.vendor-menu-management__item-copy { display: grid; min-width: 0; gap: 4px; }
-.vendor-menu-management__item-copy span {
+.vendor-menu-management__category-copy { display: flex; min-width: 0; flex: 1; align-items: center; gap: var(--space-3); }
+.vendor-menu-management__category-icon { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; border-radius: var(--radius-md); color: var(--color-icon-secondary); background: var(--color-bg-tertiary); }
+.vendor-menu-management__item-copy { display: flex; min-width: 0; flex: 1; align-items: center; gap: var(--space-3); }
+.vendor-menu-management__item-image { width: 56px; height: 56px; flex: 0 0 56px; border-radius: var(--radius-md); object-fit: cover; }
+.vendor-menu-management__item-image--empty { display: grid; place-items: center; color: var(--color-icon-tertiary); background: var(--color-bg-tertiary); }
+.vendor-menu-management__item-details { display: grid; min-width: 0; gap: 4px; }
+.vendor-menu-management__item-details span {
   color: var(--color-text-secondary);
   font-size: .76rem;
 }

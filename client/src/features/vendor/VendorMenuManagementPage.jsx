@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { IconArrowLeft, IconCategory, IconChevronDown, IconChevronRight, IconList, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconArchive, IconArrowLeft, IconCategory, IconChevronDown, IconChevronRight, IconList, IconPhoto, IconPlus, IconPencil, IconTrash } from '@tabler/icons-react';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import { useConfirm } from '../../components/confirmation/ConfirmProvider.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
@@ -314,10 +314,13 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
           {categoriesState === 'ready' && categories.length > 0 && <>
             <div className="vendor-menu-management__rows">
               {categories.map((category) => <article className="vendor-menu-management__row" key={category.id}>
-                <div><strong>{category.name}</strong></div>
-                <div className="vendor-menu-management__actions">
-                  <PrimaryButton size="sm" disabled={busy} onClick={() => setEditingCategory(category)}>Edit</PrimaryButton>
-                  <PrimaryButton size="sm" icon={IconTrash} className="primary-btn primary-btn--sm vendor-menu-danger-button" disabled={busy} onClick={() => deleteCategory(category)}>Delete</PrimaryButton>
+                <div className="vendor-menu-management__category-copy">
+                  <span className="vendor-menu-management__category-icon"><IconCategory size={19} /></span>
+                  <strong>{category.name}</strong>
+                </div>
+                <div className="vendor-menu-management__actions vendor-menu-item__actions">
+                  <button type="button" className="vendor-menu-item__action" disabled={busy} onClick={() => setEditingCategory(category)}><IconPencil size={16} />Edit</button>
+                  <button type="button" className="vendor-menu-item__action vendor-menu-item__action--archive" disabled={busy} onClick={() => deleteCategory(category)}><IconTrash size={16} />Delete</button>
                 </div>
               </article>)}
             </div>
@@ -355,12 +358,17 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
             <div className="vendor-menu-management__items">
               {items.map((item) => <article className="vendor-menu-management__row" key={item.id}>
                 <div className="vendor-menu-management__item-copy">
-                  <strong>{item.name}</strong>
-                  <span>{item.menu_categories?.name || 'Uncategorized'} · {formatMoney(item.base_price, item.currency)}</span>
+                  {item.image_url
+                    ? <img className="vendor-menu-management__item-image" src={item.image_url} alt={item.name} loading="lazy" />
+                    : <span className="vendor-menu-management__item-image vendor-menu-management__item-image--empty" aria-label="No item image"><IconPhoto size={20} /></span>}
+                  <div className="vendor-menu-management__item-details">
+                    <strong>{item.name}</strong>
+                    <span>{item.menu_categories?.name || 'Uncategorized'} · {formatMoney(item.base_price, item.currency)}</span>
+                  </div>
                 </div>
-                <div className="vendor-menu-management__actions">
-                  <PrimaryButton size="sm" disabled={busy} onClick={() => openItemModal(item)}>Edit</PrimaryButton>
-                  <PrimaryButton size="sm" icon={IconTrash} className="primary-btn primary-btn--sm vendor-menu-danger-button" disabled={busy} onClick={() => archiveItem(item)}>Archive</PrimaryButton>
+                <div className="vendor-menu-management__actions vendor-menu-item__actions">
+                  <button type="button" className="vendor-menu-item__action" disabled={busy} onClick={() => openItemModal(item)}><IconPencil size={16} />Edit</button>
+                  <button type="button" className="vendor-menu-item__action vendor-menu-item__action--archive" disabled={busy} onClick={() => archiveItem(item)}><IconArchive size={16} />Archive</button>
                 </div>
               </article>)}
             </div>

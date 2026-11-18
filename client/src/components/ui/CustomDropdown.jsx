@@ -4,6 +4,7 @@ import './CustomDropdown.css';
 
 export default function CustomDropdown({
   label,
+  ariaLabel,
   options = [],
   value,
   onChange,
@@ -12,6 +13,7 @@ export default function CustomDropdown({
   error,
   disabled,
   showClockIcon = false,
+  showAvailabilityStatus = true,
   onOpen,
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -77,6 +79,7 @@ export default function CustomDropdown({
       <button
         type="button"
         className={`custom-dropdown__trigger${isOpen ? ' custom-dropdown__trigger--open' : ''}`}
+        aria-label={ariaLabel ? `${ariaLabel}: ${displayValue()}` : undefined}
         onClick={handleTriggerClick}
         disabled={disabled}
       >
@@ -114,11 +117,11 @@ export default function CustomDropdown({
                     </span>
                   </span>
                   <span className="custom-dropdown__option-right">
-                    {option.available ? (
+                    {showAvailabilityStatus && (option.available ? (
                       <span className="custom-dropdown__option-available">Available</span>
                     ) : (
                       <span className="custom-dropdown__option-unavailable">Still Busy</span>
-                    )}
+                    ))}
                     {option.priceDelta && option.priceDelta !== 'R0.00' && (
                       <span className="custom-dropdown__option-price">+{option.priceDelta}</span>
                     )}

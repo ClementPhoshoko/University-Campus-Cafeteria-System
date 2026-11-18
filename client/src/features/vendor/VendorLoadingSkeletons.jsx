@@ -69,14 +69,12 @@ function MenuRowSkeleton() {
             </div>
             <Skeleton className="vendor-loading-status home_card-skeleton-shimmer" />
           </div>
-          <div className="vendor-menu-item__availability">
-            <LoadingLine width="68px" height={10} />
-            <Skeleton className="vendor-loading-input home_card-skeleton-shimmer" />
-          </div>
         </div>
       </div>
       <div className="vendor-menu-item__footer">
-        <Skeleton className="vendor-loading-input home_card-skeleton-shimmer" />
+        <div className="vendor-menu-item__availability">
+          <Skeleton className="vendor-loading-input home_card-skeleton-shimmer" />
+        </div>
         <div className="vendor-menu-item__actions">
           <Skeleton className="vendor-loading-button home_card-skeleton-shimmer" />
           <Skeleton className="vendor-loading-button home_card-skeleton-shimmer" />
