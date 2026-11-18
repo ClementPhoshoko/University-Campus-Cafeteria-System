@@ -17,7 +17,7 @@ The daily vendor workspace remains focused on the first active location’s publ
 | `DELETE` | `/vendor/menu/items/{itemId}` | Archive an item (soft deactivation) |
 | `PATCH` | `/vendor/menu/items/{itemId}/availability` | Change item availability on today’s menu |
 
-The reusable catalogue is separate from the daily published menu. The `/vendor/menus` client path is a compatibility redirect to catalogue management, not a dated-menu API. Staff availability updates apply only to items linked to today’s published menu at the first active vendor location.
+The reusable catalogue is separate from the daily published menu. The `/vendor/menus` client path is a compatibility redirect to catalogue management, not a dated-menu API. Staff availability updates apply only to items linked to today’s published menu at the first active vendor location. For compatibility, customer restaurant pages show active, available catalogue items when no daily menu exists or today’s published menu has no item links. Once a menu has item links, only linked items and their per-menu availability are shown and accepted into carts.
 
 The legacy create request includes `vendor_id`, `menu_id`, `name`, and `base_price`, and attaches the item to today’s published menu. All item prices must be non-negative with no more than two decimal places. Ingredients are stored as up to 50 text values.
 

@@ -347,7 +347,7 @@ export async function addToCart(req, res) {
 
     const { data: menuItem, error: miError } = await db()
       .from('menu_items')
-      .select('id, vendor_id, base_price, name')
+      .select('id, vendor_id, base_price, name, status')
       .eq('id', menuItemId)
       .eq('is_active', true)
       .maybeSingle();
@@ -360,7 +360,10 @@ export async function addToCart(req, res) {
 
     const publishedMenuItem = await getTodaysPublishedMenuItem(db(), menuItem.vendor_id, menuItem.id);
     if (!publishedMenuItem.locationId) throw new ApiError(400, 'VENDOR_UNAVAILABLE', 'Vendor has no active locations');
-    if (!['available', 'limited'].includes(publishedMenuItem.status)) {
+    const availability = publishedMenuItem.menuId && !publishedMenuItem.menuEmpty
+      ? publishedMenuItem.status
+      : menuItem.status;
+    if (!['available', 'limited'].includes(availability)) {
       throw new ApiError(400, 'ITEM_UNAVAILABLE', 'Menu item is not available on today’s published menu');
     }
     const vendorLoc = { id: publishedMenuItem.locationId };

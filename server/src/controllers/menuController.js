@@ -219,7 +219,7 @@ export async function listVendorMenu(req, res) {
     const vendor = await assertApprovedVendor(vendorId);
 
     let menuItems = [];
-    const { menu } = await getTodaysPublishedVendorMenu(db(), vendorId);
+    const { locationId, menu } = await getTodaysPublishedVendorMenu(db(), vendorId);
     if (menu) {
       const { data: links, error: linkError } = await db()
         .from('menu_menu_items')
@@ -230,6 +230,30 @@ export async function listVendorMenu(req, res) {
         .order('display_order');
       if (linkError) throw linkError;
       menuItems = (links || []).map((link) => ({ ...link.menu_items, status: link.status }));
+    }
+
+    let canUseCatalogueFallback = !menu;
+    if (menu && !menuItems.length) {
+      const { count, error: linkCountError } = await db()
+        .from('menu_menu_items')
+        .select('menu_item_id', { count: 'exact', head: true })
+        .eq('menu_id', menu.id);
+      if (linkCountError) throw linkCountError;
+      canUseCatalogueFallback = count === 0;
+    }
+
+    if (locationId && canUseCatalogueFallback) {
+      // Preserve the established restaurant menu behavior until a daily menu
+      // has been published with any item links for this vendor location.
+      const { data: items, error: itemsError } = await db()
+        .from('menu_items')
+        .select('id, vendor_id, category_id, name, description, image_url, base_price, currency, prep_minutes, status, created_at, menu_categories(name)')
+        .eq('vendor_id', vendorId)
+        .eq('is_active', true)
+        .in('status', ['available', 'limited'])
+        .order('name');
+      if (itemsError) throw itemsError;
+      menuItems = items || [];
     }
 
     if (!menuItems.length) {
@@ -322,7 +346,8 @@ export async function getMenuItem(req, res) {
     if (itemError) throw itemError;
     if (!item) throw new ApiError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
     const currentItem = await getTodaysPublishedMenuItem(db(), vendorId, itemId);
-    if (!['available', 'limited'].includes(currentItem.status)) {
+    const availability = currentItem.menuId && !currentItem.menuEmpty ? currentItem.status : item.status;
+    if (!currentItem.locationId || !['available', 'limited'].includes(availability)) {
       throw new ApiError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
     }
 
@@ -379,7 +404,7 @@ export async function getMenuItem(req, res) {
         image_url: await resolveAssetUrl(item.image_url, { size: 'hero', refresh: refreshImages }),
         base_price: item.base_price,
         prep_minutes: item.prep_minutes,
-        status: currentItem.status,
+        status: availability,
         ingredients: item.ingredients,
         portion_description: item.portion_description,
         dietary_tags,

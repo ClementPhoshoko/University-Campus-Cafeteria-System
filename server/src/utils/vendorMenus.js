@@ -43,5 +43,13 @@ export async function getTodaysPublishedMenuItem(database, vendorId, itemId) {
     .eq('menu_item_id', itemId)
     .maybeSingle();
   if (error) throw error;
+  if (!link) {
+    const { count, error: countError } = await database
+      .from('menu_menu_items')
+      .select('menu_item_id', { count: 'exact', head: true })
+      .eq('menu_id', menu.id);
+    if (countError) throw countError;
+    return { locationId, menuId: menu.id, status: null, menuEmpty: count === 0 };
+  }
   return { locationId, menuId: menu.id, status: link?.status || null };
 }
