@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { IconArchive, IconArrowLeft, IconCategory, IconChevronDown, IconChevronRight, IconList, IconPhoto, IconPlus, IconPencil, IconTrash } from '@tabler/icons-react';
+import { IconArchive, IconArrowLeft, IconCategory, IconChevronDown, IconChevronRight, IconList, IconListCheck, IconPhoto, IconPlus, IconPencil, IconTrash } from '@tabler/icons-react';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import { useConfirm } from '../../components/confirmation/ConfirmProvider.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
@@ -13,13 +13,15 @@ import {
   deleteVendorMenuCategory,
   listVendorMenuCatalog,
   listVendorMenuCategories,
+  listVendorOptionGroups,
   updateVendorMenuCategory,
   updateVendorMenuItem,
+  updateVendorOptionGroup,
   uploadVendorMenuItemAsset,
 } from '../../services/vendorApi.js';
 import { useVendorMenuSummary } from '../../hooks/useVendorMenuSummary.js';
 import { formatMoney } from './components/VendorDashboardComponents.jsx';
-import VendorOptionGroupManager from './VendorCatalogueConfiguration.jsx';
+import { VendorOptionGroupEditor } from './VendorCatalogueConfiguration.jsx';
 import VendorMenuItemConfigurationModal from './VendorMenuItemConfigurationModal.jsx';
 import { MenuItemModal, CategoryModal } from '../admin/VendorForms.jsx';
 import './vendor-menu-management.css';
@@ -40,20 +42,25 @@ function PageSkeleton() {
   </div>;
 }
 
-export default function VendorMenuManagementPage({ vendorId, vendorName, onBack }) {
+export default function VendorMenuManagementPage({ vendorId, vendorName, onBack, onOpenStock }) {
   const confirm = useConfirm();
   const { session, user } = useAuth();
   const token = session?.access_token;
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
+  const [optionGroups, setOptionGroups] = useState([]);
   const [categoriesPage, setCategoriesPage] = useState(1);
   const [itemsPage, setItemsPage] = useState(1);
+  const [optionsPage, setOptionsPage] = useState(1);
   const [categoriesPagination, setCategoriesPagination] = useState(EMPTY_PAGINATION);
   const [itemsPagination, setItemsPagination] = useState(EMPTY_PAGINATION);
+  const [optionsPagination, setOptionsPagination] = useState(EMPTY_PAGINATION);
   const [categoriesState, setCategoriesState] = useState('loading');
   const [itemsState, setItemsState] = useState('loading');
+  const [optionsState, setOptionsState] = useState('loading');
   const [categoriesError, setCategoriesError] = useState('');
   const [itemsError, setItemsError] = useState('');
+  const [optionsError, setOptionsError] = useState('');
   const [pageError, setPageError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
@@ -62,11 +69,14 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
   const [editingItem, setEditingItem] = useState(null);
   const [showNewItem, setShowNewItem] = useState(false);
   const [configuringItem, setConfiguringItem] = useState(null);
+  const [editingOptionGroup, setEditingOptionGroup] = useState(null);
   const [formCategories, setFormCategories] = useState([]);
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const [itemsExpanded, setItemsExpanded] = useState(false);
+  const [optionsExpanded, setOptionsExpanded] = useState(false);
   const [categoriesOpened, setCategoriesOpened] = useState(false);
   const [itemsOpened, setItemsOpened] = useState(false);
+  const [optionsOpened, setOptionsOpened] = useState(false);
   const { counts, loading: summaryLoading, error: summaryError, refresh: refreshSummary } = useVendorMenuSummary(vendorId, { token });
 
   function invalidateMenuPages() {
@@ -131,6 +141,35 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
     }
   }, [token, user?.id, vendorId]);
 
+  const loadOptionGroups = useCallback(async (page, signal) => {
+    if (!vendorId) return;
+    const cacheKey = user?.id ? menuCacheKey(user.id, vendorId, 'option-groups', page) : null;
+    const cached = cacheKey ? getCache(cacheKey) : null;
+    if (cached && !cached.isStale) {
+      setOptionGroups(cached.data.option_groups || []);
+      setOptionsPagination(cached.data.pagination || EMPTY_PAGINATION);
+      setOptionsState('ready');
+      setOptionsError('');
+      return;
+    }
+    setOptionsState('loading');
+    setOptionsError('');
+    try {
+      const response = await listVendorOptionGroups(vendorId, { token, page, limit: PAGE_SIZE, signal });
+      if (cacheKey) setCache(cacheKey, response, MENU_PAGE_CACHE_TTL);
+      setOptionGroups(response.option_groups || []);
+      setOptionsPagination(response.pagination || EMPTY_PAGINATION);
+      setOptionsState('ready');
+      const lastPage = Math.max(1, response.pagination?.totalPages || 1);
+      setOptionsPage((current) => current > lastPage ? lastPage : current);
+    } catch (error) {
+      if (!signal?.aborted && error.name !== 'AbortError') {
+        setOptionsError(error.message || 'Could not load customer options.');
+        setOptionsState('error');
+      }
+    }
+  }, [token, user?.id, vendorId]);
+
   useEffect(() => {
     if (!vendorId || !categoriesExpanded) return undefined;
     const controller = new AbortController();
@@ -144,6 +183,13 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
     loadItems(itemsPage, controller.signal);
     return () => controller.abort();
   }, [itemsExpanded, itemsPage, loadItems, vendorId]);
+
+  useEffect(() => {
+    if (!vendorId || !optionsExpanded) return undefined;
+    const controller = new AbortController();
+    loadOptionGroups(optionsPage, controller.signal);
+    return () => controller.abort();
+  }, [optionsExpanded, optionsPage, loadOptionGroups, vendorId]);
 
   async function loadFormCategories() {
     const first = await listVendorMenuCategories(vendorId, { token, page: 1, limit: 50 });
@@ -276,6 +322,24 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
     }
   }
 
+  async function archiveOptionGroup(group) {
+    if (!await confirm({ title: 'Archive this option group?', message: `“${group.name}” will stop appearing on every item that uses it.`, confirmLabel: 'Archive group', tone: 'danger' })) return;
+    setBusy(true);
+    setPageError('');
+    setNotice('');
+    try {
+      await updateVendorOptionGroup(vendorId, group.id, { ...group, is_active: false }, { token });
+      invalidateMenuPages();
+      await loadOptionGroups(optionsPage);
+      await refreshSummary();
+      setNotice(`${group.name} archived.`);
+    } catch (error) {
+      setPageError(error.message || 'Could not archive this option group.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const initialLoading = summaryLoading && !categories.length && !items.length;
 
   return <div className="vendor-menu-management">
@@ -285,7 +349,10 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
         <h2>Menu &amp; categories</h2>
         <span>Manage the reusable menu items and categories for {vendorName || 'your vendor'}.</span>
       </div>
-      <PrimaryButton size="sm" icon={IconArrowLeft} className="primary-btn primary-btn--sm vendor-menu-management__back-button" onClick={onBack}>Back to dashboard</PrimaryButton>
+      <div className="vendor-menu-management__heading-actions">
+        <PrimaryButton size="sm" disabled={busy} onClick={() => onOpenStock?.()}>Location stock</PrimaryButton>
+        <PrimaryButton size="sm" icon={IconArrowLeft} className="primary-btn primary-btn--sm vendor-menu-management__back-button" onClick={onBack}>Back to dashboard</PrimaryButton>
+      </div>
     </header>
 
     {notice && <p className="vendor-menu-management__notice" role="status">{notice}</p>}
@@ -371,6 +438,7 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
                 </div>
                 <div className="vendor-menu-management__actions vendor-menu-item__actions">
                   <button type="button" className="vendor-menu-item__action" disabled={busy} onClick={() => setConfiguringItem(item)}>Details</button>
+                  <button type="button" className="vendor-menu-item__action" disabled={busy} onClick={() => onOpenStock?.(item.id)}>Stock</button>
                   <button type="button" className="vendor-menu-item__action" disabled={busy} onClick={() => openItemModal(item)}><IconPencil size={16} />Edit</button>
                   <button type="button" className="vendor-menu-item__action vendor-menu-item__action--archive" disabled={busy} onClick={() => archiveItem(item)}><IconArchive size={16} />Archive</button>
                 </div>
@@ -382,7 +450,50 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
           </div>
         </div>
       </section>
-      <VendorOptionGroupManager vendorId={vendorId} token={token} />
+      <section className="vendor-menu-management__section">
+        <header className="vendor-menu-management__section-heading">
+          <button type="button" className="vendor-menu-management__accordion-toggle" aria-expanded={optionsExpanded} onClick={() => { setOptionsOpened(true); setOptionsExpanded((current) => !current); }}>
+            <div className="vendor-menu-management__section-title">
+              <span><IconListCheck size={19} /></span>
+              <div><h3>Customer options</h3><p>Create reusable choices such as sizes, extras, and preparation preferences.</p></div>
+            </div>
+            <div className="vendor-menu-management__count-chip" aria-label={`${counts.active_option_groups ?? 0} active option groups`}>
+              <span>{summaryLoading ? '…' : (counts.active_option_groups ?? 0)}</span>
+              {optionsExpanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+            </div>
+          </button>
+        </header>
+        {summaryError && !optionsExpanded && <p className="vendor-menu-management__inline-error" role="alert">{summaryError}</p>}
+        <div className={`vendor-menu-management__accordion-panel${optionsExpanded ? ' is-open' : ''}`} aria-hidden={!optionsExpanded} inert={!optionsExpanded}>
+          <div className="vendor-menu-management__accordion-content">
+            {optionsOpened && <>
+              <div className="vendor-menu-management__panel-actions">
+                <PrimaryButton size="sm" icon={IconPlus} disabled={busy} onClick={() => setEditingOptionGroup({ isNew: true })}>Add option group</PrimaryButton>
+              </div>
+              <p className="vendor-menu-management__section-note">Groups are reusable. Editing or archiving one affects every item assigned to it.</p>
+              {optionsState === 'error' && <p className="vendor-menu-management__inline-error" role="alert">{optionsError} <button type="button" onClick={() => loadOptionGroups(optionsPage)}>Retry</button></p>}
+              {optionsState === 'loading' && <PageSkeleton />}
+              {optionsState === 'ready' && !optionGroups.length && <p className="vendor-menu-management__empty">No option groups yet. Create one when customers need to choose item variations.</p>}
+              {optionsState === 'ready' && optionGroups.length > 0 && <>
+                <div className="vendor-menu-management__items">
+                  {optionGroups.map((group) => <article className="vendor-option-group__row" key={group.id}>
+                    <div className="vendor-option-group__copy">
+                      <strong>{group.name}</strong>
+                      <span>{group.selection_type === 'single' ? 'Choose one' : 'Choose multiple'} · {group.is_required ? 'Required' : 'Optional'} · {group.options.length} choices</span>
+                      <small>{group.options.map((option) => `${option.name}${Number(option.price_delta) > 0 ? ` (+${Number(option.price_delta).toFixed(2)})` : ''}`).join(' · ')}</small>
+                    </div>
+                    <div className="vendor-menu-management__actions vendor-menu-item__actions">
+                      <button type="button" className="vendor-menu-item__action" disabled={busy} onClick={() => setEditingOptionGroup(group)}><IconPencil size={16} />Edit</button>
+                      <button type="button" className="vendor-menu-item__action vendor-menu-item__action--archive" disabled={busy} onClick={() => archiveOptionGroup(group)}><IconTrash size={16} />Archive</button>
+                    </div>
+                  </article>)}
+                </div>
+                <Pagination currentPage={optionsPagination.page} totalPages={optionsPagination.totalPages} totalItems={optionsPagination.total} itemsPerPage={optionsPagination.limit} label="option groups" onPageChange={setOptionsPage} />
+              </>}
+            </>}
+          </div>
+        </div>
+      </section>
     </>}
 
     {(editingItem || showNewItem) && <MenuItemModal
@@ -408,6 +519,18 @@ export default function VendorMenuManagementPage({ vendorId, vendorName, onBack 
       token={token}
       onClose={() => setConfiguringItem(null)}
       onSaved={() => setNotice(`${configuringItem.name} details saved.`)}
+    />}
+    {editingOptionGroup && <VendorOptionGroupEditor
+      vendorId={vendorId}
+      token={token}
+      group={editingOptionGroup.isNew ? null : editingOptionGroup}
+      onClose={() => setEditingOptionGroup(null)}
+      onSaved={async () => {
+        invalidateMenuPages();
+        await loadOptionGroups(optionsPage);
+        await refreshSummary();
+        setNotice(editingOptionGroup.isNew ? 'Option group created.' : 'Option group updated.');
+      }}
     />}
   </div>;
 }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { getVendorMenuSummary } from '../services/vendorApi.js';
 
-const EMPTY_COUNTS = { active_categories: 0, active_menu_items: 0 };
+const EMPTY_COUNTS = { active_categories: 0, active_menu_items: 0, active_option_groups: 0 };
 
 export function useVendorMenuSummary(vendorId, { token } = {}) {
   const [counts, setCounts] = useState(EMPTY_COUNTS);

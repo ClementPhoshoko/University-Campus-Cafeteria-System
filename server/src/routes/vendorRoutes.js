@@ -48,6 +48,12 @@ import {
 } from '../controllers/vendorInvitationController.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { uploadVendorMenuItemAsset } from '../controllers/assetController.js';
+import {
+  getMyVendorLocationInventory,
+  setMyVendorLocationInventory,
+  setMyVendorLocationInventoryTracking,
+  setMyVendorLocationItemStock,
+} from '../controllers/vendorInventoryController.js';
 
 /**
  * Employee-facing cafeteria browsing is vendor-based: each approved vendor is a
@@ -76,6 +82,10 @@ vendorRouter.patch('/vendor/menu/categories/:categoryId', vendorMutations, updat
 vendorRouter.delete('/vendor/menu/categories/:categoryId', vendorMutations, deleteMyVendorCategory);
 vendorRouter.get('/vendor/menu/catalog-items', listMyVendorCatalogItems);
 vendorRouter.get('/vendor/menu/metadata-options', listMyVendorMenuMetadataOptions);
+vendorRouter.get('/vendor/menu/inventory', getMyVendorLocationInventory);
+vendorRouter.put('/vendor/menu/inventory', vendorMutations, setMyVendorLocationInventory);
+vendorRouter.put('/vendor/menu/inventory/settings', vendorMutations, setMyVendorLocationInventoryTracking);
+vendorRouter.put('/vendor/menu/items/:itemId/inventory', vendorMutations, setMyVendorLocationItemStock);
 vendorRouter.get('/vendor/menu/option-groups', listMyVendorOptionGroups);
 vendorRouter.post('/vendor/menu/option-groups', vendorMutations, createMyVendorOptionGroup);
 vendorRouter.patch('/vendor/menu/option-groups/:groupId', vendorMutations, updateMyVendorOptionGroup);

@@ -12,6 +12,7 @@ import { MenuItemCard, OrderCard, SummaryCard, VendorSection, formatTime } from 
 import { MenuItemModal } from '../admin/VendorForms.jsx';
 import { archiveVendorMenuItem, listVendorMenuCategories, updateVendorMenuItem, uploadVendorMenuItemAsset } from '../../services/vendorApi.js';
 import VendorMenuManagementPage from './VendorMenuManagementPage.jsx';
+import VendorLocationStockPage from './VendorLocationStockPage.jsx';
 import VendorTeamManagementPage from './VendorTeamManagementPage.jsx';
 import VendorWorkspaceLayout from './VendorWorkspaceLayout.jsx';
 import { VendorDashboardSkeleton, VendorMenuItemsSkeleton, VendorQueueSkeleton, VendorSummarySkeleton } from './VendorLoadingSkeletons.jsx';
@@ -35,9 +36,11 @@ export default function VendorOperationsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const token = session?.access_token;
   const showingMenuManagement = searchParams.get('view') === 'menus';
+  const showingStockManagement = searchParams.get('view') === 'stock';
   const showingTeamManagement = searchParams.get('view') === 'team';
-  const showingManagerView = showingMenuManagement || showingTeamManagement;
-  const activeView = showingMenuManagement ? 'menus' : showingTeamManagement ? 'team' : 'overview';
+  const showingManagerView = showingMenuManagement || showingStockManagement || showingTeamManagement;
+  const activeView = showingMenuManagement ? 'menus' : showingStockManagement ? 'stock' : showingTeamManagement ? 'team' : 'overview';
+  const focusedStockItemId = searchParams.get('item') || '';
   const [vendors, setVendors] = useState([]);
   const [vendorId, setVendorId] = useState('');
   const [vendorsState, setVendorsState] = useState('loading');
@@ -252,15 +255,25 @@ export default function VendorOperationsPage() {
           vendorId={vendorId}
           vendorName={selectedVendor.name}
           onBack={() => setSearchParams({})}
+          onOpenStock={(itemId) => setSearchParams(itemId ? { view: 'stock', item: itemId } : { view: 'stock' })}
         />
-        : showingTeamManagement
-          ? <VendorTeamManagementPage
+        : showingStockManagement
+          ? <VendorLocationStockPage
             vendorId={vendorId}
             vendorName={selectedVendor.name}
             token={token}
+            focusedItemId={focusedStockItemId}
             onBack={() => setSearchParams({})}
+            onClearFocus={() => setSearchParams({ view: 'stock' })}
           />
-        : <>
+          : showingTeamManagement
+            ? <VendorTeamManagementPage
+              vendorId={vendorId}
+              vendorName={selectedVendor.name}
+              token={token}
+              onBack={() => setSearchParams({})}
+            />
+            : <>
         <div className="vendor-ops-grid">
         <VendorSection title="Live order queue" description="Sorted by collection time · refreshes automatically" Icon={IconShoppingBag} className="vendor-ops-section--queue" action={<button className="vendor-ops-refresh" type="button" onClick={() => loadOrders()} aria-label="Refresh orders"><IconRefresh size={18} /></button>}>
           <div className="vendor-queue-filters" role="group" aria-label="Filter orders">{QUEUE_FILTERS.map((item) => <button key={item.value} type="button" className={filter === item.value ? 'is-active' : ''} aria-pressed={filter === item.value} onClick={() => setFilter(item.value)}>{item.label}{item.value === 'needs_attention' && urgentCount > 0 ? <span>{urgentCount}</span> : null}</button>)}</div>
@@ -284,7 +297,7 @@ export default function VendorOperationsPage() {
         </div>
         </VendorSection>
       </div>
-      <p className="vendor-ops-footnote">Availability indicates whether an item can be ordered. Quantity-based stock is not enabled yet.</p>
+      <p className="vendor-ops-footnote">Availability is the global sale gate. Managers can enforce per-location stock from Location stock.</p>
       {editingItem && <MenuItemModal item={editingItem.isNew ? null : editingItem} categories={menuCategories} submitting={savingEditor} usePrimaryButtons onClose={() => setEditingItem(null)} onSubmit={handleMenuItemSave} />}
       </>}
     </VendorWorkspaceLayout>}

@@ -178,6 +178,17 @@
   color: var(--color-text-tertiary);
 }
 
+.cart-item__stock-note {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--color-text-tertiary);
+}
+
+.cart-item__stock-note--unavailable {
+  color: var(--color-status-error, #b54742);
+}
+
 .cart-item__instructions {
   margin: 0;
   padding: var(--space-2) var(--space-3);

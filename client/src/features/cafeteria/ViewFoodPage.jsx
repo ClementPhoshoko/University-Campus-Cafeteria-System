@@ -259,7 +259,12 @@ export default function ViewFoodPage() {
     }
   };
 
-  const isPurchasable = Boolean(selectedLocationId) && (menuItem?.status === 'available' || menuItem?.status === 'limited');
+  const trackedStock = menuItem?.inventory?.tracking_enabled === true;
+  const orderableQuantity = Number(menuItem?.inventory?.orderable_quantity);
+  const maxOrderQuantity = trackedStock ? Math.min(10, Math.max(0, orderableQuantity)) : 10;
+  const isPurchasable = Boolean(selectedLocationId)
+    && (menuItem?.status === 'available' || menuItem?.status === 'limited')
+    && (!trackedStock || orderableQuantity > 0);
 
   if (itemLoading) {
     return (
@@ -402,6 +407,17 @@ export default function ViewFoodPage() {
                 )}
               </div>
 
+              {trackedStock && (
+                <div className="view-food__section">
+                  <span className="view-food__section-label">Pickup availability</span>
+                  <span className="view-food__availability">
+                    {orderableQuantity > 0
+                      ? `${orderableQuantity} available at this location`
+                      : 'Currently out of stock at this location'}
+                  </span>
+                </div>
+              )}
+
               {dietaryLabels.length > 0 && (
                 <div className="view-food__section">
                   <span className="view-food__section-label">Dietary</span>
@@ -498,7 +514,7 @@ export default function ViewFoodPage() {
                   value={quantity}
                   onChange={setQuantity}
                   min={1}
-                  max={10}
+                  max={maxOrderQuantity || 1}
                   disabled={!isPurchasable}
                 />
                 <button

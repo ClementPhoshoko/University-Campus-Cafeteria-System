@@ -8,6 +8,7 @@ import { calculateServiceFee } from '../utils/feeCalculator.js';
 import { resolveUnitPrice } from '../utils/pricing.js';
 import { expireCartIfExpired } from '../services/cartExpiry.js';
 import { requireActiveVendorLocation } from '../utils/vendorLocation.js';
+import { assertVendorLocationStock, getVendorLocationInventory } from '../services/vendorLocationInventory.js';
 
 const db = () => supabaseAdmin;
 
@@ -70,13 +71,17 @@ async function findActiveCartForLocation(userId, vendorId, vendorLocationId) {
   return data;
 }
 
-async function getCartItems(cartId, { refreshImages = false } = {}) {
+async function getCartItems(cartId, { refreshImages = false, vendorLocationId } = {}) {
   const { data, error } = await db()
     .from('cart_items')
     .select('*, menu_items(id, name, description, image_url, base_price, status, prep_minutes, dietary_tags:menu_item_dietary_tags(dietary_tags(name)), allergens:menu_item_allergens(allergens(name))), cart_item_options(option_id, quantity, price_delta_snapshot, options(name))')
     .eq('cart_id', cartId)
     .order('created_at');
   if (error) throw error;
+  const resolvedLocationId = vendorLocationId || data?.[0]?.vendor_location_id;
+  const locationInventory = resolvedLocationId
+    ? await getVendorLocationInventory(db(), resolvedLocationId, (data || []).map((item) => item.menu_item_id))
+    : { trackingEnabled: false, items: new Map() };
   return Promise.all((data || []).map(async (item) => {
     const { menu_items, cart_item_options, unit_price_snapshot, special_instructions, cart_id, menu_item_id, ...rest } = item;
     return {
@@ -95,6 +100,12 @@ async function getCartItems(cartId, { refreshImages = false } = {}) {
         prep_minutes: menu_items.prep_minutes,
         dietaryTags: (menu_items.dietary_tags || []).map((d) => d.dietary_tags?.name).filter(Boolean),
         allergens: (menu_items.allergens || []).map((a) => a.allergens?.name).filter(Boolean),
+        inventory: {
+          trackingEnabled: locationInventory.trackingEnabled,
+          orderableQuantity: locationInventory.trackingEnabled
+            ? locationInventory.items.get(menu_items.id)?.orderable_quantity ?? 0
+            : null,
+        },
       } : null,
       selectedOptions: (cart_item_options || []).map((opt) => ({
         id: opt.option_id,
@@ -279,7 +290,7 @@ export async function getCart(req, res) {
     const refreshImages = req.query.refresh_images === 'true';
     const activeCarts = await findActiveCarts(userId);
     const carts = await Promise.all(activeCarts.map(async (cart) => {
-      const items = await getCartItems(cart.id, { refreshImages });
+      const items = await getCartItems(cart.id, { refreshImages, vendorLocationId: cart.vendor_location_id });
       const allSlots = await getCollectionSlots(cart.vendor_location_id);
       const site = Array.isArray(cart.vendor_locations?.sites)
         ? cart.vendor_locations.sites[0]
@@ -398,6 +409,9 @@ export async function addToCart(req, res) {
       .eq('menu_item_id', menuItemId);
     if (existingError) throw existingError;
 
+    const requestedForItem = (existingItems || []).reduce((sum, row) => sum + row.quantity, quantity);
+    await assertVendorLocationStock(db(), locationId, [{ menuItemId, quantity: requestedForItem, name: menuItem.name }]);
+
     const canonicalOptions = (rows) => (rows || [])
       .map((option) => `${option.optionId || option.option_id}:${option.quantity || 1}`)
       .sort()
@@ -456,7 +470,7 @@ export async function addToCart(req, res) {
       category: 'data',
     });
 
-    const items = await getCartItems(cart.id);
+    const items = await getCartItems(cart.id, { vendorLocationId: cart.vendor_location_id });
     const { subtotal, serviceFee, total, itemCount } = await buildCartTotals(cart, items);
 
     return respond(req, res, {
@@ -502,6 +516,23 @@ export async function updateCartItem(req, res) {
       const { error: delError } = await db().from('cart_items').delete().eq('id', itemId);
       if (delError) throw delError;
     } else if (quantity !== undefined) {
+      const { data: requestedItem, error: requestedItemError } = await db().from('cart_items')
+        .select('menu_item_id, menu_items(name)')
+        .eq('id', itemId)
+        .single();
+      if (requestedItemError) throw requestedItemError;
+      const { data: otherRows, error: otherRowsError } = await db().from('cart_items')
+        .select('quantity')
+        .eq('cart_id', cart.id)
+        .eq('menu_item_id', requestedItem.menu_item_id)
+        .neq('id', itemId);
+      if (otherRowsError) throw otherRowsError;
+      const totalQuantity = (otherRows || []).reduce((sum, row) => sum + row.quantity, quantity);
+      await assertVendorLocationStock(db(), cart.vendor_location_id, [{
+        menuItemId: requestedItem.menu_item_id,
+        quantity: totalQuantity,
+        name: requestedItem.menu_items?.name,
+      }]);
       const updates = { quantity, updated_at: new Date().toISOString() };
       if (specialInstructions !== undefined) updates.special_instructions = specialInstructions || null;
       const { error: upError } = await db().from('cart_items').update(updates).eq('id', itemId);
@@ -513,7 +544,7 @@ export async function updateCartItem(req, res) {
         .eq('id', itemId);
       if (upError) throw upError;
     }
-    const items = await getCartItems(cart.id);
+    const items = await getCartItems(cart.id, { vendorLocationId: cart.vendor_location_id });
     const { subtotal, serviceFee, total, itemCount } = await buildCartTotals(cart, items);
 
     return respond(req, res, {
@@ -548,7 +579,7 @@ export async function removeCartItem(req, res) {
       category: 'data',
     });
 
-    const items = await getCartItems(cart.id);
+    const items = await getCartItems(cart.id, { vendorLocationId: cart.vendor_location_id });
     const { subtotal, serviceFee, total, itemCount } = await buildCartTotals(cart, items);
 
     return respond(req, res, {

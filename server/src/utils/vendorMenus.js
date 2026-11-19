@@ -17,7 +17,7 @@ export async function getTodaysPublishedVendorMenu(database, vendorId, locationI
   const { data: menu, error: menuError } = await database
     .from('menus')
     .select('id, name, menu_date')
-    .eq('vendor_location_id', locationId)
+    .eq('vendor_location_id', location.id)
     .eq('menu_date', johannesburgDate())
     .eq('status', 'published')
     .maybeSingle();
@@ -26,8 +26,8 @@ export async function getTodaysPublishedVendorMenu(database, vendorId, locationI
 }
 
 export async function getTodaysPublishedMenuItem(database, vendorId, itemId, locationId) {
-  const { menu } = await getTodaysPublishedVendorMenu(database, vendorId, locationId);
-  if (!menu) return { locationId, menuId: null, status: null };
+  const { locationId: resolvedLocationId, menu } = await getTodaysPublishedVendorMenu(database, vendorId, locationId);
+  if (!menu) return { locationId: resolvedLocationId, menuId: null, status: null };
 
   const { data: link, error } = await database
     .from('menu_menu_items')
@@ -42,7 +42,7 @@ export async function getTodaysPublishedMenuItem(database, vendorId, itemId, loc
       .select('menu_item_id', { count: 'exact', head: true })
       .eq('menu_id', menu.id);
     if (countError) throw countError;
-    return { locationId, menuId: menu.id, status: null, menuEmpty: count === 0 };
+    return { locationId: resolvedLocationId, menuId: menu.id, status: null, menuEmpty: count === 0 };
   }
-  return { locationId, menuId: menu.id, status: link?.status || null };
+  return { locationId: resolvedLocationId, menuId: menu.id, status: link?.status || null };
 }

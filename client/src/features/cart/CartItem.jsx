@@ -120,6 +120,14 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, onImageErro
           </div>
         )}
 
+        {menuItem.inventory?.trackingEnabled && (
+          <p className={`cart-item__stock-note${menuItem.inventory.orderableQuantity <= 0 ? ' cart-item__stock-note--unavailable' : ''}`} role={menuItem.inventory.orderableQuantity <= 0 ? 'alert' : undefined}>
+            {menuItem.inventory.orderableQuantity <= 0
+              ? 'This item is currently out of stock at this pickup location.'
+              : `${menuItem.inventory.orderableQuantity} available at this pickup location`}
+          </p>
+        )}
+
         <div className="cart-item__section cart-item__section--actions">
           <QuantitySelector
             value={quantity}

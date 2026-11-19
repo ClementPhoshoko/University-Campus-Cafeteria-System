@@ -225,6 +225,16 @@
   color: var(--color-text-secondary);
 }
 
+.view-food__allergen-list span + span {
+  display: block;
+  margin-top: var(--space-1);
+}
+
+.view-food__availability {
+  font-size: 0.84rem;
+  color: var(--color-text-secondary);
+}
+
 .view-food__sidebar {
   position: relative;
   display: flex;

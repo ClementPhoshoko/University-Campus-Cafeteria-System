@@ -26,6 +26,7 @@ import geocodeRoutes from './routes/geocodeRoutes.js';
 import { bootstrapSuperAdmin } from './services/bootstrapSuperAdmin.js';
 import { startCartExpiryWorker } from './services/cartExpiry.js';
 import { startCollectionSlotScheduler } from './services/collectionSlotScheduler.js';
+import { startInventoryExpiryWorker } from './services/inventoryExpiry.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT) || 4000;
@@ -106,4 +107,5 @@ app.listen(port, () => {
   bootstrapSuperAdmin();
   startCartExpiryWorker();
   startCollectionSlotScheduler();
+  startInventoryExpiryWorker();
 });

@@ -52,7 +52,9 @@
 - [x] Return snapshots through order history/vendor order details so later catalogue edits do not rewrite what was purchased.
 - Avoid a schema migration for these fields unless implementation shows the current JSON contract cannot represent the required stable snapshot.
 
-### 2. Location-aware inventory — location resolution complete; inventory design next
+### 2. Location-aware inventory — implementation ready for staging verification
+
+Migration 029, service-role RPCs, inventory APIs, the manager sidebar **Location stock** page, and customer stock feedback are implemented. Rollout items stay open until the lifecycle is verified in Supabase.
 
 **Resolve location first**
 
@@ -71,7 +73,7 @@
 
 **Vendor/customer UI**
 
-- Add manager-only stock controls to the catalogue/location workflow with a clear distinction between on-hand, reserved, and currently orderable quantities.
+- [x] Add manager-only stock controls through the sidebar **Location stock** page with server-paginated item rows and a clear distinction between on-hand, reserved, and currently orderable quantities.
 - Keep catalogue status as a global sale gate; calculate customer orderability from both the global status and selected-location stock. Do not overload `menu_items.status` with per-location quantity state.
 - Show useful sold-out/low-stock feedback on customer menu and cart, and revalidate at checkout to handle races.
 
@@ -94,6 +96,7 @@
 - Number new database migrations from 026 onward. Add tables/indexes/RPCs without dropping legacy tables; document deployment order and rollback limits.
 - Apply migrations before deploying dependent API code. Deploy server support before enabling manager/customer controls; keep new inventory enforcement behind a controlled rollout until checkout, payment, and release paths are ready together.
 - [x] Apply migration 026 before deploying dependent API routes.
+- [x] Apply migration 029 from the Supabase migration role before deploying inventory-dependent API routes.
 - [ ] Confirm item metadata and option-group writes work in the target Supabase project.
 - [ ] Verify manager/staff/admin boundaries, cross-vendor denial, audit coverage, option validation, stable order snapshots, and pagination.
 - Stress-check concurrent checkout, retries, payment failure/expiry, cancellation, order rejection, and duplicate release/consume attempts against real database transactions.

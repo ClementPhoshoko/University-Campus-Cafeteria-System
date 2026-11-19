@@ -119,3 +119,17 @@ test('vendor menu management exposes paginated category and reusable item endpoi
   assert.ok(routes.some((route) => route.path === '/vendor/menu/catalog-items' && route.methods.post));
   assert.equal(routes.some((route) => route.path === '/vendor/menus'), false);
 });
+
+test('vendor menu management exposes inventory and customer option endpoints', () => {
+  const routes = vendorOperationsRoutes.default.stack
+    .filter((layer) => layer.route)
+    .map((layer) => ({ path: layer.route.path, methods: layer.route.methods }));
+
+  assert.ok(routes.some((route) => route.path === '/vendor/menu/inventory' && route.methods.get));
+  assert.ok(routes.some((route) => route.path === '/vendor/menu/inventory' && route.methods.put));
+  assert.ok(routes.some((route) => route.path === '/vendor/menu/inventory/settings' && route.methods.put));
+  assert.ok(routes.some((route) => route.path === '/vendor/menu/items/:itemId/inventory' && route.methods.put));
+  assert.ok(routes.some((route) => route.path === '/vendor/menu/option-groups' && route.methods.get));
+  assert.ok(routes.some((route) => route.path === '/vendor/menu/option-groups' && route.methods.post));
+  assert.ok(routes.some((route) => route.path === '/vendor/menu/option-groups/:groupId' && route.methods.patch));
+});

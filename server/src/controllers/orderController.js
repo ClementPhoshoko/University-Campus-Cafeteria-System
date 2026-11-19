@@ -15,8 +15,31 @@ import { validateCartOptions } from './cartController.js';
 
 const db = () => supabaseAdmin;
 
-function handleControllerError(res, err) {
+export function handleControllerError(res, err) {
   if (err instanceof ApiError) return sendError(res, err.status, err.code, err.message);
+  const businessErrors = {
+    INVENTORY_INSUFFICIENT: [409, 'INSUFFICIENT_STOCK', 'Some items no longer have enough stock at this collection location.'],
+    INVENTORY_SETUP_INCOMPLETE: [409, 'INVENTORY_SETUP_INCOMPLETE', 'Inventory tracking is enabled, but stock is missing for a menu item at this location. Please contact the vendor.'],
+    ORDER_NOT_RESERVABLE: [409, 'ORDER_NOT_RESERVABLE', 'This order is no longer eligible to reserve stock.'],
+    INVENTORY_RESERVATION_INCONSISTENT: [409, 'INVENTORY_RESERVATION_INCONSISTENT', 'Reserved stock is inconsistent. Please contact the vendor.'],
+    RESERVATION_QUANTITY_MISMATCH: [409, 'RESERVATION_QUANTITY_MISMATCH', 'The reserved quantity no longer matches this order.'],
+    INVENTORY_ALREADY_CONSUMED: [409, 'INVENTORY_ALREADY_CONSUMED', 'Stock for this order has already been consumed.'],
+    PAYMENT_WINDOW_EXPIRED: [409, 'PAYMENT_WINDOW_EXPIRED', 'The payment window expired. Start a new checkout.'],
+    CART_NOT_FOUND: [400, 'EMPTY_CART', 'No active cart found for this checkout'],
+    CART_EXPIRED: [410, 'CART_EXPIRED', 'Your cart has expired. Add the items again to start a new cart.'],
+    CART_MISMATCH: [400, 'CART_MISMATCH', 'The active cart does not match the selected vendor location'],
+    SLOT_NOT_FOUND: [404, 'SLOT_NOT_FOUND', 'Collection slot not found'],
+    SLOT_PAUSED: [409, 'SLOT_PAUSED', 'This collection slot is paused'],
+    SLOT_EXPIRED: [409, 'SLOT_EXPIRED', 'This collection slot is no longer available'],
+    SLOT_FULL: [409, 'SLOT_FULL', 'This collection slot is full'],
+    ITEM_UNAVAILABLE: [409, 'ITEM_UNAVAILABLE', 'An item in your cart is no longer available'],
+    INVALID_ORDER_ITEMS: [400, 'VALIDATION_ERROR', 'The cart contains invalid order items'],
+    INVALID_ORDER_TOTAL: [400, 'VALIDATION_ERROR', 'The order total could not be verified'],
+  };
+  const message = String(err?.message || '');
+  for (const [marker, [status, code, text]] of Object.entries(businessErrors)) {
+    if (message.includes(marker)) return sendError(res, status, code, text);
+  }
   if (err && err.code) {
     const mapped = mapDbError(err);
     if (mapped) return sendError(res, mapped.status, mapped.code, mapped.message);
@@ -185,81 +208,55 @@ export async function createOrder(req, res) {
     const collectionCode = generateCollectionCode();
     const collectionHash = hashCollectionCode(collectionCode);
 
-    const orderValues = {
-      user_id: userId,
-      order_reference: generateOrderReference(),
-      vendor_id: vendorId,
-      vendor_location_id: vendorLocationId,
-      order_type: 'personal',
-      site_id: location.site_id,
-      building_id: location.building_id,
-      collection_point_id: location.collection_point_id,
-      collection_slot_id: collectionSlotId,
-      status: 'payment_pending',
-      payment_status: 'pending',
-      currency: 'ZAR',
-      subtotal,
-      service_fee: serviceFee,
-      total,
-      notes: orderNotes,
-      idempotency_key: idempotencyKey,
-      collection_reference_hash: collectionHash,
-      collection_reference_last4: collectionCode,
-    };
-    let { data: order, error: orderError } = await db()
-      .from('orders').insert(orderValues).select().single();
-    if (orderError?.code === '23505' && orderError.message?.includes('order_reference')) {
-      orderValues.order_reference = generateOrderReference();
-      ({ data: order, error: orderError } = await db()
-        .from('orders').insert(orderValues).select().single());
+    const { data: checkout, error: checkoutError } = await db().rpc('create_order_with_inventory', {
+      p_cart_id: cart.id,
+      p_user_id: userId,
+      p_vendor_id: vendorId,
+      p_vendor_location_id: vendorLocationId,
+      p_collection_slot_id: collectionSlotId,
+      p_order_reference: generateOrderReference(),
+      p_site_id: location.site_id,
+      p_building_id: location.building_id,
+      p_collection_point_id: location.collection_point_id,
+      p_notes: orderNotes,
+      p_idempotency_key: idempotencyKey,
+      p_collection_reference_hash: collectionHash,
+      p_collection_reference_last4: collectionCode,
+      p_subtotal: subtotal,
+      p_service_fee: serviceFee,
+      p_total: total,
+      p_currency: 'ZAR',
+      p_payment_idempotency_key: idempotencyKey,
+      p_items: orderItems,
+      p_actor_id: userId,
+      p_expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+    });
+    if (checkoutError) throw checkoutError;
+    if (!checkout?.success || !checkout.order) {
+      throw new ApiError(409, 'CHECKOUT_FAILED', 'Checkout could not be completed. Review your cart and try again.');
     }
-    if (orderError) throw orderError;
-
-    const orderItemRows = orderItems.map((item) => ({ ...item, order_id: order.id }));
-    const { error: oiError } = await db().from('order_items').insert(orderItemRows);
-    if (oiError) throw oiError;
-
-    const { error: cartUpdateError } = await db()
-      .from('carts')
-      .update({ status: 'converted', updated_at: new Date().toISOString() })
-      .eq('id', cart.id)
-      .eq('status', 'active');
-    if (cartUpdateError) throw cartUpdateError;
-
-    const { error: slotError } = await db().rpc('reserve_collection_slot', { p_slot_id: collectionSlotId });
-    if (slotError) console.error('Failed to reserve slot:', slotError);
-
-    const { error: payError } = await db()
-      .from('payments')
-      .insert({
-        order_id: order.id,
-        provider: 'mock',
-        idempotency_key: idempotencyKey,
-        method: 'bank_card',
-        status: 'pending',
-        amount: total,
-        currency: 'ZAR',
-      });
-    if (payError) throw payError;
 
     await writeAudit(req, {
       action: 'INSERT',
       tableName: 'public.orders',
-      recordKey: order.id,
+      recordKey: checkout.order.id,
       newData: { vendor_id: vendorId, total, status: 'payment_pending' },
       reason: 'Order created',
       category: 'lifecycle',
     });
 
-    const orderResponse = { ...order };
+    const orderResponse = { ...checkout.order };
     delete orderResponse.collection_reference_hash;
     delete orderResponse.collection_reference_last4;
+    const itemRows = Array.isArray(checkout.items) && checkout.items.length
+      ? checkout.items
+      : orderItems.map((item) => ({ ...item, order_id: checkout.order.id }));
 
     return respond(req, res, {
       success: true,
       order: {
         ...orderResponse,
-        items: orderItemRows,
+        items: itemRows,
         collectionCode,
       },
     }, { status: 201 });

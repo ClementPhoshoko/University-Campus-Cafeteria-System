@@ -105,6 +105,48 @@ export function listVendorMenuMetadataOptions(vendorId, { token, signal, type } 
   });
 }
 
+export function getVendorMenuInventory(vendorId, { token, signal, vendorLocationId, menuItemId, page, limit } = {}) {
+  return apiRequest('/vendor/menu/inventory', {
+    token,
+    signal,
+    query: {
+      vendor_id: vendorId,
+      vendor_location_id: vendorLocationId,
+      menu_item_id: menuItemId,
+      page,
+      limit,
+    },
+    cache: 'no-store',
+  });
+}
+
+export function saveVendorLocationInventory(payload, { token, signal } = {}) {
+  return apiRequest('/vendor/menu/inventory', {
+    method: 'PUT',
+    token,
+    signal,
+    body: payload,
+  });
+}
+
+export function setVendorMenuItemStock(itemId, payload, { token, signal } = {}) {
+  return apiRequest(`/vendor/menu/items/${itemId}/inventory`, {
+    method: 'PUT',
+    token,
+    signal,
+    body: payload,
+  });
+}
+
+export function setVendorLocationInventoryTracking(payload, { token, signal } = {}) {
+  return apiRequest('/vendor/menu/inventory/settings', {
+    method: 'PUT',
+    token,
+    signal,
+    body: payload,
+  });
+}
+
 export function listVendorOptionGroups(vendorId, { token, page = 1, limit = 50, signal } = {}) {
   return apiRequest('/vendor/menu/option-groups', {
     token,

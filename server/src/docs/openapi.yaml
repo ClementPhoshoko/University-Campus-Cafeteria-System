@@ -2997,6 +2997,113 @@ paths:
       responses:
         '200': { description: Server-paginated catalogue items and their global availability }
         '403': { $ref: '#/components/responses/Forbidden' }
+  '/vendor/menu/inventory':
+    get:
+      tags: [Vendor Operations]
+      summary: Read one server-paginated page of stock for a vendor collection location
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vendor_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: vendor_location_id
+          in: query
+          description: Location to inspect. Defaults to the vendor’s first active location.
+          schema: { type: string, format: uuid }
+        - name: menu_item_id
+          in: query
+          description: Limit stock rows to one catalogue item.
+          schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 8 }
+      responses:
+        '200': { description: Paginated stock rows, location options, tracking state, and location-wide counts }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Active vendor location was not found }
+    put:
+      tags: [Vendor Operations]
+      summary: Save stock for every active item at one location
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vendor_id, vendor_location_id, items, reason, request_id, enable_tracking]
+              properties:
+                vendor_id: { type: string, format: uuid }
+                vendor_location_id: { type: string, format: uuid }
+                reason: { type: string, minLength: 1, maxLength: 500 }
+                request_id: { type: string, format: uuid }
+                enable_tracking: { type: boolean }
+                items:
+                  type: array
+                  minItems: 1
+                  maxItems: 500
+                  items:
+                    type: object
+                    required: [menu_item_id, on_hand_quantity]
+                    properties:
+                      menu_item_id: { type: string, format: uuid }
+                      on_hand_quantity: { type: integer, minimum: 0 }
+      responses:
+        '200': { description: Stock rows saved and tracking setting applied }
+        '400': { description: Incomplete or invalid stock payload }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: Stock conflict or active reservation prevents the change }
+  '/vendor/menu/inventory/settings':
+    put:
+      tags: [Vendor Operations]
+      summary: Enable or disable stock enforcement for one vendor location
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vendor_id, vendor_location_id, tracking_enabled]
+              properties:
+                vendor_id: { type: string, format: uuid }
+                vendor_location_id: { type: string, format: uuid }
+                tracking_enabled: { type: boolean }
+      responses:
+        '200': { description: Tracking setting updated }
+        '409': { description: Setup incomplete or active reservations remain }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  '/vendor/menu/items/{itemId}/inventory':
+    put:
+      tags: [Vendor Operations]
+      summary: Adjust one catalogue item’s stock at one location
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vendor_id, vendor_location_id, on_hand_quantity, reason, idempotency_key]
+              properties:
+                vendor_id: { type: string, format: uuid }
+                vendor_location_id: { type: string, format: uuid }
+                on_hand_quantity: { type: integer, minimum: 0 }
+                reason: { type: string, minLength: 1, maxLength: 500 }
+                idempotency_key: { type: string, minLength: 8, maxLength: 200 }
+      responses:
+        '200': { description: Stock adjusted }
+        '409': { description: Stock conflict or duplicate request key }
+        '403': { $ref: '#/components/responses/Forbidden' }
   '/vendor/menu/categories':
     get:
       tags: [Vendor Operations]

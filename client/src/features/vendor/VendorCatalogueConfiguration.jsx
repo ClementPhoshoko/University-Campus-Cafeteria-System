@@ -1,17 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
-import { IconPlus, IconPencil, IconTrash } from '@tabler/icons-react';
+import { useState } from 'react';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
-import Pagination from '../../components/ui/Pagination.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
-import { useConfirm } from '../../components/confirmation/ConfirmProvider.jsx';
 import {
   createVendorOptionGroup,
-  listVendorOptionGroups,
   updateVendorOptionGroup,
 } from '../../services/vendorApi.js';
 import './vendor-catalogue-configuration.css';
 
-const GROUP_PAGE_SIZE = 8;
 const statusValue = (value) => ({ id: value, name: value === 'single' ? 'Choose one' : 'Choose multiple' });
 
 function FieldLabel({ children, htmlFor }) {
@@ -91,77 +87,4 @@ export function VendorOptionGroupEditor({ vendorId, token, group, onClose, onSav
       <footer className="admin-modal__foot"><PrimaryButton type="button" disabled={busy} onClick={onClose}>Cancel</PrimaryButton><PrimaryButton type="submit" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save option group' : 'Create option group'}</PrimaryButton></footer>
     </form>
   </div>;
-}
-
-export default function VendorOptionGroupManager({ vendorId, token }) {
-  const confirm = useConfirm();
-  const [groups, setGroups] = useState([]);
-  const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({ page: 1, limit: GROUP_PAGE_SIZE, total: 0, totalPages: 1 });
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const [editing, setEditing] = useState(null);
-
-  const load = useCallback(async (signal) => {
-    if (!vendorId) return;
-    setLoading(true);
-    try {
-      const response = await listVendorOptionGroups(vendorId, { token, page, limit: GROUP_PAGE_SIZE, signal });
-      setGroups(response.option_groups || []);
-      setPagination(response.pagination || { page, limit: GROUP_PAGE_SIZE, total: 0, totalPages: 1 });
-      setError('');
-    } catch (loadError) {
-      if (loadError.name !== 'AbortError') setError(loadError.message || 'Could not load option groups.');
-    } finally {
-      if (!signal?.aborted) setLoading(false);
-    }
-  }, [vendorId, token, page]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    load(controller.signal);
-    return () => controller.abort();
-  }, [load]);
-
-  async function archive(group) {
-    if (busy) return;
-    setBusy(true);
-    try {
-      if (!await confirm({ title: 'Archive this option group?', message: `“${group.name}” will stop appearing on every item that uses it.`, confirmLabel: 'Archive group', tone: 'danger' })) return;
-      await updateVendorOptionGroup(vendorId, group.id, { ...group, is_active: false }, { token });
-      setNotice(`${group.name} archived.`);
-      await load();
-    } catch (archiveError) {
-      setError(archiveError.message || 'Could not archive this option group.');
-    } finally { setBusy(false); }
-  }
-
-  return <section className="vendor-menu-management__section vendor-option-groups" aria-labelledby="vendor-option-groups-title">
-    <header className="vendor-option-groups__heading">
-      <div><h3 id="vendor-option-groups-title">Customer options</h3><p>Create reusable choices such as sizes, extras, and preparation preferences.</p></div>
-      <PrimaryButton size="sm" icon={IconPlus} disabled={busy} onClick={() => setEditing({ isNew: true })}>Add option group</PrimaryButton>
-    </header>
-    <p className="vendor-config-note">Groups are reusable. Editing or archiving one affects every item assigned to it.</p>
-    {notice && <p className="vendor-menu-management__notice" role="status">{notice}</p>}
-    {error && <p className="vendor-menu-management__error" role="alert">{error}</p>}
-    {loading ? <p className="vendor-config-loading" role="status">Loading option groups…</p>
-      : !groups.length ? <p className="vendor-menu-management__empty">No option groups yet. Create one when customers need to choose item variations.</p>
-        : <div className="vendor-menu-management__items">
-          {groups.map((group) => <article className="vendor-option-group__row" key={group.id}>
-            <div className="vendor-option-group__copy">
-              <strong>{group.name}</strong>
-              <span>{group.selection_type === 'single' ? 'Choose one' : 'Choose multiple'} · {group.is_required ? 'Required' : 'Optional'} · {group.options.length} choices</span>
-              <small>{group.options.map((option) => `${option.name}${Number(option.price_delta) > 0 ? ` (+${Number(option.price_delta).toFixed(2)})` : ''}`).join(' · ')}</small>
-            </div>
-            <div className="vendor-menu-item__actions">
-              <button type="button" className="vendor-menu-item__action" disabled={busy} onClick={() => setEditing(group)}><IconPencil size={16} />Edit</button>
-              <button type="button" className="vendor-menu-item__action vendor-menu-item__action--archive" disabled={busy} onClick={() => archive(group)}><IconTrash size={16} />Archive</button>
-            </div>
-          </article>)}
-          <Pagination currentPage={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.total} itemsPerPage={pagination.limit} label="option groups" onPageChange={setPage} />
-        </div>}
-    {editing && <VendorOptionGroupEditor vendorId={vendorId} token={token} group={editing.isNew ? null : editing} onClose={() => setEditing(null)} onSaved={() => { setNotice(editing.isNew ? 'Option group created.' : 'Option group updated.'); load(); }} />}
-  </section>;
 }

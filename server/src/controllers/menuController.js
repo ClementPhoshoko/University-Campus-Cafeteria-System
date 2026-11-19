@@ -5,6 +5,7 @@ import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { rankFeaturedMenuItems, rankPopularMenuItems } from '../utils/popularMenuItems.js';
 import { isUuid } from '../validators/vendorValidators.js';
 import { requireActiveVendorLocation } from '../utils/vendorLocation.js';
+import { getVendorLocationInventory } from '../services/vendorLocationInventory.js';
 
 const db = () => supabaseAdmin;
 
@@ -260,6 +261,8 @@ export async function listVendorMenu(req, res) {
       .order('sort_order');
     if (catError) throw catError;
 
+    const locationInventory = await getVendorLocationInventory(db(), locationId, itemIds);
+
     const categoryMap = {};
     (categories || []).forEach((c) => { categoryMap[c.id] = { ...c, items: [] }; });
 
@@ -276,6 +279,12 @@ export async function listVendorMenu(req, res) {
         prep_minutes: item.prep_minutes,
         status: item.status,
         dietary_tags: dietaryByItem[item.id] || [],
+        inventory: {
+          tracking_enabled: locationInventory.trackingEnabled,
+          orderable_quantity: locationInventory.trackingEnabled
+            ? locationInventory.items.get(item.id)?.orderable_quantity ?? 0
+            : null,
+        },
       });
     }
 
@@ -325,6 +334,8 @@ export async function getMenuItem(req, res) {
     if (!['available', 'limited'].includes(item.status)) {
       throw new ApiError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
     }
+    const locationInventory = await getVendorLocationInventory(db(), locationId, [itemId]);
+    const inventoryRow = locationInventory.items.get(itemId);
 
     const [dietaryResult, allergenResult, optionResult] = await Promise.all([
       db()
@@ -383,6 +394,12 @@ export async function getMenuItem(req, res) {
         status: item.status,
         ingredients: item.ingredients,
         portion_description: item.portion_description,
+        inventory: {
+          tracking_enabled: locationInventory.trackingEnabled,
+          on_hand_quantity: locationInventory.trackingEnabled ? inventoryRow?.on_hand_quantity ?? 0 : null,
+          reserved_quantity: locationInventory.trackingEnabled ? inventoryRow?.reserved_quantity ?? 0 : null,
+          orderable_quantity: locationInventory.trackingEnabled ? inventoryRow?.orderable_quantity ?? 0 : null,
+        },
         dietary_tags,
         allergens,
         option_groups,

@@ -132,17 +132,20 @@ function validateUuidList(value, label, max = 50) {
 }
 
 export async function getVendorMenuSummaryCounts(database, vendorId) {
-  const [categoryResult, menuResult] = await Promise.all([
+  const [categoryResult, menuResult, optionGroupResult] = await Promise.all([
     database.from('menu_categories').select('id', { count: 'exact', head: true }).eq('vendor_id', vendorId).eq('is_active', true),
     database.from('menu_items').select('id', { count: 'exact', head: true }).eq('vendor_id', vendorId).eq('is_active', true),
+    database.from('option_groups').select('id', { count: 'exact', head: true }).eq('vendor_id', vendorId).eq('is_active', true),
   ]);
 
   if (categoryResult.error) throw categoryResult.error;
   if (menuResult.error) throw menuResult.error;
+  if (optionGroupResult.error) throw optionGroupResult.error;
 
   return {
     active_categories: Number(categoryResult.count ?? 0),
     active_menu_items: Number(menuResult.count ?? 0),
+    active_option_groups: Number(optionGroupResult.count ?? 0),
   };
 }
 
