@@ -77,21 +77,23 @@ Migration 029, service-role RPCs, inventory APIs, the manager sidebar **Location
 - Keep catalogue status as a global sale gate; calculate customer orderability from both the global status and selected-location stock. Do not overload `menu_items.status` with per-location quantity state.
 - Show useful sold-out/low-stock feedback on customer menu and cart, and revalidate at checkout to handle races.
 
-### 3. Vendor collection-slot controls — implementation complete; migration 030 and verification pending
+### 3. Vendor collection-slot controls — implementation complete; verification pending
 
-Migration 030, manager-only vendor-scoped slot APIs, the sidebar **Collection slots** page, and customer paused/full enforcement are implemented. Rollout items stay open until migration 030 is applied and the behavior is verified in Supabase.
+Migration 030 (applied), manager-only vendor-scoped slot APIs, the sidebar **Collection slots** page, and customer paused/full enforcement are implemented. Rollout items stay open until the behavior is verified in Supabase.
 
 - Reuse the existing generated-slot schedule and admin pause/resume logic; add manager-only vendor-scoped read and pause/resume controls first.
 - Do not expose interval, preparation capacity, or capacity editing until product rules and reserved-slot behavior are defined.
 - Implement slot changes transactionally. Prevent unsafe changes to started/reserved slots, and ensure customer slot selection and checkout immediately enforce paused/full state.
 - Audit each manager action and validate slot ownership through the slot's vendor location.
 
-### 4. Catering and reporting — separate product scope
+### 4. Catering and reporting — reporting slice implemented; catering workflow pending
 
-- Map existing corporate order, quote, and delivery states before adding vendor actions. Define employee request creation/status tracking and whether each order type requires admin approval.
-- Specify allowed transitions for quote, accept/reject, dispatch, and delivery confirmation, with audit history and authorization rules, before building vendor screens.
-- Build live, vendor-scoped reporting from verified order, item, status-history, and settlement data. Define date boundaries, timezone, pagination, and export permissions.
-- Replace admin mock report sources separately; do not use client mock data for vendor reports.
+Live vendor reporting is implemented: manager-only `/vendor/reports` and `/vendor/reports/export`, plus the manager **Reports** sidebar page. It reads real orders, retained item snapshots, status history, and refunds. No migration was needed. Corporate catering workflow remains a separate product decision because checkout currently creates personal orders only and no quote/approval/delivery state machine exists yet.
+
+- [ ] Map existing corporate order, quote, and delivery states before adding vendor actions. Define employee request creation/status tracking and whether each order type requires admin approval.
+- [ ] Specify allowed transitions for quote, accept/reject, dispatch, and delivery confirmation, with audit history and authorization rules, before building vendor screens.
+- [x] Build live, vendor-scoped reporting from verified order, item, status-history, and settlement data. Date boundaries are UTC; displayed times use the location timezone; recent orders are server-paginated; CSV export is manager-only and audited.
+- [ ] Replace admin mock report sources separately; do not use client mock data for vendor reports.
 
 ### 5. Rollout and verification
 
@@ -99,9 +101,10 @@ Migration 030, manager-only vendor-scoped slot APIs, the sidebar **Collection sl
 - Apply migrations before deploying dependent API code. Deploy server support before enabling manager/customer controls; keep new inventory enforcement behind a controlled rollout until checkout, payment, and release paths are ready together.
 - [x] Apply migration 026 before deploying dependent API routes.
 - [x] Apply migration 029 from the Supabase migration role before deploying inventory-dependent API routes.
-- [ ] Apply migration 030 from the Supabase migration role before deploying collection-slot-dependent API routes.
+- [x] Apply migration 030 from the Supabase migration role before deploying collection-slot-dependent API routes.
 - [ ] Confirm item metadata and option-group writes work in the target Supabase project.
 - [ ] Verify manager/staff/admin boundaries, cross-vendor denial, audit coverage, option validation, stable order snapshots, and pagination.
+- [ ] Verify live vendor reporting date boundaries, timezone display, aggregation, server pagination, and CSV export audit against the target Supabase project.
 - Stress-check concurrent checkout, retries, payment failure/expiry, cancellation, order rejection, and duplicate release/consume attempts against real database transactions.
 - Verify slot pause/full behavior against the employee picker and checkout. Reconcile stock reservations and slot counts in staging before enabling production traffic.
 - Update this roadmap as each phase ships; do not mark schema, API, UI, or rollout work complete until all dependent surfaces agree.

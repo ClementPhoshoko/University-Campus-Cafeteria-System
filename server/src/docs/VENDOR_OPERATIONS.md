@@ -42,6 +42,21 @@ The read derives `Available`, `Paused`, `Full`, `In progress`, and `Ended` state
 
 Pausing hides a slot from the employee picker immediately because `cartController` filters `paused = false`, and checkout rejects paused slots both in the controller pre-check and again inside `create_order_with_inventory`. Existing reservations are not released by a pause; those orders keep their collection time. Interval, preparation capacity, and slot capacity editing remain out of scope until product rules are defined.
 
+## Live vendor reporting
+
+Manager-only reporting reads real data; it does not import or fall back to the admin client mock reports. No migration is required for this slice.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/vendor/reports?vendor_id={id}&range={7d\|30d\|90d\|ytd\|custom}&from={date}&to={date}&vendor_location_id={id}&page={n}&limit={n}` | Live report summary, trend, breakdowns, and one server-paginated orders page |
+| `GET` | `/vendor/reports/export?vendor_id={id}&range={...}` | UTF-8 CSV of the same range, with an attributed audit row |
+
+The report resolves inclusive-start/exclusive-end UTC boundaries. `7d`, `30d`, and `90d` end at the start of tomorrow (UTC); `ytd` starts on 1 January; `custom` accepts `YYYY-MM-DD` dates and cannot exceed 366 days. Trend buckets use the same UTC days. Displayed timestamps and the busiest-hours buckets use the site timezone of the selected active location, falling back to `Africa/Johannesburg`.
+
+Aggregation uses `orders` filtered by the authenticated manager's `vendor_id` (and optional active location), retained `order_items` snapshots, `order_status_history`, and `succeeded` refunds. Cancelled and rejected orders are excluded from revenue but still counted in order volume and status breakdowns. Net revenue subtracts succeeded refunds from gross order totals. Preparation time is derived from `preparing` to `ready_for_collection` history entries. A vendor above 5000 orders in a range receives a `truncated` flag; narrow the range or select a location for a complete report.
+
+Both endpoints recheck manager membership before touching data. Export is rate-limited, capped at 5000 rows, and writes `audit_logs` with action `EXPORT`, category `data`, the vendor id as the record key, and the range in the reason.
+
 ### Catalogue dietary details and options
 
 Apply migrations `026_vendor_catalogue_details.sql`, `027_admin_catalogue_metadata.sql`, and `028_vendor_item_configuration_sections.sql` in order. For an existing deployment, apply whichever numbered migrations have not already been run. Registry entries remain centrally managed; vendors can assign active shared dietary/allergen rows but cannot create or rename labels. Option groups and choices are vendor-owned. Configuration writes run through service-role-only database functions that re-check manager membership, item/group ownership, active registry values, and selection limits inside the database transaction, and write actor-attributed audit rows. The item-details modal loads Dietary, Allergens, and Customer options on demand. The catalogue’s Customer options accordion also fetches its server-paginated group list only when opened; section saves leave the other sections untouched.

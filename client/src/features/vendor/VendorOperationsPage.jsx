@@ -14,6 +14,7 @@ import { archiveVendorMenuItem, listVendorMenuCategories, updateVendorMenuItem, 
 import VendorMenuManagementPage from './VendorMenuManagementPage.jsx';
 import VendorLocationStockPage from './VendorLocationStockPage.jsx';
 import VendorCollectionSlotsPage from './VendorCollectionSlotsPage.jsx';
+import VendorReportsPage from './VendorReportsPage.jsx';
 import VendorTeamManagementPage from './VendorTeamManagementPage.jsx';
 import VendorWorkspaceLayout from './VendorWorkspaceLayout.jsx';
 import { VendorDashboardSkeleton, VendorMenuItemsSkeleton, VendorQueueSkeleton, VendorSummarySkeleton } from './VendorLoadingSkeletons.jsx';
@@ -39,9 +40,10 @@ export default function VendorOperationsPage() {
   const showingMenuManagement = searchParams.get('view') === 'menus';
   const showingStockManagement = searchParams.get('view') === 'stock';
   const showingSlotManagement = searchParams.get('view') === 'slots';
+  const showingReportManagement = searchParams.get('view') === 'reports';
   const showingTeamManagement = searchParams.get('view') === 'team';
-  const showingManagerView = showingMenuManagement || showingStockManagement || showingSlotManagement || showingTeamManagement;
-  const activeView = showingMenuManagement ? 'menus' : showingStockManagement ? 'stock' : showingSlotManagement ? 'slots' : showingTeamManagement ? 'team' : 'overview';
+  const showingManagerView = showingMenuManagement || showingStockManagement || showingSlotManagement || showingReportManagement || showingTeamManagement;
+  const activeView = showingMenuManagement ? 'menus' : showingStockManagement ? 'stock' : showingSlotManagement ? 'slots' : showingReportManagement ? 'reports' : showingTeamManagement ? 'team' : 'overview';
   const focusedStockItemId = searchParams.get('item') || '';
   const [vendors, setVendors] = useState([]);
   const [vendorId, setVendorId] = useState('');
@@ -275,14 +277,21 @@ export default function VendorOperationsPage() {
               token={token}
               onBack={() => setSearchParams({})}
             />
-            : showingTeamManagement
-              ? <VendorTeamManagementPage
+            : showingReportManagement
+              ? <VendorReportsPage
                 vendorId={vendorId}
                 vendorName={selectedVendor.name}
                 token={token}
                 onBack={() => setSearchParams({})}
               />
-              : <>
+              : showingTeamManagement
+                ? <VendorTeamManagementPage
+                  vendorId={vendorId}
+                  vendorName={selectedVendor.name}
+                  token={token}
+                  onBack={() => setSearchParams({})}
+                />
+                : <>
         <div className="vendor-ops-grid">
         <VendorSection title="Live order queue" description="Sorted by collection time · refreshes automatically" Icon={IconShoppingBag} className="vendor-ops-section--queue" action={<button className="vendor-ops-refresh" type="button" onClick={() => loadOrders()} aria-label="Refresh orders"><IconRefresh size={18} /></button>}>
           <div className="vendor-queue-filters" role="group" aria-label="Filter orders">{QUEUE_FILTERS.map((item) => <button key={item.value} type="button" className={filter === item.value ? 'is-active' : ''} aria-pressed={filter === item.value} onClick={() => setFilter(item.value)}>{item.label}{item.value === 'needs_attention' && urgentCount > 0 ? <span>{urgentCount}</span> : null}</button>)}</div>

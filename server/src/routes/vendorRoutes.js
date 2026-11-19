@@ -58,6 +58,10 @@ import {
   getMyVendorCollectionSlots,
   updateMyVendorCollectionSlot,
 } from '../controllers/vendorCollectionSlotsController.js';
+import {
+  getMyVendorReport,
+  exportMyVendorReport,
+} from '../controllers/vendorReportsController.js';
 
 /**
  * Employee-facing cafeteria browsing is vendor-based: each approved vendor is a
@@ -103,6 +107,8 @@ vendorRouter.delete('/vendor/menu/items/:itemId', vendorMutations, deactivateMyV
 vendorRouter.patch('/vendor/menu/items/:itemId/availability', vendorMutations, updateMyVendorAvailability);
 vendorRouter.get('/vendor/collection-slots', getMyVendorCollectionSlots);
 vendorRouter.patch('/vendor/collection-slots/:slotId', vendorMutations, updateMyVendorCollectionSlot);
+vendorRouter.get('/vendor/reports', getMyVendorReport);
+vendorRouter.get('/vendor/reports/export', vendorMutations, exportMyVendorReport);
 
 vendorRouter.get('/popular-menu-items', listPopularMenuItems);
 vendorRouter.get('/vendor-categories', listPublicVendorCategories);

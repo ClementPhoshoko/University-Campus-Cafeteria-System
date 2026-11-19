@@ -170,6 +170,38 @@ export function setVendorCollectionSlotPaused(slotId, payload, { token, signal }
   });
 }
 
+export function getVendorReport(vendorId, { token, signal, range, from, to, vendorLocationId, page, limit } = {}) {
+  return apiRequest('/vendor/reports', {
+    token,
+    signal,
+    query: {
+      vendor_id: vendorId,
+      range,
+      from,
+      to,
+      vendor_location_id: vendorLocationId,
+      page,
+      limit,
+    },
+    cache: 'no-store',
+  });
+}
+
+export function exportVendorReportCsv(vendorId, { token, signal, range, from, to, vendorLocationId } = {}) {
+  return apiRequest('/vendor/reports/export', {
+    token,
+    signal,
+    query: {
+      vendor_id: vendorId,
+      range,
+      from,
+      to,
+      vendor_location_id: vendorLocationId,
+    },
+    cache: 'no-store',
+  });
+}
+
 export function listVendorOptionGroups(vendorId, { token, page = 1, limit = 50, signal } = {}) {
   return apiRequest('/vendor/menu/option-groups', {
     token,

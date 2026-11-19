@@ -1,4 +1,4 @@
-import { IconBox, IconBuildingStore, IconCalendarTime, IconList, IconShoppingBag, IconUsers } from '@tabler/icons-react';
+import { IconBox, IconBuildingStore, IconCalendarTime, IconChartBar, IconList, IconShoppingBag, IconUsers } from '@tabler/icons-react';
 import './vendor-workspace.css';
 
 const OVERVIEW_ITEM = { view: 'overview', label: 'Overview', Icon: IconShoppingBag };
@@ -6,6 +6,7 @@ const MANAGER_ITEMS = [
   { view: 'menus', label: 'Menu & categories', Icon: IconList },
   { view: 'stock', label: 'Location stock', Icon: IconBox },
   { view: 'slots', label: 'Collection slots', Icon: IconCalendarTime },
+  { view: 'reports', label: 'Reports', Icon: IconChartBar },
   { view: 'team', label: 'Team access', Icon: IconUsers },
 ];
 

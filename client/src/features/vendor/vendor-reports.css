@@ -1,0 +1,396 @@
+.vendor-reports-page {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.vendor-reports-page__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.vendor-reports-page__heading p {
+  margin: 0 0 var(--space-1);
+  color: var(--color-action-primary);
+  font-size: .76rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.vendor-reports-page__heading h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: clamp(1.45rem, 3vw, 1.9rem);
+  line-height: 1.2;
+}
+
+.vendor-reports-page__heading > div > span {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: .88rem;
+  line-height: 1.5;
+}
+
+.vendor-reports-page__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.vendor-reports-page__notice,
+.vendor-reports-page__error,
+.vendor-reports-page__warning {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: .84rem;
+  line-height: 1.45;
+}
+
+.vendor-reports-page__notice {
+  color: var(--color-status-success);
+  background: color-mix(in srgb, var(--color-status-success) 10%, var(--color-surface-default));
+}
+
+.vendor-reports-page__error {
+  color: var(--color-status-error);
+  background: color-mix(in srgb, var(--color-status-error) 9%, var(--color-surface-default));
+}
+
+.vendor-reports-page__warning {
+  color: var(--color-status-warning);
+  background: color-mix(in srgb, var(--color-status-warning) 10%, var(--color-surface-default));
+}
+
+.vendor-reports-page__card {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-default);
+  box-shadow: var(--elevation-sm);
+}
+
+.vendor-reports-page__card-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.vendor-reports-page__card-heading--split { justify-content: space-between; }
+
+.vendor-reports-page__card-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border-radius: var(--radius-md);
+  color: var(--color-action-primary);
+  background: var(--color-action-secondary);
+}
+
+.vendor-reports-page__card-heading h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.vendor-reports-page__card-heading p {
+  margin: 4px 0 0;
+  color: var(--color-text-secondary);
+  font-size: .8rem;
+  line-height: 1.5;
+}
+
+.vendor-reports-page__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
+.vendor-reports-page__ranges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.vendor-reports-page__range {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-subtle);
+  font-size: .78rem;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.vendor-reports-page__range:hover,
+.vendor-reports-page__range.is-active {
+  border-color: var(--color-action-primary);
+  color: var(--color-action-primary);
+  background: var(--color-action-secondary);
+}
+
+.vendor-reports-page__dates {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.vendor-reports-page__dates label {
+  display: grid;
+  gap: 5px;
+  color: var(--color-text-secondary);
+  font-size: .74rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.vendor-reports-page__location {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 220px;
+  flex: 1 1 220px;
+}
+
+.vendor-reports-page__label {
+  color: var(--color-text-secondary);
+  font-size: .78rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.vendor-reports-page__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.vendor-reports-page__kpis article {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-default);
+  box-shadow: var(--elevation-sm);
+}
+
+.vendor-reports-page__kpis span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  font-size: .76rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.vendor-reports-page__kpis strong {
+  color: var(--color-text-primary);
+  font-size: clamp(1.05rem, 2.4vw, 1.4rem);
+  font-weight: var(--font-weight-semibold);
+}
+
+.vendor-reports-page__kpis small {
+  color: var(--color-text-tertiary);
+  font-size: .72rem;
+}
+
+.vendor-reports-page__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.vendor-reports-page__bars,
+.vendor-reports-page__list {
+  display: grid;
+  gap: var(--space-2);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.vendor-reports-page__bar-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 1.1fr) minmax(60px, 1.6fr) minmax(70px, auto) minmax(48px, auto);
+  align-items: center;
+  gap: var(--space-2);
+  font-size: .76rem;
+}
+
+.vendor-reports-page__bar-label {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vendor-reports-page__bar-track {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-surface-subtle);
+}
+
+.vendor-reports-page__bar-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-action-primary);
+}
+
+.vendor-reports-page__bar-row strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  text-align: right;
+}
+
+.vendor-reports-page__bar-row small {
+  color: var(--color-text-tertiary);
+  text-align: right;
+}
+
+.vendor-reports-page__list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.vendor-reports-page__list > div:last-child { border-bottom: 0; }
+.vendor-reports-page__list strong { color: var(--color-text-primary); font-size: .84rem; }
+
+.vendor-reports-page__badge {
+  display: inline-flex;
+  align-items: center;
+  min-width: 92px;
+  justify-content: center;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-subtle);
+  font-size: .7rem;
+  font-weight: var(--font-weight-semibold);
+  text-transform: capitalize;
+}
+
+.vendor-reports-page__badge.is-success {
+  color: var(--color-status-success);
+  background: color-mix(in srgb, var(--color-status-success) 11%, var(--color-surface-default));
+}
+
+.vendor-reports-page__badge.is-error {
+  color: var(--color-status-error);
+  background: color-mix(in srgb, var(--color-status-error) 10%, var(--color-surface-default));
+}
+
+.vendor-reports-page__badge.is-info {
+  color: var(--color-action-link);
+  background: var(--color-action-secondary);
+}
+
+.vendor-reports-page__badge.is-warning {
+  color: var(--color-status-warning);
+  background: color-mix(in srgb, var(--color-status-warning) 12%, var(--color-surface-default));
+}
+
+.vendor-reports-page__table {
+  display: grid;
+  gap: var(--space-2);
+  overflow-x: auto;
+}
+
+.vendor-reports-page__table-head,
+.vendor-reports-page__table-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.6fr) minmax(120px, 1fr) minmax(150px, 1.2fr) minmax(120px, .8fr) minmax(90px, .6fr);
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 680px;
+}
+
+.vendor-reports-page__table-head {
+  padding: 0 var(--space-3) var(--space-1);
+  color: var(--color-text-tertiary);
+  font-size: .7rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.vendor-reports-page__table-row {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  font-size: .8rem;
+}
+
+.vendor-reports-page__table-row > span:first-child,
+.vendor-reports-page__table-row > span:last-child {
+  display: grid;
+  gap: 3px;
+}
+
+.vendor-reports-page__table-row small {
+  color: var(--color-text-tertiary);
+  font-size: .7rem;
+}
+
+.vendor-reports-page__pagination { display: flex; justify-content: flex-end; }
+
+.vendor-reports-page__empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: .84rem;
+}
+
+.vendor-reports-page__empty button {
+  padding: 0 0 0 4px;
+  border: 0;
+  color: var(--color-action-link);
+  background: transparent;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.vendor-reports-page__skeleton { display: grid; gap: var(--space-2); }
+.vendor-reports-page__skeleton > * { min-height: 48px; border-radius: var(--radius-sm); }
+
+.vendor-reports-page__footnote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
+.vendor-reports-page__footnote svg { flex: 0 0 auto; margin-top: 1px; }
+
+@media (max-width: 1000px) {
+  .vendor-reports-page__grid { grid-template-columns: 1fr; }
+  .vendor-reports-page__kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .vendor-reports-page__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .vendor-reports-page__header-actions { justify-content: flex-start; }
+  .vendor-reports-page__card { padding: var(--space-4); }
+  .vendor-reports-page__dates { flex-wrap: wrap; }
+}

@@ -3051,6 +3051,74 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Slot or active vendor location was not found }
         '409': { description: Slot has started or still holds reservations }
+  '/vendor/reports':
+    get:
+      tags: [Vendor Operations]
+      summary: Read a live, vendor-scoped performance report
+      description: Aggregates real orders, retained item snapshots, status history, and settled refunds. Date boundaries and trend buckets are UTC; displayed timestamps use the collection location timezone. Manager only.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vendor_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: vendor_location_id
+          in: query
+          description: Limit the report to one active vendor location.
+          schema: { type: string, format: uuid }
+        - name: range
+          in: query
+          schema: { type: string, enum: [7d, 30d, 90d, ytd, custom], default: '30d' }
+        - name: from
+          in: query
+          description: Inclusive start date (YYYY-MM-DD) when range is custom.
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          description: Inclusive end date (YYYY-MM-DD) when range is custom.
+          schema: { type: string, format: date }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 5 }
+      responses:
+        '200': { description: Report summary, trend, breakdowns, and one server-paginated orders page }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Active vendor location was not found }
+  '/vendor/reports/export':
+    get:
+      tags: [Vendor Operations]
+      summary: Export the vendor report as UTF-8 CSV
+      description: Manager only. Uses the same range and location filters as the report, caps at 5000 orders, and writes an attributed audit row.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vendor_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: vendor_location_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: range
+          in: query
+          schema: { type: string, enum: [7d, 30d, 90d, ytd, custom], default: '30d' }
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: CSV attachment
+          content:
+            text/csv:
+              schema: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   '/vendor/menu/inventory':
     get:
       tags: [Vendor Operations]
