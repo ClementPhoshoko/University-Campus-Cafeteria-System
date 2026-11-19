@@ -13,7 +13,6 @@ import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.webp'
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFetch } from '../../hooks/useFetch.js';
 import { getCart, updateCartItem, removeCartItem, createOrder, processMockPayment } from '../../services/employeeApi.js';
-import { CACHE_TTL } from '../../services/cache.js';
 import './CartPage.css';
 
 export default function CartPage() {
@@ -35,7 +34,9 @@ export default function CartPage() {
   const cartFeed = useFetch(loadCart, {
     cacheKey: cartUserId ? `employee:cart:${cartUserId}` : null,
     enabled: Boolean(token && cartUserId),
-    staleTime: CACHE_TTL.cart,
+    // Cart labels are read from current menu-item configuration; re-fetch on
+    // entry so dietary/allergen changes aren't hidden by an old cart snapshot.
+    staleTime: 0,
   });
   const cartData = cartFeed.data?.userId === cartUserId ? cartFeed.data : null;
   const carts = cartData?.carts || (cartData?.cart ? [cartData.cart] : []);

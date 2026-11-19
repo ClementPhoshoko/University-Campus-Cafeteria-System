@@ -24,6 +24,21 @@ function formatPrice(price) {
   return `R${Number(num || 0).toFixed(2)}`;
 }
 
+function normalizeMenuLabels(value, relationKey) {
+  const rows = Array.isArray(value) ? value : value ? [value] : [];
+  return rows.map((row) => {
+    if (typeof row === 'string') return { id: row, name: row };
+    if (!row || typeof row !== 'object') return null;
+    const related = row[relationKey];
+    const name = row.name || related?.name;
+    return name ? {
+      id: row.id || related?.id || name,
+      name,
+      vendor_notice: row.vendor_notice || null,
+    } : null;
+  }).filter(Boolean);
+}
+
 function ProductPageSkeleton() {
   return (
     <div className="view-food-skeleton" role="status" aria-label="Loading menu item" aria-busy="true">
@@ -97,7 +112,7 @@ export default function ViewFoodPage() {
   }, [vendor, requestedLocationId, selectedLocationId, searchParams, setSearchParams]);
 
   const loadMenuItem = useCallback(({ signal }) => (
-    getMenuItem(vendorId, menuItemId, { token, signal, cache: 'no-cache', locationId: selectedLocationId })
+    getMenuItem(vendorId, menuItemId, { token, signal, cache: 'no-store', locationId: selectedLocationId })
   ), [token, vendorId, menuItemId, selectedLocationId]);
   const transformMenuItem = useCallback((response) => ({
     vendorId,
@@ -106,9 +121,7 @@ export default function ViewFoodPage() {
     menuItem: response?.menuItem || null,
   }), [vendorId, menuItemId, selectedLocationId]);
   const itemFeed = useFetch(loadMenuItem, {
-    cacheKey: vendorId && menuItemId && selectedLocationId ? `employee:menu-item:${vendorId}:${menuItemId}:${selectedLocationId}` : null,
     enabled: Boolean(token && vendorId && menuItemId && selectedLocationId),
-    staleTime: CACHE_TTL.employeeMenu,
     transform: transformMenuItem,
   });
 
@@ -117,6 +130,8 @@ export default function ViewFoodPage() {
     ? itemFeed.data
     : null;
   const menuItem = itemResponse?.menuItem || null;
+  const dietaryLabels = normalizeMenuLabels(menuItem?.dietary_tags, 'dietary_tags');
+  const allergenLabels = normalizeMenuLabels(menuItem?.allergens, 'allergens');
   const optionGroups = menuItem?.option_groups || [];
   // A failed first request has no data to carry the request's location key.
   // Treat that as the current request's error so it doesn't leave the page
@@ -387,29 +402,35 @@ export default function ViewFoodPage() {
                 )}
               </div>
 
-              {menuItem.dietary_tags?.length > 0 && (
+              {dietaryLabels.length > 0 && (
                 <div className="view-food__section">
                   <span className="view-food__section-label">Dietary</span>
                   <div className="view-food__tags">
-                    {menuItem.dietary_tags.map((tag) => (
-                      <span key={tag} className="view-food__tag">
-                        {tag === 'Halal' && <IconCheck size={14} stroke={2} />}
-                        {tag === 'High Protein' && <IconFlame size={14} stroke={2} />}
-                        {tag === 'Vegetarian' && <IconLeaf size={14} stroke={2} />}
-                        {tag}
+                    {dietaryLabels.map((tag) => (
+                      <span key={tag.id} className="view-food__tag">
+                        {tag.name === 'Halal' && <IconCheck size={14} stroke={2} />}
+                        {tag.name === 'High Protein' && <IconFlame size={14} stroke={2} />}
+                        {tag.name === 'Vegetarian' && <IconLeaf size={14} stroke={2} />}
+                        {tag.name}
                       </span>
                     ))}
                   </div>
                 </div>
               )}
 
-              {menuItem.allergens?.length > 0 && (
+              {allergenLabels.length > 0 && (
                 <div className="view-food__section">
                   <span className="view-food__section-label">
                     <IconInfoCircle size={14} stroke={1.8} />
                     Contains
                   </span>
-                  <span className="view-food__allergen-list">{menuItem.allergens.map((allergen) => allergen.name || allergen).join(', ')}</span>
+                  <div className="view-food__allergen-list">
+                    {allergenLabels.map((allergen) => (
+                      <span key={allergen.id}>
+                        {allergen.name}{allergen.vendor_notice ? ` — ${allergen.vendor_notice}` : ''}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

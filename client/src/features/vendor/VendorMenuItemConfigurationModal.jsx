@@ -145,6 +145,30 @@ export default function VendorMenuItemConfigurationModal({ item, token, onClose,
           ? { section: activeSection, allergens }
           : { section: activeSection, option_group_ids: groupIds };
       await updateVendorMenuItemConfiguration(item.id, payload, { token });
+
+      // Keep the editor open unless the server can read back the exact saved
+      // assignments. This catches deployments where the write RPC is missing
+      // or the database did not persist the selected IDs.
+      const verifiedResponse = await getVendorMenuItemConfiguration(item.id, {
+        token,
+        section: activeSection,
+      });
+      const verified = verifiedResponse.configuration || {};
+      const idsFor = (rows) => (rows || []).map((row) => typeof row === 'string' ? row : row.id).filter(Boolean).sort();
+      const expectedIds = activeSection === 'dietary'
+        ? [...dietaryIds].sort()
+        : activeSection === 'allergens'
+          ? idsFor(allergens)
+          : [...groupIds].sort();
+      const actualIds = activeSection === 'dietary'
+        ? idsFor(verified.dietary_tags)
+        : activeSection === 'allergens'
+          ? idsFor(verified.allergens)
+          : idsFor(verified.option_groups);
+      if (JSON.stringify(actualIds) !== JSON.stringify(expectedIds)) {
+        throw new Error(`The ${activeSection} assignments could not be confirmed after saving. Please try again.`);
+      }
+
       onSaved?.();
       onClose();
     } catch (error) {

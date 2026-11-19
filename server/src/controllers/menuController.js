@@ -387,7 +387,9 @@ export async function getMenuItem(req, res) {
         allergens,
         option_groups,
       },
-    }, { cacheControl: CACHE.publicMenu });
+    // Dietary/allergen assignments can be changed by vendor managers, so the
+    // customer detail response must not keep an older item configuration.
+    }, { cacheControl: 'private, no-store' });
   } catch (err) {
     return handleControllerError(res, err);
   }
