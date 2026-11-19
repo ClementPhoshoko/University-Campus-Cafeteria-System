@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   IconChartBar,
+  IconBuilding,
   IconBuildingStore,
   IconMapPin,
   IconUsers,
@@ -25,6 +26,7 @@ import './admin.css';
 
 const ICON_MAP = {
   IconChartBar,
+  IconBuilding,
   IconBuildingStore,
   IconMapPin,
   IconUsers,
@@ -121,11 +123,11 @@ export default function AdminLayout() {
             <NavItem key={item.id} item={item} />
           ))}
           <span className="admin-sidebar__heading">Operations</span>
-          {ADMIN_NAV_ITEMS.slice(4, 8).map((item) => (
+          {ADMIN_NAV_ITEMS.slice(4, 9).map((item) => (
             <NavItem key={item.id} item={item} />
           ))}
           <span className="admin-sidebar__heading">System</span>
-          {ADMIN_NAV_ITEMS.slice(8).map((item) => (
+          {ADMIN_NAV_ITEMS.slice(9).map((item) => (
             <NavItem key={item.id} item={item} />
           ))}
         </nav>

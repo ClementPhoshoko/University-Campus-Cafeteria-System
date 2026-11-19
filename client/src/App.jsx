@@ -25,6 +25,8 @@ import CartPage from './features/cart/CartPage.jsx';
 import OrdersPage from './features/orders/OrdersPage.jsx';
 import OrderDetailPage from './features/orders/OrderDetailPage.jsx';
 import ProfilePage from './features/profile/ProfilePage.jsx';
+import CorporateCateringPage from './features/corporate/CorporateCateringPage.jsx';
+import CorporateApprovalsPage from './features/corporate/CorporateApprovalsPage.jsx';
 import AdminLayout from './features/admin/AdminLayout.jsx';
 import AdminDashboardPage from './features/admin/AdminDashboardPage.jsx';
 import AdminVendorList from './features/admin/AdminVendorList.jsx';
@@ -124,7 +126,7 @@ export default function App() {
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/orders/:orderId" element={<OrderDetailPage />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/corporate" element={<PlaceholderPage title="Corporate Catering" />} />
+          <Route path="/corporate" element={<CorporateCateringPage />} />
           <Route path="/vendor" element={<VendorOperationsPage />} />
           <Route path="/vendor/menus" element={<Navigate to="/vendor?view=menus" replace />} />
           <Route path="/vendor/stock" element={<Navigate to="/vendor?view=stock" replace />} />
@@ -145,6 +147,7 @@ export default function App() {
           <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
           <Route path="/admin/orders" element={<AdminOrderList />} />
           <Route path="/admin/orders/:orderId" element={<AdminOrderDetail />} />
+          <Route path="/admin/corporate-approvals" element={<CorporateApprovalsPage />} />
           <Route path="/admin/reports" element={<AdminReportsPage />} />
           <Route path="/admin/complaints" element={<AdminComplaintsPage />} />
           <Route path="/admin/complaints/:complaintId" element={<AdminComplaintDetail />} />

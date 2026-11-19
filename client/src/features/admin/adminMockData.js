@@ -1562,6 +1562,7 @@ export const ADMIN_NAV_ITEMS = [
   { id: 'cafeterias', label: 'Cafeterias', to: '/admin/cafeterias', icon: 'IconMapPin' },
   { id: 'users', label: 'Users & Roles', to: '/admin/users', icon: 'IconUsers' },
   { id: 'orders', label: 'Orders', to: '/admin/orders', icon: 'IconReceipt' },
+  { id: 'corporate-approvals', label: 'Catering approvals', to: '/admin/corporate-approvals', icon: 'IconBuilding' },
   { id: 'reports', label: 'Reports', to: '/admin/reports', icon: 'IconFileAnalytics' },
   { id: 'complaints', label: 'Complaints', to: '/admin/complaints', icon: 'IconAlertTriangle' },
   { id: 'announcements', label: 'Announcements', to: '/admin/announcements', icon: 'IconSpeakerphone' },

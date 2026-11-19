@@ -86,11 +86,13 @@ Migration 030 (applied), manager-only vendor-scoped slot APIs, the sidebar **Col
 - Implement slot changes transactionally. Prevent unsafe changes to started/reserved slots, and ensure customer slot selection and checkout immediately enforce paused/full state.
 - Audit each manager action and validate slot ownership through the slot's vendor location.
 
-### 4. Catering and reporting — reporting slice implemented; catering workflow pending
+### 4. Catering and reporting — reporting and request foundation implemented; vendor workflow pending
 
-Live vendor reporting is implemented: manager-only `/vendor/reports` and `/vendor/reports/export`, plus the manager **Reports** sidebar page. It reads real orders, retained item snapshots, status history, and refunds. No migration was needed. Corporate catering workflow remains a separate product decision because checkout currently creates personal orders only and no quote/approval/delivery state machine exists yet.
+Live vendor reporting is implemented: manager-only `/vendor/reports` and `/vendor/reports/export`, plus the manager **Reports** sidebar page. It reads real orders, retained item snapshots, status history, and refunds. No migration was needed.
 
-- [ ] Map existing corporate order, quote, and delivery states before adding vendor actions. Define employee request creation/status tracking and whether each order type requires admin approval.
+The corporate catering foundation is implemented behind migration 031: eligible employees can create cost-centre requests with retained item prices, server-paginated status tracking, and admin/finance approval decisions. The internal cost-centre payment uses the standard service-fee rules. Vendor quote, acceptance, dispatch, and delivery actions remain unimplemented until their transition rules are agreed; checkout still creates personal orders only.
+
+- [x] Map existing corporate order, quote, and delivery states before adding vendor actions. Employee request creation, admin/finance approval, and status tracking are implemented; vendor workflow states remain read-only in detail.
 - [ ] Specify allowed transitions for quote, accept/reject, dispatch, and delivery confirmation, with audit history and authorization rules, before building vendor screens.
 - [x] Build live, vendor-scoped reporting from verified order, item, status-history, and settlement data. Date boundaries are UTC; displayed times use the location timezone; recent orders are server-paginated; CSV export is manager-only and audited.
 - [ ] Replace admin mock report sources separately; do not use client mock data for vendor reports.
@@ -102,9 +104,11 @@ Live vendor reporting is implemented: manager-only `/vendor/reports` and `/vendo
 - [x] Apply migration 026 before deploying dependent API routes.
 - [x] Apply migration 029 from the Supabase migration role before deploying inventory-dependent API routes.
 - [x] Apply migration 030 from the Supabase migration role before deploying collection-slot-dependent API routes.
+- [x] Apply migration 031 from the Supabase migration role before deploying corporate catering APIs or enabling the Catering navigation.
 - [ ] Confirm item metadata and option-group writes work in the target Supabase project.
 - [ ] Verify manager/staff/admin boundaries, cross-vendor denial, audit coverage, option validation, stable order snapshots, and pagination.
 - [ ] Verify live vendor reporting date boundaries, timezone display, aggregation, server pagination, and CSV export audit against the target Supabase project.
+- [ ] Verify corporate catering role boundaries, schedule/validation guard rails, approval transitions, audit rows, and concurrent decisions using `CORPORATE_CATERING_VERIFICATION.md`.
 - Stress-check concurrent checkout, retries, payment failure/expiry, cancellation, order rejection, and duplicate release/consume attempts against real database transactions.
 - Verify slot pause/full behavior against the employee picker and checkout. Reconcile stock reservations and slot counts in staging before enabling production traffic.
 - Update this roadmap as each phase ships; do not mark schema, API, UI, or rollout work complete until all dependent surfaces agree.

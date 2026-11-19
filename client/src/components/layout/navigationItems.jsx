@@ -25,7 +25,7 @@ export const navigationItems = [
     label: 'Catering',
     route: '/corporate',
     Icon: IconBuilding,
-    roles: ['executive', 'executive_assistant', 'meeting_organiser'],
+    roles: ['executive', 'executive_assistant', 'meeting_organiser', 'training_coordinator', 'cost_centre_owner'],
   },
 
   { key: 'orders', label: 'Orders', route: '/orders', Icon: IconReceipt2 },
