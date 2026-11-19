@@ -17,7 +17,7 @@
 - Vendor managers now have scoped APIs and UI for assigning dietary tags/allergens, notices, and reusable vendor option groups. Checkout snapshots dietary/allergen details alongside existing option snapshots; migration 026 adds transactional, audited write functions and has been applied. API behavior still needs environment verification.
 - Customer menu browsing and item detail now carry an explicit active vendor location, resolved from the employee's preferred site/building only when it identifies one location or chosen directly. Cart creation validates and stores that location; slot listing and checkout use the cart's same location.
 - `menu_item_inventory` is currently keyed by `menu_id`; there is no live inventory reservation or release logic. It cannot serve as the new location-based stock model without a deliberate migration.
-- Admin tools can pause/resume generated collection slots. Vendor-scoped slot controls do not exist. Vendor catering and reporting endpoints do not exist; current admin reports use mock data.
+- Admin tools and vendor managers can pause/resume generated collection slots through separate scoped surfaces. Vendor catering and reporting endpoints do not exist; current admin reports use mock data.
 
 ## Implementation roadmap
 
@@ -77,7 +77,9 @@ Migration 029, service-role RPCs, inventory APIs, the manager sidebar **Location
 - Keep catalogue status as a global sale gate; calculate customer orderability from both the global status and selected-location stock. Do not overload `menu_items.status` with per-location quantity state.
 - Show useful sold-out/low-stock feedback on customer menu and cart, and revalidate at checkout to handle races.
 
-### 3. Vendor collection-slot controls
+### 3. Vendor collection-slot controls — implementation complete; migration 030 and verification pending
+
+Migration 030, manager-only vendor-scoped slot APIs, the sidebar **Collection slots** page, and customer paused/full enforcement are implemented. Rollout items stay open until migration 030 is applied and the behavior is verified in Supabase.
 
 - Reuse the existing generated-slot schedule and admin pause/resume logic; add manager-only vendor-scoped read and pause/resume controls first.
 - Do not expose interval, preparation capacity, or capacity editing until product rules and reserved-slot behavior are defined.
@@ -97,6 +99,7 @@ Migration 029, service-role RPCs, inventory APIs, the manager sidebar **Location
 - Apply migrations before deploying dependent API code. Deploy server support before enabling manager/customer controls; keep new inventory enforcement behind a controlled rollout until checkout, payment, and release paths are ready together.
 - [x] Apply migration 026 before deploying dependent API routes.
 - [x] Apply migration 029 from the Supabase migration role before deploying inventory-dependent API routes.
+- [ ] Apply migration 030 from the Supabase migration role before deploying collection-slot-dependent API routes.
 - [ ] Confirm item metadata and option-group writes work in the target Supabase project.
 - [ ] Verify manager/staff/admin boundaries, cross-vendor denial, audit coverage, option validation, stable order snapshots, and pagination.
 - Stress-check concurrent checkout, retries, payment failure/expiry, cancellation, order rejection, and duplicate release/consume attempts against real database transactions.

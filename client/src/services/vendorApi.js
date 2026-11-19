@@ -147,6 +147,29 @@ export function setVendorLocationInventoryTracking(payload, { token, signal } = 
   });
 }
 
+export function getVendorCollectionSlots(vendorId, { token, signal, vendorLocationId, page, limit } = {}) {
+  return apiRequest('/vendor/collection-slots', {
+    token,
+    signal,
+    query: {
+      vendor_id: vendorId,
+      vendor_location_id: vendorLocationId,
+      page,
+      limit,
+    },
+    cache: 'no-store',
+  });
+}
+
+export function setVendorCollectionSlotPaused(slotId, payload, { token, signal } = {}) {
+  return apiRequest(`/vendor/collection-slots/${slotId}`, {
+    method: 'PATCH',
+    token,
+    signal,
+    body: payload,
+  });
+}
+
 export function listVendorOptionGroups(vendorId, { token, page = 1, limit = 50, signal } = {}) {
   return apiRequest('/vendor/menu/option-groups', {
     token,

@@ -89,6 +89,8 @@ test('checkout maps database inventory markers to client error codes', () => {
     ['ORDER_NOT_RESERVABLE', 409, 'ORDER_NOT_RESERVABLE'],
     ['CART_EXPIRED', 410, 'CART_EXPIRED'],
     ['SLOT_FULL', 409, 'SLOT_FULL'],
+    ['SLOT_PAUSED', 409, 'SLOT_PAUSED'],
+    ['SLOT_EXPIRED', 409, 'SLOT_EXPIRED'],
   ];
   for (const [marker, status, code] of cases) {
     const { res, recorder } = createResponseRecorder();

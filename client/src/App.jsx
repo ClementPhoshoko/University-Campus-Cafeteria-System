@@ -128,6 +128,7 @@ export default function App() {
           <Route path="/vendor" element={<VendorOperationsPage />} />
           <Route path="/vendor/menus" element={<Navigate to="/vendor?view=menus" replace />} />
           <Route path="/vendor/stock" element={<Navigate to="/vendor?view=stock" replace />} />
+          <Route path="/vendor/slots" element={<Navigate to="/vendor?view=slots" replace />} />
         </Route>
       </Route>
 

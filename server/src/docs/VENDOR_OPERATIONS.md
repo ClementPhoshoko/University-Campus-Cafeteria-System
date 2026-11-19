@@ -29,6 +29,19 @@ Archiving sets `is_active=false` and `status=unavailable`. It does not physicall
 
 The catalogue editor supports name, description, category, price, preparation estimate, portion, ingredients, default availability, and an item image. Image uploads are restricted to active managers of the vendor that owns the item. Managers can also assign shared dietary tags and allergens, add customer notices, and manage reusable vendor-owned option groups. Dietary/allergen names and notices are copied into order item snapshots at checkout, so later catalogue edits do not change order history. Recurring weekly templates are not part of this API slice yet. The manager sidebar’s **Location stock** page reads one server-paginated item page at a time and saves each adjustment through the RPC-backed per-item endpoint. A separate bulk save endpoint remains available for complete-location setup; tracking cannot be enabled until every active catalogue item has stock at that location. On-hand, reserved, and orderable quantities are shown separately. `menu_items.status` remains the global sale gate.
 
+## Collection slot controls
+
+Apply `migrations/030_vendor_collection_slot_controls.sql` before deploying these routes. Generated slots remain unchanged; this slice only adds a manager-scoped read and pause/resume control.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/vendor/collection-slots?vendor_id={id}&vendor_location_id={id}&page={n}&limit={n}` | Read one server-paginated page of slots, location options, derived states, and location-wide counts (manager only) |
+| `PATCH` | `/vendor/collection-slots/{slotId}` | Pause or resume a slot with a reason and idempotency key (manager only) |
+
+The read derives `Available`, `Paused`, `Full`, `In progress`, and `Ended` states from the slot timestamps, pause flag, and reservation count, and marks each row `can_change` when collection has not started. The mutation calls `set_vendor_collection_slot_paused`, a service-role-only `SECURITY DEFINER` RPC that locks the slot and rechecks manager membership, active location ownership, and slot ownership inside one transaction. It rejects slots whose start time has passed and refuses to pause a slot that still holds reservations. Repeating a change that is already applied returns `unchanged: true` without writing another audit row. Every real change writes an actor-attributed `audit_logs` row with the reason and request key.
+
+Pausing hides a slot from the employee picker immediately because `cartController` filters `paused = false`, and checkout rejects paused slots both in the controller pre-check and again inside `create_order_with_inventory`. Existing reservations are not released by a pause; those orders keep their collection time. Interval, preparation capacity, and slot capacity editing remain out of scope until product rules are defined.
+
 ### Catalogue dietary details and options
 
 Apply migrations `026_vendor_catalogue_details.sql`, `027_admin_catalogue_metadata.sql`, and `028_vendor_item_configuration_sections.sql` in order. For an existing deployment, apply whichever numbered migrations have not already been run. Registry entries remain centrally managed; vendors can assign active shared dietary/allergen rows but cannot create or rename labels. Option groups and choices are vendor-owned. Configuration writes run through service-role-only database functions that re-check manager membership, item/group ownership, active registry values, and selection limits inside the database transaction, and write actor-attributed audit rows. The item-details modal loads Dietary, Allergens, and Customer options on demand. The catalogue’s Customer options accordion also fetches its server-paginated group list only when opened; section saves leave the other sections untouched.

@@ -1,0 +1,357 @@
+.vendor-slots-page {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.vendor-slots-page__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.vendor-slots-page__heading p {
+  margin: 0 0 var(--space-1);
+  color: var(--color-action-primary);
+  font-size: .76rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.vendor-slots-page__heading h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: clamp(1.45rem, 3vw, 1.9rem);
+  line-height: 1.2;
+}
+
+.vendor-slots-page__heading > div > span {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: .88rem;
+  line-height: 1.5;
+}
+
+.vendor-slots-page__notice,
+.vendor-slots-page__error {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: .84rem;
+  line-height: 1.45;
+}
+
+.vendor-slots-page__notice {
+  color: var(--color-status-success);
+  background: color-mix(in srgb, var(--color-status-success) 10%, var(--color-surface-default));
+}
+
+.vendor-slots-page__error {
+  color: var(--color-status-error);
+  background: color-mix(in srgb, var(--color-status-error) 9%, var(--color-surface-default));
+}
+
+.vendor-slots-page__card {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-default);
+  box-shadow: var(--elevation-sm);
+}
+
+.vendor-slots-page__card-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.vendor-slots-page__card-heading--split {
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.vendor-slots-page__card-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border-radius: var(--radius-md);
+  color: var(--color-action-primary);
+  background: var(--color-action-secondary);
+}
+
+.vendor-slots-page__card-heading h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.vendor-slots-page__card-heading p {
+  margin: 4px 0 0;
+  color: var(--color-text-secondary);
+  font-size: .8rem;
+  line-height: 1.5;
+}
+
+.vendor-slots-page__title-copy { min-width: 0; }
+
+.vendor-slots-page__location-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 1.6fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.vendor-slots-page__field {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.vendor-slots-page__label {
+  color: var(--color-text-secondary);
+  font-size: .78rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.vendor-slots-page__hint {
+  color: var(--color-text-tertiary);
+  font-size: .74rem;
+}
+
+.vendor-slots-page__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.vendor-slots-page__metrics article {
+  display: grid;
+  gap: 4px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
+.vendor-slots-page__metrics span {
+  color: var(--color-text-secondary);
+  font-size: .72rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.vendor-slots-page__metrics strong {
+  color: var(--color-text-primary);
+  font-size: 1.05rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.vendor-slots-page__table-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.vendor-slots-page__reason {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.vendor-slots-page__reason span {
+  color: var(--color-text-secondary);
+  font-size: .78rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.vendor-slots-page__reason input {
+  min-width: 230px;
+}
+
+.vendor-slots-page__refresh {
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-subtle);
+  cursor: pointer;
+}
+
+.vendor-slots-page__refresh:hover:not(:disabled) { color: var(--color-action-primary); }
+.vendor-slots-page__refresh:disabled { opacity: .5; cursor: not-allowed; }
+
+.vendor-slots-page__table {
+  display: grid;
+  gap: var(--space-2);
+  overflow-x: auto;
+}
+
+.vendor-slots-page__table-head,
+.vendor-slots-page__table-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) minmax(150px, 1.2fr) minmax(110px, .7fr) minmax(100px, .55fr);
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 640px;
+}
+
+.vendor-slots-page__table-head {
+  padding: 0 var(--space-3) var(--space-1);
+  color: var(--color-text-tertiary);
+  font-size: .7rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.vendor-slots-page__table-row {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+}
+
+.vendor-slots-page__time {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.vendor-slots-page__time strong {
+  color: var(--color-text-primary);
+  font-size: .86rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.vendor-slots-page__time small {
+  color: var(--color-text-tertiary);
+  font-size: .72rem;
+}
+
+.vendor-slots-page__capacity-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--color-text-secondary);
+  font-size: .76rem;
+}
+
+.vendor-slots-page__capacity-track {
+  display: block;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-surface-subtle);
+}
+
+.vendor-slots-page__capacity-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-action-primary);
+}
+
+.vendor-slots-page__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-subtle);
+}
+
+.vendor-slots-page__badge.is-available {
+  color: var(--color-status-success);
+  background: color-mix(in srgb, var(--color-status-success) 11%, var(--color-surface-default));
+}
+
+.vendor-slots-page__badge.is-paused,
+.vendor-slots-page__badge.is-full {
+  color: var(--color-status-warning);
+  background: color-mix(in srgb, var(--color-status-warning) 12%, var(--color-surface-default));
+}
+
+.vendor-slots-page__badge.is-in-progress {
+  color: var(--color-action-primary);
+  background: var(--color-action-secondary);
+}
+
+.vendor-slots-page__row-action { display: flex; justify-content: flex-end; }
+.vendor-slots-page__pagination { display: flex; justify-content: flex-end; }
+
+.vendor-slots-page__empty,
+.vendor-slots-page__inline-error {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: .84rem;
+}
+
+.vendor-slots-page__inline-error { color: var(--color-status-error); }
+.vendor-slots-page__inline-error button {
+  padding: 0 0 0 4px;
+  border: 0;
+  color: var(--color-action-link);
+  background: transparent;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.vendor-slots-page__skeleton { display: grid; gap: var(--space-2); }
+.vendor-slots-page__skeleton > * { min-height: 48px; border-radius: var(--radius-sm); }
+
+.vendor-slots-page__footnote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
+.vendor-slots-page__footnote svg { flex: 0 0 auto; margin-top: 1px; }
+
+.vendor-slots-page__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .vendor-slots-page__card-heading--split {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .vendor-slots-page__table-actions { width: 100%; }
+  .vendor-slots-page__reason { flex: 1; }
+  .vendor-slots-page__reason input { min-width: 0; width: 100%; }
+}
+
+@media (max-width: 720px) {
+  .vendor-slots-page__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .vendor-slots-page__card { padding: var(--space-4); }
+  .vendor-slots-page__location-grid { grid-template-columns: 1fr; }
+  .vendor-slots-page__metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

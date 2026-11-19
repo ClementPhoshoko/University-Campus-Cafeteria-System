@@ -54,6 +54,10 @@ import {
   setMyVendorLocationInventoryTracking,
   setMyVendorLocationItemStock,
 } from '../controllers/vendorInventoryController.js';
+import {
+  getMyVendorCollectionSlots,
+  updateMyVendorCollectionSlot,
+} from '../controllers/vendorCollectionSlotsController.js';
 
 /**
  * Employee-facing cafeteria browsing is vendor-based: each approved vendor is a
@@ -97,6 +101,8 @@ vendorRouter.get('/vendor/menu/items/:itemId/configuration', getMyVendorMenuItem
 vendorRouter.put('/vendor/menu/items/:itemId/configuration', vendorMutations, updateMyVendorMenuItemConfiguration);
 vendorRouter.delete('/vendor/menu/items/:itemId', vendorMutations, deactivateMyVendorMenuItem);
 vendorRouter.patch('/vendor/menu/items/:itemId/availability', vendorMutations, updateMyVendorAvailability);
+vendorRouter.get('/vendor/collection-slots', getMyVendorCollectionSlots);
+vendorRouter.patch('/vendor/collection-slots/:slotId', vendorMutations, updateMyVendorCollectionSlot);
 
 vendorRouter.get('/popular-menu-items', listPopularMenuItems);
 vendorRouter.get('/vendor-categories', listPublicVendorCategories);

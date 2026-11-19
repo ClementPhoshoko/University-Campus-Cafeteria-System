@@ -2997,6 +2997,60 @@ paths:
       responses:
         '200': { description: Server-paginated catalogue items and their global availability }
         '403': { $ref: '#/components/responses/Forbidden' }
+  '/vendor/collection-slots':
+    get:
+      tags: [Vendor Operations]
+      summary: Read one server-paginated page of collection slots for a vendor location
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vendor_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: vendor_location_id
+          in: query
+          description: Location to inspect. Defaults to the vendor’s first active location.
+          schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 8 }
+      responses:
+        '200': { description: Paginated slots with derived state, location options, and location-wide counts }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Active vendor location was not found }
+  '/vendor/collection-slots/{slotId}':
+    patch:
+      tags: [Vendor Operations]
+      summary: Pause or resume one collection slot at an active vendor location
+      description: Applied transactionally by a service-role RPC. Started slots and slots with active reservations cannot be changed.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: slotId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vendor_id, vendor_location_id, paused, reason, idempotency_key]
+              properties:
+                vendor_id: { type: string, format: uuid }
+                vendor_location_id: { type: string, format: uuid }
+                paused: { type: boolean }
+                reason: { type: string, minLength: 1, maxLength: 500 }
+                idempotency_key: { type: string, minLength: 8, maxLength: 200 }
+      responses:
+        '200': { description: Slot state applied; unchanged is true when it was already in that state }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Slot or active vendor location was not found }
+        '409': { description: Slot has started or still holds reservations }
   '/vendor/menu/inventory':
     get:
       tags: [Vendor Operations]
