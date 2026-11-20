@@ -43,6 +43,7 @@
 }
 
 .home_meal-card .home_vendor-media {
+  position: relative;
   height: 140px;
   aspect-ratio: 220 / 140;
 }
@@ -110,6 +111,46 @@
   transform: rotate(40deg);
   box-shadow: 0 2px 8px rgba(10, 140, 255, 0.3);
   pointer-events: none;
+}
+
+.food-availability-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 4;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-full);
+  font-size: 0.66rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow: var(--elevation-sm);
+  pointer-events: none;
+}
+
+.food-availability-badge--error {
+  color: var(--color-status-error);
+  background: color-mix(in srgb, var(--color-status-error) 12%, var(--color-surface-default));
+}
+
+.food-availability-badge--warning {
+  color: var(--color-status-warning);
+  background: color-mix(in srgb, var(--color-status-warning) 14%, var(--color-surface-default));
+}
+
+.food-availability-badge--muted {
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-surface-subtle) 92%, var(--color-surface-default));
+}
+
+.food-availability-badge--default {
+  color: var(--color-text-primary);
+  background: var(--color-surface-default);
 }
 
 /* Browse-menu list variant. The home tile remains unchanged. */

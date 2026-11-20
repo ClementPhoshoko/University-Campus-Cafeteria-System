@@ -2,12 +2,14 @@ import { Link } from 'react-router-dom';
 import { IconX, IconCheck, IconLeaf, IconFlame } from '@tabler/icons-react';
 import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
 import SmartImage from '../../components/ui/SmartImage.jsx';
+import { getAvailability, availabilityMessage } from '../../components/cards/availability.js';
 import './CartItem.css';
 
 export default function CartItem({ item, onUpdateQuantity, onRemove, onImageError, to }) {
   const { menuItem, quantity, unitPriceSnapshot, selectedOptions } = item;
   const rawInstructions = item.specialInstructions ?? item.special_instructions;
   const instructions = typeof rawInstructions === 'string' ? rawInstructions.trim() : '';
+  const availability = getAvailability({ status: menuItem?.status, inventory: menuItem?.inventory });
 
   const formatPrice = (price) => {
     const numPrice = typeof price === 'string'
@@ -120,11 +122,12 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, onImageErro
           </div>
         )}
 
-        {menuItem.inventory?.trackingEnabled && (
-          <p className={`cart-item__stock-note${menuItem.inventory.orderableQuantity <= 0 ? ' cart-item__stock-note--unavailable' : ''}`} role={menuItem.inventory.orderableQuantity <= 0 ? 'alert' : undefined}>
-            {menuItem.inventory.orderableQuantity <= 0
-              ? 'This item is currently out of stock at this pickup location.'
-              : `${menuItem.inventory.orderableQuantity} available at this pickup location`}
+        {availability.tracked && (
+          <p
+            className={`cart-item__stock-note${availability.orderableQuantity <= 0 ? ' cart-item__stock-note--unavailable' : ''}`}
+            role={availability.orderableQuantity <= 0 ? 'alert' : undefined}
+          >
+            {availabilityMessage(menuItem?.inventory, 'pickup location')}
           </p>
         )}
 
@@ -133,7 +136,7 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, onImageErro
             value={quantity}
             onChange={(val) => onUpdateQuantity(item.id, val)}
             min={1}
-            max={10}
+            max={availability.maxQuantity}
           />
           <span className="cart-item__price">{formatPrice(lineTotal)}</span>
         </div>

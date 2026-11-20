@@ -104,6 +104,22 @@ test('mapMenuItemToMeal normalizes a menu item into a food card payload', () => 
   assert.equal(output.id, 'item-1');
   assert.equal(output.cafeteriaName, 'Main Campus Cafe');
   assert.equal(output.price, 'R45.00');
+  assert.equal(output.status, 'available');
+});
+
+test('mapMenuItemToMeal preserves a limited status for the food card badge', () => {
+  const output = mapMenuItemToMeal(
+    {
+      id: 'item-2',
+      name: 'Chicken Wrap',
+      base_price: 45,
+      image_url: 'https://example.com/item.png',
+      status: 'limited',
+    },
+    'Main Campus Cafe',
+  );
+
+  assert.equal(output.status, 'limited');
 });
 
 test('mapFeaturedMenuItems interleaves cafeteria menus and avoids duplicate vendor items', () => {

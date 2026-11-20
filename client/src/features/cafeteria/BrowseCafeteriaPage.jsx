@@ -568,6 +568,7 @@ export default function BrowseCafeteriaPage() {
                     onImageError={refreshMenuItemImage}
                     description={item.description}
                     status={item.status}
+                    inventory={item.inventory}
                     prepMinutes={item.prep_minutes}
                     dietaryTags={item.dietary_tags || []}
                     variant="browse"

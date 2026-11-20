@@ -42,6 +42,7 @@ export function mapMenuItemToMeal(item, cafeteriaName) {
     id: item?.id,
     name: item?.name || '',
     price: formatPrice(item?.base_price ?? item?.price),
+    status: item?.status || 'available',
     cafeteriaName: cafeteriaName || '',
     image: item?.image_url || '',
   };

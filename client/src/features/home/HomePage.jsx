@@ -392,6 +392,7 @@ export default function HomePage() {
                   price={m.price}
                   cafeteriaName={m.cafeteriaName}
                   image={m.image}
+                  status={m.status}
                   vendorId={m.vendorId}
                   onImageError={refreshMealImage}
                   bestSeller={m.source === 'sales' && index < 3}

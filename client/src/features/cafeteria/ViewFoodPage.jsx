@@ -3,6 +3,7 @@ import { IconClock, IconCheck, IconPlus, IconFlame, IconLeaf, IconInfoCircle } f
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import FoodCard from '../../components/cards/FoodCard.jsx';
+import { getAvailability, availabilityMessage } from '../../components/cards/availability.js';
 import QuantitySelector from '../../components/ui/QuantitySelector.jsx';
 import VendorLocationPicker from './VendorLocationPicker.jsx';
 import { resolveVendorLocationId } from './vendorLocationSelection.js';
@@ -259,12 +260,10 @@ export default function ViewFoodPage() {
     }
   };
 
-  const trackedStock = menuItem?.inventory?.tracking_enabled === true;
-  const orderableQuantity = Number(menuItem?.inventory?.orderable_quantity);
-  const maxOrderQuantity = trackedStock ? Math.min(10, Math.max(0, orderableQuantity)) : 10;
-  const isPurchasable = Boolean(selectedLocationId)
-    && (menuItem?.status === 'available' || menuItem?.status === 'limited')
-    && (!trackedStock || orderableQuantity > 0);
+  const availability = getAvailability({ status: menuItem?.status, inventory: menuItem?.inventory });
+  const trackedStock = availability.tracked;
+  const maxOrderQuantity = availability.maxQuantity;
+  const isPurchasable = Boolean(selectedLocationId) && !availability.blocked;
 
   if (itemLoading) {
     return (
@@ -410,11 +409,7 @@ export default function ViewFoodPage() {
               {trackedStock && (
                 <div className="view-food__section">
                   <span className="view-food__section-label">Pickup availability</span>
-                  <span className="view-food__availability">
-                    {orderableQuantity > 0
-                      ? `${orderableQuantity} available at this location`
-                      : 'Currently out of stock at this location'}
-                  </span>
+                  <span className="view-food__availability">{availabilityMessage(menuItem?.inventory)}</span>
                 </div>
               )}
 
@@ -514,7 +509,7 @@ export default function ViewFoodPage() {
                   value={quantity}
                   onChange={setQuantity}
                   min={1}
-                  max={maxOrderQuantity || 1}
+                  max={maxOrderQuantity}
                   disabled={!isPurchasable}
                 />
                 <button

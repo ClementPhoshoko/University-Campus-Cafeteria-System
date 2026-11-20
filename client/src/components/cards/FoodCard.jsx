@@ -2,6 +2,7 @@ import { IconCheck, IconPlus } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 import './FoodCard.css';
 import SmartImage from '../ui/SmartImage.jsx';
+import { getAvailability } from './availability.js';
 
 export default function FoodCard({
   id,
@@ -13,6 +14,8 @@ export default function FoodCard({
   bestSeller,
   description,
   status = 'available',
+  inventory,
+  showAvailabilityBadge = true,
   prepMinutes,
   dietaryTags = [],
   variant = 'default',
@@ -22,19 +25,25 @@ export default function FoodCard({
   vendorId,
   to,
 }) {
+  const availability = getAvailability({ status, inventory });
+  const badge = showAvailabilityBadge && availability.badge
+    ? <span className={`food-availability-badge food-availability-badge--${availability.tone}`}>{availability.label}</span>
+    : null;
+
   if (variant === 'browse') {
-    const unavailable = status !== 'available' || !onAdd;
+    const unavailable = availability.blocked || !onAdd;
 
     const cardContent = (
       <>
         <div className="food_browse-image-wrap">
           {bestSeller && <span className="home_best-seller">Best Seller</span>}
+          {badge}
           <SmartImage src={image} alt={name} className="food_browse-image" width={132} height={132} onError={onImageError ? () => onImageError(id, vendorId, image) : undefined} />
         </div>
         <div className="food_browse-content">
           <div className="food_browse-heading">
             <h3 className="food_browse-name">{name}</h3>
-            {status !== 'available' && (
+            {!showAvailabilityBadge && status !== 'available' && (
               <span className="food_browse-status">{status === 'sold_out' ? 'Sold out' : 'Unavailable'}</span>
             )}
           </div>
@@ -86,6 +95,7 @@ export default function FoodCard({
     <div className="home_vendor-card home_meal-card">
       {bestSeller && <span className="home_best-seller">Best Seller</span>}
       <div className="home_vendor-media">
+        {badge}
         <SmartImage src={image} alt={name} width={220} height={280} onError={onImageError ? () => onImageError(id, vendorId, image) : undefined} />
       </div>
 
