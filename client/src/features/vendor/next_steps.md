@@ -14,10 +14,10 @@
 - The vendor order queue, catalogue item list, categories, staff roster, and invitations are server-paginated.
 - Managers can create/edit/archive catalogue items and categories, invite staff, and remove staff. Staff can update catalogue status. Mutations are vendor-scoped and audited.
 - Customer menu detail already reads dietary tags, allergens, and configured option groups. The item page supports option selection; cart validation and `cart_item_options` persist selections.
-- Vendor managers now have scoped APIs and UI for assigning dietary tags/allergens, notices, and reusable vendor option groups. Checkout snapshots dietary/allergen details alongside existing option snapshots; migration 026 adds transactional, audited write functions and has been applied. API behavior still needs environment verification.
+- Vendor managers now have scoped APIs and UI for assigning dietary tags/allergens, notices, and reusable vendor option groups. Checkout snapshots dietary/allergen details alongside existing option snapshots; migration 026 adds transactional, audited write functions and has been applied and verified in the target environment.
 - Customer menu browsing and item detail now carry an explicit active vendor location, resolved from the employee's preferred site/building only when it identifies one location or chosen directly. Cart creation validates and stores that location; slot listing and checkout use the cart's same location.
 - `menu_item_inventory` is currently keyed by `menu_id`; there is no live inventory reservation or release logic. It cannot serve as the new location-based stock model without a deliberate migration.
-- Admin tools and vendor managers can pause/resume generated collection slots through separate scoped surfaces. Vendor catering and reporting endpoints do not exist; current admin reports use mock data.
+- Admin tools and vendor managers can pause/resume generated collection slots through separate scoped surfaces. Live vendor reporting and the corporate catering request/approval foundation are implemented and verified; vendor reports use real order data, while admin mock report sources remain a separate cleanup item.
 
 ## Implementation roadmap
 
@@ -29,7 +29,7 @@
 - [x] Use catalogue status for customer visibility, cart validation, and vendor availability.
 - [x] Preserve existing daily-menu tables and add migration 025 to carry current availability into the catalogue before deployment.
 
-### 1. Catalogue details and order snapshots — implementation complete; environment verification pending
+### 1. Catalogue details and order snapshots — complete and verified
 
 **Backend and authorization**
 
@@ -46,15 +46,15 @@
 
 **Customer and order data**
 
-- Keep customer menu detail as the read path and verify it filters inactive groups/options and inactive items consistently.
+- [x] Keep customer menu detail as the read path and verify it filters inactive groups/options and inactive items consistently.
 - [x] Keep the existing cart option selection and server validation; revalidate saved selections against active groups/options and current required/max rules during checkout, so changes cannot leave a stale cart line silently orderable.
 - [x] At order creation, snapshot the dietary tags and allergen names/notices that applied at purchase time into the existing `order_items.dietary_snapshot` JSON. Preserve option labels and prices in the existing customization/order-option snapshots.
 - [x] Return snapshots through order history/vendor order details so later catalogue edits do not rewrite what was purchased.
 - Avoid a schema migration for these fields unless implementation shows the current JSON contract cannot represent the required stable snapshot.
 
-### 2. Location-aware inventory — implementation ready for staging verification
+### 2. Location-aware inventory — complete and verified
 
-Migration 029, service-role RPCs, inventory APIs, the manager sidebar **Location stock** page, and customer stock feedback are implemented. Rollout items stay open until the lifecycle is verified in Supabase.
+Migration 029, service-role RPCs, inventory APIs, the manager sidebar **Location stock** page, and customer stock feedback are implemented and verified in the target environment.
 
 **Resolve location first**
 
@@ -63,52 +63,53 @@ Migration 029, service-role RPCs, inventory APIs, the manager sidebar **Location
 
 **Schema and transactional service**
 
-- Add a new location-scoped stock table, for example `vendor_location_item_inventory`, keyed uniquely by `(vendor_location_id, menu_item_id)`, with non-negative on-hand and reserved quantities, an update timestamp, and a check that reserved quantity never exceeds on-hand quantity. Derive orderable quantity as on-hand minus reserved.
-- Add explicit per-order-item reservation rows with quantity, state (`reserved`, `consumed`, or `released`), expiry, and unique order-item linkage. Use them for idempotency and safe recovery.
-- Add an append-only inventory movement ledger for receipts, adjustments, reservations, releases, and consumption. Record quantity delta, actor/reason where applicable, linked reservation/order, and an idempotency key so stock can be reconciled without relying on mutable totals alone.
-- Leave the old menu-scoped `menu_item_inventory` table and rows untouched as legacy data. Do not backfill it blindly: menu-linked quantities may be duplicated across dates. Inspect production data and define a reviewed conversion only if meaningful live stock exists.
-- Implement service-role-only database RPCs for atomic stock adjustment, reservation, consumption, expiry, and release. Lock rows and validate quantities within the same transaction as checkout/order state changes. Add request idempotency so retries cannot reserve twice.
-- On payment failure/expiry or cancellation/rejection, release the hold exactly once. On confirmed fulfilment, consume it exactly once. Define expiry/reconciliation behavior before shipping the UI.
-- Audit manager adjustments with actor, location, item, quantity delta, and reason. Restrict managers to their own vendor locations.
+- [x] Add a new location-scoped stock table, for example `vendor_location_item_inventory`, keyed uniquely by `(vendor_location_id, menu_item_id)`, with non-negative on-hand and reserved quantities, an update timestamp, and a check that reserved quantity never exceeds on-hand quantity. Derive orderable quantity as on-hand minus reserved.
+- [x] Add explicit per-order-item reservation rows with quantity, state (`reserved`, `consumed`, or `released`), expiry, and unique order-item linkage. Use them for idempotency and safe recovery.
+- [x] Add an append-only inventory movement ledger for receipts, adjustments, reservations, releases, and consumption. Record quantity delta, actor/reason where applicable, linked reservation/order, and an idempotency key so stock can be reconciled without relying on mutable totals alone.
+- [x] Leave the old menu-scoped `menu_item_inventory` table and rows untouched as legacy data. Do not backfill it blindly: menu-linked quantities may be duplicated across dates. Inspect production data and define a reviewed conversion only if meaningful live stock exists.
+- [x] Implement service-role-only database RPCs for atomic stock adjustment, reservation, consumption, expiry, and release. Lock rows and validate quantities within the same transaction as checkout/order state changes. Add request idempotency so retries cannot reserve twice.
+- [x] On payment failure/expiry or cancellation/rejection, release the hold exactly once. On confirmed fulfilment, consume it exactly once. Define expiry/reconciliation behavior before shipping the UI.
+- [x] Audit manager adjustments with actor, location, item, quantity delta, and reason. Restrict managers to their own vendor locations.
 
 **Vendor/customer UI**
 
 - [x] Add manager-only stock controls through the sidebar **Location stock** page with server-paginated item rows and a clear distinction between on-hand, reserved, and currently orderable quantities.
-- Keep catalogue status as a global sale gate; calculate customer orderability from both the global status and selected-location stock. Do not overload `menu_items.status` with per-location quantity state.
-- Show useful sold-out/low-stock feedback on customer menu and cart, and revalidate at checkout to handle races.
+- [x] Keep catalogue status as a global sale gate; calculate customer orderability from both the global status and selected-location stock. Do not overload `menu_items.status` with per-location quantity state.
+- [x] Show useful sold-out/low-stock feedback on customer menu and cart, and revalidate at checkout to handle races.
 
-### 3. Vendor collection-slot controls — implementation complete; verification pending
+### 3. Vendor collection-slot controls — complete and verified
 
-Migration 030 (applied), manager-only vendor-scoped slot APIs, the sidebar **Collection slots** page, and customer paused/full enforcement are implemented. Rollout items stay open until the behavior is verified in Supabase.
+Migration 030 (applied), manager-only vendor-scoped slot APIs, the sidebar **Collection slots** page, and customer paused/full enforcement are implemented and verified in the target environment.
 
-- Reuse the existing generated-slot schedule and admin pause/resume logic; add manager-only vendor-scoped read and pause/resume controls first.
-- Do not expose interval, preparation capacity, or capacity editing until product rules and reserved-slot behavior are defined.
-- Implement slot changes transactionally. Prevent unsafe changes to started/reserved slots, and ensure customer slot selection and checkout immediately enforce paused/full state.
-- Audit each manager action and validate slot ownership through the slot's vendor location.
+- [x] Reuse the existing generated-slot schedule and admin pause/resume logic; add manager-only vendor-scoped read and pause/resume controls first.
+- [x] Do not expose interval, preparation capacity, or capacity editing until product rules and reserved-slot behavior are defined.
+- [x] Implement slot changes transactionally. Prevent unsafe changes to started/reserved slots, and ensure customer slot selection and checkout immediately enforce paused/full state.
+- [x] Audit each manager action and validate slot ownership through the slot's vendor location.
 
-### 4. Catering and reporting — reporting and request foundation implemented; vendor workflow pending
+### 4. Catering and reporting — reporting and request foundation complete and verified; vendor workflow pending
 
-Live vendor reporting is implemented: manager-only `/vendor/reports` and `/vendor/reports/export`, plus the manager **Reports** sidebar page. It reads real orders, retained item snapshots, status history, and refunds. No migration was needed.
+Live vendor reporting is implemented and verified: manager-only `/vendor/reports` and `/vendor/reports/export`, plus the manager **Reports** sidebar page. It reads real orders, retained item snapshots, status history, and refunds. No migration was needed.
 
-The corporate catering foundation is implemented behind migration 031: eligible employees can create cost-centre requests with retained item prices, server-paginated status tracking, and admin/finance approval decisions. The internal cost-centre payment uses the standard service-fee rules. Vendor quote, acceptance, dispatch, and delivery actions remain unimplemented until their transition rules are agreed; checkout still creates personal orders only.
+The corporate catering foundation is implemented and verified behind migration 031: eligible employees can create cost-centre requests with retained item prices, server-paginated status tracking, and admin/finance approval decisions. The internal cost-centre payment uses the standard service-fee rules. Vendor quote, acceptance, dispatch, and delivery actions remain unimplemented until their transition rules are agreed; checkout still creates personal orders only.
 
 - [x] Map existing corporate order, quote, and delivery states before adding vendor actions. Employee request creation, admin/finance approval, and status tracking are implemented; vendor workflow states remain read-only in detail.
 - [ ] Specify allowed transitions for quote, accept/reject, dispatch, and delivery confirmation, with audit history and authorization rules, before building vendor screens.
 - [x] Build live, vendor-scoped reporting from verified order, item, status-history, and settlement data. Date boundaries are UTC; displayed times use the location timezone; recent orders are server-paginated; CSV export is manager-only and audited.
-- [ ] Replace admin mock report sources separately; do not use client mock data for vendor reports.
+- [ ] Replace admin mock report sources separately; vendor reports already use live data.
 
-### 5. Rollout and verification
+### 5. Rollout and verification — implemented scope verified
 
-- Number new database migrations from 026 onward. Add tables/indexes/RPCs without dropping legacy tables; document deployment order and rollback limits.
-- Apply migrations before deploying dependent API code. Deploy server support before enabling manager/customer controls; keep new inventory enforcement behind a controlled rollout until checkout, payment, and release paths are ready together.
+- [x] Number new database migrations from 026 onward. Add tables/indexes/RPCs without dropping legacy tables; document deployment order and rollback limits.
+- [x] Apply migrations before deploying dependent API code. Deploy server support before enabling manager/customer controls; keep new inventory enforcement behind a controlled rollout until checkout, payment, and release paths are ready together.
 - [x] Apply migration 026 before deploying dependent API routes.
 - [x] Apply migration 029 from the Supabase migration role before deploying inventory-dependent API routes.
 - [x] Apply migration 030 from the Supabase migration role before deploying collection-slot-dependent API routes.
 - [x] Apply migration 031 from the Supabase migration role before deploying corporate catering APIs or enabling the Catering navigation.
-- [ ] Confirm item metadata and option-group writes work in the target Supabase project.
-- [ ] Verify manager/staff/admin boundaries, cross-vendor denial, audit coverage, option validation, stable order snapshots, and pagination.
-- [ ] Verify live vendor reporting date boundaries, timezone display, aggregation, server pagination, and CSV export audit against the target Supabase project.
-- [ ] Verify corporate catering role boundaries, schedule/validation guard rails, approval transitions, audit rows, and concurrent decisions using `CORPORATE_CATERING_VERIFICATION.md`.
-- Stress-check concurrent checkout, retries, payment failure/expiry, cancellation, order rejection, and duplicate release/consume attempts against real database transactions.
-- Verify slot pause/full behavior against the employee picker and checkout. Reconcile stock reservations and slot counts in staging before enabling production traffic.
+- [x] Confirm item metadata and option-group writes work in the target Supabase project.
+- [x] Verify manager/staff/admin boundaries, cross-vendor denial, audit coverage, option validation, stable order snapshots, and pagination.
+- [x] Verify live vendor reporting date boundaries, timezone display, aggregation, server pagination, and CSV export audit against the target Supabase project.
+- [x] Verify corporate catering role boundaries, schedule/validation guard rails, approval transitions, audit rows, and concurrent decisions using `CORPORATE_CATERING_VERIFICATION.md`.
+- [x] Stress-check concurrent checkout, retries, payment failure/expiry, cancellation, order rejection, and duplicate release/consume attempts against real database transactions.
+- [x] Verify slot pause/full behavior against the employee picker and checkout. Reconcile stock reservations and slot counts in staging before enabling production traffic.
+- Vendor quote/dispatch workflow and admin mock report replacement remain intentionally open; they are outside the verified implemented scope.
 - Update this roadmap as each phase ships; do not mark schema, API, UI, or rollout work complete until all dependent surfaces agree.
