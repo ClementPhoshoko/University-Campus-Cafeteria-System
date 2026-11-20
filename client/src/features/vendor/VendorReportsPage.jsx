@@ -250,6 +250,7 @@ export default function VendorReportsPage({ vendorId, vendorName, token, onBack 
             value={selectedOption}
             onChange={(option) => selectLocation(option.id)}
             disabled={state === 'loading' || !locationOptions.length}
+            loading={state === 'loading'}
             showAvailabilityStatus={false}
           />
         </div>

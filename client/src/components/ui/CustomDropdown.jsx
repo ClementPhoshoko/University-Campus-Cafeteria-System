@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { IconCheck, IconChevronDown, IconClock } from '@tabler/icons-react';
+import { IconCheck, IconChevronDown, IconClock, IconLoader2 } from '@tabler/icons-react';
 import './CustomDropdown.css';
 
 export default function CustomDropdown({
@@ -12,6 +12,7 @@ export default function CustomDropdown({
   placeholder = 'Select...',
   error,
   disabled,
+  loading = false,
   showClockIcon = false,
   showAvailabilityStatus = true,
   onOpen,
@@ -57,7 +58,7 @@ export default function CustomDropdown({
   };
 
   const handleTriggerClick = () => {
-    if (disabled) return;
+    if (disabled || loading) return;
     const opening = !isOpen;
     setIsOpen(opening);
     if (opening) onOpen?.();
@@ -72,28 +73,38 @@ export default function CustomDropdown({
     }
     return selectedOptions[0]?.name || placeholder;
   };
+  const triggerLabel = loading ? 'Loading options' : displayValue();
 
   return (
-    <div className={`custom-dropdown${error ? ' custom-dropdown--error' : ''}${disabled ? ' custom-dropdown--disabled' : ''}`} ref={dropdownRef}>
+    <div className={`custom-dropdown${error ? ' custom-dropdown--error' : ''}${disabled ? ' custom-dropdown--disabled' : ''}${loading ? ' custom-dropdown--loading' : ''}`} ref={dropdownRef}>
       {label && <label className="custom-dropdown__label">{label}</label>}
       <button
         type="button"
         className={`custom-dropdown__trigger${isOpen ? ' custom-dropdown__trigger--open' : ''}`}
-        aria-label={ariaLabel ? `${ariaLabel}: ${displayValue()}` : undefined}
-        title={displayValue()}
+        aria-label={ariaLabel ? `${ariaLabel}: ${triggerLabel}` : undefined}
+        title={triggerLabel}
         onClick={handleTriggerClick}
-        disabled={disabled}
+        disabled={disabled || loading}
       >
         <span className={`custom-dropdown__value${selectedOptions.length === 0 ? ' custom-dropdown__value--placeholder' : ''}`}>
-          {showClockIcon && selectedOptions.length > 0 && (
-            <IconClock size={14} stroke={1.8} className="custom-dropdown__value-icon" />
+          {loading ? (
+            <span className="custom-dropdown__loading">
+              <IconLoader2 size={14} stroke={2} className="custom-dropdown__spinner" />
+              Loading...
+            </span>
+          ) : (
+            <>
+              {showClockIcon && selectedOptions.length > 0 && (
+                <IconClock size={14} stroke={1.8} className="custom-dropdown__value-icon" />
+              )}
+              <span className="custom-dropdown__value-label">{displayValue()}</span>
+            </>
           )}
-          <span className="custom-dropdown__value-label">{displayValue()}</span>
         </span>
-        <IconChevronDown size={16} stroke={2} className={`custom-dropdown__icon${isOpen ? ' custom-dropdown__icon--open' : ''}`} />
+        {!loading && <IconChevronDown size={16} stroke={2} className={`custom-dropdown__icon${isOpen ? ' custom-dropdown__icon--open' : ''}`} />}
       </button>
 
-      {isOpen && (
+      {isOpen && !loading && (
         <div className="custom-dropdown__menu">
           {options.length === 0 ? (
             <div className="custom-dropdown__empty">No options available</div>

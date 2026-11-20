@@ -167,6 +167,7 @@ export default function VendorCollectionSlotsPage({ vendorId, vendorName, token,
               value={selectedOption}
               onChange={(option) => selectLocation(option.id)}
               disabled={state === 'loading' || !locationOptions.length}
+              loading={state === 'loading'}
               showAvailabilityStatus={false}
             />
             {!locationOptions.length && state === 'ready' && (

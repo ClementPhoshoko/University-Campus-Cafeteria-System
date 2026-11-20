@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
+import ModalProgressOverlay from '../admin/ModalProgressOverlay.jsx';
 import {
   createVendorOptionGroup,
   updateVendorOptionGroup,
@@ -103,6 +104,12 @@ export function VendorOptionGroupEditor({ vendorId, token, group, onClose, onSav
         </div>
       </div>
       <footer className="admin-modal__foot"><PrimaryButton type="button" disabled={busy} onClick={onClose}>Cancel</PrimaryButton><PrimaryButton type="submit" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save option group' : 'Create option group'}</PrimaryButton></footer>
+      <ModalProgressOverlay
+        active={busy}
+        messages={editing
+          ? ['Updating option group...', 'Saving your choices...', 'Almost there...']
+          : ['Creating option group...', 'Saving your choices...', 'Almost there...']}
+      />
     </form>
   </div>;
 }

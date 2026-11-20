@@ -1,4 +1,5 @@
 .vendor-config-modal {
+  position: relative;
   display: flex;
   width: min(720px, calc(100vw - 32px));
   max-height: min(86vh, 820px);
@@ -6,6 +7,70 @@
   overflow: hidden;
   color: var(--color-text-primary);
   background: var(--color-bg-default);
+}
+
+.vendor-config-modal .vendor-creating-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  background: var(--color-overlay-soft);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.vendor-config-modal .vendor-creating-card {
+  max-width: 320px;
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+}
+
+.vendor-config-modal .vendor-creating-spinner {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto var(--space-5);
+  border: 3px solid var(--color-border-strong);
+  border-top-color: var(--color-action-primary);
+  border-radius: var(--radius-full);
+  animation: vendor-config-spin .8s linear infinite;
+}
+
+.vendor-config-modal .vendor-creating-msg {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-primary);
+  font-size: .92rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.vendor-config-modal .vendor-creating-bar {
+  height: 4px;
+  margin-bottom: var(--space-3);
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+
+.vendor-config-modal .vendor-creating-bar__fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-action-primary);
+  animation: vendor-config-progress 2.4s ease-in-out infinite;
+}
+
+.vendor-config-modal .vendor-creating-hint {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: .78rem;
+}
+
+@keyframes vendor-config-spin { to { transform: rotate(360deg); } }
+@keyframes vendor-config-progress {
+  0% { width: 0%; margin-left: 0; }
+  50% { width: 60%; margin-left: 20%; }
+  100% { width: 0%; margin-left: 100%; }
 }
 
 .vendor-config-modal .admin-modal__head {
@@ -340,4 +405,6 @@
     animation: none;
     transition: none;
   }
+  .vendor-config-modal .vendor-creating-spinner,
+  .vendor-config-modal .vendor-creating-bar__fill { animation: none; }
 }

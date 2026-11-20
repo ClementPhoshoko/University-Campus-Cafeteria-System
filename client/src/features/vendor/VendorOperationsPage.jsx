@@ -4,6 +4,7 @@ import { IconRefresh, IconShoppingBag, IconSoup, IconClockHour4, IconAlertTriang
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
+import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import { useConfirm } from '../../components/confirmation/ConfirmProvider.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -118,6 +119,8 @@ export default function VendorOperationsPage() {
   }, [vendorId, loadOrders, loadMenu, showingManagerView]);
 
   const selectedVendor = useMemo(() => vendors.find((vendor) => vendor.id === vendorId), [vendors, vendorId]);
+  const vendorOptions = useMemo(() => vendors.map((vendor) => ({ id: vendor.id, name: vendor.name, available: true })), [vendors]);
+  const selectedVendorOption = selectedVendor ? { id: selectedVendor.id, name: selectedVendor.name } : null;
   const visibleOrders = orders;
   const pagedOrders = orders;
   const safeQueuePage = queuePagination.page || queuePage;
@@ -230,9 +233,19 @@ export default function VendorOperationsPage() {
     </div></PageContainer>;
   }
 
-  const headerActions = vendors.length > 1 && (
+  const headerActions = vendorOptions.length > 1 && (
     <div className="vendor-ops-header-actions">
-      {vendors.length > 1 && <label className="vendor-ops-picker">Vendor<select value={vendorId} onChange={(event) => setVendorId(event.target.value)}>{vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}</select></label>}
+      <div className="vendor-ops-picker">
+        <CustomDropdown
+          label="Vendor"
+          ariaLabel="Vendor"
+          placeholder="Choose a vendor"
+          options={vendorOptions}
+          value={selectedVendorOption}
+          onChange={(option) => setVendorId(option.id)}
+          showAvailabilityStatus={false}
+        />
+      </div>
     </div>
   );
 

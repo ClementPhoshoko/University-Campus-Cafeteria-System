@@ -2,8 +2,8 @@
 .vendor-ops-page { width: min(100%, var(--content-max-width, 1180px)); margin: 0 auto; padding: var(--space-6) 0 calc(var(--space-12) + var(--bottom-nav-height)); }
 .vendor-ops-page .page-header { margin-bottom: var(--space-6); }
 .vendor-ops-header-actions { display: flex; align-items: flex-end; gap: var(--space-3); }
-.vendor-ops-picker { display: grid; min-width: 190px; gap: var(--space-1); color: var(--color-text-secondary); font-size: .78rem; font-weight: var(--font-weight-medium); }
-.vendor-ops-picker select, .vendor-menu-item select { min-width: 0; height: 44px; padding: 0 12px; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); color: var(--color-text-primary); background: var(--color-surface-default); font: inherit; }
+.vendor-ops-picker { width: 220px; min-width: 190px; max-width: 100%; }
+.vendor-ops-picker .custom-dropdown__label { color: var(--color-text-secondary); font-size: .78rem; font-weight: var(--font-weight-medium); }
 .vendor-ops-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); margin-bottom: var(--space-5); }
 .vendor-summary-card { display: flex; align-items: flex-start; gap: var(--space-3); min-height: 112px; padding: var(--space-4); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-surface-default); box-shadow: var(--elevation-sm); }
 .vendor-summary-card__icon { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border-radius: var(--radius-md); color: var(--color-icon-secondary); background: var(--color-bg-tertiary); }
@@ -83,7 +83,7 @@
 .vendor-ops-button--quiet:hover:not(:disabled) { background: color-mix(in srgb, var(--color-status-error) 8%, var(--color-surface-default)); }
 .vendor-ops-button--small { min-height: 44px; padding: 8px 13px; }
 .vendor-order-card__form { display: flex; flex: 1 1 100%; gap: var(--space-2); }
-.vendor-order-card__form input, .vendor-menu-item select { min-width: 0; height: 44px; padding: 0 12px; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); color: var(--color-text-primary); background: var(--color-surface-default); font: inherit; font-size: .82rem; }
+.vendor-order-card__form input { min-width: 0; height: 44px; padding: 0 12px; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); color: var(--color-text-primary); background: var(--color-surface-default); font: inherit; font-size: .82rem; }
 .vendor-order-card__form input { flex: 1; }
 .vendor-order-card__form input { outline: 0; border-color: var(--glass-border, var(--color-border-default)); background: var(--glass-bg-light, var(--color-surface-default)); font-family: var(--font-primary); font-size: .86rem; transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast); }
 .vendor-order-card__form input:focus { border-color: var(--color-border-focus, var(--color-action-primary)); background: var(--color-surface-default); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-action-primary) 14%, transparent); }

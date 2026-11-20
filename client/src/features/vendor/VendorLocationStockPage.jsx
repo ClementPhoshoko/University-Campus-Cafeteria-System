@@ -247,6 +247,7 @@ export default function VendorLocationStockPage({ vendorId, vendorName, token, f
               value={selectedOption}
               onChange={(option) => selectLocation(option.id)}
               disabled={state === 'loading' || !locationOptions.length}
+              loading={state === 'loading'}
               showAvailabilityStatus={false}
             />
             {!locationOptions.length && state === 'ready' && <small className="vendor-stock-page__hint">No active collection locations are configured for this vendor.</small>}

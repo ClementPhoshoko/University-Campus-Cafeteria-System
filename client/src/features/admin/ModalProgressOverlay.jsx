@@ -20,7 +20,7 @@ export default function ModalProgressOverlay({ active = false, messages = DEFAUL
   if (!active) return null;
 
   return (
-    <div className="vendor-creating-overlay">
+    <div className="vendor-creating-overlay" role="status" aria-live="polite" aria-busy="true">
       <div className="vendor-creating-card">
         <div className="vendor-creating-spinner" />
         <p className="vendor-creating-msg">{messages[loadMsg]}</p>

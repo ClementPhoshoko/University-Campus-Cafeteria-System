@@ -3,6 +3,7 @@ import { IconRefresh } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
+import ModalProgressOverlay from '../admin/ModalProgressOverlay.jsx';
 import {
   getVendorMenuItemConfiguration,
   listVendorMenuMetadataOptions,
@@ -251,6 +252,10 @@ export default function VendorMenuItemConfigurationModal({ item, token, onClose,
         <PrimaryButton type="button" disabled={saving} onClick={onClose}>Cancel</PrimaryButton>
         <PrimaryButton type="submit" disabled={!sectionLoaded[activeSection] || isLoading || saving}>{saving ? 'Saving…' : `Save ${SECTIONS.find((section) => section.id === activeSection)?.label.toLowerCase()}`}</PrimaryButton>
       </footer>
+      <ModalProgressOverlay
+        active={saving}
+        messages={['Saving item details...', 'Verifying your changes...', 'Almost there...']}
+      />
     </form>
   </div>;
 }
