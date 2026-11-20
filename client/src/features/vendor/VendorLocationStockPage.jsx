@@ -28,6 +28,7 @@ function quantityIsValid(value) {
 export default function VendorLocationStockPage({ vendorId, vendorName, token, focusedItemId, onBack, onClearFocus }) {
   const selectedLocationRef = useRef('');
   const saveKeysRef = useRef(new Map());
+  const itemsRef = useRef([]);
   const [locations, setLocations] = useState([]);
   const [selectedLocationId, setSelectedLocationId] = useState('');
   const [location, setLocation] = useState(null);
@@ -61,6 +62,7 @@ export default function VendorLocationStockPage({ vendorId, vendorName, token, f
       if (signal?.aborted) return;
       const nextLocation = response.location || null;
       const nextItems = response.items || [];
+      itemsRef.current = nextItems;
       const nextDrafts = Object.fromEntries(nextItems.map((item) => [
         item.id,
         item.on_hand_quantity == null ? '' : String(item.on_hand_quantity),
@@ -126,11 +128,36 @@ export default function VendorLocationStockPage({ vendorId, vendorName, token, f
         reason: adjustmentReason,
         idempotency_key: getSaveKey(item.id, quantity, adjustmentReason),
       }, { token });
-      const savedQuantity = String(response?.inventory?.on_hand_quantity ?? quantity);
+      const savedInventory = response?.inventory || {};
+      const savedOnHand = savedInventory.on_hand_quantity == null
+        ? quantity
+        : Number(savedInventory.on_hand_quantity);
+      const reservedQuantity = savedInventory.reserved_quantity == null
+        ? Number(item.reserved_quantity) || 0
+        : Number(savedInventory.reserved_quantity);
+      const savedQuantity = String(savedOnHand);
+      const previousItem = itemsRef.current.find((row) => row.id === item.id);
+      const nextItem = {
+        ...item,
+        on_hand_quantity: savedOnHand,
+        reserved_quantity: reservedQuantity,
+        orderable_quantity: savedOnHand - reservedQuantity,
+        updated_at: savedInventory.updated_at || item.updated_at || null,
+      };
+      const nextItems = itemsRef.current.map((row) => (row.id === item.id ? nextItem : row));
+      itemsRef.current = nextItems;
+
       setDrafts((current) => ({ ...current, [item.id]: savedQuantity }));
       setSavedQuantities((current) => ({ ...current, [item.id]: savedQuantity }));
+      setItems(nextItems);
+      if (previousItem?.on_hand_quantity == null) {
+        setCounts((current) => ({
+          ...current,
+          configured_items: current.configured_items + 1,
+          unconfigured_items: Math.max(0, current.unconfigured_items - 1),
+        }));
+      }
       setNotice(`${item.name} stock saved at ${location.label}.`);
-      setReloadKey((current) => current + 1);
     } catch (saveError) {
       setError(saveError.message || `Could not save stock for ${item.name}.`);
     } finally {
@@ -304,7 +331,7 @@ export default function VendorLocationStockPage({ vendorId, vendorName, token, f
             const canSave = dirty && quantityIsValid(draft) && Boolean(reason.trim()) && !busyRows[item.id];
             const onHand = item.on_hand_quantity;
             return <div
-              className={`vendor-stock-page__table-row${item.id === focusedItemId ? ' is-focused' : ''}`}
+              className={`vendor-stock-page__table-row${item.id === focusedItemId ? ' is-focused' : ''}${dirty ? ' is-editing' : ''}`}
               key={item.id}
               role="row"
             >
