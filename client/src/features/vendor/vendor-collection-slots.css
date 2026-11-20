@@ -115,6 +115,11 @@
   min-width: 0;
 }
 
+.vendor-slots-page__field .custom-dropdown {
+  width: 100%;
+  min-width: 0;
+}
+
 .vendor-slots-page__label {
   color: var(--color-text-secondary);
   font-size: .78rem;
@@ -292,7 +297,7 @@
 }
 
 .vendor-slots-page__row-action { display: flex; justify-content: flex-end; }
-.vendor-slots-page__pagination { display: flex; justify-content: flex-end; }
+.vendor-slots-page__pagination { display: flex; justify-content: flex-end; min-height: 32px; }
 
 .vendor-slots-page__empty,
 .vendor-slots-page__inline-error {
@@ -311,9 +316,6 @@
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
 }
-
-.vendor-slots-page__skeleton { display: grid; gap: var(--space-2); }
-.vendor-slots-page__skeleton > * { min-height: 48px; border-radius: var(--radius-sm); }
 
 .vendor-slots-page__footnote {
   display: flex;

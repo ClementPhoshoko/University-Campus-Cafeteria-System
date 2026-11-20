@@ -1,8 +1,163 @@
 import Skeleton from '../../components/ui/Skeleton.jsx';
 import '../../components/cards/CardSkeletonShimmer.css';
+import './vendor-manager-skeletons.css';
+
+const MANAGER_SKELETON_ROWS = 8;
 
 function LoadingLine({ width, height = 12, className = '' }) {
   return <Skeleton className={`home_card-skeleton-shimmer ${className}`} style={{ width, height }} />;
+}
+
+function SkeletonCopy({ titleWidth, descriptionWidth, titleHeight = 16 }) {
+  return <div className="vendor-manager-skeleton-copy" aria-hidden="true">
+    <LoadingLine width={titleWidth} height={titleHeight} />
+    <LoadingLine width={descriptionWidth} height={11} />
+  </div>;
+}
+
+export function VendorStockPageSkeleton() {
+  const itemWidths = ['64%', '78%', '58%', '72%', '66%', '60%', '74%', '62%'];
+
+  return <>
+    <section className="vendor-stock-page__card" role="status" aria-label="Loading collection location" aria-busy="true">
+      <header className="vendor-stock-page__card-heading" aria-hidden="true">
+        <Skeleton className="vendor-manager-skeleton-icon home_card-skeleton-shimmer" />
+        <SkeletonCopy titleWidth="184px" descriptionWidth="min(100%, 430px)" />
+      </header>
+      <div className="vendor-stock-page__location-grid" aria-hidden="true">
+        <div className="vendor-stock-page__field">
+          <LoadingLine width="132px" height={11} />
+          <Skeleton className="vendor-manager-skeleton-control home_card-skeleton-shimmer" />
+        </div>
+        <div className="vendor-stock-page__metrics">
+          {Array.from({ length: 3 }, (_, index) => <article key={index}>
+            <LoadingLine width="72%" height={10} />
+            <LoadingLine width="34px" height={20} />
+          </article>)}
+        </div>
+        <div className="vendor-stock-page__tracking vendor-manager-skeleton-tracking">
+          <Skeleton className="vendor-manager-skeleton-checkbox home_card-skeleton-shimmer" />
+          <SkeletonCopy titleWidth="196px" descriptionWidth="min(100%, 390px)" titleHeight={13} />
+        </div>
+      </div>
+    </section>
+
+    <section className="vendor-stock-page__card" role="status" aria-label="Loading stock by menu item" aria-busy="true">
+      <header className="vendor-stock-page__card-heading vendor-stock-page__card-heading--split" aria-hidden="true">
+        <div className="vendor-stock-page__title-copy">
+          <SkeletonCopy titleWidth="166px" descriptionWidth="min(100%, 420px)" />
+        </div>
+        <div className="vendor-stock-page__table-actions">
+          <div className="vendor-stock-page__reason">
+            <LoadingLine width="104px" height={11} />
+            <Skeleton className="vendor-manager-skeleton-input home_card-skeleton-shimmer" />
+          </div>
+          <Skeleton className="vendor-manager-skeleton-refresh home_card-skeleton-shimmer" />
+        </div>
+      </header>
+      <div className="vendor-stock-page__table" aria-hidden="true">
+        <div className="vendor-stock-page__table-head">
+          <LoadingLine width="74px" height={9} />
+          <LoadingLine width="48px" height={9} />
+          <LoadingLine width="54px" height={9} />
+          <LoadingLine width="56px" height={9} />
+          <LoadingLine width="44px" height={9} />
+          <LoadingLine width="52px" height={9} />
+        </div>
+        {Array.from({ length: MANAGER_SKELETON_ROWS }, (_, index) => (
+          <div className="vendor-stock-page__table-row vendor-manager-skeleton-row" key={index}>
+            <span className="vendor-stock-page__item">
+              <LoadingLine width={itemWidths[index]} height={13} />
+              {index % 4 === 0 && <LoadingLine width="74px" height={9} />}
+            </span>
+            <span className="vendor-manager-skeleton-cell--center">
+              <Skeleton className="vendor-manager-skeleton-quantity home_card-skeleton-shimmer" />
+            </span>
+            <span className="vendor-manager-skeleton-cell--center"><LoadingLine width="28px" height={11} /></span>
+            <span className="vendor-manager-skeleton-cell--center"><LoadingLine width="28px" height={11} /></span>
+            <span className="vendor-manager-skeleton-cell--center">
+              <Skeleton className="vendor-manager-skeleton-pill home_card-skeleton-shimmer" />
+            </span>
+            <span className="vendor-manager-skeleton-cell--right">
+              <Skeleton className="vendor-manager-skeleton-button home_card-skeleton-shimmer" />
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="vendor-stock-page__pagination" aria-hidden="true">
+        <Skeleton className="vendor-manager-skeleton-pagination home_card-skeleton-shimmer" />
+      </div>
+    </section>
+  </>;
+}
+
+export function VendorCollectionSlotsPageSkeleton() {
+  const timeWidths = ['112px', '136px', '104px', '124px', '118px', '108px', '132px', '116px'];
+
+  return <>
+    <section className="vendor-slots-page__card" role="status" aria-label="Loading collection location" aria-busy="true">
+      <header className="vendor-slots-page__card-heading" aria-hidden="true">
+        <Skeleton className="vendor-manager-skeleton-icon home_card-skeleton-shimmer" />
+        <SkeletonCopy titleWidth="184px" descriptionWidth="min(100%, 390px)" />
+      </header>
+      <div className="vendor-slots-page__location-grid" aria-hidden="true">
+        <div className="vendor-slots-page__field">
+          <LoadingLine width="132px" height={11} />
+          <Skeleton className="vendor-manager-skeleton-control home_card-skeleton-shimmer" />
+        </div>
+        <div className="vendor-slots-page__metrics">
+          {Array.from({ length: 4 }, (_, index) => <article key={index}>
+            <LoadingLine width="72%" height={10} />
+            <LoadingLine width="34px" height={20} />
+          </article>)}
+        </div>
+      </div>
+    </section>
+
+    <section className="vendor-slots-page__card" role="status" aria-label="Loading upcoming collection times" aria-busy="true">
+      <header className="vendor-slots-page__card-heading vendor-slots-page__card-heading--split" aria-hidden="true">
+        <div className="vendor-slots-page__title-copy">
+          <SkeletonCopy titleWidth="186px" descriptionWidth="min(100%, 430px)" />
+        </div>
+        <div className="vendor-slots-page__table-actions">
+          <div className="vendor-slots-page__reason">
+            <LoadingLine width="92px" height={11} />
+            <Skeleton className="vendor-manager-skeleton-input home_card-skeleton-shimmer" />
+          </div>
+          <Skeleton className="vendor-manager-skeleton-refresh home_card-skeleton-shimmer" />
+        </div>
+      </header>
+      <div className="vendor-slots-page__table" aria-hidden="true">
+        <div className="vendor-slots-page__table-head">
+          <LoadingLine width="102px" height={9} />
+          <LoadingLine width="68px" height={9} />
+          <LoadingLine width="42px" height={9} />
+          <LoadingLine width="48px" height={9} />
+        </div>
+        {Array.from({ length: MANAGER_SKELETON_ROWS }, (_, index) => (
+          <div className="vendor-slots-page__table-row vendor-manager-skeleton-row" key={index}>
+            <span className="vendor-slots-page__time">
+              <LoadingLine width={timeWidths[index]} height={13} />
+              <LoadingLine width="78px" height={9} />
+            </span>
+            <span>
+              <span className="vendor-manager-skeleton-capacity"><LoadingLine width="88px" height={10} /></span>
+              <Skeleton className="vendor-manager-skeleton-track home_card-skeleton-shimmer" />
+            </span>
+            <span className="vendor-manager-skeleton-cell--center">
+              <Skeleton className="vendor-manager-skeleton-badge home_card-skeleton-shimmer" />
+            </span>
+            <span className="vendor-manager-skeleton-cell--right">
+              <Skeleton className="vendor-manager-skeleton-button home_card-skeleton-shimmer" />
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="vendor-slots-page__pagination" aria-hidden="true">
+        <Skeleton className="vendor-manager-skeleton-pagination home_card-skeleton-shimmer" />
+      </div>
+    </section>
+  </>;
 }
 
 function SummaryCardSkeleton() {

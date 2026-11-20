@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { IconArrowLeft, IconCalendarTime, IconInfoCircle, IconRefresh } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
-import Skeleton from '../../components/ui/Skeleton.jsx';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
+import { VendorCollectionSlotsPageSkeleton } from './VendorLoadingSkeletons.jsx';
 import {
   getVendorCollectionSlots,
   setVendorCollectionSlotPaused,
@@ -127,6 +127,7 @@ export default function VendorCollectionSlotsPage({ vendorId, vendorName, token,
 
   const locationOptions = locations.map((row) => ({ id: row.id, name: row.label, available: true }));
   const selectedOption = locationOptions.find((option) => option.id === selectedLocationId) || null;
+  const showSkeleton = state === 'loading' && !locations.length && !location && !slots.length;
 
   return <div className="vendor-slots-page">
     <header className="vendor-slots-page__heading">
@@ -141,6 +142,7 @@ export default function VendorCollectionSlotsPage({ vendorId, vendorName, token,
     {notice && <p className="vendor-slots-page__notice" role="status">{notice}</p>}
     {error && <p className="vendor-slots-page__error" role="alert">{error}</p>}
 
+    {showSkeleton ? <VendorCollectionSlotsPageSkeleton /> : <>
     <section className="vendor-slots-page__card" aria-labelledby="vendor-slots-location-title">
       <header className="vendor-slots-page__card-heading">
         <span className="vendor-slots-page__card-icon"><IconCalendarTime size={19} /></span>
@@ -208,11 +210,7 @@ export default function VendorCollectionSlotsPage({ vendorId, vendorName, token,
         </div>
       </header>
 
-      {state === 'loading' ? (
-        <div className="vendor-slots-page__skeleton" role="status" aria-busy="true">
-          <Skeleton /><Skeleton /><Skeleton /><Skeleton />
-        </div>
-      ) : !location ? (
+      {!location ? (
         <p className="vendor-slots-page__empty">Select an active location to manage its collection slots.</p>
       ) : !slots.length ? (
         <p className="vendor-slots-page__empty">No collection slots have been generated for this location yet.</p>
@@ -279,6 +277,7 @@ export default function VendorCollectionSlotsPage({ vendorId, vendorName, token,
         </div>
       </>}
     </section>
+    </>}
 
     <p className="vendor-slots-page__footnote">
       <IconInfoCircle size={15} /> Paused slots disappear from the employee picker immediately and checkout rejects them. Intervals, preparation capacity, and slot capacity are controlled by the generated schedule.

@@ -135,6 +135,11 @@
   min-width: 0;
 }
 
+.vendor-stock-page__field .custom-dropdown {
+  width: 100%;
+  min-width: 0;
+}
+
 .vendor-stock-page__label,
 .vendor-stock-page__reason span {
   color: var(--color-text-secondary);
@@ -389,7 +394,7 @@
 
 .vendor-stock-page__row-action { display: flex; justify-content: flex-end; }
 
-.vendor-stock-page__pagination { display: flex; justify-content: flex-end; }
+.vendor-stock-page__pagination { display: flex; justify-content: flex-end; min-height: 32px; }
 
 .vendor-stock-page__empty,
 .vendor-stock-page__inline-error {
@@ -408,9 +413,6 @@
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
 }
-
-.vendor-stock-page__skeleton { display: grid; gap: var(--space-2); }
-.vendor-stock-page__skeleton > * { min-height: 48px; border-radius: var(--radius-sm); }
 
 .vendor-stock-page__footnote {
   display: flex;

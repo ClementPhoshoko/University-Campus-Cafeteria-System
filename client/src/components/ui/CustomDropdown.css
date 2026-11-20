@@ -1,6 +1,7 @@
 .custom-dropdown {
   position: relative;
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: var(--space-1);
 }
@@ -17,6 +18,7 @@
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
+  min-width: 0;
   height: 44px;
   padding: 0 var(--space-3);
   border: 1px solid var(--glass-border);
@@ -40,6 +42,7 @@
 
 .custom-dropdown__value {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -51,6 +54,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.custom-dropdown__value-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .custom-dropdown__value--placeholder {
@@ -141,6 +151,7 @@
 
 .custom-dropdown__option-left {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: var(--space-2);
 }
@@ -151,10 +162,14 @@
 }
 
 .custom-dropdown__option-name {
+  min-width: 0;
+  overflow: hidden;
   font-family: var(--font-primary);
   font-size: 0.84rem;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .custom-dropdown__option-time {
@@ -164,6 +179,7 @@
 
 .custom-dropdown__option-right {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: var(--space-2);
 }

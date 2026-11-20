@@ -80,6 +80,7 @@ export default function CustomDropdown({
         type="button"
         className={`custom-dropdown__trigger${isOpen ? ' custom-dropdown__trigger--open' : ''}`}
         aria-label={ariaLabel ? `${ariaLabel}: ${displayValue()}` : undefined}
+        title={displayValue()}
         onClick={handleTriggerClick}
         disabled={disabled}
       >
@@ -87,7 +88,7 @@ export default function CustomDropdown({
           {showClockIcon && selectedOptions.length > 0 && (
             <IconClock size={14} stroke={1.8} className="custom-dropdown__value-icon" />
           )}
-          {displayValue()}
+          <span className="custom-dropdown__value-label">{displayValue()}</span>
         </span>
         <IconChevronDown size={16} stroke={2} className={`custom-dropdown__icon${isOpen ? ' custom-dropdown__icon--open' : ''}`} />
       </button>
@@ -104,6 +105,7 @@ export default function CustomDropdown({
                   key={option.id}
                   type="button"
                   className={`custom-dropdown__option${isSelected ? ' custom-dropdown__option--selected' : ''}${!option.available ? ' custom-dropdown__option--unavailable' : ''}`}
+                  title={option.name}
                   onClick={() => option.available && handleSelect(option)}
                   disabled={!option.available}
                 >

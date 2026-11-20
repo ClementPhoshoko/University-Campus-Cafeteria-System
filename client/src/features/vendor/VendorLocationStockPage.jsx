@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { IconArrowLeft, IconInfoCircle, IconMapPin, IconRefresh } from '@tabler/icons-react';
 import Pagination from '../../components/ui/Pagination.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
-import Skeleton from '../../components/ui/Skeleton.jsx';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
+import { VendorStockPageSkeleton } from './VendorLoadingSkeletons.jsx';
 import {
   getVendorMenuInventory,
   setVendorLocationInventoryTracking,
@@ -203,6 +203,7 @@ export default function VendorLocationStockPage({ vendorId, vendorName, token, f
         : nextTracking
           ? 'Every active item has stock here. Checkout will reserve stock at this location.'
           : 'Turn off enforcement only when no orders hold reserved stock.';
+  const showSkeleton = state === 'loading' && !locations.length && !items.length && !location;
 
   return <div className="vendor-stock-page">
     <header className="vendor-stock-page__heading">
@@ -223,6 +224,7 @@ export default function VendorLocationStockPage({ vendorId, vendorName, token, f
       <IconInfoCircle size={16} /> Showing the item selected in Menu &amp; categories.
     </p>}
 
+    {showSkeleton ? <VendorStockPageSkeleton /> : <>
     <section className="vendor-stock-page__card" aria-labelledby="vendor-stock-location-title">
       <header className="vendor-stock-page__card-heading">
         <span className="vendor-stock-page__card-icon"><IconMapPin size={19} /></span>
@@ -307,11 +309,7 @@ export default function VendorLocationStockPage({ vendorId, vendorName, token, f
         </div>
       </header>
 
-      {state === 'loading' ? (
-        <div className="vendor-stock-page__skeleton" role="status" aria-busy="true">
-          <Skeleton /><Skeleton /><Skeleton /><Skeleton />
-        </div>
-      ) : !location ? (
+      {!location ? (
         <p className="vendor-stock-page__empty">Select an active location to manage its stock.</p>
       ) : !items.length ? (
         <p className="vendor-stock-page__empty">No active catalogue items are available for stock management.</p>
@@ -381,6 +379,7 @@ export default function VendorLocationStockPage({ vendorId, vendorName, token, f
         </div>
       </>}
     </section>
+    </>}
 
     <p className="vendor-stock-page__footnote">
       <IconInfoCircle size={15} /> Global item availability still controls every location. Location stock adds an extra checkout check only where tracking is enabled.
