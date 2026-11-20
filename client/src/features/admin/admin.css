@@ -5678,6 +5678,13 @@
   line-height: 1.5;
 }
 
+.admin-role-modal__note {
+  margin: var(--space-2) var(--space-5) 0;
+  color: var(--color-text-tertiary);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
 .admin-role-modal__body {
   display: flex;
   flex-direction: column;
@@ -5774,6 +5781,15 @@
 
 .admin-role-option--selected:hover {
   border-color: var(--color-border-focus);
+}
+
+.admin-role-option--readonly {
+  cursor: not-allowed;
+}
+
+.admin-role-option--readonly .admin-role-option__selected {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
 }
 
 .admin-role-option__selected {

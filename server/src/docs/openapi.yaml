@@ -562,7 +562,7 @@ paths:
       tags:
         - Administration
       summary: List users
-      description: Retrieve a paginated list of users with their assigned roles. Requires admin role.
+      description: Retrieve a paginated list of users with their effective roles, including vendor roles derived from active memberships. Requires admin role.
       operationId: listUsers
       security:
         - bearerAuth: []
@@ -618,7 +618,7 @@ paths:
       tags:
         - Administration
       summary: Get user roles
-      description: Retrieve all roles assigned to a specific user. Requires admin role.
+      description: Retrieve effective roles for a specific user, including platform roles and vendor roles derived from active memberships. Requires admin role.
       operationId: getUserRoles
       security:
         - bearerAuth: []
@@ -645,10 +645,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/AppRole'
+                  platformRoles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AppRole'
+                  vendorRoles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AppRole'
                   roleDetails:
                     type: array
                     items:
                       $ref: '#/components/schemas/RoleDetail'
+                  vendorMemberships:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VendorMembership'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3887,6 +3899,17 @@ components:
           format: date-time
         roles:
           type: array
+          description: Effective roles, including vendor roles derived from active memberships.
+          items:
+            $ref: '#/components/schemas/AppRole'
+        platformRoles:
+          type: array
+          description: Roles stored in user_roles.
+          items:
+            $ref: '#/components/schemas/AppRole'
+        vendorRoles:
+          type: array
+          description: Roles derived from active vendor_users memberships.
           items:
             $ref: '#/components/schemas/AppRole'
 
@@ -3905,6 +3928,26 @@ components:
           type: string
           format: date-time
           nullable: true
+
+    VendorMembership:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        vendor_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum:
+            - staff
+            - manager
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
 
     AppRole:
       type: string

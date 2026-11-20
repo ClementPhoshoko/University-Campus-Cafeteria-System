@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../config/supabase.js';
 import { writeAudit } from '../utils/audit.js';
 import { respond, CACHE } from '../utils/http.js';
+import { buildEffectiveRoleData, fetchEffectiveRoleData, mapVendorMemberRole, mergeEffectiveRoles } from '../utils/effectiveRoles.js';
 
 const VALID_ROLES = [
   'employee', 'executive', 'executive_assistant', 'meeting_organiser',
@@ -45,24 +46,28 @@ export async function listUsers(req, res) {
       });
     }
 
-    // Fetch roles separately — avoids PostgREST embedding ambiguity
+    // Fetch roles separately — avoids PostgREST embedding ambiguity.
+    // Vendor roles are derived from active memberships so the users list
+    // matches the roles shown in the authenticated vendor workspace.
     const userIds = (users || []).map((u) => u.id);
-    let roleMap = {};
+    let effectiveRolesByUser = {};
     if (userIds.length > 0) {
-      const { data: allRoles } = await supabaseAdmin
-        .from('user_roles')
-        .select('user_id, role')
-        .in('user_id', userIds);
-      for (const r of allRoles || []) {
-        if (!roleMap[r.user_id]) roleMap[r.user_id] = [];
-        roleMap[r.user_id].push(r.role);
+      try {
+        effectiveRolesByUser = await fetchEffectiveRoleData(userIds);
+      } catch (roleError) {
+        console.error('listUsers role lookup error:', roleError);
       }
     }
 
-    let filtered = (users || []).map((u) => ({
-      ...u,
-      roles: roleMap[u.id] || [],
-    }));
+    let filtered = (users || []).map((u) => {
+      const roleData = effectiveRolesByUser[u.id] || {};
+      return {
+        ...u,
+        roles: roleData.roles || [],
+        platformRoles: roleData.platformRoles || [],
+        vendorRoles: roleData.vendorRoles || [],
+      };
+    });
 
     if (role) {
       filtered = filtered.filter((u) => u.roles.includes(role));
@@ -108,24 +113,46 @@ export async function getUserRoles(req, res) {
       });
     }
 
-    const { data: roles, error: rolesError } = await supabaseAdmin
-      .from('user_roles')
-      .select('role, granted_by, granted_at, expires_at')
-      .eq('user_id', userId)
-      .order('granted_at', { ascending: true });
+    const [rolesResult, vendorResult] = await Promise.all([
+      supabaseAdmin
+        .from('user_roles')
+        .select('role, granted_by, granted_at, expires_at')
+        .eq('user_id', userId)
+        .or('expires_at.is.null,expires_at.gt.now()')
+        .order('granted_at', { ascending: true }),
+      supabaseAdmin
+        .from('vendor_users')
+        .select('vendor_id, role, is_active, created_at')
+        .eq('user_id', userId)
+        .eq('is_active', true),
+    ]);
 
-    if (rolesError) {
+    if (rolesResult.error || vendorResult.error) {
+      const queryError = rolesResult.error || vendorResult.error;
       return res.status(500).json({
         success: false,
-        error: { code: 'QUERY_ERROR', message: rolesError.message },
+        error: { code: 'QUERY_ERROR', message: queryError.message },
       });
     }
+
+    const roleDetails = rolesResult.data || [];
+    const vendorMemberships = vendorResult.data || [];
+    const platformRoles = roleDetails.map((r) => r.role);
+    const vendorRoles = [...new Set(vendorMemberships.map((row) => mapVendorMemberRole(row.role)).filter(Boolean))];
+    const roleData = buildEffectiveRoleData(
+      roleDetails.map((row) => ({ user_id: userId, role: row.role })),
+      vendorMemberships.map((row) => ({ ...row, user_id: userId })),
+      [userId],
+    );
 
     return respond(req, res, {
       success: true,
       user: profile,
-      roles: (roles || []).map((r) => r.role),
-      roleDetails: roles || [],
+      roles: roleData[userId]?.roles || mergeEffectiveRoles(platformRoles, vendorMemberships),
+      platformRoles,
+      vendorRoles,
+      roleDetails,
+      vendorMemberships,
     }, { cacheControl: CACHE.adminConfig });
   } catch (err) {
     console.error('getUserRoles error:', err);
