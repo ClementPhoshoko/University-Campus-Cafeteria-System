@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
@@ -31,8 +31,20 @@ export function VendorOptionGroupEditor({ vendorId, token, group, onClose, onSav
   } : makeEmptyGroup());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const optionListRef = useRef(null);
+  const previousOptionCount = useRef(form.options.length);
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const updateOption = (index, key, value) => setForm((current) => ({ ...current, options: current.options.map((option, optionIndex) => optionIndex === index ? { ...option, [key]: value } : option) }));
+  const addChoice = () => update('options', [...form.options, { name: '', price_delta: 0, max_quantity: 1 }]);
+
+  useEffect(() => {
+    if (form.options.length > previousOptionCount.current) {
+      const rows = optionListRef.current?.querySelectorAll('.vendor-config-option-row');
+      const behavior = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+      rows?.[rows.length - 1]?.scrollIntoView({ block: 'nearest', behavior });
+    }
+    previousOptionCount.current = form.options.length;
+  }, [form.options.length]);
 
   async function submit(event) {
     event.preventDefault();
@@ -74,13 +86,19 @@ export function VendorOptionGroupEditor({ vendorId, token, group, onClose, onSav
           <label className="vendor-config-field"><FieldLabel htmlFor="option-group-max">Maximum choices</FieldLabel><input id="option-group-max" className="admin-input" type="number" min="1" max={form.options.length} value={form.selection_type === 'single' ? 1 : form.max_select} disabled={busy || form.selection_type === 'single'} onChange={(event) => update('max_select', Number(event.target.value))} /></label>
         </div>
         <label className="vendor-config-required"><input type="checkbox" checked={form.is_required} disabled={busy} onChange={(event) => update('is_required', event.target.checked)} /><span>Customer must make a selection</span></label>
-        <div className="vendor-config-options-heading"><div><h4>Choices</h4><p>Set any additional price for each choice.</p></div><button type="button" className="vendor-config-add-option" disabled={busy || form.options.length >= 50} onClick={() => update('options', [...form.options, { name: '', price_delta: 0, max_quantity: 1 }])}><IconPlus size={16} />Add choice</button></div>
-        <div className="vendor-config-option-list">
+        <div className="vendor-config-options-heading"><div><h4>Choices</h4><p>Set any additional price for each choice.</p></div><button type="button" className="vendor-config-add-option" disabled={busy || form.options.length >= 50} onClick={addChoice}><IconPlus size={16} />Add choice</button></div>
+        <div className="vendor-config-option-list" ref={optionListRef}>
+          <div className="vendor-config-option-head">
+            <span>Choice</span>
+            <span>Price change</span>
+            <span>Max qty</span>
+            <span />
+          </div>
           {form.options.map((option, index) => <div className="vendor-config-option-row" key={option.id || `new-${index}`}>
-            <label className="vendor-config-field"><FieldLabel htmlFor={`option-name-${index}`}>Choice</FieldLabel><input id={`option-name-${index}`} className="admin-input" maxLength={100} value={option.name} disabled={busy} onChange={(event) => updateOption(index, 'name', event.target.value)} /></label>
-            <label className="vendor-config-field"><FieldLabel htmlFor={`option-price-${index}`}>Price change</FieldLabel><input id={`option-price-${index}`} className="admin-input" type="number" min="0" step="0.01" value={option.price_delta} disabled={busy} onChange={(event) => updateOption(index, 'price_delta', event.target.value)} /></label>
-            <label className="vendor-config-field"><FieldLabel htmlFor={`option-quantity-${index}`}>Max qty</FieldLabel><input id={`option-quantity-${index}`} className="admin-input" type="number" min="1" max="99" value={option.max_quantity} disabled={busy} onChange={(event) => updateOption(index, 'max_quantity', event.target.value)} /></label>
-            <button type="button" className="vendor-config-remove-option" aria-label={`Remove ${option.name || 'choice'}`} disabled={busy || form.options.length <= 1} onClick={() => update('options', form.options.filter((_, choiceIndex) => choiceIndex !== index))}><IconTrash size={17} /></button>
+            <input id={`option-name-${index}`} className="admin-input" aria-label={`Choice ${index + 1} name`} maxLength={100} value={option.name} disabled={busy} onChange={(event) => updateOption(index, 'name', event.target.value)} />
+            <input id={`option-price-${index}`} className="admin-input" aria-label={`Choice ${index + 1} price change`} type="number" min="0" step="0.01" value={option.price_delta} disabled={busy} onChange={(event) => updateOption(index, 'price_delta', event.target.value)} />
+            <input id={`option-quantity-${index}`} className="admin-input" aria-label={`Choice ${index + 1} maximum quantity`} type="number" min="1" max="99" value={option.max_quantity} disabled={busy} onChange={(event) => updateOption(index, 'max_quantity', event.target.value)} />
+            <button type="button" className="vendor-config-remove-option" aria-label={`Remove ${option.name || 'choice'}`} disabled={busy || form.options.length <= 1} onClick={() => update('options', form.options.filter((_, choiceIndex) => choiceIndex !== index))}><IconTrash size={16} /></button>
           </div>)}
         </div>
       </div>

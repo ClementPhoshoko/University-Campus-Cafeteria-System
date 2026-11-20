@@ -431,11 +431,11 @@ export default function VendorReportsPage({ vendorId, vendorName, token, onBack 
             </div>
             {data.orders.map((order) => (
               <div className="vendor-reports-page__table-row" key={order.id} role="row">
-                <span role="cell"><strong>{order.orderReference}</strong><small>{order.locationLabel}</small></span>
+                <span role="cell"><strong>{order.orderReference}</strong><small title={order.locationLabel}>{order.locationLabel}</small></span>
                 <span role="cell">{order.customer}</span>
                 <span role="cell">{formatDateTime(order.createdAt, timezone)}</span>
                 <span role="cell">
-                  <span className={`vendor-reports-page__badge is-${statusTone(order.status)}`}>{formatStatus(order.status)}</span>
+                  <span className={`vendor-reports-page__badge is-${statusTone(order.status)}`} title={formatStatus(order.status)}>{formatStatus(order.status)}</span>
                 </span>
                 <span role="cell"><strong>{money(order.total)}</strong><small>{order.currency}</small></span>
               </div>
