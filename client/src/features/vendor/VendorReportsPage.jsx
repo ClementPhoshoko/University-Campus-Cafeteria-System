@@ -14,6 +14,7 @@ import PrimaryButton from '../../components/PrimaryButton.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import { exportVendorReportCsv, getVendorReport } from '../../services/vendorApi.js';
+import { buildStatusSegments, formatStatusPercentage } from './vendorReportsDonut.js';
 import './vendor-reports.css';
 
 const PAGE_SIZE = 5;
@@ -94,6 +95,7 @@ export default function VendorReportsPage({ vendorId, vendorName, token, onBack 
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [hoveredStatus, setHoveredStatus] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
 
   const reportParams = useCallback(() => ({
@@ -183,6 +185,8 @@ export default function VendorReportsPage({ vendorId, vendorName, token, onBack 
   const maxRevenue = Math.max(1, ...report.revenueTrend.map((row) => row.revenue));
   const maxItems = Math.max(1, ...report.topItems.map((row) => row.revenue));
   const maxHours = Math.max(1, ...report.peakHours.map((row) => row.orders));
+  const statusDonut = buildStatusSegments(report.statusBreakdown);
+  const hoveredSegment = statusDonut.segments.find((segment) => segment.status === hoveredStatus) || null;
   const locationOptions = locations.map((location) => ({ id: location.id, name: location.label, available: true }));
   const selectedOption = locationOptions.find((option) => option.id === selectedLocationId) || null;
 
@@ -292,21 +296,72 @@ export default function VendorReportsPage({ vendorId, vendorName, token, onBack 
           )}
         </section>
 
-        <section className="vendor-reports-page__card" aria-labelledby="vendor-reports-status-title">
+        <section className="vendor-reports-page__card vendor-reports-page__card--status" aria-labelledby="vendor-reports-status-title">
           <header className="vendor-reports-page__card-heading">
             <div>
               <h3 id="vendor-reports-status-title">Order status</h3>
               <p>Current lifecycle state of every order in the period.</p>
             </div>
           </header>
-          {!report.statusBreakdown.length ? <p className="vendor-reports-page__empty">No orders to summarise.</p> : (
-            <div className="vendor-reports-page__list">
-              {report.statusBreakdown.map((row) => (
-                <div key={row.status}>
-                  <span className={`vendor-reports-page__badge is-${statusTone(row.status)}`}>{formatStatus(row.status)}</span>
-                  <strong>{number.format(row.count)}</strong>
+          {!statusDonut.segments.length ? <p className="vendor-reports-page__empty">No orders to summarise.</p> : (
+            <div className="vendor-reports-page__donut-layout">
+              <div className="vendor-reports-page__donut-wrap">
+                <svg
+                  className="vendor-reports-page__donut"
+                  viewBox="0 0 120 120"
+                  role="img"
+                  aria-label={`Order status distribution for ${number.format(statusDonut.total)} orders`}
+                >
+                  {statusDonut.segments.map((segment) => (
+                    <circle
+                      key={segment.status}
+                      className={`vendor-reports-page__donut-segment is-${statusTone(segment.status)}${hoveredStatus === segment.status ? ' is-hovered' : ''}`}
+                      cx="60"
+                      cy="60"
+                      r="46"
+                      fill="none"
+                      strokeWidth="16"
+                      strokeDasharray={segment.strokeDasharray}
+                      strokeDashoffset={segment.strokeDashoffset}
+                      transform="rotate(-90 60 60)"
+                      tabIndex={0}
+                      aria-label={`${formatStatus(segment.status)}: ${number.format(segment.count)} orders, ${formatStatusPercentage(segment.percentage)}`}
+                      onMouseEnter={() => setHoveredStatus(segment.status)}
+                      onMouseLeave={() => setHoveredStatus('')}
+                      onFocus={() => setHoveredStatus(segment.status)}
+                      onBlur={() => setHoveredStatus('')}
+                    >
+                      <title>{`${formatStatus(segment.status)}: ${number.format(segment.count)} orders (${formatStatusPercentage(segment.percentage)})`}</title>
+                    </circle>
+                  ))}
+                </svg>
+                <div className="vendor-reports-page__donut-center" aria-hidden="true">
+                  <strong>{number.format(statusDonut.total)}</strong>
+                  <span>orders</span>
                 </div>
-              ))}
+                {hoveredSegment && (
+                  <div className="vendor-reports-page__donut-tooltip" role="tooltip">
+                    <span>{formatStatus(hoveredSegment.status)}</span>
+                    <strong>{number.format(hoveredSegment.count)} orders</strong>
+                  </div>
+                )}
+              </div>
+
+              <div className="vendor-reports-page__status-legend" aria-label="Order status legend">
+                {statusDonut.segments.map((segment) => (
+                  <div
+                    className={`vendor-reports-page__legend-row${hoveredStatus === segment.status ? ' is-hovered' : ''}`}
+                    key={segment.status}
+                    onMouseEnter={() => setHoveredStatus(segment.status)}
+                    onMouseLeave={() => setHoveredStatus('')}
+                  >
+                    <span className={`vendor-reports-page__legend-dot is-${statusTone(segment.status)}`} aria-hidden="true" />
+                    <span className="vendor-reports-page__legend-name">{formatStatus(segment.status)}</span>
+                    <strong>{number.format(segment.count)}</strong>
+                    <small>{formatStatusPercentage(segment.percentage)}</small>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </section>
