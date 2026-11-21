@@ -256,7 +256,8 @@ Clean the duplicated override block in `profile.css` and remove stale selectors 
 ### Access
 
 - Load `GET /profile/access`.
-- Show effective platform and vendor roles as read-only badges with short explanations.
+- Show effective roles as read-only cards with an icon, short description, and dynamic active state.
+- Keep vendor memberships in a separate section with full-width cards that lead with the resolved vendor name.
 - Never render role-edit controls or write role APIs from the profile.
 
 ### Security
@@ -318,7 +319,7 @@ Evidence: nested `/profile/*` routes and `/profile` → `/profile/overview` redi
 
 **Status: complete — verified 2026-11-21.**
 
-Evidence: `ProfileLayout.jsx` passes the confirmed `updateProfile` result to pages and shows shared-shimmer overview and access skeletons during initial loads; `profileForms.js` builds only allowlisted patches; `ProfileOverviewPage.jsx` edits full name inline with edit/save/cancel controls beside its label, highlights only the active input, keeps other details visible, and saves the shared `CustomDropdown` location pickers through `PATCH /profile` with the site/building draft keys mapped explicitly into the allowlisted patch; the shared dropdown flips above the trigger when space is limited and uses the project's themed scrollbar; `ProfilePreferencesPage.jsx` normalizes arrays and uses an explicit dirty/save/cancel flow for allowed notification keys; `ProfileFavouritesPage.jsx` reads paginated lists and removes through toggle APIs; `ProfileAccessPage.jsx` reads only `GET /profile/access`, presents effective roles, source roles, and named active vendor memberships, and avoids invented capability copy or raw vendor IDs; `effectiveRoles.js` normalizes vendor names into the canonical access payload; `ProfileSecurityPage.jsx` uses the existing OTP recovery route and current-device sign-out. Focused profile tests passed 35/35, the full client suite passed 64/64, and the production build passed.
+Evidence: `ProfileLayout.jsx` passes the confirmed `updateProfile` result to pages and shows shared-shimmer overview and access skeletons during initial loads; `profileForms.js` builds only allowlisted patches; `ProfileOverviewPage.jsx` edits full name inline with edit/save/cancel controls beside its label, highlights only the active input, keeps other details visible, and saves the shared `CustomDropdown` location pickers through `PATCH /profile` with the site/building draft keys mapped explicitly into the allowlisted patch; the shared dropdown flips above the trigger when space is limited and uses the project's themed scrollbar; `ProfilePreferencesPage.jsx` normalizes arrays and uses an explicit dirty/save/cancel flow for allowed notification keys; `ProfileFavouritesPage.jsx` reads paginated lists and removes through toggle APIs; `ProfileAccessPage.jsx` reads only `GET /profile/access` and renders data-driven platform-role cards plus a separate vendor-membership list using the shared `AccessSectionHeader`, `AccessRoleCard`, `AccessActiveStatus`, `VendorMembershipCard`, and `AccessEmptyState` components; vendor names come from the canonical payload and raw IDs are only a fallback; `effectiveRoles.js` normalizes vendor names into that payload; `ProfileSecurityPage.jsx` uses the existing OTP recovery route and current-device sign-out. Focused profile tests passed 35/35, the full client suite passed 69/69, and the production build passed.
 
 - [x] Wire overview save flow through `PATCH /profile`.
 - [x] Wire location selectors to paginated site/building endpoints.
@@ -335,7 +336,7 @@ Evidence: `ProfileLayout.jsx` passes the confirmed `updateProfile` result to pag
 The project owner elected to perform the live checks directly. Keep this phase open until those results are recorded here.
 
 - [x] Apply migration 032 before deploying profile API code. Migration 032 has already been applied in the target Supabase project.
-- [x] Run server tests (**145/145**), client build (**passed**, pre-existing chunk-size warning), client tests (**64/64**), OpenAPI parse (**93 paths**), and `git diff --check` (**clean**).
+- [x] Run server tests (**145/145**), client build (**passed**, pre-existing chunk-size warning), client tests (**69/69**), OpenAPI parse (**93 paths**), and `git diff --check` (**clean**).
 - [ ] Verify self-update ownership, blocked protected fields, site/building mismatch rejection, preference validation, and audit sanitization in the target environment.
 - [ ] Verify favourite pagination stability, removal, inactive-item handling, and cache invalidation.
 - [ ] Verify deep links, keyboard navigation, responsive layout, and sensitive-data display.

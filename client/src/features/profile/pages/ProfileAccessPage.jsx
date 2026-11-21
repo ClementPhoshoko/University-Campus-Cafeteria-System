@@ -1,74 +1,124 @@
 import { useCallback } from 'react';
+import {
+  IconBriefcase,
+  IconBuildingStore,
+  IconCalendarEvent,
+  IconCash,
+  IconCoins,
+  IconCrown,
+  IconFileSearch,
+  IconHeadset,
+  IconSchool,
+  IconShield,
+  IconUser,
+  IconUsers,
+} from '@tabler/icons-react';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { useFetch } from '../../../hooks/useFetch.js';
 import { getProfileAccess } from '../../../services/profileApi.js';
 import ProfileAccessSkeleton from '../ProfileAccessSkeleton.jsx';
+import AccessSectionHeader from '../components/AccessSectionHeader.jsx';
+import AccessRoleCard from '../components/AccessRoleCard.jsx';
+import AccessEmptyState from '../components/AccessEmptyState.jsx';
+import VendorMembershipCard from '../components/VendorMembershipCard.jsx';
 
-const ROLE_LABELS = {
-  employee: 'Employee',
-  executive: 'Executive',
-  executive_assistant: 'Executive Assistant',
-  meeting_organiser: 'Meeting Organiser',
-  training_coordinator: 'Training Coordinator',
-  cost_centre_owner: 'Cost Centre Owner',
-  vendor_staff: 'Vendor Staff',
-  vendor_manager: 'Vendor Manager',
-  admin: 'Administrator',
-  finance: 'Finance',
-  support: 'Technical Support',
-  auditor: 'System Auditor',
+const ROLE_PRESENTATION = {
+  employee: {
+    label: 'Employee',
+    description: 'Place personal orders and manage your own food preferences.',
+    Icon: IconUser,
+    tone: 'blue',
+  },
+  executive: {
+    label: 'Executive',
+    description: 'Executive ordering and corporate catering access.',
+    Icon: IconBriefcase,
+    tone: 'blue',
+  },
+  executive_assistant: {
+    label: 'Executive Assistant',
+    description: 'Coordinate orders and catering on behalf of executives.',
+    Icon: IconUsers,
+    tone: 'blue',
+  },
+  meeting_organiser: {
+    label: 'Meeting Organiser',
+    description: 'Arrange food and delivery details for workplace meetings.',
+    Icon: IconCalendarEvent,
+    tone: 'blue',
+  },
+  training_coordinator: {
+    label: 'Training Coordinator',
+    description: 'Organise catering for training sessions and programmes.',
+    Icon: IconSchool,
+    tone: 'blue',
+  },
+  cost_centre_owner: {
+    label: 'Cost Centre Owner',
+    description: 'Review orders charged to your cost centres.',
+    Icon: IconCoins,
+    tone: 'blue',
+  },
+  vendor_staff: {
+    label: 'Vendor Staff',
+    description: 'Manage assigned vendor orders and menu updates.',
+    Icon: IconBuildingStore,
+    tone: 'purple',
+  },
+  vendor_manager: {
+    label: 'Vendor Manager',
+    description: 'Manage vendor operations, menus, and staff access.',
+    Icon: IconBuildingStore,
+    tone: 'purple',
+  },
+  admin: {
+    label: 'Administrator',
+    description: 'Manage platform users, configuration, and operational access.',
+    Icon: IconShield,
+    tone: 'blue',
+  },
+  finance: {
+    label: 'Finance',
+    description: 'Review financial activity, fees, and reconciliation.',
+    Icon: IconCash,
+    tone: 'blue',
+  },
+  support: {
+    label: 'Technical Support',
+    description: 'Assist users with ordering and account issues.',
+    Icon: IconHeadset,
+    tone: 'blue',
+  },
+  auditor: {
+    label: 'System Auditor',
+    description: 'Review operational activity and audit records.',
+    Icon: IconFileSearch,
+    tone: 'blue',
+  },
 };
 
 function roleLabel(role) {
-  if (!role) return '';
-  return ROLE_LABELS[role] || String(role)
+  return String(role || '')
     .split('_')
+    .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 }
 
+function presentationForRole(role) {
+  const config = ROLE_PRESENTATION[role] || {};
+  return {
+    title: config.label || roleLabel(role),
+    description: config.description || 'Platform access role.',
+    Icon: config.Icon || IconShield,
+    tone: config.tone || 'blue',
+  };
+}
+
 function membershipRoleLabel(role) {
-  if (role === 'manager') return roleLabel('vendor_manager');
-  if (role === 'staff') return roleLabel('vendor_staff');
+  if (role === 'manager') return ROLE_PRESENTATION.vendor_manager.label;
+  if (role === 'staff') return ROLE_PRESENTATION.vendor_staff.label;
   return roleLabel(role);
-}
-
-function RoleBadges({ roles, emptyLabel }) {
-  if (!roles?.length) return <p className="profile_empty">{emptyLabel}</p>;
-  return (
-    <div className="profile-access-badge-list">
-      {roles.map((role) => (
-        <span key={role} className="profile-access-badge">{roleLabel(role)}</span>
-      ))}
-    </div>
-  );
-}
-
-function VendorAccessList({ memberships }) {
-  if (!memberships?.length) return <p className="profile_empty">No active vendor access.</p>;
-  return (
-    <div className="profile-access-member-list">
-      {memberships.map((membership) => (
-        <div
-          key={`${membership.vendor_id}-${membership.role}`}
-          className="profile-access-member-row"
-        >
-          <div className="profile-access-member-main">
-            <span className="profile-access-member-name">
-              {membership.vendorName || 'Vendor'}
-            </span>
-            <span className="profile-access-member-meta">
-              {membershipRoleLabel(membership.role)}
-            </span>
-          </div>
-          <span className="profile-access-status">
-            <span className="profile-access-status-dot" />
-            Active
-          </span>
-        </div>
-      ))}
-    </div>
-  );
 }
 
 export default function ProfileAccessPage() {
@@ -84,64 +134,82 @@ export default function ProfileAccessPage() {
 
   if (state === 'error') {
     return (
-      <section className="profile_section">
-        <div className="profile_card" role="alert">
-          <p className="profile_empty">{error?.message || 'We could not load your access details.'}</p>
-          <button type="button" className="profile_link-button" onClick={refetch}>Try again</button>
-        </div>
-      </section>
+      <div className="access-error-state" role="alert">
+        <p>{error?.message || 'We could not load your access details.'}</p>
+        <button type="button" className="profile_link-button" onClick={refetch}>Try again</button>
+      </div>
     );
   }
 
+  const roles = data?.roles || [];
+  const vendorRoles = data?.vendorRoles || [];
   const memberships = data?.vendorMemberships || [];
-  const vendorCount = new Set(memberships.map((membership) => membership.vendor_id).filter(Boolean)).size;
 
   return (
-    <section className="profile_section">
-      <header className="profile-access-header">
-        <p className="profile_eyebrow">Account access</p>
-        <h2 className="profile-access-title">Role &amp; access</h2>
-        <p className="profile-access-subtitle">
-          Roles are managed by your organisation. Contact an administrator to change access.
-        </p>
-      </header>
-
-      <section className="profile_card">
-        <div className="profile_card-header">
-          <h3 className="profile_card-title">Access summary</h3>
-        </div>
-        <RoleBadges roles={data?.roles} emptyLabel="No roles assigned." />
-        <dl className="profile-access-summary">
-          <div className="profile-access-stat">
-            <dt>Platform roles</dt>
-            <dd>{data?.platformRoles?.length || 0}</dd>
+    <div className="profile-access-page">
+      <section className="profile-access-section" aria-labelledby="platform-roles-heading">
+        <AccessSectionHeader
+          icon={IconShield}
+          tone="blue"
+          headingId="platform-roles-heading"
+          title="Platform roles"
+          description="These roles define what you can do on the platform."
+        />
+        {roles.length ? (
+          <div className="access-role-grid">
+            {roles.map((role) => {
+              const presentation = presentationForRole(role);
+              const isVendorRole = vendorRoles.includes(role);
+              return (
+                <AccessRoleCard
+                  key={role}
+                  title={presentation.title}
+                  description={presentation.description}
+                  icon={presentation.Icon}
+                  tone={isVendorRole ? 'purple' : presentation.tone}
+                  source={isVendorRole ? 'Vendor role' : 'Platform role'}
+                  active={roles.includes(role)}
+                />
+              );
+            })}
           </div>
-          <div className="profile-access-stat">
-            <dt>Vendor roles</dt>
-            <dd>{data?.vendorRoles?.length || 0}</dd>
-          </div>
-          <div className="profile-access-stat">
-            <dt>Active vendors</dt>
-            <dd>{vendorCount}</dd>
-          </div>
-        </dl>
+        ) : (
+          <AccessEmptyState
+            icon={IconShield}
+            title="No roles assigned"
+            description="Your assigned roles will appear here."
+          />
+        )}
       </section>
 
-      <div className="profile-access-grid">
-        <section className="profile_card">
-          <div className="profile_card-header">
-            <h3 className="profile_card-title">Platform roles</h3>
+      <section className="profile-access-section" aria-labelledby="vendor-memberships-heading">
+        <AccessSectionHeader
+          icon={IconCrown}
+          tone="purple"
+          headingId="vendor-memberships-heading"
+          title="Vendor memberships"
+          description="Your current vendor membership details."
+        />
+        {memberships.length ? (
+          <div className="access-membership-list">
+            {memberships.map((membership) => (
+              <VendorMembershipCard
+                key={`${membership.vendor_id}-${membership.role}`}
+                membership={{
+                  ...membership,
+                  roleLabel: membershipRoleLabel(membership.role),
+                }}
+              />
+            ))}
           </div>
-          <RoleBadges roles={data?.platformRoles} emptyLabel="No platform roles assigned." />
-        </section>
-
-        <section className="profile_card">
-          <div className="profile_card-header">
-            <h3 className="profile_card-title">Vendor access</h3>
-          </div>
-          <VendorAccessList memberships={memberships} />
-        </section>
-      </div>
-    </section>
+        ) : (
+          <AccessEmptyState
+            icon={IconCrown}
+            title="No vendor memberships"
+            description="Your vendor associations will appear here."
+          />
+        )}
+      </section>
+    </div>
   );
 }

@@ -19,12 +19,16 @@ test('access skeleton reuses the shared Skeleton and shimmer', () => {
   assert.doesNotMatch(skeleton, /profile_loading-bar/);
 });
 
-test('access skeleton mirrors the summary and source cards', () => {
-  assert.match(skeleton, /profile-access-header/);
-  assert.match(skeleton, /profile-access-summary/);
-  assert.match(skeleton, /profile-access-grid/);
-  assert.match(skeleton, /profile-skeleton-badge/);
-  assert.match(skeleton, /profile-skeleton-status/);
+test('access skeleton mirrors the role cards and membership cards', () => {
+  assert.match(skeleton, /profile-access-section/);
+  assert.match(skeleton, /access-section-heading/);
+  assert.match(skeleton, /access-role-grid/);
+  assert.match(skeleton, /access-role-card/);
+  assert.match(skeleton, /access-membership-list/);
+  assert.match(skeleton, /access-membership-card/);
+  assert.match(skeleton, /profile-skeleton-section-icon/);
+  assert.match(skeleton, /profile-skeleton-round-icon/);
+  assert.doesNotMatch(skeleton, /profile-access-summary/);
 });
 
 test('access page shows the skeleton while the canonical request is loading', () => {
@@ -36,7 +40,7 @@ test('access page shows the skeleton while the canonical request is loading', ()
 
 test('access skeleton styles use project tokens', () => {
   assert.match(css, /\.profile-access-skeleton/);
-  assert.match(css, /\.profile-skeleton-badge/);
-  assert.match(css, /\.profile-skeleton-status/);
+  assert.match(css, /\.profile-skeleton-section-icon/);
+  assert.match(css, /\.profile-skeleton-round-icon/);
   assert.match(css, /var\(--radius-full\)/);
 });

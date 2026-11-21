@@ -412,151 +412,271 @@
 
 /* ── Role & access ── */
 
-.profile-access-header {
+.profile-access-page {
+  --access-surface: var(--color-bg-secondary);
+  --access-border: var(--color-border-default);
+  --access-blue-bg: var(--color-surface-subtle);
+  --access-blue-ink: var(--color-action-link);
+  --access-purple-bg: rgba(139, 92, 246, 0.14);
+  --access-purple-ink: #7c3aed;
+
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding-bottom: var(--space-6);
-  border-bottom: 1px solid var(--color-border-subtle);
+  gap: var(--space-10);
 }
 
-.profile-access-title {
+[data-theme='dark'] .profile-access-page {
+  --access-purple-ink: #c4b5fd;
+}
+
+.profile-access-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.access-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.access-section-heading__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: var(--radius-md);
+}
+
+.access-section-heading__icon--blue {
+  background: var(--access-blue-bg);
+  color: var(--access-blue-ink);
+}
+
+.access-section-heading__icon--purple {
+  background: var(--access-purple-bg);
+  color: var(--access-purple-ink);
+}
+
+.access-section-heading__copy {
+  min-width: 0;
+}
+
+.access-section-heading__title {
   margin: 0;
   color: var(--color-text-primary);
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-size: 1rem;
   font-weight: var(--font-weight-semibold);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.01em;
 }
 
-.profile-access-subtitle {
-  margin: 0;
-  max-width: 620px;
+.access-section-heading__description {
+  margin: 4px 0 0;
   color: var(--color-text-secondary);
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   line-height: 1.5;
 }
 
-.profile-access-badge-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.profile-access-badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 4px var(--space-3);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-full);
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
-  font-size: 0.78rem;
-  font-weight: var(--font-weight-semibold);
-}
-
-.profile-access-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0 var(--space-6);
-  margin: var(--space-5) 0 0;
-}
-
-.profile-access-stat {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-3) 0;
-  border-top: 1px solid var(--color-border-subtle);
-}
-
-.profile-access-stat dt {
-  color: var(--color-text-tertiary);
-  font-size: 0.72rem;
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.profile-access-stat dd {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: 1.3rem;
-  font-weight: var(--font-weight-semibold);
-  line-height: 1;
-}
-
-.profile-access-grid {
+.access-role-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-8);
+  gap: var(--space-4);
 }
 
-.profile-access-member-list {
+.access-role-card {
   display: flex;
   flex-direction: column;
+  min-height: 174px;
+  padding: var(--space-5);
+  border: 1px solid var(--access-border);
+  border-radius: var(--radius-lg);
+  background: var(--access-surface);
 }
 
-.profile-access-member-row {
+.access-role-card__top {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.access-icon-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: var(--radius-full);
+}
+
+.access-icon-badge--blue {
+  background: var(--access-blue-bg);
+  color: var(--access-blue-ink);
+}
+
+.access-icon-badge--purple {
+  background: var(--access-purple-bg);
+  color: var(--access-purple-ink);
+}
+
+.access-active-status {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+  color: var(--success-700);
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.access-active-status__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--success-500);
+  box-shadow: 0 0 0 3px rgba(34, 165, 89, 0.12);
+}
+
+.access-role-card__body {
+  margin-top: var(--space-4);
+}
+
+.access-role-card__title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 0.94rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.access-role-card__description {
+  margin: 6px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.access-role-card__source {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  color: var(--color-text-tertiary);
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.access-membership-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.access-membership-card {
+  display: flex;
+  align-items: center;
   gap: var(--space-4);
-  min-width: 0;
-  padding: var(--space-4) 0;
-  border-bottom: 1px solid var(--color-border-subtle);
+  width: 100%;
+  min-height: 84px;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--access-border);
+  border-radius: var(--radius-lg);
+  background: var(--access-surface);
 }
 
-.profile-access-member-row:last-child {
-  border-bottom: 0;
-}
-
-.profile-access-member-main {
+.access-membership-card__body {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  flex: 1;
   min-width: 0;
 }
 
-.profile-access-member-name {
+.access-membership-card__role {
+  color: var(--access-purple-ink);
+  font-size: 0.7rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.access-membership-card__vendor {
   overflow: hidden;
   color: var(--color-text-primary);
-  font-size: 0.9rem;
+  font-size: 0.94rem;
   font-weight: var(--font-weight-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.profile-access-member-meta {
-  color: var(--color-text-secondary);
-  font-size: 0.78rem;
+.access-membership-card__id {
+  color: var(--color-text-tertiary);
+  font-size: 0.72rem;
 }
 
-.profile-access-status {
-  display: inline-flex;
+.access-empty-state {
+  display: flex;
   align-items: center;
-  flex-shrink: 0;
-  gap: var(--space-2);
-  color: var(--success-700);
-  font-size: 0.76rem;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--access-border);
+  border-radius: var(--radius-lg);
+  background: var(--access-surface);
+}
+
+.access-empty-state__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
+}
+
+.access-empty-state__title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 0.88rem;
   font-weight: var(--font-weight-semibold);
 }
 
-.profile-access-status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: var(--radius-full);
-  background: var(--success-500);
+.access-empty-state__description {
+  margin: 4px 0 0;
+  color: var(--color-text-tertiary);
+  font-size: 0.78rem;
+}
+
+.access-error-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--access-border);
+  border-radius: var(--radius-lg);
+  background: var(--access-surface);
+}
+
+.access-error-state p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.84rem;
 }
 
 @media (max-width: 767px) {
-  .profile-access-grid,
-  .profile-access-summary {
+  .profile-access-page {
+    gap: var(--space-8);
+  }
+
+  .access-role-grid {
     grid-template-columns: 1fr;
   }
 
-  .profile-access-summary {
-    gap: 0;
+  .access-role-card {
+    min-height: 0;
   }
 }
 
