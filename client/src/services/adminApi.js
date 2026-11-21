@@ -1,4 +1,5 @@
 import { invalidateEmployeeCatalogCache } from './cache.js';
+import { attachAbortListener } from './abortSignal.js';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
@@ -91,10 +92,11 @@ export async function adminRequest(path, {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   const abortFromCaller = () => controller.abort();
+  let detachAbortListener = () => {};
 
   if (signal) {
     if (signal.aborted) controller.abort();
-    signal.addEventListener('abort', abortFromCaller, { once: true });
+    detachAbortListener = attachAbortListener(signal, abortFromCaller);
   }
 
   try {
@@ -150,7 +152,7 @@ export async function adminRequest(path, {
     });
   } finally {
     window.clearTimeout(timeout);
-    if (signal) signal.removeEventListener('abort', abortFromCaller);
+    detachAbortListener();
   }
 }
 

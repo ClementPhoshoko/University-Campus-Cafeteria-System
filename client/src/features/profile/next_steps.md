@@ -332,6 +332,8 @@ Evidence: `ProfileLayout.jsx` passes the confirmed `updateProfile` result to pag
 - [x] Wire security actions to existing recovery and sign-out flows.
 - [x] Clean duplicated and unused profile CSS.
 
+`services/abortSignal.js` bridges caller signals into API requests with an `onabort` fallback, so embedded browsers without `AbortSignal.addEventListener` do not break favourites or other API reads.
+
 ### Phase 5 — Verification and rollout
 
 **Status: static verification complete; live target-environment checks pending.**
@@ -340,7 +342,7 @@ The project owner elected to perform the live checks directly. Keep this phase o
 
 - [x] Apply migration 032 before deploying profile API code. Migration 032 has already been applied in the target Supabase project.
 - [ ] Apply migration 033 before live retesting favourites. It creates `favorite_vendors`, `favorite_menu_items`, their grants, and ownership RLS policies for projects provisioned from numbered migrations.
-- [x] Run latest static checks: server tests (**150/150**), client build (**passed**, pre-existing chunk-size warning), client tests (**75/75**), OpenAPI parse (**94 paths**), and `git diff --check` (**clean**).
+- [x] Run latest static checks: server tests (**150/150**), client build (**passed**, pre-existing chunk-size warning), client tests (**79/79**), OpenAPI parse (**94 paths**), and `git diff --check` (**clean**).
 - [ ] Verify self-update ownership, blocked protected fields, site/building mismatch rejection, preference validation, and audit sanitization in the target environment.
 - [ ] Verify favourite pagination stability, removal, inactive-item handling, cache invalidation, card-star state, and the save animation in the target environment.
 - [ ] Verify deep links, keyboard navigation, responsive layout, and sensitive-data display.

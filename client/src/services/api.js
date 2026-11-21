@@ -1,3 +1,5 @@
+import { attachAbortListener } from './abortSignal.js';
+
 const apiBaseUrl = import.meta.env?.VITE_API_BASE_URL || '/api/v1';
 
 export const DEFAULT_TIMEOUT_MS = 15000;
@@ -59,10 +61,11 @@ export async function apiRequest(path, {
     controller.abort();
   }, timeoutMs);
   const abortFromCaller = () => controller.abort();
+  let detachAbortListener = () => {};
 
   if (signal) {
     if (signal.aborted) controller.abort();
-    signal.addEventListener('abort', abortFromCaller, { once: true });
+    detachAbortListener = attachAbortListener(signal, abortFromCaller);
   }
 
   try {
@@ -96,7 +99,7 @@ export async function apiRequest(path, {
     throw err;
   } finally {
     clearTimeout(timeoutId);
-    if (signal) signal.removeEventListener('abort', abortFromCaller);
+    detachAbortListener();
   }
 }
 
