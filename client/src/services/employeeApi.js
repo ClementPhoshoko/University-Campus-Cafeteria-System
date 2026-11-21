@@ -1,37 +1,52 @@
 import { apiRequest } from './api.js';
 import { invalidateCachePattern } from './cache.js';
 
+export const IMAGE_REFRESH_SIZES = new Set(['icon', 'thumb', 'card', 'hero']);
+
+// ─── Images ─────────────────────────────────────────────────────────
+
+/** Re-sign one failed image instead of re-signing a whole feed. */
+export function refreshAssetImage({ url, size, token, signal } = {}) {
+  return apiRequest('/assets/refresh-image', {
+    method: 'POST',
+    body: { url, size },
+    token,
+    signal,
+    cache: 'no-store',
+  });
+}
+
 // ─── Vendor Browsing ────────────────────────────────────────────────
 
 export function listVendors({ page, limit, site_id, search, token, signal, cache } = {}) {
   return apiRequest('/vendors', { query: { page, limit, site_id, search }, token, signal, cache });
 }
 
-export function getVendor(vendorId, { token, signal, cache, refreshImages = false } = {}) {
-  return apiRequest(`/vendors/${vendorId}`, { query: { refresh_images: refreshImages ? 'true' : undefined }, token, signal, cache });
+export function getVendor(vendorId, { token, signal, cache } = {}) {
+  return apiRequest(`/vendors/${vendorId}`, { token, signal, cache });
 }
 
 export function getVendorHours(vendorId, { token, signal } = {}) {
   return apiRequest(`/vendors/${vendorId}/hours`, { token, signal });
 }
 
-export function getPopularMenuItems({ token, signal, cache, refreshImages = false } = {}) {
-  return apiRequest('/popular-menu-items', { query: { refresh_images: refreshImages ? 'true' : undefined }, token, signal, cache });
+export function getPopularMenuItems({ token, signal, cache } = {}) {
+  return apiRequest('/popular-menu-items', { token, signal, cache });
 }
 
-export function listVendorCategoryCatalog({ token, signal, cache, refreshImages = false } = {}) {
-  return apiRequest('/vendor-categories', { query: { refresh_images: refreshImages ? 'true' : undefined }, token, signal, cache });
+export function listVendorCategoryCatalog({ token, signal, cache } = {}) {
+  return apiRequest('/vendor-categories', { token, signal, cache });
 }
 
 // ─── Menu ───────────────────────────────────────────────────────────
 
-export function listVendorMenu(vendorId, { token, signal, cache, refreshImages = false, locationId } = {}) {
-  return apiRequest(`/vendors/${vendorId}/menu`, { query: { location_id: locationId, refresh_images: refreshImages ? 'true' : undefined }, token, signal, cache });
+export function listVendorMenu(vendorId, { token, signal, cache, locationId } = {}) {
+  return apiRequest(`/vendors/${vendorId}/menu`, { query: { location_id: locationId }, token, signal, cache });
 }
 
-export function getMenuItem(vendorId, itemId, { token, signal, cache, refreshImages = false, locationId } = {}) {
+export function getMenuItem(vendorId, itemId, { token, signal, cache, locationId } = {}) {
   return apiRequest(`/vendors/${vendorId}/menu/${itemId}`, {
-    query: { location_id: locationId, refresh_images: refreshImages ? 'true' : undefined },
+    query: { location_id: locationId },
     token,
     signal,
     cache,
@@ -40,13 +55,8 @@ export function getMenuItem(vendorId, itemId, { token, signal, cache, refreshIma
 
 // ─── Cart ───────────────────────────────────────────────────────────
 
-export function getCart({ token, signal, refreshImages = false, cache = 'no-cache' } = {}) {
-  return apiRequest('/cart', {
-    query: { refresh_images: refreshImages ? 'true' : undefined },
-    token,
-    signal,
-    cache,
-  });
+export function getCart({ token, signal, cache = 'no-cache' } = {}) {
+  return apiRequest('/cart', { token, signal, cache });
 }
 
 export async function addToCart({ menuItemId, vendorLocationId, quantity, options, specialInstructions }, { token, signal } = {}) {

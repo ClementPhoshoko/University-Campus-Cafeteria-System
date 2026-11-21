@@ -15,20 +15,19 @@ export default function SmartImage({
   onError,
   ...rest
 }) {
-  const [failed, setFailed] = useState(false);
-  const [current, setCurrent] = useState(src || '');
+  const current = src || '';
+  const [failedSrc, setFailedSrc] = useState(null);
 
   const handleError = (event) => {
-    setFailed(true);
+    setFailedSrc(current);
     onError?.(event);
   };
 
   useEffect(() => {
-    setCurrent(src || '');
-    setFailed(false);
-  }, [src]);
+    setFailedSrc(null);
+  }, [current]);
 
-  if (!current || failed) {
+  if (!current || failedSrc === current) {
     return <img src={FALLBACK} alt={alt} className={className} width={width} height={height} loading="lazy" decoding="async" style={style} {...rest} />;
   }
 

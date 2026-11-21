@@ -329,6 +329,16 @@
   right: auto;
 }
 
+/* The detail back button is hidden on desktop, leaving this menu as the only
+   topbar item. Anchor it to the trigger's left edge so it opens inside the
+   clipped detail panel instead of being pushed out of its left side. */
+@media (min-width: 768px) {
+  .notification-detail__menu .notification-menu__dropdown {
+    left: 0;
+    right: auto;
+  }
+}
+
 /* ── Category icons ──────────────────────────────────────────────── */
 
 .notification-icon {

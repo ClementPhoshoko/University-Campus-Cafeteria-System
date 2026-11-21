@@ -1,9 +1,9 @@
 import crypto from 'node:crypto';
 import sharp from 'sharp';
 import { supabaseAdmin } from '../config/supabase.js';
-import { resolveAssetUrl } from '../utils/assetUrl.js';
+import { getStorageObjectPath, invalidateAssetUrl, resolveAssetUrl } from '../utils/assetUrl.js';
 import { writeAudit } from '../utils/audit.js';
-import { sendError, sendInternalError } from '../utils/errors.js';
+import { ApiError, sendError, sendInternalError } from '../utils/errors.js';
 import { respond } from '../utils/http.js';
 import { isUuid } from '../validators/vendorValidators.js';
 
@@ -83,6 +83,8 @@ export async function uploadAdminAsset(req, res) {
     // Remove the superseded object so replaced uploads don't orphan storage files.
     if (previousPath && previousPath !== path && previousPath.startsWith(`${storagePath}/`)) {
       await supabaseAdmin.storage.from(BUCKET).remove([previousPath]).catch(() => {});
+      // A signed URL for the deleted object must never survive in the cache.
+      invalidateAssetUrl(previousPath);
     }
 
     const signedUrl = await resolveAssetUrl(path, { size: 'hero' });
@@ -125,3 +127,47 @@ export async function uploadVendorMenuItemAsset(req, res) {
     return sendInternalError(res, error);
   }
 }
+
+const REFRESH_IMAGE_SIZES = new Set(['icon', 'thumb', 'card', 'hero']);
+
+/**
+ * Re-sign a single image. The handler is built through a factory so tests can
+ * inject a resolver; Express receives the plain `(req, res)` export below.
+ */
+export function createRefreshAssetImageHandler({ resolve = resolveAssetUrl } = {}) {
+  return async function refreshAssetImage(req, res) {
+    try {
+      const { url, size } = req.body || {};
+
+      if (!REFRESH_IMAGE_SIZES.has(size)) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'size must be one of icon, thumb, card, hero');
+      }
+      if (typeof url !== 'string' || !url.trim()) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'url must be a non-empty string');
+      }
+
+      const input = url.trim();
+      let objectPath;
+      try {
+        objectPath = getStorageObjectPath(input);
+      } catch (error) {
+        throw new ApiError(400, 'VALIDATION_ERROR', error?.message || 'url is not a valid storage object path');
+      }
+      if (!objectPath || objectPath === input) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'url must be a vendor-assets storage path or signed URL');
+      }
+
+      // One asset, one requested size. `refresh` bypasses the cached URL but
+      // still shares an in-flight signing operation with concurrent callers.
+      const signedUrl = await resolve(input, size, { refresh: true });
+      return respond(req, res, { success: true, url: signedUrl });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return sendError(res, error.status, error.code, error.message, error.details);
+      }
+      return sendInternalError(res, error);
+    }
+  };
+}
+
+export const refreshAssetImage = createRefreshAssetImageHandler();

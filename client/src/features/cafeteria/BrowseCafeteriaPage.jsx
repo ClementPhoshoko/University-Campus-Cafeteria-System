@@ -13,6 +13,7 @@ import SmartImage from '../../components/ui/SmartImage.jsx';
 import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Error_Icon.webp';
 import { useAuth } from '../../hooks/useAuth.js';
 import { listVendorMenu, getVendor, addToCart } from '../../services/employeeApi.js';
+import { refreshImageOnce } from '../../services/imageRefresh.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import { useFetch } from '../../hooks/useFetch.js';
 import VendorLocationPicker, { VendorLocationPickerSkeleton } from './VendorLocationPicker.jsx';
@@ -243,7 +244,6 @@ export default function BrowseCafeteriaPage() {
   const [addedItems, setAddedItems] = useState([]);
   const [selectedRating, setSelectedRating] = useState(null);
   const [showAddReview, setShowAddReview] = useState(false);
-  const attemptedImageRefreshes = useRef(new Set());
 
   const isReviewsView = searchParams.get('view') === 'reviews';
   const requestedLocationId = searchParams.get('locationId');
@@ -345,34 +345,30 @@ export default function BrowseCafeteriaPage() {
   };
 
   const refreshVendorImage = async (failedImage) => {
-    const refreshKey = `vendor:${cafeteriaId}`;
-    if (!cafeteriaId || attemptedImageRefreshes.current.has(refreshKey)) return;
-    attemptedImageRefreshes.current.add(refreshKey);
+    if (!cafeteriaId || !failedImage) return;
 
     try {
-      const response = await getVendor(cafeteriaId, { token, cache: 'no-cache', refreshImages: true });
-      const image = response?.vendor?.logo_url;
-      if (!image || image === failedImage) {
+      const image = await refreshImageOnce({ url: failedImage, size: 'card', token });
+      if (!image) {
         console.error(`Unable to refresh cafeteria image for vendor ${cafeteriaId}: no new image URL was returned.`);
         return;
       }
-      vendorFeed.mutate((current) => current?.id === cafeteriaId ? { ...current, logo_url: image } : current);
+      vendorFeed.mutate((current) => (
+        current?.id === cafeteriaId && current.logo_url === failedImage
+          ? { ...current, logo_url: image }
+          : current
+      ));
     } catch (error) {
       console.error(`Unable to refresh cafeteria image for vendor ${cafeteriaId}:`, error);
     }
   };
 
   const refreshMenuItemImage = async (itemId, vendorId, failedImage) => {
-    const refreshKey = `menu:${vendorId}:${itemId}`;
-    if (!itemId || vendorId !== cafeteriaId || attemptedImageRefreshes.current.has(refreshKey)) return;
-    attemptedImageRefreshes.current.add(refreshKey);
+    if (!itemId || vendorId !== cafeteriaId || !failedImage) return;
 
     try {
-      const response = await listVendorMenu(vendorId, { token, cache: 'no-cache', refreshImages: true, locationId: selectedLocationId });
-      const freshItem = response?.categories
-        ?.flatMap((category) => category.items || [])
-        .find((item) => item.id === itemId);
-      if (!freshItem?.image_url || freshItem.image_url === failedImage) {
+      const image = await refreshImageOnce({ url: failedImage, size: 'thumb', token });
+      if (!image) {
         console.error(`Unable to refresh menu image for item ${itemId}: no new image URL was returned.`);
         return;
       }
@@ -383,7 +379,9 @@ export default function BrowseCafeteriaPage() {
           categories: current.categories.map((category) => ({
             ...category,
             items: category.items.map((item) => (
-              item.id === itemId ? { ...item, image_url: freshItem.image_url } : item
+              item.id === itemId && item.image_url === failedImage
+                ? { ...item, image_url: image }
+                : item
             )),
           })),
         };

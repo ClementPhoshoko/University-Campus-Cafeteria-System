@@ -54,7 +54,11 @@ export default function NotificationDetail({ notification, busy, onBack, onActio
           <IconArrowLeft size={18} stroke={1.8} />
           <span>Inbox</span>
         </button>
-        <NotificationActionsMenu label="Notification actions" items={items} />
+        <NotificationActionsMenu
+          className="notification-detail__menu"
+          label="Notification actions"
+          items={items}
+        />
       </header>
 
       <div className="notification-detail__content">

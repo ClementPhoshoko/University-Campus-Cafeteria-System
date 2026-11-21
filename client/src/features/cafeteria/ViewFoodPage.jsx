@@ -16,6 +16,7 @@ import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Err
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFetch } from '../../hooks/useFetch.js';
 import { getMenuItem, getVendor, addToCart } from '../../services/employeeApi.js';
+import { refreshImageOnce } from '../../services/imageRefresh.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import '../../components/cards/CardSkeletonShimmer.css';
 import './ViewFoodPage.css';
@@ -83,7 +84,6 @@ export default function ViewFoodPage() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [cartActionError, setCartActionError] = useState('');
   const [optionError, setOptionError] = useState('');
-  const attemptedImageRefreshes = useRef(new Set());
   const addedTimer = useRef(null);
 
   const loadVendor = useCallback(({ signal }) => (
@@ -163,7 +163,6 @@ export default function ViewFoodPage() {
     setAddingToCart(false);
     setCartActionError('');
     setOptionError('');
-    attemptedImageRefreshes.current.clear();
     if (addedTimer.current) window.clearTimeout(addedTimer.current);
   }, [vendorId, menuItemId, selectedLocationId]);
 
@@ -191,19 +190,11 @@ export default function ViewFoodPage() {
   };
 
   const refreshMenuItemImage = async (failedImage) => {
-    const refreshKey = `menu-item:${vendorId}:${menuItemId}`;
-    if (!vendorId || !menuItemId || attemptedImageRefreshes.current.has(refreshKey)) return;
-    attemptedImageRefreshes.current.add(refreshKey);
+    if (!vendorId || !menuItemId || !failedImage) return;
 
     try {
-      const response = await getMenuItem(vendorId, menuItemId, {
-        token,
-        cache: 'no-cache',
-        refreshImages: true,
-        locationId: selectedLocationId,
-      });
-      const image = response?.menuItem?.image_url;
-      if (!image || image === failedImage) {
+      const image = await refreshImageOnce({ url: failedImage, size: 'hero', token });
+      if (!image) {
         console.error(`Unable to refresh menu item image for item ${menuItemId}: no new image URL was returned.`);
         return;
       }

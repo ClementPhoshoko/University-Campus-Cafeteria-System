@@ -24,6 +24,7 @@ import favoriteRoutes from './routes/favoriteRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import adminVendorRoutes from './routes/adminVendorRoutes.js';
 import adminAssetRoutes from './routes/adminAssetRoutes.js';
+import assetRoutes from './routes/assetRoutes.js';
 import adminAuditRoutes from './routes/adminAuditRoutes.js';
 import geocodeRoutes from './routes/geocodeRoutes.js';
 import { bootstrapSuperAdmin } from './services/bootstrapSuperAdmin.js';
@@ -96,6 +97,7 @@ app.use('/api/v1', adminRoutes);
 app.use('/api/v1', adminSiteRoutes);
 app.use('/api/v1', adminVendorRoutes);
 app.use('/api/v1', adminAssetRoutes);
+app.use('/api/v1', assetRoutes);
 app.use('/api/v1', adminAuditRoutes);
 app.use('/api/v1', geocodeRoutes);
 

@@ -13,6 +13,7 @@ import avoidQueuesImg from '../../assets/avatars/illustration_avoid_queues.webp'
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFetch } from '../../hooks/useFetch.js';
 import { getCart, updateCartItem, removeCartItem, createOrder, processMockPayment } from '../../services/employeeApi.js';
+import { refreshImageOnce } from '../../services/imageRefresh.js';
 import './CartPage.css';
 
 export default function CartPage() {
@@ -20,7 +21,6 @@ export default function CartPage() {
   const { session } = useAuth();
   const token = session?.access_token;
   const cartUserId = session?.user?.id;
-  const attemptedImageRefreshes = useRef(new Set());
   const cartMutationQueue = useRef(Promise.resolve());
   const pendingCartMutations = useRef(0);
   const latestCartMutation = useRef(new Map());
@@ -143,35 +143,28 @@ export default function CartPage() {
 
   const refreshCartImage = async (cartId, itemId, failedImage) => {
     if (!token || !failedImage) return;
-    const key = `cart:${cartId}:${itemId}`;
-    if (attemptedImageRefreshes.current.has(key)) return;
-    attemptedImageRefreshes.current.add(key);
+    const size = itemId === 'vendor' ? 'icon' : 'thumb';
 
     try {
-      const response = await getCart({ token, refreshImages: true });
-      const refreshedCart = (response?.carts || (response?.cart ? [response.cart] : []))
-        .find((cart) => cart.id === cartId);
-      const nextImage = itemId === 'vendor'
-        ? refreshedCart?.vendor?.logo_url
-        : refreshedCart?.items?.find((item) => item.id === itemId)?.menuItem?.image_url;
-      if (!nextImage || nextImage === failedImage) {
+      const image = await refreshImageOnce({ url: failedImage, size, token });
+      if (!image) {
         console.error(`Unable to refresh cart image for ${itemId}: no new image URL was returned.`);
         return;
       }
       cartFeed.mutate((current) => {
-        if (!current?.carts || !refreshedCart) return current;
+        if (!current?.carts) return current;
         return {
           ...current,
           carts: current.carts.map((cart) => cart.id !== cartId ? cart : ({
             ...cart,
             vendor: itemId === 'vendor'
-              ? { ...cart.vendor, logo_url: nextImage }
+              ? { ...cart.vendor, logo_url: image }
               : cart.vendor,
             items: itemId === 'vendor'
               ? cart.items
-              : cart.items.map((item) => (
-                item.id === itemId
-                  ? { ...item, menuItem: { ...item.menuItem, image_url: nextImage } }
+              : (cart.items || []).map((item) => (
+                item.id === itemId && item.menuItem?.image_url === failedImage
+                  ? { ...item, menuItem: { ...item.menuItem, image_url: image } }
                   : item
               )),
           })),

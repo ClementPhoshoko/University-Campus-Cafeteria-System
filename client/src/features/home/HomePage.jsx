@@ -22,7 +22,8 @@ import ReviewItem from '../../components/reviews/ReviewItem.jsx';
 import androidBadge from '../../assets/android_download-PJqqAvJc.webp';
 import iosBadge from '../../assets/ios_download-Dn_KtiFi.webp';
 import HeroFoodShowcase from '../../components/hero/HeroFoodShowcase.jsx';
-import { getVendor, getPopularMenuItems, listVendors, listVendorMenu, listVendorCategoryCatalog } from '../../services/employeeApi.js';
+import { getPopularMenuItems, listVendors, listVendorMenu, listVendorCategoryCatalog } from '../../services/employeeApi.js';
+import { refreshImageOnce } from '../../services/imageRefresh.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import { useFetch } from '../../hooks/useFetch.js';
 import { resolveVendorLocationId } from '../cafeteria/vendorLocationSelection.js';
@@ -71,7 +72,6 @@ export default function HomePage() {
   const meals = useScrollProgress();
   const token = session?.access_token;
 
-  const attemptedImageRefreshes = useRef(new Set());
   const loadCafeterias = useCallback(async ({ signal }) => {
     const cafeteriasResponse = await listVendors({
       limit: 6,
@@ -185,18 +185,20 @@ export default function HomePage() {
   );
 
   const refreshCafeteriaImage = async (vendorId, failedImage) => {
-    const refreshKey = `${vendorId}:${failedImage}`;
-    if (!vendorId || attemptedImageRefreshes.current.has(refreshKey)) return;
-    attemptedImageRefreshes.current.add(refreshKey);
+    if (!vendorId || !failedImage) return;
 
     try {
-      const response = await getVendor(vendorId, { token, cache: 'no-cache' });
-      const image = response?.vendor?.logo_url;
-      if (!image || image === failedImage) return;
+      const image = await refreshImageOnce({ url: failedImage, size: 'icon', token });
+      if (!image) {
+        console.error(`Unable to refresh cafeteria image for vendor ${vendorId}: no new image URL was returned.`);
+        return;
+      }
       cafeteriaFeed.mutate((current) => current && ({
         ...current,
         cafeterias: current.cafeterias.map((cafeteria) => (
-          cafeteria.id === vendorId ? { ...cafeteria, image } : cafeteria
+          cafeteria.id === vendorId && cafeteria.image === failedImage
+            ? { ...cafeteria, image }
+            : cafeteria
         )),
       }));
     } catch (error) {
@@ -205,19 +207,18 @@ export default function HomePage() {
   };
 
   const refreshCategoryImage = async (categoryId, failedImage) => {
-    const refreshKey = `category:${categoryId}`;
-    if (!categoryId || attemptedImageRefreshes.current.has(refreshKey)) return;
-    attemptedImageRefreshes.current.add(refreshKey);
+    if (!categoryId || !failedImage) return;
 
     try {
-      const response = await listVendorCategoryCatalog({ token, cache: 'no-cache', refreshImages: true });
-      const image = response?.categories?.find((category) => category.id === categoryId)?.image_url;
-      if (!image || image === failedImage) {
+      const image = await refreshImageOnce({ url: failedImage, size: 'card', token });
+      if (!image) {
         console.error(`Unable to refresh category image for category ${categoryId}: no new image URL was returned.`);
         return;
       }
       categoryFeed.mutate((current) => current?.map((category) => (
-        category.id === categoryId ? { ...category, image } : category
+        category.id === categoryId && category.image === failedImage
+          ? { ...category, image }
+          : category
       )));
     } catch (error) {
       console.error(`Unable to refresh category image for category ${categoryId}:`, error);
@@ -225,40 +226,20 @@ export default function HomePage() {
   };
 
   const refreshMealImage = async (itemId, vendorId, failedImage) => {
-    const refreshKey = `meal:${vendorId}:${itemId}`;
-    if (!itemId || !vendorId || attemptedImageRefreshes.current.has(refreshKey)) return;
-    attemptedImageRefreshes.current.add(refreshKey);
+    if (!itemId || !vendorId || !failedImage) return;
 
     try {
-      let image;
-      try {
-        const popularResponse = await getPopularMenuItems({ token, cache: 'no-cache', refreshImages: true });
-        image = popularResponse?.items?.find((item) => item.id === itemId)?.image_url;
-      } catch (error) {
-        console.error(`Unable to refresh featured feed image for menu item ${itemId}:`, error);
-      }
-      if (!image || image === failedImage) {
-        const vendor = cafeteriaFeed.data?.cafeterias?.find((cafeteria) => cafeteria.id === vendorId);
-        const locationId = resolveVendorLocationId(vendor?.locations, {
-          preferredSiteId: profile?.preferred_site_id,
-          preferredBuildingId: profile?.preferred_building_id,
-        });
-        const menuResponse = locationId
-          ? await listVendorMenu(vendorId, { token, cache: 'no-cache', refreshImages: true, locationId })
-          : null;
-        const menuImage = menuResponse?.categories
-          ?.flatMap((category) => category.items || [])
-          .find((item) => item.id === itemId)?.image_url;
-        if (menuImage && menuImage !== failedImage) image = menuImage;
-      }
-      if (!image || image === failedImage) {
+      const image = await refreshImageOnce({ url: failedImage, size: 'thumb', token });
+      if (!image) {
         console.error(`Unable to refresh meal image for menu item ${itemId}: no new image URL was returned.`);
         return;
       }
       mealsFeed.mutate((current) => current && ({
         ...current,
         popularMeals: current.popularMeals.map((meal) => (
-          meal.id === itemId && meal.vendorId === vendorId ? { ...meal, image } : meal
+          meal.id === itemId && meal.vendorId === vendorId && meal.image === failedImage
+            ? { ...meal, image }
+            : meal
         )),
       }));
     } catch (error) {

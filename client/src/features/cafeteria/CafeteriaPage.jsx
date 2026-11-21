@@ -11,6 +11,7 @@ import CafeteriaCard from "../../components/cards/CafeteriaCard.jsx";
 import CafeteriaCardSkeleton from "../../components/cards/CafeteriaCardSkeleton.jsx";
 import { useAuth } from '../../hooks/useAuth.js';
 import { listVendors } from '../../services/employeeApi.js';
+import { refreshImageOnce } from '../../services/imageRefresh.js';
 import { mapVendorToCafeteriaCard } from '../home/homeTransform.js';
 import { heroImage } from "../home/homeData.js";
 import { CACHE_TTL } from '../../services/cache.js';
@@ -130,6 +131,25 @@ export default function CafeteriaPage() {
   const refreshError = directory.error && directory.data
     ? 'Could not refresh cafeteria information. Showing the last loaded data.'
     : null;
+
+  const refreshCafeteriaImage = async (vendorId, failedImage) => {
+    if (!token || !vendorId || !failedImage) return;
+
+    try {
+      const image = await refreshImageOnce({ url: failedImage, size: 'icon', token });
+      if (!image) {
+        console.error(`Unable to refresh cafeteria image for vendor ${vendorId}: no new image URL was returned.`);
+        return;
+      }
+      directory.mutate((current) => current?.map((cafeteria) => (
+        cafeteria.id === vendorId && cafeteria.image === failedImage
+          ? { ...cafeteria, image }
+          : cafeteria
+      )));
+    } catch (error) {
+      console.error(`Unable to refresh cafeteria image for vendor ${vendorId}:`, error);
+    }
+  };
 
   const counts = useMemo(() => ({
     all: cafeterias.length,
@@ -282,7 +302,13 @@ export default function CafeteriaPage() {
           ) : visibleCafeterias.length > 0 ? (
             <div className="cafeteria_grid">
               {visibleCafeterias.map((cafeteria) => (
-                <CafeteriaCard key={cafeteria.id} {...cafeteria} variant="directory" to={`/cafeterias/${cafeteria.id}`} />
+                <CafeteriaCard
+                  key={cafeteria.id}
+                  {...cafeteria}
+                  variant="directory"
+                  to={`/cafeterias/${cafeteria.id}`}
+                  onImageError={refreshCafeteriaImage}
+                />
               ))}
             </div>
           ) : (

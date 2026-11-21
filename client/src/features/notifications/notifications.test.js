@@ -377,6 +377,12 @@ test('inbox styling removes selected borders, aligns the menu and uses a slim sc
   assert.doesNotMatch(dropdownBlock, /left: 0/);
   assert.match(cssSource, /\.notification-item__menu \.notification-menu__dropdown\s*\{[^}]*left: 0/);
 
+  assert.match(detailSource, /<NotificationActionsMenu\s+className="notification-detail__menu"/);
+  assert.match(
+    cssSource,
+    /@media \(min-width: 768px\)\s*\{\s*\.notification-detail__menu \.notification-menu__dropdown\s*\{[^}]*left: 0;[^}]*right: auto;/,
+  );
+
   const listBlock = cssSource.match(/\.notification-inbox__list\s*\{([^}]*)\}/)?.[1] || '';
   assert.match(listBlock, /scrollbar-width: thin/);
   assert.match(listBlock, /scrollbar-color: var\(--color-border-subtle\) transparent/);

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IconHelpCircle, IconClipboardCheck, IconKey } from '@tabler/icons-react';
 import PageContainer from '../../components/layout/PageContainer.jsx';
@@ -10,7 +10,8 @@ import Pagination from '../../components/ui/Pagination.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFetch } from '../../hooks/useFetch.js';
-import { getVendor, listMyOrders } from '../../services/employeeApi.js';
+import { listMyOrders } from '../../services/employeeApi.js';
+import { refreshImageOnce } from '../../services/imageRefresh.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import './orders.css';
 
@@ -82,7 +83,6 @@ export default function OrdersPage() {
   const hasSession = Boolean(token && userId);
   const [activeFilter, setActiveFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const attemptedImageRefreshes = useRef(new Set());
 
   const fetchOrders = useCallback(({ signal }) => (
     listMyOrders({ page: 1, limit: 100, token, signal })
@@ -105,18 +105,20 @@ export default function OrdersPage() {
   const isInitialLoading = hasSession && !ordersResponse && (fetchState === 'loading' || fetchState === 'idle');
 
   const refreshVendorImage = async (vendorId, failedImage) => {
-    const refreshKey = `${vendorId}`;
-    if (!vendorId || attemptedImageRefreshes.current.has(refreshKey)) return;
-    attemptedImageRefreshes.current.add(refreshKey);
+    if (!vendorId || !failedImage) return;
 
     try {
-      const response = await getVendor(vendorId, { token, cache: 'no-cache', refreshImages: true });
-      const image = response?.vendor?.logo_url;
-      if (!image || image === failedImage) return;
+      const image = await refreshImageOnce({ url: failedImage, size: 'icon', token });
+      if (!image) {
+        console.error(`Unable to refresh vendor image for ${vendorId}: no new image URL was returned.`);
+        return;
+      }
       mutate((current) => current && ({
         ...current,
         orders: current.orders.map((order) => (
-          order.vendor_id === vendorId ? { ...order, vendorLogo: image } : order
+          order.vendor_id === vendorId && order.vendorLogo === failedImage
+            ? { ...order, vendorLogo: image }
+            : order
         )),
       }));
     } catch (error) {

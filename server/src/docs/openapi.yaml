@@ -20,6 +20,8 @@ tags:
     description: Site and building management
   - name: Vendors
     description: Vendor/outlet management
+  - name: Assets
+    description: Signed image URL management
   - name: Menus
     description: Menu items and categories
   - name: Search
@@ -3462,6 +3464,40 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+
+  '/assets/refresh-image':
+    post:
+      tags: [Assets]
+      summary: Re-sign one failed asset image
+      description: Accepts a stored object path, storage URL, or relative storage URL and returns a fresh signed URL for exactly one requested image size.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, size]
+              properties:
+                url:
+                  type: string
+                  description: The failed image URL as stored in the feed response
+                size:
+                  type: string
+                  enum: [icon, thumb, card, hero]
+      responses:
+        '200':
+          description: Fresh signed URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, url]
+                properties:
+                  success: { type: boolean, example: true }
+                  url: { type: string, format: uri }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   '/admin/assets':
     post:
