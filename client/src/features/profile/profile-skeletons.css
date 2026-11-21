@@ -13,8 +13,39 @@
 .profile-access-skeleton .access-role-card__body {
   display: flex;
   flex-direction: column;
-  gap: 7px;
   width: 100%;
+}
+
+.profile-access-skeleton .access-section-heading__copy {
+  gap: 4px;
+}
+
+.profile-access-skeleton .access-role-card__body {
+  gap: 6px;
+}
+
+.profile-skeleton-heading-title {
+  display: block;
+  height: 1rem;
+  border-radius: var(--radius-xs);
+}
+
+.profile-skeleton-heading-description {
+  display: block;
+  height: 0.82rem;
+  border-radius: var(--radius-xs);
+}
+
+.profile-skeleton-role-title {
+  display: block;
+  height: 0.94rem;
+  border-radius: var(--radius-xs);
+}
+
+.profile-skeleton-role-line {
+  display: block;
+  height: 0.8rem;
+  border-radius: var(--radius-xs);
 }
 
 .profile-skeleton-section-icon {
@@ -36,7 +67,7 @@
 .profile-skeleton-status {
   display: block;
   width: 52px;
-  height: 12px;
+  height: 0.72rem;
   flex: 0 0 52px;
   border-radius: var(--radius-full);
 }
@@ -44,6 +75,7 @@
 .profile-skeleton-source {
   display: block;
   max-width: 84px;
+  height: 0.68rem;
   border-radius: var(--radius-full);
 }
 

@@ -38,9 +38,17 @@ test('access page shows the skeleton while the canonical request is loading', ()
   assert.doesNotMatch(page, /profile_loading-bar/);
 });
 
-test('access skeleton styles use project tokens', () => {
+test('access skeleton styles match the rendered typography and spacing', () => {
   assert.match(css, /\.profile-access-skeleton/);
   assert.match(css, /\.profile-skeleton-section-icon/);
   assert.match(css, /\.profile-skeleton-round-icon/);
+  assert.match(css, /\.profile-skeleton-heading-title\s*\{[^}]*height:\s*1rem/);
+  assert.match(css, /\.profile-skeleton-heading-description\s*\{[^}]*height:\s*0\.82rem/);
+  assert.match(css, /\.profile-skeleton-role-title\s*\{[^}]*height:\s*0\.94rem/);
+  assert.match(css, /\.profile-skeleton-role-line\s*\{[^}]*height:\s*0\.8rem/);
+  assert.match(css, /\.profile-skeleton-source\s*\{[^}]*height:\s*0\.68rem/);
+  assert.match(css, /\.profile-skeleton-status\s*\{[^}]*height:\s*0\.72rem/);
+  assert.match(css, /\.profile-access-skeleton \.access-section-heading__copy\s*\{[^}]*gap:\s*4px/);
+  assert.match(css, /\.profile-access-skeleton \.access-role-card__body\s*\{[^}]*gap:\s*6px/);
   assert.match(css, /var\(--radius-full\)/);
 });

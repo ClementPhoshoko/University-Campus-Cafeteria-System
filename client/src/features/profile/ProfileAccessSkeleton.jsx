@@ -2,8 +2,8 @@ import Skeleton from '../../components/ui/Skeleton.jsx';
 import '../../components/cards/CardSkeletonShimmer.css';
 import './profile-skeletons.css';
 
-function LoadingLine({ width, height = 12, className = '' }) {
-  return <Skeleton className={`home_card-skeleton-shimmer ${className}`} style={{ width, height }} />;
+function LoadingLine({ width, className = '' }) {
+  return <Skeleton className={`home_card-skeleton-shimmer ${className}`} style={{ width }} />;
 }
 
 function SkeletonHeading({ titleWidth = '136px', descriptionWidth = 'min(100%, 320px)' }) {
@@ -11,8 +11,8 @@ function SkeletonHeading({ titleWidth = '136px', descriptionWidth = 'min(100%, 3
     <div className="access-section-heading" aria-hidden="true">
       <Skeleton className="profile-skeleton-section-icon home_card-skeleton-shimmer" />
       <div className="access-section-heading__copy">
-        <LoadingLine width={titleWidth} height={16} />
-        <LoadingLine width={descriptionWidth} height={11} />
+        <LoadingLine className="profile-skeleton-heading-title" width={titleWidth} />
+        <LoadingLine className="profile-skeleton-heading-description" width={descriptionWidth} />
       </div>
     </div>
   );
@@ -24,14 +24,14 @@ function SkeletonRoleCard({ index }) {
       <div className="access-role-card__top">
         <div className="access-role-card__identity">
           <Skeleton className="profile-skeleton-round-icon home_card-skeleton-shimmer" />
-          <LoadingLine className="profile-skeleton-source" width="84px" height={9} />
+          <LoadingLine className="profile-skeleton-source" width="84px" />
         </div>
         <Skeleton className="profile-skeleton-status home_card-skeleton-shimmer" />
       </div>
       <div className="access-role-card__body">
-        <LoadingLine width={index ? '58%' : '44%'} height={13} />
-        <LoadingLine width="90%" height={10} />
-        <LoadingLine width="72%" height={10} />
+        <LoadingLine className="profile-skeleton-role-title" width={index ? '58%' : '44%'} />
+        <LoadingLine className="profile-skeleton-role-line" width="90%" />
+        <LoadingLine className="profile-skeleton-role-line" width="72%" />
       </div>
     </article>
   );
