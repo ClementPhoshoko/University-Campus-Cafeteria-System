@@ -175,15 +175,23 @@ subject and chooses an existing template:
 | Event key(s) | Template | Notes |
 | --- | --- | --- |
 | `order.placed`, `order.payment_confirmed` | `email/templates/orderConfirmed.js` | Reads `orderReference`, `vendorName`, `collectionTime`, `items`, `total` from context. |
+| `order.accepted`, `order.preparing` | `email/templates/orderStatus.js` | Shared progress layout with the same info rows and CTA as confirmation. |
 | `order.ready_for_collection` | `email/templates/orderReady.js` | Reads `orderReference`, `vendorName`, `collectionPoint`/`collectionTime`. |
 | `cart.expiring` | `email/templates/cartExpiringSoon.js` | Reads `vendorName`, `cartUrl`; unsafe URL schemes fall back to `/cart`. |
 | `cart.expired` | `email/templates/cartExpired.js` | Reads `vendorName`, `cartUrl`; unsafe URL schemes fall back to `/cafeterias`. |
 | All other events | Generic HTML built by `notificationService.js` | Includes the sanitized catalog action path. |
 
-Missing context values render as safe empty/default values and template errors
-fall back to the generic HTML instead of throwing. User-owned values are escaped
-before interpolation and are never appended to a URL. The low-level sender is
-injectable for tests.
+All order templates use `metadata.actionPath` for a real **View order** button;
+root-relative paths are made absolute with `CLIENT_URL`. Missing context values
+render as safe empty/default values and template errors fall back to the generic
+HTML instead of throwing. User-owned values are escaped before interpolation and
+are never appended to a URL. The low-level sender is injectable for tests.
+
+Internal identifiers (`orderId`, `vendorId`, `cartId`), collection codes,
+hashes and tokens are stripped from stored notification context and from the API
+DTO. User-facing copy uses the human-readable order reference and vendor name
+only. The action path remains an opaque internal route used by the CTA and is
+never rendered as text.
 
 `/email/order-confirmed` and `/email/order-ready` remain authenticated routes,
 but now resolve the order by `order_reference`, require it to belong to

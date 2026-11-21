@@ -19,6 +19,7 @@ import {
   isInternalActionPath,
   metadataEntries,
   normalizeLevel,
+  stripSensitiveText,
 } from './notificationUtils.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -36,6 +37,8 @@ const itemSource = read('./NotificationItem.jsx');
 const menuSource = read('./NotificationActionsMenu.jsx');
 const detailSource = read('./NotificationDetail.jsx');
 const iconSource = read('./NotificationIcon.jsx');
+const avatarSource = read('./NotificationAvatar.jsx');
+const messageSource = read('./NotificationMessage.jsx');
 const skeletonSource = read('./NotificationSkeleton.jsx');
 const cssSource = read('./notifications.css');
 
@@ -189,9 +192,60 @@ test('utility helpers honour internal paths, levels and metadata.context', () =>
       context: { vendorName: 'Campus Kitchen', amountPaid: 12.5 },
     },
   });
-  assert.deepEqual(entries.map((entry) => entry.label), ['Order', 'Vendor Name', 'Amount Paid']);
-  assert.deepEqual(entries.map((entry) => entry.value), ['order-1', 'Campus Kitchen', '12.5']);
+  assert.deepEqual(entries.map((entry) => entry.label), ['Vendor Name', 'Amount Paid']);
+  assert.deepEqual(entries.map((entry) => entry.value), ['Campus Kitchen', '12.5']);
   assert.ok(entries.every((entry) => entry.key !== 'actionPath'));
+  assert.ok(entries.every((entry) => !/order-1/.test(entry.value)));
+  assert.equal(
+    stripSensitiveText('Order 0e6c1e2c-1234-4c56-8def-0123456789ab from Campus Kitchen', { orderId: '0e6c1e2c-1234-4c56-8def-0123456789ab' }),
+    'Order from Campus Kitchen',
+  );
+});
+
+test('notifications use friendly avatars and prose without identifier cards', () => {
+  for (const asset of [
+    'Cheerful_Student_with_Green_Checkmark.webp',
+    'Cheerful_Student_Presenting_with_Open_Palm.png',
+    'Disappointed_Student_with_Error_Icon.webp',
+    'illustration_avoid_queues.webp',
+    'illustration_collect_order.webp',
+    'connected_avatar.webp',
+  ]) {
+    assert.ok(avatarSource.includes(asset), `${asset} should be used by notifications`);
+  }
+  assert.match(avatarSource, /'order\.ready_for_collection': collectAvatar/);
+  assert.match(avatarSource, /'cart\.expiring': reminderAvatar/);
+  assert.match(avatarSource, /level === 'alert'/);
+  assert.match(itemSource, /<NotificationAvatar notification=\{notification\} \/>/);
+  assert.match(detailSource, /<NotificationAvatar notification=\{notification\} size=\{52\}/);
+  assert.match(detailSource, /<NotificationMessage notification=\{notification\} \/>/);
+  assert.doesNotMatch(detailSource, /notification-detail__metadata/);
+  assert.match(messageSource, /context\.vendorName/);
+  assert.match(messageSource, /context\.orderReference/);
+  assert.match(messageSource, /stripSensitiveText/);
+});
+
+test('inbox styling removes selected borders, aligns the menu and uses a slim scrollbar', () => {
+  const selectedBlock = cssSource.match(/\.notification-item\.is-selected\s*\{([^}]*)\}/)?.[1] || '';
+  assert.match(selectedBlock, /background: var\(--color-surface-selected\)/);
+  assert.doesNotMatch(selectedBlock, /box-shadow|border/);
+
+  const menuBlock = cssSource.match(/\.notification-item__menu\s*\{([^}]*)\}/)?.[1] || '';
+  assert.match(menuBlock, /top: var\(--space-3\)/);
+  assert.match(menuBlock, /left: var\(--space-2\)/);
+
+  const listBlock = cssSource.match(/\.notification-inbox__list\s*\{([^}]*)\}/)?.[1] || '';
+  assert.match(listBlock, /scrollbar-width: thin/);
+  assert.match(listBlock, /scrollbar-color: var\(--color-border-subtle\) transparent/);
+  assert.match(cssSource, /\.notification-inbox__list::-webkit-scrollbar\s*\{[\s\S]*?width: 5px/);
+  assert.match(cssSource, /\.notification-avatar__image\s*\{[\s\S]*?object-fit: contain/);
+});
+
+test('opening related content navigates without waiting for a list refetch', () => {
+  assert.match(pageSource, /navigate\(path\)/);
+  assert.match(pageSource, /setReadState\(notification, true, \{ skipInvalidate: true \}\)/);
+  assert.match(pageSource, /if \(!options\.skipInvalidate\) invalidate\(\)/);
+  assert.doesNotMatch(pageSource, /await setReadState\(notification, true\)/);
 });
 
 test('layout styles keep desk top panels independent and reduce motion', () => {

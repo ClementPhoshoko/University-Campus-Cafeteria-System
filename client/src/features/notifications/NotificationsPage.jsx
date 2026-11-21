@@ -159,7 +159,7 @@ export default function NotificationsPage() {
     });
   }, [mutate]);
 
-  const setReadState = useCallback(async (notification, read) => {
+  const setReadState = useCallback(async (notification, read, options = {}) => {
     if (!token) return;
     const key = `read:${notification.id}`;
     if (!begin(key)) return;
@@ -175,7 +175,9 @@ export default function NotificationsPage() {
 
       const delta = (read ? 0 : 1) - (notification.isRead ? 1 : 0);
       applyLocalChange((current) => ({ unreadCount: current.unreadCount + delta }));
-      invalidate();
+      // Navigation opens immediately after a read update. Invalidating here
+      // would replace the list mid-transition and cause a visible jump.
+      if (!options.skipInvalidate) invalidate();
       refreshUnreadCount({ force: true });
     } catch {
       setActionError('Could not update this notification. Please try again.');
@@ -218,10 +220,14 @@ export default function NotificationsPage() {
     }
   }, [confirm, token, begin, end, removeNotifications, applyLocalChange, invalidate, refreshUnreadCount]);
 
-  const openRelated = useCallback(async (notification) => {
+  const openRelated = useCallback((notification) => {
     const path = notification.metadata?.actionPath;
     if (!isInternalActionPath(path)) return;
-    if (!notification.isRead) await setReadState(notification, true);
+    if (!notification.isRead) {
+      // Fire-and-forget: the read state is patched locally and refreshed in the
+      // background, but must never delay or interrupt the route transition.
+      setReadState(notification, true, { skipInvalidate: true });
+    }
     navigate(path);
   }, [navigate, setReadState]);
 

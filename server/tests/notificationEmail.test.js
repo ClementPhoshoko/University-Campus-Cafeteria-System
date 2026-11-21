@@ -59,6 +59,60 @@ test('ready-for-collection uses the order-ready template and keeps the supplied 
   assert.match(calls[0].html, /Express counter/);
 });
 
+test('order progress emails use the shared status template and a real order button', async () => {
+  for (const [eventKey, heading] of [
+    ['order.accepted', 'Order accepted'],
+    ['order.preparing', 'Order being prepared'],
+  ]) {
+    const calls = [];
+    await sendNotificationEmail({
+      to: 'ada@example.com',
+      subject: heading,
+      html: '<div>generic</div>',
+      eventKey,
+      metadata: { actionPath: `/orders/order-${eventKey}` },
+      context: {
+        orderReference: 'MM-77',
+        vendorName: 'Campus Cafe',
+        collectionPoint: 'Express counter',
+      },
+    }, { sendEmail: captureSender(calls) });
+
+    assert.equal(calls[0].subject, heading);
+    assert.match(calls[0].html, new RegExp(heading));
+    assert.match(calls[0].html, /Campus Cafe/);
+    assert.match(calls[0].html, /MM-77/);
+    assert.match(calls[0].html, /View order/);
+    assert.match(calls[0].html, /http:\/\/localhost:5173\/orders\/order-/);
+    assert.doesNotMatch(calls[0].html, /generic/);
+  }
+});
+
+test('confirmation and ready emails use the server action path for their CTA', async () => {
+  const confirmed = [];
+  await sendNotificationEmail({
+    to: 'ada@example.com',
+    subject: 'Order placed',
+    eventKey: 'order.placed',
+    metadata: { actionPath: '/orders/abc' },
+    context: { orderReference: 'MM-88', vendorName: 'Cafe' },
+  }, { sendEmail: captureSender(confirmed) });
+  assert.match(confirmed[0].html, /View order/);
+  assert.match(confirmed[0].html, /http:\/\/localhost:5173\/orders\/abc/);
+  assert.doesNotMatch(confirmed[0].html, /href="#"/);
+
+  const ready = [];
+  await sendNotificationEmail({
+    to: 'ada@example.com',
+    subject: 'Ready for collection',
+    eventKey: 'order.ready_for_collection',
+    metadata: { actionPath: '/orders/abc' },
+    context: { orderReference: 'MM-88', vendorName: 'Cafe' },
+  }, { sendEmail: captureSender(ready) });
+  assert.match(ready[0].html, /View order/);
+  assert.match(ready[0].html, /http:\/\/localhost:5173\/orders\/abc/);
+});
+
 test('cart events use their cart templates and only allow server-provided links', async () => {
   const expiring = [];
   await sendNotificationEmail({

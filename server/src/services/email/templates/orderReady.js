@@ -1,12 +1,12 @@
-import baseLayout, { infoRow, finePrint } from './baseLayout.js';
+import baseLayout, { ctaButton, infoRow, finePrint } from './baseLayout.js';
 
-export default function orderReady({ userName, orderNumber, vendorName, collectionPoint }) {
+export default function orderReady({ userName, orderNumber, vendorName, collectionPoint, actionUrl }) {
   return baseLayout({
     title: 'Your order is ready!',
     subtitle: 'Time to collect your meal',
     content: `
-      <p style="margin:0 0 14px;class="e-body" style="font-size:15px;line-height:1.65;color:#374151;">Hi <strong style="color:#111827;">${userName}</strong>,</p>
-      <p style="margin:0 0 26px;class="e-body" style="font-size:15px;line-height:1.65;color:#374151;">
+      <p class="e-body" style="margin:0 0 14px;font-size:15px;line-height:1.65;color:#374151;">Hi <strong style="color:#111827;">${userName}</strong>,</p>
+      <p class="e-body" style="margin:0 0 26px;font-size:15px;line-height:1.65;color:#374151;">
         Great news — your order is ready for collection now.
       </p>
 
@@ -17,6 +17,7 @@ export default function orderReady({ userName, orderNumber, vendorName, collecti
         ${infoRow({ label: 'From', value: vendorName })}
       </table>
 
+      ${ctaButton({ href: actionUrl || '#', label: 'View order' })}
       ${finePrint({ children: 'Present your order number at the express collection point.' })}
     `,
   });

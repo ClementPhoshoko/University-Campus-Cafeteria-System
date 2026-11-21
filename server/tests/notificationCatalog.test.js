@@ -7,6 +7,7 @@ import {
   isNotificationEnabled,
   renderTemplate,
   resolveNotificationPreferences,
+  sanitizeNotificationContext,
   toNotificationDto,
   validateNotificationFilter,
 } from '../src/services/notificationCatalog.js';
@@ -130,7 +131,7 @@ test('DTO derivation uses the catalog for category and level rather than stored 
   });
 
   assert.deepEqual(Object.keys(dto), [
-    'id', 'eventKey', 'category', 'level', 'orderId', 'title', 'body',
+    'id', 'eventKey', 'category', 'level', 'title', 'body',
     'metadata', 'channel', 'status', 'sentAt', 'readAt', 'createdAt', 'isRead',
   ]);
   assert.equal(dto.category, 'payment');
@@ -139,6 +140,29 @@ test('DTO derivation uses the catalog for category and level rather than stored 
   assert.equal(dto.metadata.actionPath, '/orders/order-1');
   assert.equal(dto.isRead, true);
   assert.equal(toNotificationDto({ event_key: 'unknown.event', read_at: null }).category, 'system');
+});
+
+test('notification context never exposes internal ids, codes or tokens', () => {
+  const publicContext = sanitizeNotificationContext({
+    orderId: '0e6c1e2c-1234-4c56-8def-0123456789ab',
+    vendorId: 'vendor-secret',
+    cartId: 'cart-secret',
+    collectionCode: 'ABCD',
+    accessToken: 'token-secret',
+    orderReference: 'MM-42',
+    vendorName: 'Campus Kitchen',
+    collectionTime: '2026-11-21T12:30:00Z',
+    total: 42,
+    items: [{ id: 'item-secret', name: 'Coffee', quantity: 2, price: 9.5 }],
+  });
+
+  assert.deepEqual(publicContext, {
+    orderReference: 'MM-42',
+    vendorName: 'Campus Kitchen',
+    collectionTime: '2026-11-21T12:30:00Z',
+    total: 42,
+    items: [{ name: 'Coffee', quantity: 2, price: 9.5 }],
+  });
 });
 
 test('templates render safely and filters are validated', () => {

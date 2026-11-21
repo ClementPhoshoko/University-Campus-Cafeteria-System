@@ -55,6 +55,18 @@ export function previewText(body, max = 140) {
   return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
 }
 
+const UUID_PATTERN = /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi;
+
+/** Remove internal ids from any user-facing string before it is rendered. */
+export function stripSensitiveText(value, context = {}) {
+  let text = typeof value === 'string' ? value : '';
+  for (const key of ['orderId', 'vendorId', 'cartId', 'userId']) {
+    const id = context?.[key];
+    if (typeof id === 'string' && id) text = text.split(id).join('');
+  }
+  return text.replace(UUID_PATTERN, '').replace(/\s+/g, ' ').trim();
+}
+
 /** Only same-origin path-like destinations may be used as action links. */
 export function isInternalActionPath(value) {
   if (typeof value !== 'string') return false;
@@ -74,11 +86,15 @@ function formatMetadataValue(value) {
 // Backend metadata is { category, level, actionPath, context }. Category and
 // level already have dedicated UI, and actionPath drives the action button.
 const IGNORED_METADATA_KEYS = new Set(['category', 'level', 'actionPath', 'actionLabel', 'context']);
+const SENSITIVE_METADATA_KEYS = new Set([
+  'orderId', 'vendorId', 'cartId', 'userId', 'collectionCode', 'accessToken',
+]);
 
 function pushMetadataEntries(source, entries, prefix = '') {
   if (!source || typeof source !== 'object' || Array.isArray(source)) return;
   Object.entries(source).forEach(([key, value]) => {
-    if (IGNORED_METADATA_KEYS.has(key)) return;
+    if (IGNORED_METADATA_KEYS.has(key) || SENSITIVE_METADATA_KEYS.has(key)) return;
+    if (/(Id|Hash|Code|Token)$/.test(key)) return;
     const formatted = formatMetadataValue(value);
     if (!formatted) return;
     const label = key
@@ -96,10 +112,6 @@ export function metadataEntries(notification) {
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
     pushMetadataEntries(raw, entries);
     pushMetadataEntries(raw.context, entries, 'context:');
-  }
-
-  if (notification?.orderId && !entries.some((entry) => entry.key === 'orderId')) {
-    entries.unshift({ key: 'orderId', label: 'Order', value: String(notification.orderId) });
   }
 
   return entries;

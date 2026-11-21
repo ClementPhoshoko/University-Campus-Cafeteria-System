@@ -43,7 +43,7 @@ export const NOTIFICATION_EVENTS = Object.freeze({
     preferenceKey: 'transactional',
     level: 'info',
     titleTemplate: 'Order placed',
-    bodyTemplate: 'Your order {orderReference} has been placed.',
+    bodyTemplate: 'Your order {orderReference} from {vendorName} is confirmed.',
     channels: ['in_app', 'email'],
     actionPath: orderPath,
   },
@@ -53,7 +53,7 @@ export const NOTIFICATION_EVENTS = Object.freeze({
     preferenceKey: 'transactional',
     level: 'info',
     titleTemplate: 'Payment confirmed',
-    bodyTemplate: 'Payment for order {orderReference} was confirmed.',
+    bodyTemplate: "Payment for order {orderReference} went through. We'll keep you posted.",
     channels: ['in_app', 'email'],
     actionPath: orderPath,
   },
@@ -63,7 +63,7 @@ export const NOTIFICATION_EVENTS = Object.freeze({
     preferenceKey: 'transactional',
     level: 'alert',
     titleTemplate: 'Payment failed',
-    bodyTemplate: 'We could not process the payment for order {orderReference}.',
+    bodyTemplate: "We couldn't process payment for order {orderReference}. Please try again.",
     channels: ['in_app', 'email'],
     actionPath: orderPath,
   },
@@ -73,7 +73,7 @@ export const NOTIFICATION_EVENTS = Object.freeze({
     preferenceKey: 'order_updates',
     level: 'info',
     titleTemplate: 'Order accepted',
-    bodyTemplate: '{vendorName} accepted your order {orderReference}.',
+    bodyTemplate: 'Good news — {vendorName} has accepted your order {orderReference}.',
     channels: ['in_app', 'email'],
     actionPath: orderPath,
   },
@@ -83,7 +83,7 @@ export const NOTIFICATION_EVENTS = Object.freeze({
     preferenceKey: 'order_updates',
     level: 'info',
     titleTemplate: 'Order being prepared',
-    bodyTemplate: '{vendorName} is preparing your order {orderReference}.',
+    bodyTemplate: '{vendorName} is preparing your order {orderReference} now.',
     channels: ['in_app', 'email'],
     actionPath: orderPath,
   },
@@ -93,7 +93,7 @@ export const NOTIFICATION_EVENTS = Object.freeze({
     preferenceKey: 'order_updates',
     level: 'info',
     titleTemplate: 'Ready for collection',
-    bodyTemplate: 'Order {orderReference} is ready for collection.',
+    bodyTemplate: 'Your order {orderReference} from {vendorName} is ready for collection.',
     channels: ['in_app', 'email'],
     actionPath: orderPath,
   },
@@ -103,7 +103,7 @@ export const NOTIFICATION_EVENTS = Object.freeze({
     preferenceKey: 'order_updates',
     level: 'info',
     titleTemplate: 'Order collected',
-    bodyTemplate: 'Order {orderReference} was collected. Enjoy your meal!',
+    bodyTemplate: 'You collected your {vendorName} order {orderReference}. Enjoy your meal!',
     channels: ['in_app'],
     actionPath: orderPath,
   },
@@ -113,7 +113,7 @@ export const NOTIFICATION_EVENTS = Object.freeze({
     preferenceKey: 'transactional',
     level: 'alert',
     titleTemplate: 'Order cancelled',
-    bodyTemplate: 'Order {orderReference} was cancelled.',
+    bodyTemplate: "Your order {orderReference} was cancelled. If a refund applies, we'll let you know.",
     channels: ['in_app', 'email'],
     actionPath: orderPath,
   },
@@ -123,7 +123,7 @@ export const NOTIFICATION_EVENTS = Object.freeze({
     preferenceKey: 'transactional',
     level: 'alert',
     titleTemplate: 'Refund issued',
-    bodyTemplate: 'A refund was issued for order {orderReference}.',
+    bodyTemplate: 'A refund was issued for order {orderReference}. It should appear on your statement soon.',
     channels: ['in_app', 'email'],
     actionPath: orderPath,
   },
@@ -153,7 +153,7 @@ export const NOTIFICATION_EVENTS = Object.freeze({
     preferenceKey: 'collection_reminders',
     level: 'warning',
     titleTemplate: 'Cart expires soon',
-    bodyTemplate: 'Your cart at {vendorName} expires soon. Complete checkout to keep your items.',
+    bodyTemplate: 'Your cart at {vendorName} expires soon. Head back to checkout to keep your items.',
     channels: ['in_app', 'email'],
     actionPath: '/cart',
   },
@@ -163,7 +163,7 @@ export const NOTIFICATION_EVENTS = Object.freeze({
     preferenceKey: 'collection_reminders',
     level: 'warning',
     titleTemplate: 'Cart expired',
-    bodyTemplate: 'Your cart at {vendorName} expired and its items were cleared.',
+    bodyTemplate: 'Your cart at {vendorName} expired, so its items were cleared.',
     channels: ['in_app', 'email'],
     actionPath: '/cart',
   },
@@ -283,6 +283,46 @@ export function isNotificationEnabled(preferences, eventKey) {
   }
 }
 
+/**
+ * Context values safe to expose to clients. Order/vender/cart ids, hashes,
+ * codes, tokens and raw address fields are deliberately omitted. Only these
+ * human-friendly values are used by the notification UI and rich emails.
+ */
+const PUBLIC_CONTEXT_KEYS = new Set([
+  'orderReference',
+  'vendorName',
+  'collectionTime',
+  'collectionPoint',
+  'items',
+  'total',
+  'currency',
+  'cartUrl',
+  'subject',
+]);
+
+function publicItems(value) {
+  if (!Array.isArray(value)) return undefined;
+  return value.slice(0, 50).map((item) => {
+    const source = item && typeof item === 'object' && !Array.isArray(item) ? item : {};
+    return {
+      name: source.name ?? source.item_name_snapshot ?? source.itemName ?? 'Item',
+      quantity: source.quantity ?? source.qty ?? 1,
+      price: source.price ?? source.line_total ?? source.lineTotal ?? 0,
+    };
+  });
+}
+
+/** Strip internal identifiers from notification context before it leaves the server. */
+export function sanitizeNotificationContext(context = {}) {
+  const source = context && typeof context === 'object' && !Array.isArray(context) ? context : {};
+  const publicContext = {};
+  for (const key of PUBLIC_CONTEXT_KEYS) {
+    if (source[key] === undefined || source[key] === null) continue;
+    publicContext[key] = key === 'items' ? publicItems(source[key]) : source[key];
+  }
+  return publicContext;
+}
+
 /** Replace {token} placeholders with context values; missing values become ''. */
 export function renderTemplate(template, context = {}) {
   const source = typeof template === 'string' ? template : '';
@@ -342,16 +382,21 @@ export function deriveUnreadLevel(notifications = []) {
 export function toNotificationDto(row = {}) {
   const eventKey = row.event_key ?? row.eventKey ?? '';
   const definition = getEventDefinition(eventKey);
-  const metadata = row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+  const storedMetadata = row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
     ? row.metadata
     : {};
+  const metadata = {
+    category: definition.category,
+    level: definition.level,
+    actionPath: storedMetadata.actionPath,
+    context: sanitizeNotificationContext(storedMetadata.context),
+  };
 
   return {
     id: row.id ?? null,
     eventKey,
     category: definition.category,
     level: definition.level,
-    orderId: row.order_id ?? row.orderId ?? null,
     title: row.title ?? '',
     body: row.body ?? '',
     metadata,

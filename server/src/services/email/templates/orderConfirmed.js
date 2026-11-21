@@ -1,6 +1,6 @@
 import baseLayout, { ctaButton, infoRow, finePrint } from './baseLayout.js';
 
-export default function orderConfirmed({ userName, orderNumber, vendorName, collectionTime, items, total }) {
+export default function orderConfirmed({ userName, orderNumber, vendorName, collectionTime, items, total, actionUrl }) {
   const itemRows = items
     .map(
       (item) => `
@@ -15,8 +15,8 @@ export default function orderConfirmed({ userName, orderNumber, vendorName, coll
     title: 'Order confirmed!',
     subtitle: 'Your meal is being prepared',
     content: `
-      <p style="margin:0 0 14px;class="e-body" style="font-size:15px;line-height:1.65;color:#374151;">Hi <strong style="color:#111827;">${userName}</strong>,</p>
-      <p style="margin:0 0 22px;class="e-body" style="font-size:15px;line-height:1.65;color:#374151;">
+      <p class="e-body" style="margin:0 0 14px;font-size:15px;line-height:1.65;color:#374151;">Hi <strong style="color:#111827;">${userName}</strong>,</p>
+      <p class="e-body" style="margin:0 0 22px;font-size:15px;line-height:1.65;color:#374151;">
         Your order has been placed successfully.
       </p>
 
@@ -34,7 +34,7 @@ export default function orderConfirmed({ userName, orderNumber, vendorName, coll
         </tr>
       </table>
 
-      ${ctaButton({ href: '#', label: 'Track Order' })}
+      ${ctaButton({ href: actionUrl || '#', label: 'View order' })}
       ${finePrint({ children: 'You will receive another email when your order is ready for collection.' })}
     `,
   });

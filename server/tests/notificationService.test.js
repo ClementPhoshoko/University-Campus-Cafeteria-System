@@ -88,7 +88,7 @@ test('transactional notifications always dispatch even when every preference is 
   assert.equal(sendCalls[0].to, profile.email);
   assert.match(sendCalls[0].html, /ORD-42/);
   assert.equal(sendCalls[0].eventKey, 'order.payment_failed');
-  assert.deepEqual(sendCalls[0].context, { orderReference: 'ORD-42', orderId: ORDER_ID });
+  assert.deepEqual(sendCalls[0].context, { orderReference: 'ORD-42' });
   assert.equal(sendCalls[0].metadata.category, 'payment');
   assert.equal(sendCalls[0].metadata.actionPath, `/orders/${ORDER_ID}`);
 });

@@ -5,13 +5,14 @@ import {
   IconTrash,
 } from '@tabler/icons-react';
 import NotificationActionsMenu from './NotificationActionsMenu.jsx';
-import NotificationIcon from './NotificationIcon.jsx';
+import NotificationAvatar from './NotificationAvatar.jsx';
 import {
   categoryLabel,
   formatRelativeTime,
   isInternalActionPath,
   notificationTimestamp,
   previewText,
+  stripSensitiveText,
 } from './notificationUtils.js';
 
 export default function NotificationItem({ notification, selected, busy, onSelect, onAction }) {
@@ -38,10 +39,12 @@ export default function NotificationItem({ notification, selected, busy, onSelec
         aria-current={selected ? 'true' : undefined}
         aria-label={`${notification.title || 'Notification'}, ${relative}${unread ? ', unread' : ''}`}
       >
-        <NotificationIcon category={notification.category} size={20} />
+        <NotificationAvatar notification={notification} />
         <span className="notification-item__content">
           <span className="notification-item__title">{notification.title || 'Notification'}</span>
-          <span className="notification-item__preview">{previewText(notification.body)}</span>
+          <span className="notification-item__preview">
+            {previewText(stripSensitiveText(notification.body, notification.metadata?.context))}
+          </span>
           <span className="notification-item__meta">
             <span className="notification-item__category">{categoryLabel(notification.category)}</span>
             <span aria-hidden="true">·</span>

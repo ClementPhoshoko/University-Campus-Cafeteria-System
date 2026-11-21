@@ -7,6 +7,7 @@ import {
   isNotificationEnabled,
   renderTemplate,
   resolveActionPath,
+  sanitizeNotificationContext,
 } from './notificationCatalog.js';
 
 /**
@@ -102,17 +103,21 @@ export async function dispatchNotification(
   const definition = getEventDefinition(eventKey);
   if (!isNotificationEnabled(profile.notification_preferences, eventKey)) return null;
 
-  const storedContext = {
+  // Internal context still contains the order id for deep-link rendering and
+  // template variables, but it must never leave the server in a DTO or email
+  // context.
+  const internalContext = {
     ...context,
     ...(orderId != null ? { orderId } : {}),
   };
+  const storedContext = sanitizeNotificationContext(internalContext);
   const renderContext = {
-    ...storedContext,
+    ...internalContext,
     userName: profile.full_name || profile.email?.split('@')[0] || 'there',
   };
   const title = renderTemplate(definition.titleTemplate, renderContext);
   const body = renderTemplate(definition.bodyTemplate, renderContext);
-  const actionPath = resolveActionPath(definition, { orderId, context: storedContext });
+  const actionPath = resolveActionPath(definition, { orderId, context: internalContext });
   const now = new Date().toISOString();
   const metadata = {
     category: definition.category,

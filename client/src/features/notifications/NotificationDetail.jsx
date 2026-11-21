@@ -8,13 +8,13 @@ import {
 } from '@tabler/icons-react';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import NotificationActionsMenu from './NotificationActionsMenu.jsx';
+import NotificationAvatar from './NotificationAvatar.jsx';
 import NotificationEmptyState from './NotificationEmptyState.jsx';
-import NotificationIcon from './NotificationIcon.jsx';
+import NotificationMessage from './NotificationMessage.jsx';
 import {
   categoryLabel,
   formatFullDateTime,
   isInternalActionPath,
-  metadataEntries,
   notificationTimestamp,
 } from './notificationUtils.js';
 
@@ -34,7 +34,6 @@ export default function NotificationDetail({ notification, busy, onBack, onActio
 
   const unread = !notification.isRead;
   const canOpen = isInternalActionPath(notification.metadata?.actionPath);
-  const metadata = metadataEntries(notification);
   const timestamp = notificationTimestamp(notification);
   const actionLabel = 'Open related content';
 
@@ -60,7 +59,7 @@ export default function NotificationDetail({ notification, busy, onBack, onActio
 
       <div className="notification-detail__content">
         <div className="notification-detail__heading">
-          <NotificationIcon category={notification.category} size={22} className="notification-icon--large" />
+          <NotificationAvatar notification={notification} size={52} className="notification-avatar--large" />
           <div>
             <h3 className="notification-detail__title">{notification.title || 'Notification'}</h3>
             <p className="notification-detail__category">{categoryLabel(notification.category)}</p>
@@ -75,18 +74,7 @@ export default function NotificationDetail({ notification, busy, onBack, onActio
           </span>
         </div>
 
-        <div className="notification-detail__body">{notification.body || 'No details were provided.'}</div>
-
-        {metadata.length > 0 && (
-          <dl className="notification-detail__metadata">
-            {metadata.map((entry) => (
-              <div className="notification-detail__metadata-row" key={entry.key}>
-                <dt>{entry.label}</dt>
-                <dd>{entry.value}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
+        <NotificationMessage notification={notification} />
 
         {canOpen && (
           <div className="notification-detail__actions">

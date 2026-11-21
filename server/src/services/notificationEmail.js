@@ -1,6 +1,7 @@
 import { sendEmail as defaultSendEmail } from './email/sendEmail.js';
 import orderConfirmedEmail from './email/templates/orderConfirmed.js';
 import orderReadyEmail from './email/templates/orderReady.js';
+import orderStatusEmail from './email/templates/orderStatus.js';
 import cartExpiringSoonEmail from './email/templates/cartExpiringSoon.js';
 import cartExpiredEmail from './email/templates/cartExpired.js';
 
@@ -68,6 +69,14 @@ function safeUrl(value, fallback) {
   return fallback;
 }
 
+/** Email clients need an absolute URL for a root-relative server action path. */
+export function absoluteActionUrl(value, fallback = '/orders') {
+  const path = safeUrl(value, fallback);
+  if (/^https?:\/\//i.test(path)) return path;
+  const clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/+$/, '');
+  return `${clientUrl}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
 function normalizeItems(context) {
   const raw = firstValue(context, ['items', 'orderItems', 'order_items']);
   if (!Array.isArray(raw)) return [];
@@ -96,6 +105,7 @@ export async function sendNotificationEmail(payload = {}, deps = {}) {
     html,
     eventKey,
     context = {},
+    metadata = {},
   } = payload || {};
 
   const sender = typeof deps === 'function' ? deps : (deps?.sendEmail || defaultSendEmail);
@@ -109,7 +119,7 @@ export async function sendNotificationEmail(payload = {}, deps = {}) {
   const userName = safeText(rawUserName, fallbackName);
   const vendorName = safeText(firstValue(safeContext, ['vendorName', 'vendor_name']), '');
   const orderNumber = safeText(firstValue(safeContext, [
-    'orderReference', 'order_reference', 'orderNumber', 'order_number', 'orderId',
+    'orderReference', 'order_reference', 'orderNumber', 'order_number',
   ]), '');
   const collectionTime = safeText(firstValue(safeContext, [
     'collectionTime', 'collection_time', 'startsAt', 'starts_at',
@@ -119,6 +129,7 @@ export async function sendNotificationEmail(payload = {}, deps = {}) {
   ]), collectionTime);
   const total = safeAmount(firstValue(safeContext, ['total', 'orderTotal', 'order_total']), 0);
   const genericHtml = typeof html === 'string' ? html : '';
+  const actionUrl = absoluteActionUrl(metadata?.actionPath);
 
   let renderedHtml = genericHtml;
   try {
@@ -132,6 +143,18 @@ export async function sendNotificationEmail(payload = {}, deps = {}) {
           collectionTime: escapeHtml(collectionTime),
           items: normalizeItems(safeContext),
           total,
+          actionUrl: escapeHtml(actionUrl),
+        });
+        break;
+      case 'order.accepted':
+      case 'order.preparing':
+        renderedHtml = orderStatusEmail({
+          status: eventKey === 'order.accepted' ? 'accepted' : 'preparing',
+          userName: escapeHtml(userName),
+          orderNumber: escapeHtml(orderNumber),
+          vendorName: escapeHtml(vendorName),
+          collectionPoint: escapeHtml(collectionPoint),
+          actionUrl: escapeHtml(actionUrl),
         });
         break;
       case 'order.ready_for_collection':
@@ -140,6 +163,7 @@ export async function sendNotificationEmail(payload = {}, deps = {}) {
           orderNumber: escapeHtml(orderNumber),
           vendorName: escapeHtml(vendorName),
           collectionPoint: escapeHtml(collectionPoint),
+          actionUrl: escapeHtml(actionUrl),
         });
         break;
       case 'cart.expiring':
