@@ -22,7 +22,10 @@ function SkeletonRoleCard({ index }) {
   return (
     <article className="access-role-card" aria-hidden="true">
       <div className="access-role-card__top">
-        <Skeleton className="profile-skeleton-round-icon home_card-skeleton-shimmer" />
+        <div className="access-role-card__identity">
+          <Skeleton className="profile-skeleton-round-icon home_card-skeleton-shimmer" />
+          <LoadingLine className="profile-skeleton-source" width="84px" height={9} />
+        </div>
         <Skeleton className="profile-skeleton-status home_card-skeleton-shimmer" />
       </div>
       <div className="access-role-card__body">
@@ -30,7 +33,6 @@ function SkeletonRoleCard({ index }) {
         <LoadingLine width="90%" height={10} />
         <LoadingLine width="72%" height={10} />
       </div>
-      <LoadingLine className="profile-skeleton-source" width="84px" height={9} />
     </article>
   );
 }

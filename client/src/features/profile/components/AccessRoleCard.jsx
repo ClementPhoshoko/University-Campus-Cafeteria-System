@@ -15,16 +15,18 @@ export default function AccessRoleCard({
   return (
     <article className={`access-role-card access-role-card--${tone}`}>
       <div className="access-role-card__top">
-        <span className={`access-icon-badge access-icon-badge--${tone}`}>
-          {Icon ? <Icon size={19} stroke={1.8} aria-hidden="true" /> : null}
-        </span>
+        <div className="access-role-card__identity">
+          <span className={`access-icon-badge access-icon-badge--${tone}`}>
+            {Icon ? <Icon size={19} stroke={1.8} aria-hidden="true" /> : null}
+          </span>
+          {source && <span className="access-role-card__source">{source}</span>}
+        </div>
         <AccessActiveStatus active={active} />
       </div>
       <div className="access-role-card__body">
         <h4 className="access-role-card__title">{title}</h4>
         <p className="access-role-card__description">{description}</p>
       </div>
-      {source && <span className="access-role-card__source">{source}</span>}
     </article>
   );
 }

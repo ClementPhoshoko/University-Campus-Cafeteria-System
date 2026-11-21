@@ -34,6 +34,7 @@ test('role cards are driven by response data and show dynamic active state', () 
   assert.match(page, /active=\{roles\.includes\(role\)\}/);
   assert.match(page, /source=\{isVendorRole \? 'Vendor role' : 'Platform role'\}/);
   assert.match(roleCard, /AccessActiveStatus/);
+  assert.match(roleCard, /access-role-card__top[\s\S]*access-role-card__identity[\s\S]*access-role-card__source/);
   assert.match(roleCard, /access-role-card__title/);
   assert.match(roleCard, /access-role-card__description/);
   assert.match(activeStatus, /if \(!active\) return null/);
@@ -45,9 +46,10 @@ test('vendor membership cards lead with the resolved vendor name', () => {
   assert.match(page, /membershipRoleLabel\(membership\.role\)/);
   assert.match(membershipCard, /access-membership-card__vendor/);
   assert.match(membershipCard, /vendorName \|\| 'Vendor'/);
-  assert.match(membershipCard, /!vendorName && shortId/);
   assert.match(membershipCard, /is_active !== false/);
-  assert.doesNotMatch(membershipCard, /\{membership\.vendor_id\}/);
+  assert.doesNotMatch(membershipCard, /vendor_id/);
+  assert.doesNotMatch(membershipCard, /shortId/);
+  assert.doesNotMatch(accessCss, /access-membership-card__id/);
 });
 
 test('empty states are provided for both sections', () => {

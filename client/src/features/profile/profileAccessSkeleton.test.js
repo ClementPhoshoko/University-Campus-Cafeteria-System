@@ -28,6 +28,7 @@ test('access skeleton mirrors the role cards and membership cards', () => {
   assert.match(skeleton, /access-membership-card/);
   assert.match(skeleton, /profile-skeleton-section-icon/);
   assert.match(skeleton, /profile-skeleton-round-icon/);
+  assert.match(skeleton, /access-role-card__top[\s\S]*access-role-card__identity[\s\S]*profile-skeleton-source/);
   assert.doesNotMatch(skeleton, /profile-access-summary/);
 });
 
