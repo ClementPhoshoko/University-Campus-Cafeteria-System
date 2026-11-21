@@ -1,6 +1,7 @@
 .profile-overview-skeleton,
 .profile-access-skeleton,
-.profile-favourites-skeleton {
+.profile-favourites-skeleton,
+.profile-preferences-skeleton {
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
@@ -72,6 +73,32 @@
   width: 44px;
   height: 16px;
   flex: 0 0 44px;
+  border-radius: var(--radius-full);
+}
+
+.profile-preferences-skeleton .profile_toggle-text,
+.profile-preferences-skeleton .profile_tag-list {
+  width: 100%;
+}
+
+.profile-skeleton-preference-title,
+.profile-skeleton-preference-label,
+.profile-skeleton-preference-tag,
+.profile-skeleton-preference-description,
+.profile-skeleton-preference-note {
+  display: block;
+  border-radius: var(--radius-xs);
+}
+
+.profile-skeleton-preference-note {
+  margin-top: var(--space-2);
+}
+
+.profile-skeleton-preference-switch {
+  display: block;
+  width: 40px;
+  height: 22px;
+  flex: 0 0 40px;
   border-radius: var(--radius-full);
 }
 
@@ -160,7 +187,8 @@
 .profile-overview-skeleton .skeleton,
 .profile-access-skeleton .skeleton,
 .profile-favourites-skeleton .skeleton,
-.profile-favourites-skeleton-list .skeleton {
+.profile-favourites-skeleton-list .skeleton,
+.profile-preferences-skeleton .skeleton {
   max-width: 100%;
 }
 

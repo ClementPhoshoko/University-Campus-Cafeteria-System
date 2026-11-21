@@ -7,6 +7,7 @@ import ProfileSidebar from './components/ProfileSidebar.jsx';
 import ProfileOverviewSkeleton from './ProfileOverviewSkeleton.jsx';
 import ProfileAccessSkeleton from './ProfileAccessSkeleton.jsx';
 import ProfileFavouritesSkeleton from './ProfileFavouritesSkeleton.jsx';
+import ProfilePreferencesSkeleton from './ProfilePreferencesSkeleton.jsx';
 import './profile.css';
 
 /**
@@ -26,6 +27,7 @@ export default function ProfileLayout() {
   const isOverviewRoute = ['/profile', '/profile/overview'].includes(location.pathname);
   const isAccessRoute = location.pathname === '/profile/access';
   const isFavouritesRoute = location.pathname === '/profile/favourites';
+  const isPreferencesRoute = location.pathname === '/profile/preferences';
   const showInitialSkeleton = profileLoading && !displayProfile;
 
   return (
@@ -42,6 +44,8 @@ export default function ProfileLayout() {
             <ProfileAccessSkeleton />
           ) : showInitialSkeleton && isFavouritesRoute ? (
             <ProfileFavouritesSkeleton />
+          ) : showInitialSkeleton && isPreferencesRoute ? (
+            <ProfilePreferencesSkeleton />
           ) : (
             <>
               <ProfileHeader profile={displayProfile} user={user} />

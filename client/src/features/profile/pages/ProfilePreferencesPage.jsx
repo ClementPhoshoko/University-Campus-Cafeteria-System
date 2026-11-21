@@ -8,6 +8,7 @@ import ProfileFormMessage from '../components/ProfileFormMessage.jsx';
 import {
   buildFoodPreferencesPatch,
   buildNotificationsPatch,
+  foodDraftFromProfile,
   notificationDraftFromProfile,
 } from '../profileForms.js';
 
@@ -36,10 +37,7 @@ export default function ProfilePreferencesPage() {
   const dietaryPreferences = Array.isArray(profile?.dietary_preferences) ? profile.dietary_preferences : [];
   const allergyIndicators = Array.isArray(profile?.allergy_indicators) ? profile.allergy_indicators : [];
   const [editingFood, setEditingFood] = useState(false);
-  const [foodDraft, setFoodDraft] = useState({
-    dietary: dietaryPreferences.join(', '),
-    allergies: allergyIndicators.join(', '),
-  });
+  const [foodDraft, setFoodDraft] = useState(() => foodDraftFromProfile(profile));
   const [savingFood, setSavingFood] = useState(false);
   const [foodError, setFoodError] = useState('');
   const [foodSuccess, setFoodSuccess] = useState('');
@@ -54,10 +52,7 @@ export default function ProfilePreferencesPage() {
   );
 
   useEffect(() => {
-    setFoodDraft({
-      dietary: dietaryPreferences.join(', '),
-      allergies: allergyIndicators.join(', '),
-    });
+    setFoodDraft(foodDraftFromProfile(profile));
 
     const confirmedNotifications = notificationDraftFromProfile(profile);
     setNotificationDraft(confirmedNotifications);
@@ -75,7 +70,8 @@ export default function ProfilePreferencesPage() {
     setFoodSuccess('');
     setSavingFood(true);
     try {
-      await saveProfile(built.patch);
+      const confirmed = await saveProfile(built.patch);
+      setFoodDraft(foodDraftFromProfile(confirmed || profile));
       setEditingFood(false);
       setFoodSuccess('Your food preferences have been updated.');
     } catch (err) {
@@ -83,6 +79,13 @@ export default function ProfilePreferencesPage() {
     } finally {
       setSavingFood(false);
     }
+  };
+
+  const cancelFood = () => {
+    setFoodDraft(foodDraftFromProfile(profile));
+    setFoodError('');
+    setFoodSuccess('');
+    setEditingFood(false);
   };
 
   const saveNotifications = async () => {
@@ -132,7 +135,7 @@ export default function ProfilePreferencesPage() {
           <ProfileSaveActions
             editing={editingFood}
             onEdit={() => { setFoodError(''); setFoodSuccess(''); setEditingFood(true); }}
-            onCancel={() => setEditingFood(false)}
+            onCancel={cancelFood}
             onSave={saveFood}
             saving={savingFood}
           />

@@ -6,6 +6,7 @@ import {
   buildLocationPatch,
   buildNotificationPatch,
   buildNotificationsPatch,
+  foodDraftFromProfile,
   hasMorePages,
   normalizeListInput,
   notificationDraftFromProfile,
@@ -35,6 +36,17 @@ test('food patch normalizes both arrays before sending', () => {
     dietary_preferences: ['Vegetarian', 'vegan'],
     allergy_indicators: ['Peanuts', 'dairy'],
   });
+});
+
+test('food draft is reconstructed from confirmed profile arrays', () => {
+  assert.deepEqual(foodDraftFromProfile({
+    dietary_preferences: ['Vegetarian', 'Halal'],
+    allergy_indicators: ['Peanuts'],
+  }), {
+    dietary: 'Vegetarian, Halal',
+    allergies: 'Peanuts',
+  });
+  assert.deepEqual(foodDraftFromProfile({}), { dietary: '', allergies: '' });
 });
 
 test('location patch clears the building when the site is cleared', () => {

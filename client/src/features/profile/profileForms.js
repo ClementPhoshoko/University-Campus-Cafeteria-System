@@ -116,6 +116,15 @@ export function buildNotificationsPatch(draft = {}, baseline = {}) {
   return { patch: { notification_preferences: changes } };
 }
 
+export function foodDraftFromProfile(profile) {
+  const dietary = Array.isArray(profile?.dietary_preferences) ? profile.dietary_preferences : [];
+  const allergies = Array.isArray(profile?.allergy_indicators) ? profile.allergy_indicators : [];
+  return {
+    dietary: dietary.join(', '),
+    allergies: allergies.join(', '),
+  };
+}
+
 export function notificationDraftFromProfile(profile) {
   const preferences = profile?.notification_preferences || {};
   return {
