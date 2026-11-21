@@ -1,0 +1,70 @@
+.profile-overview-skeleton,
+.profile-access-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.profile-access-skeleton .profile-access-header {
+  gap: var(--space-3);
+}
+
+.profile-access-skeleton .profile-access-summary {
+  margin-top: var(--space-5);
+}
+
+.profile-skeleton-badge {
+  display: block;
+  width: 92px;
+  height: 28px;
+  border-radius: var(--radius-full);
+}
+
+.profile-skeleton-badge--short {
+  width: 68px;
+}
+
+.profile-skeleton-status {
+  display: block;
+  width: 52px;
+  height: 12px;
+  flex: 0 0 52px;
+  border-radius: var(--radius-full);
+}
+
+.profile-skeleton-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border-radius: var(--radius-xs);
+}
+
+.profile-skeleton-pill {
+  display: block;
+  width: 68px;
+  height: 22px;
+  border-radius: var(--radius-full);
+}
+
+.profile-skeleton-action {
+  display: block;
+  width: 38px;
+  height: 14px;
+  border-radius: var(--radius-sm);
+}
+
+.profile-skeleton-link {
+  align-self: flex-start;
+  margin-top: var(--space-2);
+}
+
+.profile-overview-skeleton .skeleton {
+  max-width: 100%;
+}
+
+@media (max-width: 767px) {
+  .profile-skeleton-action {
+    width: 32px;
+  }
+}

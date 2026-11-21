@@ -1,4 +1,4 @@
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const apiBaseUrl = import.meta.env?.VITE_API_BASE_URL || '/api/v1';
 
 export const DEFAULT_TIMEOUT_MS = 15000;
 

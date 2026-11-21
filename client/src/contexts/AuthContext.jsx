@@ -1,9 +1,20 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase.js';
 import * as auth from '../services/auth.js';
+import { getProfile as fetchProfile, updateProfile as patchProfile } from '../services/profileApi.js';
+import {
+  confirmedProfileFromResponse,
+  onboardingMigrationPatch,
+  shouldApplyProfileResponse,
+} from '../features/profile/profileState.js';
 
 const AuthContext = createContext(null);
+
+function readLegacyOnboardingFlag() {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem('onboarding_completed') === 'true';
+}
 
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
@@ -11,33 +22,53 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const profileRequestRef = useRef(0);
 
-  const loadProfile = useCallback(async (userId) => {
-    if (!supabase) return;
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      if (error) throw error;
-      setProfile(data);
+  /**
+   * Profile state is only ever set from a confirmed canonical API response.
+   * The request id prevents an older in-flight response from overwriting a
+   * newer session, refresh, or explicit update.
+   */
+  const loadProfile = useCallback(async (token) => {
+    const requestId = ++profileRequestRef.current;
+    const isActive = () => shouldApplyProfileResponse(requestId, profileRequestRef.current);
 
-      if (localStorage.getItem('onboarding_completed') === 'true' &&
-          !data?.notification_preferences?.onboarding_completed) {
-        const updatedPrefs = {
-          ...(data.notification_preferences || {}),
-          onboarding_completed: true,
-        };
-        await supabase
-          .from('profiles')
-          .update({ notification_preferences: updatedPrefs })
-          .eq('id', userId);
-        setProfile((prev) => prev ? { ...prev, notification_preferences: updatedPrefs } : prev);
+    if (!token) {
+      if (isActive()) {
+        setProfile(null);
+        setProfileLoading(false);
       }
+      return null;
+    }
+
+    setProfileLoading(true);
+
+    try {
+      const payload = await fetchProfile({ token });
+      let confirmed = null;
+
+      if (isActive()) {
+        confirmed = confirmedProfileFromResponse(payload, null);
+        setProfile(confirmed);
+      }
+
+      const migrationPatch = onboardingMigrationPatch(confirmed, readLegacyOnboardingFlag());
+      if (migrationPatch) {
+        const migrated = await patchProfile(migrationPatch, { token });
+        if (isActive()) {
+          confirmed = confirmedProfileFromResponse(migrated, confirmed);
+          setProfile(confirmed);
+        }
+      }
+
+      return confirmed;
     } catch {
-      setProfile(null);
+      if (isActive()) setProfile(null);
+      return null;
+    } finally {
+      if (isActive()) setProfileLoading(false);
     }
   }, []);
 
@@ -46,16 +77,17 @@ export function AuthProvider({ children }) {
 
     const initialiseAuth = async () => {
       try {
-        const session = await auth.getSession();
-        if (mounted) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          if (session?.user) loadProfile(session.user.id);
-        }
+        const currentSession = await auth.getSession();
+        if (!mounted) return;
+
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        await loadProfile(currentSession?.access_token ?? null);
       } catch {
         if (mounted) {
           setSession(null);
           setUser(null);
+          setProfile(null);
         }
       } finally {
         if (mounted) setInitialized(true);
@@ -65,42 +97,65 @@ export function AuthProvider({ children }) {
     initialiseAuth();
 
     const { data: { subscription } } = supabase?.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event, nextSession) => {
         if (!mounted) return;
 
-        setSession(session);
-        setUser(session?.user ?? null);
+        setSession(nextSession);
+        setUser(nextSession?.user ?? null);
 
-        if (event === 'SIGNED_IN' && session?.user) {
-          loadProfile(session.user.id);
+        if (event === 'SIGNED_IN' && nextSession?.user) {
+          await loadProfile(nextSession.access_token);
         }
 
         if (event === 'SIGNED_OUT') {
+          profileRequestRef.current += 1;
           setProfile(null);
+          setProfileLoading(false);
         }
 
-        if (event === 'TOKEN_REFRESHED' && session) {
-          setSession(session);
+        if (event === 'USER_UPDATED' && nextSession?.user) {
+          await loadProfile(nextSession.access_token);
         }
-
-        if (event === 'USER_UPDATED' && session?.user) {
-          setUser(session.user);
-          loadProfile(session.user.id);
-        }
-      }
+      },
     ) ?? { data: { subscription: { unsubscribe: () => {} } } };
 
     return () => {
       mounted = false;
+      profileRequestRef.current += 1;
       subscription.unsubscribe();
     };
   }, [loadProfile]);
 
+  const refreshProfile = useCallback(async () => {
+    return loadProfile(session?.access_token ?? null);
+  }, [loadProfile, session?.access_token]);
+
+  const updateProfile = useCallback(async (patch) => {
+    const token = session?.access_token;
+    if (!token) throw new Error('No active session');
+
+    const requestId = ++profileRequestRef.current;
+    const isActive = () => shouldApplyProfileResponse(requestId, profileRequestRef.current);
+    setProfileLoading(true);
+
+    try {
+      const payload = await patchProfile(patch, { token });
+      const confirmed = confirmedProfileFromResponse(payload, null);
+      if (isActive()) setProfile(confirmed);
+      return confirmed;
+    } catch (err) {
+      // Keep the last confirmed profile when a write fails; local drafts stay
+      // owned by the page that produced them.
+      throw err;
+    } finally {
+      if (isActive()) setProfileLoading(false);
+    }
+  }, [session?.access_token]);
+
   const signIn = useCallback(async (email, password) => {
     setLoading(true);
     try {
-      const data = await auth.signInWithEmail(email, password);
-      return data;
+      return await auth.signInWithEmail(email, password);
     } finally {
       setLoading(false);
     }
@@ -109,8 +164,7 @@ export function AuthProvider({ children }) {
   const signUp = useCallback(async (email, password, metadata, options = {}) => {
     setLoading(true);
     try {
-      const data = await auth.signUpWithEmail(email, password, metadata, options);
-      return data;
+      return await auth.signUpWithEmail(email, password, metadata, options);
     } finally {
       setLoading(false);
     }
@@ -128,8 +182,7 @@ export function AuthProvider({ children }) {
   const sendOtp = useCallback(async (email) => {
     setLoading(true);
     try {
-      const data = await auth.sendOtp(email);
-      return data;
+      return await auth.sendOtp(email);
     } finally {
       setLoading(false);
     }
@@ -138,8 +191,7 @@ export function AuthProvider({ children }) {
   const verifyOtp = useCallback(async (email, token) => {
     setLoading(true);
     try {
-      const data = await auth.verifyOtp(email, token);
-      return data;
+      return await auth.verifyOtp(email, token);
     } finally {
       setLoading(false);
     }
@@ -148,8 +200,7 @@ export function AuthProvider({ children }) {
   const resetPassword = useCallback(async (newPassword) => {
     setLoading(true);
     try {
-      const data = await auth.resetPassword(newPassword);
-      return data;
+      return await auth.resetPassword(newPassword);
     } finally {
       setLoading(false);
     }
@@ -159,9 +210,11 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       await auth.signOut();
+      profileRequestRef.current += 1;
       setSession(null);
       setUser(null);
       setProfile(null);
+      setProfileLoading(false);
       navigate('/login', { replace: true });
     } finally {
       setLoading(false);
@@ -172,6 +225,7 @@ export function AuthProvider({ children }) {
     session,
     user,
     profile,
+    profileLoading,
     loading,
     initialized,
     isEmailVerified: !!user?.email_confirmed_at,
@@ -181,6 +235,8 @@ export function AuthProvider({ children }) {
     sendOtp,
     verifyOtp,
     resetPassword,
+    refreshProfile,
+    updateProfile,
     signOut,
   };
 

@@ -24,7 +24,12 @@ import ViewFoodPage from './features/cafeteria/ViewFoodPage.jsx';
 import CartPage from './features/cart/CartPage.jsx';
 import OrdersPage from './features/orders/OrdersPage.jsx';
 import OrderDetailPage from './features/orders/OrderDetailPage.jsx';
-import ProfilePage from './features/profile/ProfilePage.jsx';
+import ProfileLayout from './features/profile/ProfileLayout.jsx';
+import ProfileOverviewPage from './features/profile/pages/ProfileOverviewPage.jsx';
+import ProfileAccessPage from './features/profile/pages/ProfileAccessPage.jsx';
+import ProfileFavouritesPage from './features/profile/pages/ProfileFavouritesPage.jsx';
+import ProfilePreferencesPage from './features/profile/pages/ProfilePreferencesPage.jsx';
+import ProfileSecurityPage from './features/profile/pages/ProfileSecurityPage.jsx';
 import CorporateCateringPage from './features/corporate/CorporateCateringPage.jsx';
 import CorporateApprovalsPage from './features/corporate/CorporateApprovalsPage.jsx';
 import AdminLayout from './features/admin/AdminLayout.jsx';
@@ -74,7 +79,7 @@ function PlaceholderPage({ title }) {
 }
 
 export default function App() {
-  const { user, profile, initialized } = useAuth();
+  const { user, profile, profileLoading, initialized, updateProfile } = useAuth();
   const [phase, setPhase] = useState('splash');
 
   useEffect(() => {
@@ -84,18 +89,31 @@ export default function App() {
   }, [profile]);
 
   const shouldShowOnboarding = useMemo(() => {
-    if (!initialized) return false;
+    if (!initialized || profileLoading) return false;
     if (phase !== 'home') return false;
     if (isOnboardingCompleted(profile) || localStorage.getItem('onboarding_completed') === 'true') return false;
     return true;
-  }, [initialized, phase, user, profile]);
+  }, [initialized, profileLoading, phase, user, profile]);
+
+  const completeOnboarding = async () => {
+    // Persist through the canonical profile API; the localStorage flag is only
+    // a legacy bootstrap hint and is not the source of truth.
+    try {
+      await updateProfile({ notification_preferences: { onboarding_completed: true } });
+    } catch {
+      // Onboarding still proceeds; AuthContext will retry the migration on the
+      // next confirmed profile load.
+    }
+    localStorage.setItem('onboarding_completed', 'true');
+    setPhase('app');
+  };
 
   if (phase === 'splash') {
     return <SplashScreen onComplete={() => setPhase('home')} />;
   }
 
   if (phase === 'home' && shouldShowOnboarding) {
-    return <Onboarding onComplete={() => setPhase('app')} />;
+    return <Onboarding onComplete={completeOnboarding} />;
   }
 
   return (
@@ -125,7 +143,15 @@ export default function App() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/orders/:orderId" element={<OrderDetailPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile" element={<ProfileLayout />}>
+            <Route index element={<Navigate to="/profile/overview" replace />} />
+            <Route path="overview" element={<ProfileOverviewPage />} />
+            <Route path="access" element={<ProfileAccessPage />} />
+            <Route path="favourites" element={<ProfileFavouritesPage />} />
+            <Route path="preferences" element={<ProfilePreferencesPage />} />
+            <Route path="security" element={<ProfileSecurityPage />} />
+            <Route path="*" element={<Navigate to="/profile/overview" replace />} />
+          </Route>
           <Route path="/corporate" element={<CorporateCateringPage />} />
           <Route path="/vendor" element={<VendorOperationsPage />} />
           <Route path="/vendor/menus" element={<Navigate to="/vendor?view=menus" replace />} />

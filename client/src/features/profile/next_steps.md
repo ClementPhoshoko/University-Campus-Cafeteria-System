@@ -1,6 +1,8 @@
 # Employee Profile Plan
 
-## Current state (verified against code and schema)
+## Baseline before this work (verified against code and schema)
+
+The bullets below record the pre-change state that motivated this plan. Current status is recorded in **Delivery phases** below.
 
 - `ProfilePage.jsx` contains all profile sections in one file and switches them with local `active` state. `MainSidebar` uses buttons, not router links.
 - Only `/profile` is registered. There are no `/profile/*` child routes, so sections cannot be refreshed, deep-linked, or reached with browser back/forward.
@@ -234,12 +236,12 @@ Clean the duplicated override block in `profile.css` and remove stale selectors 
 ### Overview
 
 - Show name, email, employee number, department, business unit, cost centre, and active status as read-only except `full_name`.
-- Use dependent `CustomDropdown` selectors for preferred site and building. Each selector supports loading, empty, error/retry, and “load more” pages.
+- Use dependent, accessible selectors backed by the paginated site/building APIs for preferred site and building. Each selector supports loading, empty, error/retry, and “load more” pages.
 - Link to `/orders` for order history. Do not duplicate order history here.
 
 ### Preferences
 
-- Edit dietary/allergy values as structured arrays through controlled tag-style inputs; accept comma/paste input but normalize into arrays before saving.
+- Edit dietary/allergy values as normalized arrays; accept comma-separated input but trim and deduplicate it into arrays before saving.
 - Show an allergy disclaimer: personal indicators help staff understand needs but are not a guarantee of allergen-safe preparation.
 - Toggle only `order_updates`, `promotions`, and `collection_reminders`.
 - Show dirty/saving/saved/error states. Do not auto-save silently.
@@ -247,7 +249,7 @@ Clean the duplicated override block in `profile.css` and remove stale selectors 
 ### Favourites
 
 - Replace sample data with paginated favourite vendor and meal lists.
-- Use `loading`, empty, error/retry, and removal states. “Load more” appends the next server page.
+- Use `loading`, empty, error/retry, and removal states. Previous/Next controls request the next server page.
 - Link vendors to `/cafeterias/:cafeteriaId` and meals to `/cafeterias/:cafeteriaId/menu/:menuItemId`.
 - Inactive or unavailable favourites remain visible with a badge and remain removable.
 
@@ -267,42 +269,73 @@ Clean the duplicated override block in `profile.css` and remove stale selectors 
 
 ### Phase 1 — Server contract and schema guard
 
-- [ ] Add the profile router, controller, service, validators, and auth-derived user scoping.
-- [ ] Implement `GET /profile`, `PATCH /profile`, and `GET /profile/access`.
-- [ ] Add migration 032 for direct-client write protection and profile invariants.
-- [ ] Add paginated favourite list responses and fix `resolveAssetUrl`.
-- [ ] Update OpenAPI and fix the `/auth/me` envelope documentation.
-- [ ] Add server validation, ownership, audit, and pagination tests.
+**Status: complete — verified 2026-11-20.**
+
+Evidence against each checkbox:
+
+| Requirement | Evidence |
+|---|---|
+| Router, controller, service, validators, auth-derived scoping | `profileRoutes.js`, `profileController.js`, `profileService.js`, `profileValidators.js`, `profileRoutes.test.js`, `profileController.test.js` |
+| `GET /profile`, `PATCH /profile`, `GET /profile/access` | Mounted in `app.js`; route and controller tests cover paths, auth-derived IDs, protected-field rejection, and sanitized audit output |
+| Migration 032 | `032_profile_self_service_guard.sql` plus `profileMigration.test.js`; migration applied in the target Supabase project |
+| Favourites pagination and `resolveAssetUrl` | `favoriteController.js` plus `favoritePagination.test.js` |
+| OpenAPI and `/auth/me` envelope | `openapi.yaml` plus `openapiProfile.test.js`; explicit YAML parse succeeded with 93 paths |
+| Validation, ownership, audit, and pagination tests | `profileValidators.test.js`, `profileController.test.js`, `profileMigration.test.js`, `favoritePagination.test.js` |
+
+Verification results: server tests **145/145 passed**, client build **passed** with the pre-existing chunk-size warning, client tests **22/22 passed**, OpenAPI parse **passed**, and `git diff --check` **clean**.
+
+- [x] Add the profile router, controller, service, validators, and auth-derived user scoping.
+- [x] Implement `GET /profile`, `PATCH /profile`, and `GET /profile/access`.
+- [x] Add migration 032 for direct-client write protection and profile invariants. Migration 032 has been applied in the target Supabase project.
+- [x] Add paginated favourite list responses and fix `resolveAssetUrl`.
+- [x] Update OpenAPI and fix the `/auth/me` envelope documentation.
+- [x] Add server validation, ownership, audit, and pagination tests.
 
 ### Phase 2 — Auth/profile client foundation
 
-- [ ] Add `profileApi.js`, `locationApi.js`, and favourite wrapper changes.
-- [ ] Convert `AuthContext` to server-backed profile load/refresh/update.
-- [ ] Remove direct Supabase profile reads/writes from feature code.
-- [ ] Gate onboarding on settled profile state.
-- [ ] Add focused hook tests for confirmed-response-only updates.
+**Status: complete — verified 2026-11-20.**
+
+Evidence: `services/profileApi.js`, `services/locationApi.js`, paginated wrappers in `services/employeeApi.js`, server-backed `AuthContext.jsx`, onboarding gating in `App.jsx`, and `profileState.test.js`, `profileApi.test.js`, `authProfileContract.test.js`. Focused tests passed 10/10 and the production build passed.
+
+- [x] Add `profileApi.js`, `locationApi.js`, and favourite wrapper changes.
+- [x] Convert `AuthContext` to server-backed profile load/refresh/update.
+- [x] Remove direct Supabase profile reads/writes from feature code.
+- [x] Gate onboarding on settled profile state.
+- [x] Add focused hook tests for confirmed-response-only updates.
 
 ### Phase 3 — Route and layout foundation
 
-- [ ] Add nested `/profile/*` routes and `/profile` → `/profile/overview` redirect.
-- [ ] Add `ProfileLayout` and route-aware `ProfileSidebar`.
-- [ ] Split the monolithic page into five page components.
-- [ ] Verify direct links, refresh, browser back/forward, desktop rail, and mobile tab strip.
+**Status: complete — verified 2026-11-20.**
+
+Evidence: nested `/profile/*` routes and `/profile` → `/profile/overview` redirect in `App.jsx`, persistent `ProfileLayout.jsx`, route-aware `ProfileSidebar.jsx` through `MainSidebar.jsx`, five page components under `pages/`, and `profileNavigation.test.js` / `profileRouteContract.test.js`. Focused tests passed 16/16, the full client suite passed 38/38, and the production build passed. Browser smoke checks confirmed deep links, refresh, sidebar navigation, browser back/forward, `/profile` redirect, `aria-current` on the active rail item, and the mobile tab-strip CSS rules.
+
+- [x] Add nested `/profile/*` routes and `/profile` → `/profile/overview` redirect.
+- [x] Add `ProfileLayout` and route-aware `ProfileSidebar`.
+- [x] Split the monolithic page into five page components.
+- [x] Verify direct links, refresh, browser back/forward, desktop rail, and mobile tab strip.
 
 ### Phase 4 — Page implementation
 
-- [ ] Wire overview save flow through `PATCH /profile`.
-- [ ] Wire location selectors to paginated site/building endpoints.
-- [ ] Wire preferences through `PATCH /profile` with normalization and immutable transactional flag.
-- [ ] Wire favourites to paginated APIs with loading/empty/error/retry/removal.
-- [ ] Wire access to `GET /profile/access` as read-only.
-- [ ] Wire security actions to existing recovery and sign-out flows.
-- [ ] Clean duplicated and unused profile CSS.
+**Status: complete — verified 2026-11-21.**
+
+Evidence: `ProfileLayout.jsx` passes the confirmed `updateProfile` result to pages and shows shared-shimmer overview and access skeletons during initial loads; `profileForms.js` builds only allowlisted patches; `ProfileOverviewPage.jsx` edits full name inline with edit/save/cancel controls beside its label, highlights only the active input, keeps other details visible, and saves the shared `CustomDropdown` location pickers through `PATCH /profile` with the site/building draft keys mapped explicitly into the allowlisted patch; the shared dropdown flips above the trigger when space is limited and uses the project's themed scrollbar; `ProfilePreferencesPage.jsx` normalizes arrays and uses an explicit dirty/save/cancel flow for allowed notification keys; `ProfileFavouritesPage.jsx` reads paginated lists and removes through toggle APIs; `ProfileAccessPage.jsx` reads only `GET /profile/access`, presents effective roles, source roles, and named active vendor memberships, and avoids invented capability copy or raw vendor IDs; `effectiveRoles.js` normalizes vendor names into the canonical access payload; `ProfileSecurityPage.jsx` uses the existing OTP recovery route and current-device sign-out. Focused profile tests passed 35/35, the full client suite passed 64/64, and the production build passed.
+
+- [x] Wire overview save flow through `PATCH /profile`.
+- [x] Wire location selectors to paginated site/building endpoints.
+- [x] Wire preferences through `PATCH /profile` with normalization and immutable transactional flag.
+- [x] Wire favourites to paginated APIs with loading/empty/error/retry/removal.
+- [x] Wire access to `GET /profile/access` as read-only.
+- [x] Wire security actions to existing recovery and sign-out flows.
+- [x] Clean duplicated and unused profile CSS.
 
 ### Phase 5 — Verification and rollout
 
-- [ ] Apply migration 032 before deploying profile API code.
-- [ ] Run server tests, client build, client tests, OpenAPI parse, and `git diff --check`.
+**Status: static verification complete; live target-environment checks pending.**
+
+The project owner elected to perform the live checks directly. Keep this phase open until those results are recorded here.
+
+- [x] Apply migration 032 before deploying profile API code. Migration 032 has already been applied in the target Supabase project.
+- [x] Run server tests (**145/145**), client build (**passed**, pre-existing chunk-size warning), client tests (**64/64**), OpenAPI parse (**93 paths**), and `git diff --check` (**clean**).
 - [ ] Verify self-update ownership, blocked protected fields, site/building mismatch rejection, preference validation, and audit sanitization in the target environment.
 - [ ] Verify favourite pagination stability, removal, inactive-item handling, and cache invalidation.
 - [ ] Verify deep links, keyboard navigation, responsive layout, and sensitive-data display.

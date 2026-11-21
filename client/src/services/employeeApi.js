@@ -140,18 +140,36 @@ export function rateOrder(orderId, { ratings, comments }, { token, signal } = {}
 
 // ─── Favorites ──────────────────────────────────────────────────────
 
-export function listFavoriteVendors({ token, signal } = {}) {
-  return apiRequest('/favorites/vendors', { token, signal });
+export function listFavoriteVendors({ token, signal, page, limit } = {}) {
+  return apiRequest('/favorites/vendors', {
+    token,
+    signal,
+    query: { page, limit },
+    cache: 'no-cache',
+  });
 }
 
 export function toggleFavoriteVendor(vendorId, { token, signal } = {}) {
-  return apiRequest(`/favorites/vendors/${vendorId}`, { method: 'POST', token, signal });
+  return apiRequest(`/favorites/vendors/${vendorId}`, { method: 'POST', token, signal })
+    .then((response) => {
+      invalidateCachePattern('employee:favorites:');
+      return response;
+    });
 }
 
-export function listFavoriteMenuItems({ token, signal } = {}) {
-  return apiRequest('/favorites/menu-items', { token, signal });
+export function listFavoriteMenuItems({ token, signal, page, limit } = {}) {
+  return apiRequest('/favorites/menu-items', {
+    token,
+    signal,
+    query: { page, limit },
+    cache: 'no-cache',
+  });
 }
 
 export function toggleFavoriteMenuItem(menuItemId, { token, signal } = {}) {
-  return apiRequest(`/favorites/menu-items/${menuItemId}`, { method: 'POST', token, signal });
+  return apiRequest(`/favorites/menu-items/${menuItemId}`, { method: 'POST', token, signal })
+    .then((response) => {
+      invalidateCachePattern('employee:favorites:');
+      return response;
+    });
 }

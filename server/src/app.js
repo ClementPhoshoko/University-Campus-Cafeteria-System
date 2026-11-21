@@ -10,6 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import healthRoutes from './routes/healthRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import siteRoutes from './routes/siteRoutes.js';
@@ -78,6 +79,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec, {
 
 app.use('/api/v1', healthRoutes);
 app.use('/api/v1', authRoutes);
+app.use('/api/v1', profileRoutes);
 app.use('/api/v1', emailRoutes);
 // This router includes a public invitation preview and must precede routers
 // whose namespace-wide authentication middleware can intercept unmatched paths.

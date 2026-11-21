@@ -1,6 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { IconCheck, IconChevronDown, IconClock, IconLoader2 } from '@tabler/icons-react';
 import './CustomDropdown.css';
+
+const MENU_GAP = 8;
+const VIEWPORT_MARGIN = 8;
+const MAX_MENU_HEIGHT = 320;
+const MIN_MENU_HEIGHT = 96;
 
 export default function CustomDropdown({
   label,
@@ -19,7 +24,46 @@ export default function CustomDropdown({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState([]);
+  const [menuPlacement, setMenuPlacement] = useState('bottom');
+  const [menuMaxHeight, setMenuMaxHeight] = useState(null);
   const dropdownRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const updateMenuPosition = useCallback(() => {
+    if (!isOpen || !dropdownRef.current || !menuRef.current) return;
+
+    const dropdownRect = dropdownRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    const spaceBelow = viewportHeight - dropdownRect.bottom - MENU_GAP - VIEWPORT_MARGIN;
+    const spaceAbove = dropdownRect.top - MENU_GAP - VIEWPORT_MARGIN;
+    const desiredHeight = Math.min(menuRef.current.scrollHeight || MAX_MENU_HEIGHT, MAX_MENU_HEIGHT);
+
+    let placement = 'bottom';
+    let availableSpace = spaceBelow;
+    if (spaceBelow < desiredHeight && spaceAbove > spaceBelow) {
+      placement = 'top';
+      availableSpace = spaceAbove;
+    }
+
+    const nextMaxHeight = Math.min(desiredHeight, Math.max(MIN_MENU_HEIGHT, availableSpace));
+    setMenuPlacement((current) => (current === placement ? current : placement));
+    setMenuMaxHeight((current) => (current === nextMaxHeight ? current : nextMaxHeight));
+  }, [isOpen]);
+
+  useLayoutEffect(() => {
+    updateMenuPosition();
+  }, [updateMenuPosition, options.length, loading]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, true);
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition);
+      window.removeEventListener('scroll', updateMenuPosition, true);
+    };
+  }, [isOpen, updateMenuPosition]);
 
   useEffect(() => {
     if (value) {
@@ -61,7 +105,11 @@ export default function CustomDropdown({
     if (disabled || loading) return;
     const opening = !isOpen;
     setIsOpen(opening);
-    if (opening) onOpen?.();
+    if (opening) {
+      setMenuPlacement('bottom');
+      setMenuMaxHeight(null);
+      onOpen?.();
+    }
   };
 
   const displayValue = () => {
@@ -105,7 +153,11 @@ export default function CustomDropdown({
       </button>
 
       {isOpen && !loading && (
-        <div className="custom-dropdown__menu">
+        <div
+          ref={menuRef}
+          className={`custom-dropdown__menu custom-dropdown__menu--${menuPlacement}`}
+          style={{ '--custom-dropdown-menu-max-height': menuMaxHeight ? `${menuMaxHeight}px` : undefined }}
+        >
           {options.length === 0 ? (
             <div className="custom-dropdown__empty">No options available</div>
           ) : (

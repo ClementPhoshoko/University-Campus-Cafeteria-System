@@ -553,9 +553,112 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserProfile'
+                type: object
+                required:
+                  - success
+                  - user
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/UserProfile'
         '401':
           description: Unauthorized - invalid or missing token
+
+  '/profile':
+    get:
+      tags:
+        - Profile
+      summary: Get the authenticated employee's full profile
+      description: >
+        Read the caller's profile. The user id is derived from the access token;
+        query parameters and body values cannot select another user. Allergy and
+        dietary data is sensitive, so responses are not cached.
+      operationId: getEmployeeProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Full profile retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - profile
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  profile:
+                    $ref: '#/components/schemas/EmployeeProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Profile
+      summary: Update the authenticated employee's profile
+      description: >
+        Partially update the caller's profile. Only the documented self-service
+        fields are accepted; identity, status, role, and timestamp fields are
+        rejected. The response is not cached and includes the refreshed profile.
+      operationId: updateEmployeeProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfilePatch'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - profile
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  profile:
+                    $ref: '#/components/schemas/EmployeeProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  '/profile/access':
+    get:
+      tags:
+        - Profile
+      summary: Get the authenticated employee's effective roles
+      description: >
+        Read-only platform roles plus vendor roles derived from active vendor
+        memberships. This endpoint never grants or persists roles.
+      operationId: getEmployeeProfileAccess
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Effective access retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileAccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   '/admin/users':
     get:
@@ -1020,6 +1123,138 @@ paths:
           description: Order ready email sent
         '400':
           description: Email is required
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/favorites/vendors':
+    get:
+      tags:
+        - Favorites
+      summary: List favorite vendors
+      description: >
+        List the authenticated employee's favorite vendors newest first. Results
+        are stable-ordered and paginated; inactive vendors remain visible so they
+        can still be removed.
+      operationId: listFavoriteVendors
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Favorite vendors retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFavoriteVendors'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/favorites/vendors/{vendorId}':
+    post:
+      tags:
+        - Favorites
+      summary: Toggle a favorite vendor
+      description: Add or remove a vendor from the authenticated employee's favorites.
+      operationId: toggleFavoriteVendor
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+      responses:
+        '200':
+          description: Vendor removed from favorites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  favorited:
+                    type: boolean
+                    example: false
+        '201':
+          description: Vendor added to favorites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  favorited:
+                    type: boolean
+                    example: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/favorites/menu-items':
+    get:
+      tags:
+        - Favorites
+      summary: List favorite menu items
+      description: >
+        List the authenticated employee's favorite menu items newest first.
+        Results are stable-ordered and paginated; unavailable items and vendors
+        remain visible so they can still be removed.
+      operationId: listFavoriteMenuItems
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Favorite menu items retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFavoriteMenuItems'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/favorites/menu-items/{menuItemId}':
+    post:
+      tags:
+        - Favorites
+      summary: Toggle a favorite menu item
+      description: Add or remove a menu item from the authenticated employee's favorites.
+      operationId: toggleFavoriteMenuItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MenuItemId'
+      responses:
+        '200':
+          description: Menu item removed from favorites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  favorited:
+                    type: boolean
+                    example: false
+        '201':
+          description: Menu item added to favorites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  favorited:
+                    type: boolean
+                    example: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -3781,6 +4016,13 @@ components:
       schema:
         type: string
         format: uuid
+    MenuItemId:
+      name: menuItemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     CategoryId:
       name: categoryId
       in: path
@@ -3878,6 +4120,256 @@ components:
           type: string
           format: uuid
 
+    EmployeeProfile:
+      type: object
+      description: Full self-service profile. Sensitive fields are returned only to the owner.
+      required:
+        - id
+        - email
+        - full_name
+        - is_active
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+          maxLength: 120
+        employee_number:
+          type: string
+          nullable: true
+          readOnly: true
+        department:
+          type: string
+          nullable: true
+          readOnly: true
+        business_unit:
+          type: string
+          nullable: true
+          readOnly: true
+        cost_centre:
+          type: string
+          nullable: true
+          readOnly: true
+        preferred_site_id:
+          type: string
+          format: uuid
+          nullable: true
+        preferred_building_id:
+          type: string
+          format: uuid
+          nullable: true
+        dietary_preferences:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            maxLength: 100
+        allergy_indicators:
+          type: array
+          maxItems: 50
+          description: Personal indicators, not an allergen-safety guarantee.
+          items:
+            type: string
+            maxLength: 100
+        notification_preferences:
+          type: object
+          properties:
+            transactional:
+              type: boolean
+              readOnly: true
+              description: Always true; required order messages cannot be disabled.
+            order_updates:
+              type: boolean
+            promotions:
+              type: boolean
+            collection_reminders:
+              type: boolean
+            onboarding_completed:
+              type: boolean
+              description: App-managed onboarding state, not a user preference toggle.
+        is_active:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    ProfilePatch:
+      type: object
+      description: >
+        Allowlisted partial profile update. Any other property, including an id,
+        email, status, role, or timestamp, is rejected with 400.
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        preferred_site_id:
+          type: string
+          format: uuid
+          nullable: true
+        preferred_building_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Must belong to the selected active site; clearing the site clears this value.
+        dietary_preferences:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            minLength: 1
+            maxLength: 100
+        allergy_indicators:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            minLength: 1
+            maxLength: 100
+        notification_preferences:
+          type: object
+          additionalProperties: false
+          description: >
+            Optional keys may be patched. transactional is server-managed and
+            will be rejected if supplied; unknown stored keys are preserved.
+          properties:
+            order_updates:
+              type: boolean
+            promotions:
+              type: boolean
+            collection_reminders:
+              type: boolean
+            onboarding_completed:
+              type: boolean
+              description: App-managed onboarding state; accepted only through this canonical API.
+
+    ProfileAccess:
+      type: object
+      required:
+        - success
+        - roles
+        - platformRoles
+        - vendorRoles
+        - vendorMemberships
+      properties:
+        success:
+          type: boolean
+          example: true
+        roles:
+          type: array
+          description: Effective union of platform and active vendor roles.
+          items:
+            $ref: '#/components/schemas/AppRole'
+        platformRoles:
+          type: array
+          description: Roles persisted in user_roles.
+          items:
+            $ref: '#/components/schemas/AppRole'
+        vendorRoles:
+          type: array
+          description: Roles derived from active vendor_users memberships.
+          items:
+            $ref: '#/components/schemas/AppRole'
+        vendorMemberships:
+          type: array
+          items:
+            $ref: '#/components/schemas/VendorMembership'
+
+    FavoriteVendor:
+      type: object
+      required:
+        - vendor
+        - favoritedAt
+      properties:
+        vendor:
+          $ref: '#/components/schemas/Vendor'
+        favoritedAt:
+          type: string
+          format: date-time
+
+    FavoriteMenuItem:
+      type: object
+      required:
+        - menuItem
+        - favoritedAt
+      properties:
+        menuItem:
+          type: object
+          required:
+            - id
+            - name
+            - base_price
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            image_url:
+              type: string
+              nullable: true
+            base_price:
+              type: number
+            status:
+              type: string
+              enum: [available, limited, sold_out, unavailable]
+              description: Global sale gate. Unavailable favourites remain removable.
+            is_active:
+              type: boolean
+            vendor:
+              $ref: '#/components/schemas/Vendor'
+        favoritedAt:
+          type: string
+          format: date-time
+
+    PaginatedFavorites:
+      type: object
+      required:
+        - success
+        - favorites
+        - pagination
+      properties:
+        success:
+          type: boolean
+          example: true
+        favorites:
+          type: array
+          items: {}
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    PaginatedFavoriteVendors:
+      allOf:
+        - $ref: '#/components/schemas/PaginatedFavorites'
+        - type: object
+          properties:
+            favorites:
+              type: array
+              items:
+                $ref: '#/components/schemas/FavoriteVendor'
+
+    PaginatedFavoriteMenuItems:
+      allOf:
+        - $ref: '#/components/schemas/PaginatedFavorites'
+        - type: object
+          properties:
+            favorites:
+              type: array
+              items:
+                $ref: '#/components/schemas/FavoriteMenuItem'
+
     AdminUser:
       type: object
       properties:
@@ -3938,6 +4430,10 @@ components:
         vendor_id:
           type: string
           format: uuid
+        vendorName:
+          type: string
+          nullable: true
+          description: Display name of the vendor, when available.
         role:
           type: string
           enum:
@@ -4324,6 +4820,14 @@ components:
               type: string
             message:
               type: string
+            details:
+              description: Optional field-level validation messages or machine-readable context.
+              nullable: true
+              oneOf:
+                - type: array
+                  items: {}
+                - type: object
+                - type: string
 
     Cafeteria:
       type: object

@@ -53,7 +53,15 @@ export function buildEffectiveRoleData(platformRows = [], vendorRows = [], userI
     const role = mapVendorMemberRole(row.role);
     if (!role) continue;
     const entry = ensureUser(row.user_id);
-    entry.vendorMemberships.push(row);
+    const vendors = Array.isArray(row.vendors) ? row.vendors[0] : row.vendors;
+    entry.vendorMemberships.push({
+      user_id: row.user_id,
+      vendor_id: row.vendor_id,
+      vendorName: row.vendorName || vendors?.name || null,
+      role: row.role,
+      is_active: row.is_active,
+      created_at: row.created_at || null,
+    });
     if (!entry.vendorRoles.includes(role)) entry.vendorRoles.push(role);
   }
 
@@ -76,7 +84,7 @@ export async function fetchEffectiveRoleData(userIds = []) {
       .or('expires_at.is.null,expires_at.gt.now()'),
     supabaseAdmin
       .from('vendor_users')
-      .select('user_id, vendor_id, role, is_active, created_at')
+      .select('user_id, vendor_id, role, is_active, created_at, vendors(id, name)')
       .in('user_id', ids)
       .eq('is_active', true),
   ]);

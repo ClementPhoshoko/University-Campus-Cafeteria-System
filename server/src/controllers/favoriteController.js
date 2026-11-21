@@ -1,6 +1,8 @@
 import { supabaseAdmin } from '../config/supabase.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { respond, CACHE } from '../utils/http.js';
+import { buildPagination, parsePagination } from '../utils/pagination.js';
+import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { isUuid } from '../validators/vendorValidators.js';
 import { writeAudit } from '../utils/audit.js';
 
@@ -25,23 +27,36 @@ function requireUuidParam(req, res, name) {
 // GET /favorites/vendors
 // ---------------------------------------------------------------------------
 
-export async function listFavoriteVendors(req, res) {
+export async function listFavoriteVendors(req, res, dbClient = supabaseAdmin) {
   try {
     const userId = req.user.id;
+    const { pageNum, limitNum, from, to } = parsePagination(req.query);
 
-    const { data, error } = await db()
+    const { data, error, count } = await dbClient
       .from('favorite_vendors')
-      .select('vendor_id, created_at, vendors(id, name, slug, logo_url, average_rating)')
+      .select('vendor_id, created_at, vendors(id, name, slug, logo_url, average_rating, status)', { count: 'exact' })
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('vendor_id', { ascending: true })
+      .range(from, to);
     if (error) throw error;
 
-    const favorites = (data || []).map((f) => ({
-      vendor: f.vendors,
-      favoritedAt: f.created_at,
-    })).filter((f) => f.vendor);
+    const favorites = await Promise.all((data || []).map(async (f) => {
+      if (!f.vendors) return null;
+      return {
+        vendor: {
+          ...f.vendors,
+          logo_url: await resolveAssetUrl(f.vendors.logo_url, { size: 'icon' }),
+        },
+        favoritedAt: f.created_at,
+      };
+    }));
 
-    return respond(req, res, { success: true, favorites }, { cacheControl: CACHE.employeeRead });
+    return respond(req, res, {
+      success: true,
+      favorites: favorites.filter(Boolean),
+      pagination: buildPagination(count, pageNum, limitNum),
+    }, { cacheControl: CACHE.employeeRead });
   } catch (err) {
     return handleControllerError(res, err);
   }
@@ -106,32 +121,46 @@ export async function toggleFavoriteVendor(req, res) {
 // GET /favorites/menu-items
 // ---------------------------------------------------------------------------
 
-export async function listFavoriteMenuItems(req, res) {
+export async function listFavoriteMenuItems(req, res, dbClient = supabaseAdmin) {
   try {
     const userId = req.user.id;
+    const { pageNum, limitNum, from, to } = parsePagination(req.query);
 
-    const { data, error } = await db()
+    const { data, error, count } = await dbClient
       .from('favorite_menu_items')
-      .select('menu_item_id, created_at, menu_items(id, name, image_url, base_price, vendors(id, name, slug))')
+      .select(
+        'menu_item_id, created_at, menu_items(id, name, image_url, base_price, status, is_active, vendors(id, name, slug, status, logo_url))',
+        { count: 'exact' },
+      )
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('menu_item_id', { ascending: true })
+      .range(from, to);
     if (error) throw error;
 
     const favorites = await Promise.all((data || []).map(async (f) => {
-      const { vendors, ...rest } = f.menu_items || {};
+      if (!f.menu_items) return null;
+      const { vendors, ...item } = f.menu_items;
       return {
-        menuItem: f.menu_items ? {
-          ...rest,
-          image_url: await resolveAssetUrl(f.menu_items.image_url, { size: 'thumb' }),
+        menuItem: {
+          ...item,
+          image_url: await resolveAssetUrl(item.image_url, { size: 'thumb' }),
           vendor: vendors
-            ? { ...vendors, logo_url: await resolveAssetUrl(vendors.logo_url, { size: 'icon' }) }
+            ? {
+              ...vendors,
+              logo_url: await resolveAssetUrl(vendors.logo_url, { size: 'icon' }),
+            }
             : null,
-        } : null,
+        },
         favoritedAt: f.created_at,
       };
-    })).then((rows) => rows.filter((f) => f.menuItem));
+    }));
 
-    return respond(req, res, { success: true, favorites }, { cacheControl: CACHE.employeeRead });
+    return respond(req, res, {
+      success: true,
+      favorites: favorites.filter(Boolean),
+      pagination: buildPagination(count, pageNum, limitNum),
+    }, { cacheControl: CACHE.employeeRead });
   } catch (err) {
     return handleControllerError(res, err);
   }
