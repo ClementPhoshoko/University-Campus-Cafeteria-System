@@ -19,16 +19,15 @@ test('access skeleton reuses the shared Skeleton and shimmer', () => {
   assert.doesNotMatch(skeleton, /profile_loading-bar/);
 });
 
-test('access skeleton mirrors the role cards and membership cards', () => {
+test('access skeleton mirrors the role cards', () => {
   assert.match(skeleton, /profile-access-section/);
   assert.match(skeleton, /access-section-heading/);
   assert.match(skeleton, /access-role-grid/);
   assert.match(skeleton, /access-role-card/);
-  assert.match(skeleton, /access-membership-list/);
-  assert.match(skeleton, /access-membership-card/);
   assert.match(skeleton, /profile-skeleton-section-icon/);
   assert.match(skeleton, /profile-skeleton-round-icon/);
   assert.match(skeleton, /access-role-card__top[\s\S]*access-role-card__identity[\s\S]*profile-skeleton-source/);
+  assert.doesNotMatch(skeleton, /access-membership/);
   assert.doesNotMatch(skeleton, /profile-access-summary/);
 });
 

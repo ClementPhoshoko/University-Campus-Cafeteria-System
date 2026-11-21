@@ -87,18 +87,17 @@ test('favourite toggles invalidate cached favourite reads', () => {
   assert.equal(invalidations.length, 2);
 });
 
-test('access uses data-driven role cards and vendor names from the canonical API', () => {
+test('access uses data-driven role cards from the canonical API', () => {
   assert.match(access, /getProfileAccess/);
   assert.doesNotMatch(access, /useRoles/);
   assert.match(access, /Platform roles/);
   assert.match(access, /These roles define what you can do on the platform\./);
-  assert.match(access, /Vendor memberships/);
-  assert.match(access, /Your current vendor membership details\./);
   assert.match(access, /data\?\.roles \|\| \[\]/);
+  assert.match(access, /vendorRoles\.includes\(role\)/);
   assert.match(access, /active=\{roles\.includes\(role\)\}/);
-  assert.match(access, /<VendorMembershipCard/);
+  assert.doesNotMatch(access, /Vendor memberships/);
+  assert.doesNotMatch(access, /vendorMemberships/);
   assert.doesNotMatch(access, /profile-access-summary/);
-  assert.doesNotMatch(access, /Vendor: /);
 });
 
 test('security uses the existing recovery flow and device-only sign-out', () => {

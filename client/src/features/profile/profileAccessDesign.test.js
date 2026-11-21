@@ -11,7 +11,6 @@ const page = read('./pages/ProfileAccessPage.jsx');
 const sectionHeader = read('./components/AccessSectionHeader.jsx');
 const roleCard = read('./components/AccessRoleCard.jsx');
 const activeStatus = read('./components/AccessActiveStatus.jsx');
-const membershipCard = read('./components/VendorMembershipCard.jsx');
 const emptyState = read('./components/AccessEmptyState.jsx');
 const css = read('./profile.css');
 
@@ -24,7 +23,6 @@ test('access section headings are reusable and icon-led', () => {
   assert.match(sectionHeader, /access-section-heading__title/);
   assert.match(sectionHeader, /access-section-heading__description/);
   assert.match(page, /icon=\{IconShield\}/);
-  assert.match(page, /icon=\{IconCrown\}/);
 });
 
 test('role cards are driven by response data and show dynamic active state', () => {
@@ -41,19 +39,16 @@ test('role cards are driven by response data and show dynamic active state', () 
   assert.doesNotMatch(page, /active:\s*true/);
 });
 
-test('vendor membership cards lead with the resolved vendor name', () => {
-  assert.match(page, /memberships\.map\(\(membership\)/);
-  assert.match(page, /membershipRoleLabel\(membership\.role\)/);
-  assert.match(membershipCard, /access-membership-card__vendor/);
-  assert.match(membershipCard, /vendorName \|\| 'Vendor'/);
-  assert.match(membershipCard, /is_active !== false/);
-  assert.doesNotMatch(membershipCard, /vendor_id/);
-  assert.doesNotMatch(membershipCard, /shortId/);
-  assert.doesNotMatch(accessCss, /access-membership-card__id/);
+test('vendor roles stay in the role grid without a membership section', () => {
+  assert.match(page, /vendorRoles\.includes\(role\)/);
+  assert.match(page, /source=\{isVendorRole \? 'Vendor role' : 'Platform role'\}/);
+  assert.doesNotMatch(page, /Vendor memberships/);
+  assert.doesNotMatch(page, /vendorMemberships/);
+  assert.doesNotMatch(accessCss, /access-membership/);
 });
 
-test('empty states are provided for both sections', () => {
-  assert.equal((page.match(/<AccessEmptyState/g) || []).length, 2);
+test('an empty state is provided for the role section', () => {
+  assert.equal((page.match(/<AccessEmptyState/g) || []).length, 1);
   assert.match(emptyState, /access-empty-state__title/);
   assert.match(emptyState, /access-empty-state__description/);
 });

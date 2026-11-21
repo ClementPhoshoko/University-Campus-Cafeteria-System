@@ -10,8 +10,7 @@
 }
 
 .profile-access-skeleton .access-section-heading__copy,
-.profile-access-skeleton .access-role-card__body,
-.profile-access-skeleton .access-membership-card__body {
+.profile-access-skeleton .access-role-card__body {
   display: flex;
   flex-direction: column;
   gap: 7px;

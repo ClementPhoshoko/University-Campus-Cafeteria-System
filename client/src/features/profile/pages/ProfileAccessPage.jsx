@@ -5,7 +5,6 @@ import {
   IconCalendarEvent,
   IconCash,
   IconCoins,
-  IconCrown,
   IconFileSearch,
   IconHeadset,
   IconSchool,
@@ -20,7 +19,6 @@ import ProfileAccessSkeleton from '../ProfileAccessSkeleton.jsx';
 import AccessSectionHeader from '../components/AccessSectionHeader.jsx';
 import AccessRoleCard from '../components/AccessRoleCard.jsx';
 import AccessEmptyState from '../components/AccessEmptyState.jsx';
-import VendorMembershipCard from '../components/VendorMembershipCard.jsx';
 
 const ROLE_PRESENTATION = {
   employee: {
@@ -115,12 +113,6 @@ function presentationForRole(role) {
   };
 }
 
-function membershipRoleLabel(role) {
-  if (role === 'manager') return ROLE_PRESENTATION.vendor_manager.label;
-  if (role === 'staff') return ROLE_PRESENTATION.vendor_staff.label;
-  return roleLabel(role);
-}
-
 export default function ProfileAccessPage() {
   const { session } = useAuth();
   const token = session?.access_token;
@@ -143,7 +135,6 @@ export default function ProfileAccessPage() {
 
   const roles = data?.roles || [];
   const vendorRoles = data?.vendorRoles || [];
-  const memberships = data?.vendorMemberships || [];
 
   return (
     <div className="profile-access-page">
@@ -178,35 +169,6 @@ export default function ProfileAccessPage() {
             icon={IconShield}
             title="No roles assigned"
             description="Your assigned roles will appear here."
-          />
-        )}
-      </section>
-
-      <section className="profile-access-section" aria-labelledby="vendor-memberships-heading">
-        <AccessSectionHeader
-          icon={IconCrown}
-          tone="purple"
-          headingId="vendor-memberships-heading"
-          title="Vendor memberships"
-          description="Your current vendor membership details."
-        />
-        {memberships.length ? (
-          <div className="access-membership-list">
-            {memberships.map((membership) => (
-              <VendorMembershipCard
-                key={`${membership.vendor_id}-${membership.role}`}
-                membership={{
-                  ...membership,
-                  roleLabel: membershipRoleLabel(membership.role),
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <AccessEmptyState
-            icon={IconCrown}
-            title="No vendor memberships"
-            description="Your vendor associations will appear here."
           />
         )}
       </section>

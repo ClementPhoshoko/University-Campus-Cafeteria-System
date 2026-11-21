@@ -37,19 +37,6 @@ function SkeletonRoleCard({ index }) {
   );
 }
 
-function SkeletonMembershipCard({ index }) {
-  return (
-    <article className="access-membership-card" aria-hidden="true">
-      <Skeleton className="profile-skeleton-round-icon home_card-skeleton-shimmer" />
-      <div className="access-membership-card__body">
-        <LoadingLine width="92px" height={9} />
-        <LoadingLine width={index ? '48%' : '62%'} height={13} />
-      </div>
-      <Skeleton className="profile-skeleton-status home_card-skeleton-shimmer" />
-    </article>
-  );
-}
-
 /** Mirrors the role and membership cards while GET /profile/access is in flight. */
 export default function ProfileAccessSkeleton() {
   return (
@@ -59,14 +46,6 @@ export default function ProfileAccessSkeleton() {
         <div className="access-role-grid">
           <SkeletonRoleCard index={0} />
           <SkeletonRoleCard index={1} />
-        </div>
-      </section>
-
-      <section className="profile-access-section">
-        <SkeletonHeading titleWidth="152px" />
-        <div className="access-membership-list">
-          <SkeletonMembershipCard index={0} />
-          <SkeletonMembershipCard index={1} />
         </div>
       </section>
     </div>
