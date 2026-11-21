@@ -221,9 +221,22 @@ test('inbox styling removes selected borders, aligns the menu and uses a slim sc
   assert.match(selectedBlock, /background: var\(--color-surface-selected\)/);
   assert.doesNotMatch(selectedBlock, /box-shadow|border/);
 
+  const itemBlock = cssSource.match(/\.notification-item\s*\{([^}]*)\}/)?.[1] || '';
+  assert.match(itemBlock, /display: grid/);
+  assert.match(itemBlock, /grid-template-columns: 32px minmax\(0, 1fr\)/);
+
+  const mainBlock = cssSource.match(/\.notification-item__main\s*\{([^}]*)\}/)?.[1] || '';
+  assert.match(mainBlock, /grid-column: 2/);
+  assert.doesNotMatch(mainBlock, /padding:[^;]*68px/);
+
   const menuBlock = cssSource.match(/\.notification-item__menu\s*\{([^}]*)\}/)?.[1] || '';
-  assert.match(menuBlock, /top: var\(--space-3\)/);
-  assert.match(menuBlock, /left: var\(--space-2\)/);
+  assert.match(menuBlock, /grid-column: 1/);
+  assert.doesNotMatch(menuBlock, /position: absolute/);
+
+  const dropdownBlock = cssSource.match(/(?:^|\r?\n)\.notification-menu__dropdown\s*\{([^}]*)\}/)?.[1] || '';
+  assert.match(dropdownBlock, /right: 0/);
+  assert.doesNotMatch(dropdownBlock, /left: 0/);
+  assert.match(cssSource, /\.notification-item__menu \.notification-menu__dropdown\s*\{[^}]*left: 0/);
 
   const listBlock = cssSource.match(/\.notification-inbox__list\s*\{([^}]*)\}/)?.[1] || '';
   assert.match(listBlock, /scrollbar-width: thin/);

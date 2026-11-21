@@ -229,7 +229,9 @@
 }
 
 .notification-item {
-  position: relative;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: start;
   border-radius: var(--radius-sm);
   transition: background-color var(--transition-normal), box-shadow var(--transition-normal);
 }
@@ -244,10 +246,12 @@
 
 .notification-item__main {
   display: flex;
+  grid-column: 2;
+  grid-row: 1;
   align-items: flex-start;
   gap: var(--space-3);
   width: 100%;
-  padding: var(--space-3) var(--space-3) var(--space-3) 68px;
+  padding: var(--space-3);
   text-align: left;
   border: none;
   border-radius: var(--radius-sm);
@@ -313,9 +317,13 @@
 }
 
 .notification-item__menu {
-  position: absolute;
-  top: var(--space-3);
-  left: var(--space-2);
+  grid-column: 1;
+  grid-row: 1;
+  margin: var(--space-3) 0 0 var(--space-2);
+}
+
+.notification-item__menu .notification-menu__dropdown {
+  left: 0;
   right: auto;
 }
 
@@ -423,7 +431,7 @@
 .notification-menu__dropdown {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
+  right: 0;
   z-index: 30;
   display: grid;
   gap: 2px;
@@ -779,8 +787,8 @@
     padding: var(--space-5) var(--space-4);
   }
 
-  .notification-item__main {
-    padding-right: 40px;
+  .notification-item__menu {
+    margin-left: var(--space-1);
   }
 }
 
