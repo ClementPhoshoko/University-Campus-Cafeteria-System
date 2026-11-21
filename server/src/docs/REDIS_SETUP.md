@@ -20,6 +20,12 @@ Do **not** add Redis for these reasons:
 
 **Recommendation for this project:** keep the current in-memory limiter until multi-instance deployment is real. When it is, implement **Phase 1 only** below. Phases 2 and 3 are optional follow-ups.
 
+### RackNerd VM deployment decision
+
+For the planned single RackNerd VM with roughly 30+ users per day, **do not install Redis**. Run one Express process using `systemd` or PM2 `fork` mode, with Nginx as the reverse proxy if needed. At this traffic level, the process-local limiter and bounded signed-URL cache are more than sufficient, and a server restart resetting a one-minute counter is acceptable.
+
+Redis becomes necessary only if that VM starts multiple Node workers or containers, such as PM2 `cluster` mode, Docker replicas, or several API instances behind a load balancer. If clustering is enabled, either set the worker count to `1` or implement Phase 1 below so all workers share the same rate-limit counter.
+
 ---
 
 ## Scope
