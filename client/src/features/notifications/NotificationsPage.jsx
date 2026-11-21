@@ -18,12 +18,33 @@ import {
 } from '../../services/notificationApi.js';
 import NotificationDetail from './NotificationDetail.jsx';
 import NotificationInbox from './NotificationInbox.jsx';
+import NotificationProgressOverlay from './NotificationProgressOverlay.jsx';
 import {
   applyNotificationEvents,
   isInternalActionPath,
   NOTIFICATION_LIMIT,
 } from './notificationUtils.js';
 import './notifications.css';
+
+const DELETE_MESSAGES = [
+  'Deleting notification...',
+  'Removing it from your inbox...',
+  'Almost there...',
+];
+
+const CLEAR_READ_MESSAGES = [
+  'Clearing read notifications...',
+  'Removing messages you have already read...',
+  'Almost there...',
+];
+
+const READ_ALL_MESSAGES = [
+  'Marking everything as read...',
+  'Updating your inbox...',
+  'Almost there...',
+];
+
+const NO_MESSAGES = [];
 
 export default function NotificationsPage() {
   const { session } = useAuth();
@@ -70,6 +91,18 @@ export default function NotificationsPage() {
     total: notifications.length,
     totalPages: 1,
   };
+
+  const readAllBusy = busyIds.has('bulk:read-all');
+  const clearReadBusy = busyIds.has('bulk:clear-read');
+  const bulkBusy = readAllBusy || clearReadBusy;
+  const deleting = [...busyIds].some((key) => key.startsWith('delete:'));
+  const progressMessages = readAllBusy
+    ? READ_ALL_MESSAGES
+    : clearReadBusy
+      ? CLEAR_READ_MESSAGES
+      : deleting
+        ? DELETE_MESSAGES
+        : null;
 
   useEffect(() => {
     if (!selected) return;
@@ -263,16 +296,16 @@ export default function NotificationsPage() {
   }, [buildReadView, setReadState]);
 
   const deleteOne = useCallback(async (notification) => {
+    const key = `delete:${notification.id}`;
+    if (pendingRef.current.has(key)) return;
+
     const confirmed = await confirm({
       title: 'Delete notification?',
       message: 'This notification will be removed from your inbox.',
       confirmLabel: 'Delete',
       tone: 'danger',
     });
-    if (!confirmed) return;
-
-    const key = `delete:${notification.id}`;
-    if (!begin(key)) return;
+    if (!confirmed || !begin(key)) return;
     setActionError('');
 
     try {
@@ -316,6 +349,9 @@ export default function NotificationsPage() {
       return;
     }
 
+    const key = action === 'read-all' ? 'bulk:read-all' : 'bulk:clear-read';
+    if (pendingRef.current.has(key)) return;
+
     if (action === 'clear-read') {
       const confirmed = await confirm({
         title: 'Clear read notifications?',
@@ -326,7 +362,7 @@ export default function NotificationsPage() {
       if (!confirmed) return;
     }
 
-    if (!begin('bulk')) return;
+    if (!begin(key)) return;
     setActionError('');
 
     try {
@@ -351,7 +387,7 @@ export default function NotificationsPage() {
     } catch {
       setActionError('Could not complete this action. Please try again.');
     } finally {
-      end('bulk');
+      end(key);
     }
   }, [confirm, token, begin, end, mutate, data, removeNotifications, applyLocalChange, refreshUnreadCount]);
 
@@ -375,7 +411,8 @@ export default function NotificationsPage() {
           unreadCount={unreadCount}
           selectedId={selected?.id}
           busyIds={busyIds}
-          busy={busyIds.has('bulk')}
+          busy={bulkBusy}
+          mutating={busyIds.size > 0}
           onSelect={selectNotification}
           onAction={handleAction}
           onPageChange={setPage}
@@ -392,6 +429,7 @@ export default function NotificationsPage() {
           onBack={() => setSelected(null)}
           onAction={handleAction}
         />
+        <NotificationProgressOverlay active={Boolean(progressMessages)} messages={progressMessages || NO_MESSAGES} />
       </div>
     </PageContainer>
   );

@@ -23,6 +23,7 @@ export default function NotificationInbox({
   selectedId,
   busyIds,
   busy = false,
+  mutating = false,
   onSelect,
   onAction,
   onPageChange,
@@ -72,7 +73,7 @@ export default function NotificationInbox({
         <NotificationFilters value={filter} onChange={onFilterChange} unreadCount={unreadCount} />
       </div>
 
-      <div className="notification-inbox__list" aria-busy={loading || refreshing}>
+      <div className="notification-inbox__list" aria-busy={loading || refreshing || mutating}>
         {loading && <NotificationSkeleton />}
 
         {!loading && error && (

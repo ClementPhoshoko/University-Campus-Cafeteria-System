@@ -15,7 +15,7 @@ bearer token, an abort signal and `cache: 'no-store'`.
 | GET | `/notifications/unread-count` | Header summary: `unreadCount`, `level` |
 | PATCH | `/notifications/:id/read` / `/:id/unread` | Flip read state; returns updated DTO |
 | DELETE | `/notifications/:id` | Delete one |
-| POST | `/notifications/read-all` | Mark all read; returns `updated` |
+| PATCH | `/notifications/read-all` | Mark all read; returns `updated` |
 | DELETE | `/notifications/read` | Clear read; returns `deleted` |
 
 `NotificationDTO`: `id`, `eventKey`, `category`, `level`, `orderId`, `title`,

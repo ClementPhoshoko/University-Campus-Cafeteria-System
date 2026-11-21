@@ -34,6 +34,8 @@ const headerCss = read('../../components/layout/ApplicationHeader.css');
 const providerSource = read('../../contexts/NotificationsContext.jsx');
 const pageSource = read('./NotificationsPage.jsx');
 const inboxSource = read('./NotificationInbox.jsx');
+const listSource = read('./NotificationList.jsx');
+const overlaySource = read('./NotificationProgressOverlay.jsx');
 const filtersSource = read('./NotificationFilters.jsx');
 const itemSource = read('./NotificationItem.jsx');
 const menuSource = read('./NotificationActionsMenu.jsx');
@@ -117,7 +119,7 @@ test('API wrappers are no-store, user-scoped and invalidate list caches', async 
     [() => markNotificationRead('n-1', { token: 'token-1' }), 'PATCH', '/api/v1/notifications/n-1/read'],
     [() => markNotificationUnread('n-1', { token: 'token-1' }), 'PATCH', '/api/v1/notifications/n-1/unread'],
     [() => deleteNotification('n-1', { token: 'token-1' }), 'DELETE', '/api/v1/notifications/n-1'],
-    [() => markAllNotificationsRead({ token: 'token-1' }), 'POST', '/api/v1/notifications/read-all'],
+    [() => markAllNotificationsRead({ token: 'token-1' }), 'PATCH', '/api/v1/notifications/read-all'],
     [() => clearReadNotifications({ token: 'token-1' }), 'DELETE', '/api/v1/notifications/read'],
   ];
 
@@ -162,6 +164,34 @@ test('page copy, actions and loading/error states are present', () => {
   assert.match(detailSource, /Select a notification/);
   assert.match(detailSource, /Choose a notification from your inbox to view its details\./);
   assert.match(skeletonSource, /home_card-skeleton-shimmer/);
+});
+
+test('destructive notification actions use the vendor-style progress overlay', () => {
+  assert.match(pageSource, /import NotificationProgressOverlay from '\.\/NotificationProgressOverlay\.jsx'/);
+  assert.match(pageSource, /const DELETE_MESSAGES = \[/);
+  assert.match(pageSource, /const CLEAR_READ_MESSAGES = \[/);
+  assert.match(pageSource, /const READ_ALL_MESSAGES = \[/);
+  assert.match(pageSource, /const key = `delete:\$\{notification\.id\}`/);
+  assert.match(pageSource, /pendingRef\.current\.has\(key\)/);
+  assert.match(pageSource, /bulk:read-all/);
+  assert.match(pageSource, /bulk:clear-read/);
+  assert.match(pageSource, /<NotificationProgressOverlay active=\{Boolean\(progressMessages\)\}/);
+  assert.doesNotMatch(pageSource, /begin\('bulk'\)/);
+  assert.doesNotMatch(pageSource, /busyIds\.has\('bulk'\)/);
+
+  assert.match(inboxSource, /mutating = false/);
+  assert.match(inboxSource, /aria-busy=\{loading \|\| refreshing \|\| mutating\}/);
+  assert.match(listSource, /bulkBusy/);
+  assert.match(listSource, /busyIds\.has\(`delete:\$\{notification\.id\}`\)/);
+  assert.match(listSource, /busyIds\.has\(`read:\$\{notification\.id\}`\)/);
+
+  assert.match(overlaySource, /role="status" aria-live="polite" aria-busy="true"/);
+  assert.match(overlaySource, /setInterval\(/);
+  assert.match(overlaySource, /notification-busy-spinner/);
+  assert.match(overlaySource, /notification-busy-bar__fill/);
+  assert.match(cssSource, /\.notification-busy-overlay\s*\{[^}]*z-index: 40/);
+  assert.match(cssSource, /@keyframes notification-spin/);
+  assert.match(cssSource, /\.notification-busy-spinner,\s*\.notification-busy-bar__fill\s*\{\s*animation: none/);
 });
 
 test('categories use the exact singular backend values', () => {

@@ -67,7 +67,7 @@ export function deleteNotification(notificationId, { token, signal } = {}) {
 
 export function markAllNotificationsRead({ token, signal } = {}) {
   return mutateNotification('/notifications/read-all', {
-    method: 'POST', token, signal,
+    method: 'PATCH', token, signal,
   });
 }
 
