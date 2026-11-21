@@ -9,6 +9,8 @@ const read = (...parts) => fs.readFileSync(path.join(here, ...parts), 'utf8');
 
 const appSource = read('../../App.jsx');
 const layoutSource = read('./ProfileLayout.jsx');
+const protectedRouteSource = read('../../components/auth/ProtectedRoute.jsx');
+const authContextSource = read('../../contexts/AuthContext.jsx');
 const sidebarSource = read('./components/ProfileSidebar.jsx');
 const mainSidebarSource = read('../../components/layout/MainSidebar.jsx');
 const sidebarCss = read('../../components/layout/MainSidebar.css');
@@ -28,6 +30,15 @@ test('ProfileLayout owns the persistent shell and routed outlet', () => {
   assert.match(layoutSource, /<ProfileSidebar \/>/);
   assert.match(layoutSource, /<ProfileHeader/);
   assert.match(layoutSource, /<Outlet context=/);
+});
+
+test('profile routes mount during the backend profile fetch so skeletons render', () => {
+  assert.match(authContextSource, /const \[sessionReady, setSessionReady\]/);
+  assert.match(authContextSource, /setSessionReady\(true\)/);
+  assert.match(authContextSource, /sessionReady,\s*loading/);
+  assert.match(protectedRouteSource, /sessionReady/);
+  assert.match(protectedRouteSource, /location\.pathname\.startsWith\('\/profile'\)/);
+  assert.match(protectedRouteSource, /isProfileRoute \? !sessionReady : !initialized/);
 });
 
 test('profile navigation uses route-aware links with aria-current', () => {

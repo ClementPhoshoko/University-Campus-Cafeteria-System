@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [sessionReady, setSessionReady] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const profileRequestRef = useRef(0);
 
@@ -82,12 +83,14 @@ export function AuthProvider({ children }) {
 
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        setSessionReady(true);
         await loadProfile(currentSession?.access_token ?? null);
       } catch {
         if (mounted) {
           setSession(null);
           setUser(null);
           setProfile(null);
+          setSessionReady(true);
         }
       } finally {
         if (mounted) setInitialized(true);
@@ -102,6 +105,7 @@ export function AuthProvider({ children }) {
 
         setSession(nextSession);
         setUser(nextSession?.user ?? null);
+        setSessionReady(true);
 
         if (event === 'SIGNED_IN' && nextSession?.user) {
           await loadProfile(nextSession.access_token);
@@ -215,6 +219,7 @@ export function AuthProvider({ children }) {
       setUser(null);
       setProfile(null);
       setProfileLoading(false);
+      setSessionReady(true);
       navigate('/login', { replace: true });
     } finally {
       setLoading(false);
@@ -226,6 +231,7 @@ export function AuthProvider({ children }) {
     user,
     profile,
     profileLoading,
+    sessionReady,
     loading,
     initialized,
     isEmailVerified: !!user?.email_confirmed_at,
