@@ -1,0 +1,55 @@
+/* Header notification bell indicator. Semantic dots only here. */
+
+.notification-bell {
+  position: relative;
+}
+
+.notification-bell__indicator {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: grid;
+  place-items: center;
+  min-width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 2px solid var(--color-bg-default);
+  border-radius: var(--radius-full);
+  transition: transform var(--transition-normal), background-color var(--transition-normal);
+}
+
+.notification-bell:hover .notification-bell__indicator {
+  transform: scale(1.12);
+}
+
+.notification-bell__indicator--info {
+  background: var(--blue-500);
+}
+
+.notification-bell__indicator--warning {
+  background: var(--warning-500);
+}
+
+.notification-bell__indicator--alert {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  top: 3px;
+  right: 3px;
+  background: var(--error-500);
+}
+
+.notification-bell__count {
+  color: var(--neutral-0);
+  font-size: 0.62rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification-bell__indicator,
+  .notification-bell:hover .notification-bell__indicator {
+    transition: none;
+    transform: none;
+  }
+}

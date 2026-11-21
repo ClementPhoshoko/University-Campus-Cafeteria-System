@@ -1,30 +1,21 @@
 import { supabaseAdmin } from '../config/supabase.js';
-import { sendEmail } from './email/sendEmail.js';
-import cartExpiredEmail from './email/templates/cartExpired.js';
-import cartExpiringSoonEmail from './email/templates/cartExpiringSoon.js';
+import { dispatchNotification } from './notificationService.js';
 
 const EXPIRY_SCAN_INTERVAL_MS = 60_000;
 const EXPIRY_SCAN_BATCH_SIZE = 100;
 const EXPIRY_REMINDER_WINDOW_MS = 20 * 60_000;
 const db = () => supabaseAdmin;
 
-async function getCartEmailDetails(cart) {
-  const { data: profile, error: profileError } = await db()
-    .from('profiles')
-    .select('email, full_name')
-    .eq('id', cart.user_id)
-    .maybeSingle();
-  if (profileError) throw profileError;
-  if (!profile?.email) return { profile, vendor: null };
-
-  const { data: vendor, error: vendorError } = await db()
+/** Vendor name is the only extra context needed; profile/email come from the dispatcher. */
+async function getCartVendorName(cart) {
+  if (!cart?.vendor_id) return null;
+  const { data: vendor, error } = await db()
     .from('vendors')
     .select('name')
     .eq('id', cart.vendor_id)
     .maybeSingle();
-  if (vendorError) throw vendorError;
-
-  return { profile, vendor };
+  if (error) throw error;
+  return vendor?.name || null;
 }
 
 function cartUrl(path) {
@@ -33,39 +24,31 @@ function cartUrl(path) {
 }
 
 async function notifyCartExpiringSoon(cart) {
-  const { profile, vendor } = await getCartEmailDetails(cart);
-  if (!profile?.email) {
-    console.warn(`[Cart expiry] Cart ${cart.id} is nearing expiry; user has no email address.`);
-    return;
+  const vendorName = await getCartVendorName(cart);
+  try {
+    await dispatchNotification({
+      userId: cart.user_id,
+      eventKey: 'cart.expiring',
+      dedupeKey: cart.id,
+      context: { vendorName, cartUrl: cartUrl('/cart') },
+    });
+  } catch (notificationError) {
+    console.error(`[Notification] Failed to dispatch cart.expiring for cart ${cart.id}:`, notificationError);
   }
-
-  await sendEmail({
-    to: profile.email,
-    subject: 'Your cart expires in 20 minutes - Merchant Munchies',
-    html: cartExpiringSoonEmail({
-      userName: profile.full_name || profile.email.split('@')[0],
-      vendorName: vendor?.name,
-      cartUrl: cartUrl('/cart'),
-    }),
-  });
 }
 
 async function notifyCartExpired(cart) {
-  const { profile, vendor } = await getCartEmailDetails(cart);
-  if (!profile?.email) {
-    console.warn(`[Cart expiry] Cart ${cart.id} expired; user has no email address.`);
-    return;
+  const vendorName = await getCartVendorName(cart);
+  try {
+    await dispatchNotification({
+      userId: cart.user_id,
+      eventKey: 'cart.expired',
+      dedupeKey: cart.id,
+      context: { vendorName, cartUrl: cartUrl('/cafeterias') },
+    });
+  } catch (notificationError) {
+    console.error(`[Notification] Failed to dispatch cart.expired for cart ${cart.id}:`, notificationError);
   }
-
-  await sendEmail({
-    to: profile.email,
-    subject: 'Your cart has expired - Merchant Munchies',
-    html: cartExpiredEmail({
-      userName: profile.full_name || profile.email.split('@')[0],
-      vendorName: vendor?.name,
-      cartUrl: cartUrl('/cafeterias'),
-    }),
-  });
 }
 
 async function remindCartIfExpiringSoon(cart, now) {
@@ -88,7 +71,7 @@ async function remindCartIfExpiringSoon(cart, now) {
   try {
     await notifyCartExpiringSoon(cart);
   } catch (emailError) {
-    console.error(`[Cart expiry] Failed to send reminder for cart ${cart.id}:`, emailError.message);
+    console.error(`[Cart expiry] Failed to notify reminders for cart ${cart.id}:`, emailError.message);
   }
   return true;
 }
@@ -106,7 +89,7 @@ export async function expireCartIfExpired(cart, now = new Date()) {
   try {
     await notifyCartExpired(cart);
   } catch (emailError) {
-    console.error(`[Cart expiry] Failed to email user for cart ${cart.id}:`, emailError.message);
+    console.error(`[Cart expiry] Failed to notify expiry for cart ${cart.id}:`, emailError.message);
   }
   return true;
 }

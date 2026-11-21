@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../config/supabase.js';
 import { ApiError, mapDbError, sendError, sendInternalError } from '../utils/errors.js';
 import { writeAudit } from '../utils/audit.js';
+import { dispatchNotification } from '../services/notificationService.js';
 import { respond } from '../utils/http.js';
 import { resolveAssetUrl } from '../utils/assetUrl.js';
 import { isUuid } from '../validators/vendorValidators.js';
@@ -462,7 +463,7 @@ export async function updateMyVendorOrderStatus(req, res) {
     if (!VENDOR_ORDER_STATUSES.includes(nextStatus)) {
       return sendError(res, 400, 'VALIDATION_ERROR', 'Unsupported order status');
     }
-    const { data: order, error: fetchError } = await db().from('orders').select('id, vendor_id, status, collection_reference_hash').eq('id', orderId).maybeSingle();
+    const { data: order, error: fetchError } = await db().from('orders').select('id, vendor_id, user_id, order_reference, status, collection_reference_hash, vendors(name)').eq('id', orderId).maybeSingle();
     if (fetchError) throw fetchError;
     if (!order) throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
     await membership(req.user.id, order.vendor_id);
@@ -494,6 +495,34 @@ export async function updateMyVendorOrderStatus(req, res) {
       await db().from('order_status_history').update({ changed_by: req.user.id, reason: reason || 'vendor_status_update' }).eq('id', historyRow.id);
     }
     await writeAudit(req, { action: 'UPDATE', tableName: 'public.orders', recordKey: orderId, oldData: { status: order.status }, newData: { status: nextStatus }, reason: reason || 'Vendor updated order status', category: 'lifecycle' });
+
+    const eventKey = {
+      accepted: 'order.accepted',
+      preparing: 'order.preparing',
+      ready_for_collection: 'order.ready_for_collection',
+      collected: 'order.collected',
+      rejected: 'order.cancelled',
+    }[nextStatus];
+    if (eventKey) {
+      try {
+        const vendorName = Array.isArray(order.vendors)
+          ? order.vendors[0]?.name
+          : order.vendors?.name;
+        await dispatchNotification({
+          userId: order.user_id,
+          eventKey,
+          orderId,
+          dedupeKey: nextStatus,
+          context: {
+            orderReference: order.order_reference || null,
+            vendorName: vendorName || null,
+          },
+        });
+      } catch (notificationError) {
+        console.error(`[Notification] Failed to dispatch ${eventKey}:`, notificationError);
+      }
+    }
+
     return respond(req, res, { success: true, order: updated }, { cacheControl: 'private, no-store' });
   } catch (error) { return handleError(res, error); }
 }

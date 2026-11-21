@@ -24,6 +24,7 @@ import ViewFoodPage from './features/cafeteria/ViewFoodPage.jsx';
 import CartPage from './features/cart/CartPage.jsx';
 import OrdersPage from './features/orders/OrdersPage.jsx';
 import OrderDetailPage from './features/orders/OrderDetailPage.jsx';
+import NotificationsPage from './features/notifications/NotificationsPage.jsx';
 import ProfileLayout from './features/profile/ProfileLayout.jsx';
 import ProfileOverviewPage from './features/profile/pages/ProfileOverviewPage.jsx';
 import ProfileAccessPage from './features/profile/pages/ProfileAccessPage.jsx';
@@ -143,6 +144,7 @@ export default function App() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/orders/:orderId" element={<OrderDetailPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/profile" element={<ProfileLayout />}>
             <Route index element={<Navigate to="/profile/overview" replace />} />
             <Route path="overview" element={<ProfileOverviewPage />} />

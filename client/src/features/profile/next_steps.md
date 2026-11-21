@@ -365,5 +365,5 @@ The project owner elected to perform the live checks directly. Keep this phase o
 - Avatar upload is out of scope until an avatar column, storage policy, and upload flow exist.
 - Saved payment methods are out of scope until provider tokenization is approved.
 - All-session listing/revocation is out of scope until the auth provider supports it.
-- Notification delivery channels are out of scope; this feature edits preferences only.
+- Notification preferences are now enforced by the server notification dispatcher; in-app delivery and preference-gated email are documented in `server/src/docs/NOTIFICATIONS.md`.
 - Vendor dietary/allergen registries remain separate from personal profile indicators for v1.

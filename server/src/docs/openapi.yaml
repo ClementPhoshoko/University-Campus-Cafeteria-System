@@ -660,6 +660,275 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  '/notifications':
+    get:
+      tags:
+        - Notifications
+      summary: List the authenticated user's notifications
+      description: >
+        Server-paginated notification inbox. The user id is derived from the
+        access token only. Category and bell level come from the server-owned
+        event catalog, never from query parameters.
+      operationId: listNotifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: filter
+          in: query
+          schema:
+            type: string
+            enum: [all, unread, read]
+            default: all
+          description: Read-state filter
+        - name: eventKey
+          in: query
+          schema:
+            type: string
+          description: Optional exact event-key filter
+        - name: orderId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Optional exact order-id filter
+      responses:
+        '200':
+          description: One page of notifications plus the unread bell state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: Notification centre is not configured on this environment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  '/notifications/unread-count':
+    get:
+      tags:
+        - Notifications
+      summary: Get the unread count and bell level
+      operationId: getNotificationUnreadCount
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Unread count and derived bell level
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, unreadCount, level]
+                properties:
+                  success: { type: boolean, example: true }
+                  unreadCount: { type: integer, minimum: 0 }
+                  level:
+                    type: string
+                    enum: [none, info, warning, alert]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/notifications/read-all':
+    patch:
+      tags:
+        - Notifications
+      summary: Mark all of the user's unread notifications as read
+      operationId: markAllNotificationsRead
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Number of notifications updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, updated]
+                properties:
+                  success: { type: boolean, example: true }
+                  updated: { type: integer, minimum: 0 }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/notifications/read':
+    delete:
+      tags:
+        - Notifications
+      summary: Delete all of the user's read notifications
+      operationId: clearReadNotifications
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Number of notifications deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, deleted]
+                properties:
+                  success: { type: boolean, example: true }
+                  deleted: { type: integer, minimum: 0 }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  '/notifications/{notificationId}/read':
+    patch:
+      tags:
+        - Notifications
+      summary: Mark one notification as read
+      description: Idempotent. The notification must belong to the authenticated user.
+      operationId: markNotificationRead
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, notification]
+                properties:
+                  success: { type: boolean, example: true }
+                  notification:
+                    $ref: '#/components/schemas/Notification'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  '/notifications/{notificationId}/unread':
+    patch:
+      tags:
+        - Notifications
+      summary: Mark one notification as unread
+      description: Idempotent. The notification must belong to the authenticated user.
+      operationId: markNotificationUnread
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, notification]
+                properties:
+                  success: { type: boolean, example: true }
+                  notification:
+                    $ref: '#/components/schemas/Notification'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  '/notifications/{notificationId}':
+    delete:
+      tags:
+        - Notifications
+      summary: Delete one notification
+      description: The notification must belong to the authenticated user.
+      operationId: deleteNotification
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Notification deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success]
+                properties:
+                  success: { type: boolean, example: true }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  '/notification-preferences':
+    get:
+      tags:
+        - Notifications
+      summary: Get notification preferences
+      description: Thin read alias over the canonical profiles.notification_preferences store.
+      operationId: getNotificationPreferences
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Effective notification preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, preferences]
+                properties:
+                  success: { type: boolean, example: true }
+                  preferences:
+                    $ref: '#/components/schemas/NotificationPreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+        - Notifications
+      summary: Update notification preferences
+      description: >
+        Thin write alias over profiles.notification_preferences. Only the four
+        editable keys are accepted; transactional is always server-forced true.
+      operationId: updateNotificationPreferences
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              minProperties: 1
+              properties:
+                order_updates: { type: boolean }
+                promotions: { type: boolean }
+                collection_reminders: { type: boolean }
+                onboarding_completed: { type: boolean }
+      responses:
+        '200':
+          description: Updated notification preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, preferences]
+                properties:
+                  success: { type: boolean, example: true }
+                  preferences:
+                    $ref: '#/components/schemas/NotificationPreferences'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   '/admin/users':
     get:
       tags:
@@ -4065,6 +4334,14 @@ components:
       schema:
         type: string
         format: uuid
+    NotificationId:
+      name: notificationId
+      in: path
+      required: true
+      description: Notification id; must belong to the authenticated user
+      schema:
+        type: string
+        format: uuid
 
   securitySchemes:
     bearerAuth:
@@ -4514,6 +4791,80 @@ components:
           type: integer
         totalPages:
           type: integer
+
+    Notification:
+      type: object
+      required:
+        - id
+        - eventKey
+        - category
+        - level
+        - title
+        - body
+        - isRead
+      properties:
+        id: { type: string, format: uuid }
+        eventKey: { type: string, description: Server-owned catalog key }
+        category:
+          type: string
+          enum: [order, payment, cart, vendor, promotion, account, system]
+          description: Derived from the event catalog, never from client input
+        level:
+          type: string
+          enum: [info, warning, alert]
+          description: Per-notification severity from the event catalog
+        orderId: { type: string, format: uuid, nullable: true }
+        title: { type: string }
+        body: { type: string }
+        metadata:
+          type: object
+          description: Server-generated category, level, actionPath and dispatch context
+          additionalProperties: true
+        channel:
+          type: string
+          enum: [in_app, push, email, sms]
+        status:
+          type: string
+          enum: [pending, sent, read, failed]
+        sentAt: { type: string, format: date-time, nullable: true }
+        readAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        isRead: { type: boolean }
+
+    NotificationListResponse:
+      type: object
+      required: [success, notifications, unreadCount, level, pagination]
+      properties:
+        success: { type: boolean, example: true }
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+        unreadCount: { type: integer, minimum: 0 }
+        level:
+          type: string
+          enum: [none, info, warning, alert]
+          description: Bell level derived from all unread notifications
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    NotificationPreferences:
+      type: object
+      required:
+        - transactional
+        - order_updates
+        - promotions
+        - collection_reminders
+        - onboarding_completed
+      properties:
+        transactional:
+          type: boolean
+          readOnly: true
+          description: Always true; required order/payment messages cannot be disabled
+        order_updates: { type: boolean, description: Defaults to true }
+        promotions: { type: boolean, description: Defaults to false; opt-in only }
+        collection_reminders: { type: boolean, description: Defaults to true }
+        onboarding_completed: { type: boolean, description: Profile onboarding flag }
 
     Site:
       type: object

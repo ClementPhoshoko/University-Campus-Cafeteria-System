@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { FavoritesProvider } from './contexts/FavoritesContext.jsx';
+import { NotificationsProvider } from './contexts/NotificationsContext.jsx';
 import { ConfirmProvider } from './components/confirmation/ConfirmProvider.jsx';
 import App from './App.jsx';
 import './styles/index.css';
@@ -16,7 +17,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <ConfirmProvider>
           <AuthProvider>
             <FavoritesProvider>
-              <App />
+              <NotificationsProvider>
+                <App />
+              </NotificationsProvider>
             </FavoritesProvider>
           </AuthProvider>
         </ConfirmProvider>

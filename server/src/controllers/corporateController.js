@@ -5,6 +5,7 @@ import { buildPagination, parsePagination } from '../utils/pagination.js';
 import { isUuid } from '../validators/vendorValidators.js';
 import { generateOrderReference } from '../utils/orderReference.js';
 import { calculateServiceFee } from '../utils/feeCalculator.js';
+import { dispatchNotification } from '../services/notificationService.js';
 
 const db = () => supabaseAdmin;
 const LIST_PAGE_SIZE = 8;
@@ -443,6 +444,35 @@ export async function decideCorporateApproval(req, res) {
       p_comments: comments,
     });
     if (error) throw error;
+
+    if (data?.success !== false && ['approved', 'rejected'].includes(decision)) {
+      const eventKey = decision === 'approved' ? 'corporate.approved' : 'corporate.rejected';
+      try {
+        const [{ data: corporate, error: corporateError }, { data: order, error: orderError }] = await Promise.all([
+          db().from('corporate_orders').select('requester_user_id').eq('order_id', orderId).maybeSingle(),
+          db().from('orders').select('order_reference, vendor_id, vendors(name)').eq('id', orderId).maybeSingle(),
+        ]);
+        if (corporateError) throw corporateError;
+        if (orderError) throw orderError;
+        if (corporate?.requester_user_id) {
+          const vendorName = Array.isArray(order?.vendors) ? order.vendors[0]?.name : order?.vendors?.name;
+          await dispatchNotification({
+            userId: corporate.requester_user_id,
+            eventKey,
+            orderId,
+            dedupeKey: 'corporate-decision',
+            context: {
+              orderReference: order?.order_reference || null,
+              vendorName: vendorName || null,
+              comments,
+            },
+          });
+        }
+      } catch (notificationError) {
+        console.error(`[Notification] Failed to dispatch ${eventKey}:`, notificationError);
+      }
+    }
+
     return respond(req, res, data, { cacheControl: 'private, no-store' });
   } catch (error) { return handleCorporateError(res, error); }
 }

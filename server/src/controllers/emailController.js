@@ -2,12 +2,12 @@ import crypto from 'node:crypto';
 import { Webhook } from 'standardwebhooks';
 import { supabaseAdmin } from '../config/supabase.js';
 import { sendEmail } from '../services/email/sendEmail.js';
+import { dispatchNotification } from '../services/notificationService.js';
+import { ApiError, sendError } from '../utils/errors.js';
 import confirmSignup from '../services/email/templates/confirmSignup.js';
 import resetPassword from '../services/email/templates/resetPassword.js';
 import magicLink from '../services/email/templates/magicLink.js';
 import welcome from '../services/email/templates/welcome.js';
-import orderConfirmed from '../services/email/templates/orderConfirmed.js';
-import orderReady from '../services/email/templates/orderReady.js';
 
 const SEND_EMAIL_HOOK_SECRET = process.env.SEND_EMAIL_HOOK_SECRET;
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -154,28 +154,66 @@ export async function sendWelcomeEmail(req, res) {
   }
 }
 
+/**
+ * Resolve an owned order server-side and dispatch through the notification
+ * centre. A client-supplied `to` is never used as the recipient.
+ */
+async function dispatchOwnedOrderEmail(req, res, { eventKey, dedupeKey, message }) {
+  try {
+    const orderReference = String(req.body?.order_reference ?? req.body?.orderReference ?? '').trim();
+    if (!orderReference) throw new ApiError(400, 'VALIDATION_ERROR', 'order_reference is required');
+
+    const { data: order, error } = await supabaseAdmin
+      .from('orders')
+      .select('id, user_id, order_reference, vendor_id, total, currency, vendors(name), collection_slots(starts_at), collection_points(name)')
+      .eq('order_reference', orderReference)
+      .maybeSingle();
+    if (error) throw error;
+    if (!order) throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+    if (order.user_id !== req.user?.id) throw new ApiError(403, 'FORBIDDEN', 'Not your order');
+
+    try {
+      const vendorName = Array.isArray(order.vendors) ? order.vendors[0]?.name : order.vendors?.name;
+      await dispatchNotification({
+        userId: order.user_id,
+        eventKey,
+        orderId: order.id,
+        dedupeKey,
+        context: {
+          orderReference: order.order_reference,
+          vendorName: vendorName || null,
+          collectionTime: order.collection_slots?.starts_at || null,
+          collectionPoint: order.collection_points?.name || null,
+          total: order.total ?? null,
+          currency: order.currency || null,
+        },
+      });
+    } catch (notificationError) {
+      console.error(`[Notification] Failed to dispatch ${eventKey}:`, notificationError);
+    }
+
+    return res.status(200).json({ message });
+  } catch (error) {
+    if (error instanceof ApiError) return sendError(res, error.status, error.code, error.message);
+    console.error('[Email] Order notification failed:', error.message);
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to send email');
+  }
+}
+
 // Order confirmation
 export async function sendOrderConfirmedEmail(req, res) {
-  try {
-    const { to, orderNumber, vendorName, collectionTime, items, total } = req.body;
-    const html = orderConfirmed({ userName: to.split('@')[0], orderNumber, vendorName, collectionTime, items, total });
-    await sendEmail({ to, subject: `Order #${orderNumber} confirmed - Merchant Munchies`, html });
-    res.status(200).json({ message: 'Order confirmation sent' });
-  } catch (error) {
-    console.error('[Email] Order confirmation failed:', error.message);
-    res.status(500).json({ error: 'Failed to send email' });
-  }
+  return dispatchOwnedOrderEmail(req, res, {
+    eventKey: 'order.placed',
+    dedupeKey: 'checkout',
+    message: 'Order confirmation sent',
+  });
 }
 
 // Order ready
 export async function sendOrderReadyEmail(req, res) {
-  try {
-    const { to, orderNumber, vendorName, collectionPoint } = req.body;
-    const html = orderReady({ userName: to.split('@')[0], orderNumber, vendorName, collectionPoint });
-    await sendEmail({ to, subject: `Order #${orderNumber} is ready! - Merchant Munchies`, html });
-    res.status(200).json({ message: 'Order ready notification sent' });
-  } catch (error) {
-    console.error('[Email] Order ready notification failed:', error.message);
-    res.status(500).json({ error: 'Failed to send email' });
-  }
+  return dispatchOwnedOrderEmail(req, res, {
+    eventKey: 'order.ready_for_collection',
+    dedupeKey: 'ready_for_collection',
+    message: 'Order ready notification sent',
+  });
 }

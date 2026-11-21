@@ -696,7 +696,7 @@ Notification events include:
 - Catering delivery.
 - Vendor unavailable.
 
-Users may control non-essential notification preferences. Transactional notifications required to complete an order remain active.
+Users may control non-essential notification preferences. These preferences now gate both in-app and email delivery; transactional notifications required to complete an order remain active.
 
 ### 23. Help / Support
 
@@ -1216,12 +1216,25 @@ POST   /favorites/menu-items/:menuItemId
 
 ## Notifications
 
+The in-app notification centre is available at `/notifications`. It uses the
+authenticated notification API below; the bell in the global header shows the
+user's unread state and level.
+
 ```text
 GET    /notifications
+GET    /notifications/unread-count
 PATCH  /notifications/:notificationId/read
+PATCH  /notifications/:notificationId/unread
+DELETE /notifications/:notificationId
+PATCH  /notifications/read-all
+DELETE /notifications/read
 GET    /notification-preferences
 PATCH  /notification-preferences
 ```
+
+Apply `server/src/docs/migrations/034_notification_center.sql` before using the
+notification centre. See `server/src/docs/NOTIFICATIONS.md` for the event,
+preference-gating, dedupe and email-delivery rules.
 
 ## Feedback / support
 

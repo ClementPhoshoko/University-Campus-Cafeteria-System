@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { IconBell, IconShoppingCart, IconChefHat, IconSun, IconMoon } from '@tabler/icons-react';
+import { IconBell, IconShoppingCart, IconSun, IconMoon } from '@tabler/icons-react';
 import DesktopNav from './DesktopNav.jsx';
 import { useTheme } from '../../contexts/ThemeContext.jsx';
+import { useNotifications } from '../../contexts/NotificationsContext.jsx';
 import logo from '../../assets/main_logo.webp';
+import './ApplicationHeader.css';
 
 /**
  * Global application header (glass topbar).
@@ -15,6 +17,14 @@ import logo from '../../assets/main_logo.webp';
 export default function ApplicationHeader({ actions }) {
   const ref = useRef(null);
   const { isDark, toggleTheme } = useTheme();
+  const { unreadCount, level } = useNotifications();
+  const hasUnread = unreadCount > 0;
+  const bellLabel = hasUnread
+    ? `Notifications, ${unreadCount} unread`
+    : 'Notifications, no unread';
+  const bellTitle = hasUnread
+    ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'} (${level})`
+    : 'No unread notifications';
 
   useEffect(() => {
     const onScroll = () => {
@@ -51,9 +61,24 @@ export default function ApplicationHeader({ actions }) {
           <Link to="/cart" className="icon-button" aria-label="Your cart">
             <IconShoppingCart size={19} stroke={1.8} />
           </Link>
-          <button type="button" className="icon-button" aria-label="Notifications">
+          <Link
+            to="/notifications"
+            className="icon-button notification-bell"
+            aria-label={bellLabel}
+            title={bellTitle}
+          >
             <IconBell size={19} stroke={1.8} />
-          </button>
+            {hasUnread && (
+              <span
+                className={`notification-bell__indicator notification-bell__indicator--${level}`}
+                aria-hidden="true"
+              >
+                {level === 'alert' && (
+                  <span className="notification-bell__count">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                )}
+              </span>
+            )}
+          </Link>
         </div>
       </div>
     </header>

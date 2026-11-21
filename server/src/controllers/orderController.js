@@ -11,6 +11,7 @@ import { expireCartIfExpired } from '../services/cartExpiry.js';
 import { resolveUnitPrice } from '../utils/pricing.js';
 import { generateOrderReference } from '../utils/orderReference.js';
 import { isMockPaymentEnabled } from '../services/paymentMode.js';
+import { dispatchNotification } from '../services/notificationService.js';
 import { validateCartOptions } from './cartController.js';
 
 const db = () => supabaseAdmin;
@@ -252,6 +253,30 @@ export async function createOrder(req, res) {
       ? checkout.items
       : orderItems.map((item) => ({ ...item, order_id: checkout.order.id }));
 
+    // Notifications are best-effort: checkout has already succeeded.
+    try {
+      await dispatchNotification({
+        userId,
+        eventKey: 'order.placed',
+        orderId: checkout.order.id,
+        dedupeKey: 'checkout',
+        context: {
+          orderReference: checkout.order.order_reference || null,
+          vendorName: vendor.name || null,
+          collectionTime: slot.starts_at || null,
+          items: itemRows.map((item) => ({
+            name: item.item_name_snapshot || item.name || 'Item',
+            quantity: item.quantity,
+            price: item.line_total ?? item.price ?? 0,
+          })),
+          total: checkout.order.total ?? total,
+          currency: checkout.order.currency || 'ZAR',
+        },
+      });
+    } catch (notificationError) {
+      console.error('[Notification] Failed to dispatch order.placed:', notificationError);
+    }
+
     return respond(req, res, {
       success: true,
       order: {
@@ -325,6 +350,31 @@ export async function processMockPayment(req, res) {
         reason: `Development mock payment ${outcome}`, category: 'lifecycle',
       }),
     ]);
+
+    if (!result.idempotent) {
+      const eventKey = {
+        succeeded: 'order.payment_confirmed',
+        failed: 'order.payment_failed',
+        cancelled: 'order.cancelled',
+      }[outcome];
+      try {
+        await dispatchNotification({
+          userId: req.user.id,
+          eventKey,
+          orderId,
+          dedupeKey: outcome,
+          context: {
+            orderReference: order?.order_reference || null,
+            status: order?.status || null,
+            paymentStatus: order?.payment_status || null,
+            total: order?.total ?? null,
+            currency: order?.currency || null,
+          },
+        });
+      } catch (notificationError) {
+        console.error(`[Notification] Failed to dispatch ${eventKey}:`, notificationError);
+      }
+    }
 
     const { collection_reference_hash, collection_reference_last4, ...safeOrder } = order;
     return respond(req, res, {
@@ -469,7 +519,7 @@ export async function cancelMyOrder(req, res) {
 
     const { data: order, error: oError } = await db()
       .from('orders')
-      .select('id, status, user_id, payment_status')
+      .select('id, order_reference, status, user_id, payment_status')
       .eq('id', orderId)
       .maybeSingle();
     if (oError) throw oError;
@@ -506,6 +556,22 @@ export async function cancelMyOrder(req, res) {
       reason: 'Order cancelled by customer',
       category: 'lifecycle',
     });
+
+    const eventKey = order.payment_status === 'succeeded' ? 'order.refunded' : 'order.cancelled';
+    try {
+      await dispatchNotification({
+        userId: order.user_id,
+        eventKey,
+        orderId,
+        dedupeKey: 'customer-cancel',
+        context: {
+          orderReference: updated?.order_reference || order.order_reference || null,
+          paymentStatus: updated?.payment_status || null,
+        },
+      });
+    } catch (notificationError) {
+      console.error(`[Notification] Failed to dispatch ${eventKey}:`, notificationError);
+    }
 
     return respond(req, res, { success: true, order: updated });
   } catch (err) {
