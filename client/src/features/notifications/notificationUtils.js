@@ -137,7 +137,7 @@ export function notificationFromRow(row) {
     title: row.title || '',
     body: row.body || '',
     metadata: { ...metadata, actionPath, context: metadata.context || {} },
-    channel: row.channel || 'in_app',
+    channel: row.channel ?? null,
     status: row.status || (readAt ? 'read' : 'sent'),
     sentAt: row.sent_at || null,
     readAt,
@@ -148,7 +148,7 @@ export function notificationFromRow(row) {
 
 function matchesNotificationView(notification, filter, search) {
   if (!notification?.id) return false;
-  if (notification.channel && notification.channel !== 'in_app') return false;
+  if (notification.channel !== 'in_app') return false;
   if (filter === 'unread' && notification.isRead) return false;
   if (filter === 'read' && !notification.isRead) return false;
 
@@ -156,6 +156,22 @@ function matchesNotificationView(notification, filter, search) {
   if (!term) return true;
   return [notification.title, notification.body]
     .some((value) => typeof value === 'string' && value.toLowerCase().includes(term));
+}
+
+/**
+ * Stable client-side fingerprint used only to stop historical duplicate rows
+ * from appearing twice before the dedupe migration has been applied. The
+ * server id remains authoritative for every update and delete.
+ */
+function notificationFingerprint(notification) {
+  if (!notification?.id) return null;
+  return [
+    notification.eventKey || '',
+    notification.sentAt || notification.createdAt || '',
+    notification.metadata?.actionPath || '',
+    notification.title || '',
+    notification.body || '',
+  ].join('\u0001');
 }
 
 /**
@@ -203,6 +219,10 @@ export function applyNotificationEvents(current, events, options = {}) {
     }
 
     if (matchesNotificationView(notification, filter, search)) {
+      const fingerprint = notificationFingerprint(notification);
+      if (fingerprint && list.some((item) => notificationFingerprint(item) === fingerprint)) {
+        continue;
+      }
       total += 1;
       changed = true;
       if (page === 1) {

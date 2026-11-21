@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
+import NotFoundScreen from './NotFoundScreen.jsx';
 import SessionExpiredScreen from './SessionExpiredScreen.jsx';
 import connectedAvatar from '../../assets/avatars/connected_avatar.webp';
 import notConnectedAvatar from '../../assets/avatars/not_connected_avatar.webp';
@@ -28,6 +29,9 @@ export default function ProtectedRoute() {
   }
 
   if (!user) {
+    // A signed-out visitor cannot resolve a private order resource. Treat the
+    // detail URL as missing rather than revealing that the route exists.
+    if (/^\/orders\/[^/]+\/?$/.test(location.pathname)) return <NotFoundScreen />;
     const returnTo = `${location.pathname}${location.search}${location.hash}`;
     return <SessionExpiredScreen redirectTo={`/login?returnTo=${encodeURIComponent(returnTo)}`} />;
   }

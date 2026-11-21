@@ -13,6 +13,7 @@ Apply the numbered migration before deploying the API:
 -- from a transaction-capable SQL client (Supabase SQL editor, psql, etc.)
 \i server/src/docs/migrations/034_notification_center.sql
 \i server/src/docs/migrations/035_notification_inbox_realtime.sql
+\i server/src/docs/migrations/036_notification_dedupe_canonical.sql
 ```
 
 `034_notification_center.sql` is idempotent: it adds `metadata jsonb not null
@@ -29,6 +30,12 @@ identity to `full` so filtered DELETE events are delivered, and adds
 `public.notifications` to `supabase_realtime`. The service role keeps full
 access because **the server creates and deletes notification rows**; clients
 may only read their own rows and mark them read through the API below.
+
+`036_notification_dedupe_canonical.sql` is idempotent. It rewrites historical
+order-scoped `dedupe_key` values to `eventKey:orderId::<channel>` and deletes
+the duplicate rows created by earlier caller-specific hints. The dispatcher
+also checks for an existing row before inserting, so idempotency no longer
+depends solely on the database index.
 
 ## API
 

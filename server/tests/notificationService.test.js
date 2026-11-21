@@ -22,6 +22,7 @@ function createDbStub(responder) {
     query.insert = (payload) => record({ method: 'insert', payload });
     query.select = (selection, options) => record({ method: 'select', selection, options });
     query.eq = (column, value) => record({ method: 'eq', column, value });
+    query.limit = (value) => record({ method: 'limit', value });
     query.maybeSingle = () => Promise.resolve(responder(local, calls));
     query.then = (onFulfilled, onRejected) => Promise.resolve(responder(local, calls)).then(onFulfilled, onRejected);
     return query;
@@ -110,7 +111,30 @@ test('disabled promotions and collection reminders skip dispatch entirely', asyn
   }
 });
 
-test('a dedupe conflict returns the existing row and does not send a second email', async () => {
+test('order dedupe keys ignore caller hints so every endpoint maps to one event', () => {
+  const fromCheckout = buildDedupeKey({
+    eventKey: 'order.cancelled', orderId: ORDER_ID, dedupeKey: 'cancelled', channel: 'in_app',
+  });
+  const fromCustomerCancel = buildDedupeKey({
+    eventKey: 'order.cancelled', orderId: ORDER_ID, dedupeKey: 'customer-cancel', channel: 'in_app',
+  });
+  const fromVendorRejection = buildDedupeKey({
+    eventKey: 'order.cancelled', orderId: ORDER_ID, dedupeKey: 'rejected', channel: 'in_app',
+  });
+
+  assert.equal(fromCheckout, fromCustomerCancel);
+  assert.equal(fromCheckout, fromVendorRejection);
+  assert.notEqual(
+    fromCheckout,
+    buildDedupeKey({ eventKey: 'order.cancelled', orderId: ORDER_ID, channel: 'email' }),
+  );
+  assert.notEqual(
+    buildDedupeKey({ eventKey: 'cart.expiring', dedupeKey: 'cart-1' }),
+    buildDedupeKey({ eventKey: 'cart.expiring', dedupeKey: 'cart-2' }),
+  );
+});
+
+test('an already dispatched event returns the existing row without a second insert or email', async () => {
   const existing = { id: 'existing-row', event_key: 'order.placed', channel: 'in_app' };
   let insertCount = 0;
   const db = createDbStub((local) => {
@@ -136,13 +160,39 @@ test('a dedupe conflict returns the existing row and does not send a second emai
   assert.equal(result.duplicate, true);
   assert.equal(result.inApp, existing);
   assert.equal(result.email, null);
-  assert.equal(insertCount, 1);
+  assert.equal(insertCount, 0, 'pre-insert lookup prevents the redundant write');
   assert.equal(emailCount, 0);
   const lookup = db.calls.find((call) => call.method === 'eq' && call.column === 'dedupe_key');
   assert.equal(
     lookup.value,
-    buildDedupeKey({ eventKey: 'order.placed', orderId: ORDER_ID, dedupeKey: 'checkout-v1', channel: 'in_app' }),
+    buildDedupeKey({ eventKey: 'order.placed', orderId: ORDER_ID, channel: 'in_app' }),
   );
+});
+
+test('a unique race still resolves to the existing row', async () => {
+  const existing = { id: 'existing-row', event_key: 'order.placed', channel: 'in_app' };
+  let insertCount = 0;
+  const db = createDbStub((local) => {
+    if (local.some((call) => call.method === 'insert')) {
+      insertCount += 1;
+      return { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint' } };
+    }
+    return insertCount > 0 ? { data: existing, error: null } : { data: null, error: null };
+  });
+
+  const result = await dispatchNotification({
+    userId: USER_ID,
+    eventKey: 'order.placed',
+    orderId: ORDER_ID,
+    db,
+  }, {
+    getProfile: async () => ({ email: null, notification_preferences: {} }),
+    sendEmail: async () => { throw new Error('should not be called'); },
+  });
+
+  assert.equal(insertCount, 1);
+  assert.equal(result.duplicate, true);
+  assert.equal(result.inApp, existing);
 });
 
 test('email failure is recorded on a separate row without throwing or failing the in-app row', async () => {

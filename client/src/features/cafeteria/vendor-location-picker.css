@@ -23,6 +23,15 @@
   line-height: 1.45;
 }
 .vendor-location-picker .custom-dropdown { width: min(390px, 58%); flex: 0 1 390px; }
+
+.vendor-location-picker--skeleton .vendor-location-picker__copy { width: min(280px, 40%); }
+.vendor-location-picker__skeleton-title,
+.vendor-location-picker__skeleton-text,
+.vendor-location-picker__skeleton-select { display: block; }
+.vendor-location-picker__skeleton-title { width: 112px; height: 14px; }
+.vendor-location-picker__skeleton-text { width: 100%; max-width: 248px; height: 12px; margin-top: 4px; }
+.vendor-location-picker__skeleton-select { width: min(390px, 58%); height: 44px; border-radius: var(--radius-sm); }
+
 .view-food__location-picker { margin: var(--space-5) 0 0; }
 .view-food__location-required { display: grid; gap: var(--space-4); margin-top: var(--space-6); }
 .view-food__location-required h1 {
@@ -41,4 +50,6 @@
 @media (max-width: 620px) {
   .vendor-location-picker { align-items: stretch; flex-direction: column; gap: var(--space-3); padding: var(--space-3); }
   .vendor-location-picker .custom-dropdown { width: 100%; flex-basis: auto; }
+  .vendor-location-picker--skeleton .vendor-location-picker__copy { width: 100%; }
+  .vendor-location-picker__skeleton-select { width: 100%; }
 }

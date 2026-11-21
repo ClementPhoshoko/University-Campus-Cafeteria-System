@@ -1232,9 +1232,10 @@ GET    /notification-preferences
 PATCH  /notification-preferences
 ```
 
-Apply `server/src/docs/migrations/034_notification_center.sql` before using the
-notification centre. See `server/src/docs/NOTIFICATIONS.md` for the event,
-preference-gating, dedupe and email-delivery rules.
+Apply `server/src/docs/migrations/034_notification_center.sql`,
+`035_notification_inbox_realtime.sql` and `036_notification_dedupe_canonical.sql`
+before using the notification centre. See `server/src/docs/NOTIFICATIONS.md` for
+the event, preference-gating, dedupe and email-delivery rules.
 
 ## Feedback / support
 

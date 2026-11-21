@@ -36,7 +36,10 @@ function readUnreadCount(payload) {
 function normalizeNotificationEvent(payload) {
   const eventType = payload?.eventType || payload?.event_type;
   const raw = eventType === 'DELETE' ? payload?.old : payload?.new;
-  if (!raw?.id || (raw.channel && raw.channel !== 'in_app')) return null;
+  // Email rows are audit records with their own dedupe key and id. A missing
+  // channel must not silently default to the inbox, otherwise every mailed
+  // event appears a second time in the list.
+  if (!raw?.id || raw.channel !== 'in_app') return null;
 
   if (eventType === 'DELETE') return { type: 'delete', id: raw.id };
   const notification = notificationFromRow(raw);

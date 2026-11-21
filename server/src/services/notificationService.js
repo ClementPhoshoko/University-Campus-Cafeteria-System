@@ -11,12 +11,17 @@ import {
 } from './notificationCatalog.js';
 
 /**
- * Deterministic key for one (event, order, caller key, channel) notification.
- * The caller-supplied part is only an idempotency hint; it is never used to
- * choose the category, level, title or recipient.
+ * Deterministic key for one (event, resource, channel) notification.
+ *
+ * Order-scoped events are identified only by the event key and order id. The
+ * checkout flow, payment outcome, customer cancellation, vendor action and
+ * email-resend endpoints all describe the same business event for one order,
+ * so their caller hints must not create separate rows. The hint is kept only
+ * for non-order resources such as a cart id, where it is the identity.
  */
 export function buildDedupeKey({ eventKey, orderId = null, dedupeKey = null, channel = 'in_app' } = {}) {
-  return `${eventKey}:${orderId ?? 'none'}:${dedupeKey ?? ''}:${channel}`;
+  const resourceKey = orderId != null ? '' : (dedupeKey ?? '');
+  return `${eventKey}:${orderId ?? 'none'}:${resourceKey}:${channel}`;
 }
 
 export function isUniqueViolation(error) {
@@ -49,13 +54,22 @@ export async function findExistingNotification(db, userId, dedupeKeyValue) {
     .select(NOTIFICATION_COLUMNS)
     .eq('user_id', userId)
     .eq('dedupe_key', dedupeKeyValue)
+    .limit(1)
     .maybeSingle();
   if (error) throw error;
   return data || null;
 }
 
-/** Insert a row, returning the pre-existing row on a unique-key race. */
+/**
+ * Insert a row, returning the pre-existing row when this event was already
+ * dispatched. The lookup happens before the insert so idempotency does not
+ * depend on the database index alone; the unique-violation path still covers
+ * two concurrent dispatches racing between lookup and insert.
+ */
 export async function insertNotificationRow(db, payload) {
+  const existing = await findExistingNotification(db, payload.user_id, payload.dedupe_key);
+  if (existing) return { row: existing, duplicated: true };
+
   const { data, error } = await db
     .from('notifications')
     .insert(payload)
@@ -80,7 +94,7 @@ export async function insertNotificationRow(db, payload) {
  * @param {string} params.eventKey - key from the central notification catalog
  * @param {string|null} [params.orderId]
  * @param {object} [params.context] - template values for this event
- * @param {string|null} [params.dedupeKey] - caller idempotency hint
+ * @param {string|null} [params.dedupeKey] - resource id for non-order events (e.g. cart id)
  * @param {object} [params.db] - Supabase client (defaults to the service role)
  * @param {object} [deps] - injectable { sendEmail, getProfile } for tests
  * @returns {Promise<null|{inApp: object, email: object|null, duplicate?: boolean, emailFailed?: boolean}>}

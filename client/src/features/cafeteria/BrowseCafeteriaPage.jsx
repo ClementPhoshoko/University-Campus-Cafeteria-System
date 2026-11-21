@@ -15,7 +15,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { listVendorMenu, getVendor, addToCart } from '../../services/employeeApi.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import { useFetch } from '../../hooks/useFetch.js';
-import VendorLocationPicker from './VendorLocationPicker.jsx';
+import VendorLocationPicker, { VendorLocationPickerSkeleton } from './VendorLocationPicker.jsx';
 import { resolveVendorLocationId } from './vendorLocationSelection.js';
 import '../../components/cards/CardSkeletonShimmer.css';
 import './browse-cafeteria.css';
@@ -488,15 +488,19 @@ export default function BrowseCafeteriaPage() {
           </div>
         </header>
 
-        {!isReviewsView && vendor && <VendorLocationPicker
-          locations={vendor.locations}
-          value={selectedLocationId}
-          onChange={(locationId) => {
-            const next = new URLSearchParams(searchParams);
-            next.set('locationId', locationId);
-            setSearchParams(next);
-          }}
-        />}
+        {!isReviewsView && (vendor ? (
+          <VendorLocationPicker
+            locations={vendor.locations}
+            value={selectedLocationId}
+            onChange={(locationId) => {
+              const next = new URLSearchParams(searchParams);
+              next.set('locationId', locationId);
+              setSearchParams(next);
+            }}
+          />
+        ) : vendorLoading ? (
+          <VendorLocationPickerSkeleton />
+        ) : null)}
 
         {!isReviewsView && (
           menuLoading

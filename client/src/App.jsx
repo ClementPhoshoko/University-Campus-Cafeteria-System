@@ -130,7 +130,6 @@ export default function App() {
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/auth/confirm" element={<EmailConfirmation />} />
       <Route path="/auth/recovery" element={<PasswordRecovery />} />
-      <Route path="*" element={<NotFoundScreen />} />
       <Route element={<AuthLayout />}>
         <Route path="/vendor-invitations/:token" element={<VendorInvitationPage />} />
       </Route>
@@ -190,6 +189,7 @@ export default function App() {
         </Route>
       </Route>
 
+      <Route path="*" element={<NotFoundScreen />} />
     </Routes>
   );
 }

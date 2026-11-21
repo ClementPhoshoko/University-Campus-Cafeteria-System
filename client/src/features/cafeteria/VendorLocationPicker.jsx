@@ -1,6 +1,25 @@
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
+import Skeleton from '../../components/ui/Skeleton.jsx';
 import { makeVendorLocationOptions } from './vendorLocationSelection.js';
+import '../../components/cards/CardSkeletonShimmer.css';
 import './vendor-location-picker.css';
+
+export function VendorLocationPickerSkeleton({ className = '' }) {
+  return (
+    <div
+      className={`vendor-location-picker vendor-location-picker--skeleton${className ? ` ${className}` : ''}`}
+      role="status"
+      aria-label="Loading pickup locations"
+      aria-busy="true"
+    >
+      <div className="vendor-location-picker__copy" aria-hidden="true">
+        <Skeleton className="vendor-location-picker__skeleton-title home_card-skeleton-shimmer" />
+        <Skeleton className="vendor-location-picker__skeleton-text home_card-skeleton-shimmer" />
+      </div>
+      <Skeleton className="vendor-location-picker__skeleton-select home_card-skeleton-shimmer" aria-hidden="true" />
+    </div>
+  );
+}
 
 export default function VendorLocationPicker({ locations, value, onChange, className = '' }) {
   const options = makeVendorLocationOptions(locations);

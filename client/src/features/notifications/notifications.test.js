@@ -89,6 +89,7 @@ test('unread provider is session-scoped, abort-aware and realtime-backed', () =>
   assert.match(providerSource, /AbortController/);
   assert.match(providerSource, /postgres_changes/);
   assert.match(providerSource, /user_id=eq\.\$\{userId\}/);
+  assert.match(providerSource, /raw\.channel !== 'in_app'/);
   assert.match(providerSource, /notificationFromRow/);
   assert.match(providerSource, /publishEvents/);
   assert.match(providerSource, /notificationEvent/);
@@ -248,6 +249,7 @@ test('realtime rows are reshaped into the API notification DTO', () => {
     isRead: false,
   });
   assert.equal(notificationFromRow({ id: 'n-2', metadata: { actionPath: 'https://evil.example' } }).metadata.actionPath, null);
+  assert.equal(notificationFromRow({ id: 'n-3' }).channel, null, 'a realtime row without a channel must not become an inbox row');
 });
 
 test('realtime events patch one row without fetching the inbox again', () => {
@@ -283,6 +285,31 @@ test('realtime events patch one row without fetching the inbox again', () => {
   }], { search: 'third' });
   assert.deepEqual(inserted.notifications.slice(0, 1).map((item) => item.id), ['n-3']);
   assert.equal(inserted.pagination.total, 3);
+});
+
+test('duplicate realtime inserts never add a second inbox row', () => {
+  const current = {
+    notifications: [],
+    pagination: { page: 1, limit: 20, total: 0, totalPages: 1 },
+  };
+  const shared = {
+    channel: 'in_app',
+    eventKey: 'order.placed',
+    title: 'Order confirmed',
+    body: 'Campus Kitchen confirmed your order.',
+    sentAt: '2026-01-01T12:00:00Z',
+    metadata: { actionPath: '/orders/order-1' },
+    isRead: false,
+  };
+
+  const result = applyNotificationEvents(current, [
+    { type: 'insert', id: 'in-app-row', notification: { ...shared, id: 'in-app-row' } },
+    { type: 'insert', id: 'email-row', notification: { ...shared, id: 'email-row', channel: 'email' } },
+    { type: 'insert', id: 'legacy-row', notification: { ...shared, id: 'legacy-row' } },
+  ]);
+
+  assert.deepEqual(result.notifications.map((item) => item.id), ['in-app-row']);
+  assert.equal(result.pagination.total, 1);
 });
 
 test('notifications use category icons and friendly prose without identifier cards', () => {
