@@ -19,6 +19,7 @@ import {
 import NotificationDetail from './NotificationDetail.jsx';
 import NotificationInbox from './NotificationInbox.jsx';
 import {
+  applyNotificationEvents,
   isInternalActionPath,
   NOTIFICATION_LIMIT,
 } from './notificationUtils.js';
@@ -30,7 +31,7 @@ export default function NotificationsPage() {
   const userId = session?.user?.id || 'anonymous';
   const navigate = useNavigate();
   const confirm = useConfirm();
-  const { unreadCount, notificationRevision, applyLocalChange, refreshUnreadCount } = useNotifications();
+  const { unreadCount, notificationEvent, applyLocalChange, refreshUnreadCount } = useNotifications();
 
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -40,7 +41,10 @@ export default function NotificationsPage() {
   const [busyIds, setBusyIds] = useState(() => new Set());
   const [actionError, setActionError] = useState('');
   const pendingRef = useRef(new Set());
-  const handledRevisionRef = useRef(notificationRevision);
+  const handledEventSequenceRef = useRef(notificationEvent?.sequence || 0);
+  // Realtime echoes of our own read mutations are redundant: the optimistic
+  // patch already applied the authoritative response.
+  const recentMutationsRef = useRef(new Map());
 
   const fetchNotifications = useCallback(({ signal } = {}) => listNotifications({
     page,
@@ -87,13 +91,47 @@ export default function NotificationsPage() {
     if (Number.isFinite(totalPages) && totalPages > 0 && page > totalPages) setPage(totalPages);
   }, [page, pagination.totalPages]);
 
-  // Realtime/poll events refresh the current page without replacing it with a
-  // loading skeleton; useFetch revalidates from cache in the background.
+  // Live row changes patch the loaded page in place. There is no list request
+  // here; only a lost realtime socket triggers a full resync.
   useEffect(() => {
-    if (notificationRevision === handledRevisionRef.current) return;
-    handledRevisionRef.current = notificationRevision;
-    refetch();
-  }, [notificationRevision, refetch]);
+    if (!notificationEvent || notificationEvent.sequence === handledEventSequenceRef.current) return;
+    handledEventSequenceRef.current = notificationEvent.sequence;
+
+    const events = Array.isArray(notificationEvent.events) ? notificationEvent.events : [];
+    if (events.some((event) => event?.type === 'resync')) {
+      refetch();
+      refreshUnreadCount({ force: true });
+      return;
+    }
+
+    const now = Date.now();
+    const liveEvents = events.filter((event) => {
+      if (event?.type !== 'update' || !event.id) return Boolean(event);
+      const mutatedAt = recentMutationsRef.current.get(event.id);
+      if (mutatedAt && now - mutatedAt < 2500) {
+        recentMutationsRef.current.delete(event.id);
+        return false;
+      }
+      return true;
+    });
+    if (!liveEvents.length) return;
+
+    mutate((current) => applyNotificationEvents(current, liveEvents, {
+      filter,
+      search: debouncedSearch,
+    }));
+
+    const deletedIds = new Set(liveEvents.filter((event) => event?.type === 'delete').map((event) => event.id));
+    if (selected?.id && deletedIds.has(selected.id)) setSelected(null);
+  }, [
+    notificationEvent,
+    filter,
+    debouncedSearch,
+    selected?.id,
+    mutate,
+    refetch,
+    refreshUnreadCount,
+  ]);
 
   const emptyState = useMemo(() => {
     if (search.trim()) {
@@ -160,25 +198,32 @@ export default function NotificationsPage() {
     });
   }, [mutate]);
 
+  const buildReadView = useCallback((notification, read) => {
+    const now = new Date().toISOString();
+    return {
+      ...notification,
+      isRead: read,
+      status: read ? 'read' : 'sent',
+      readAt: read ? notification.readAt || now : null,
+    };
+  }, []);
+
   const setReadState = useCallback(async (notification, read, options = {}) => {
     if (!token) return;
     const key = `read:${notification.id}`;
     if (!begin(key)) return;
     setActionError('');
 
-    // Update the UI and bell first. The API call confirms persistence; a
-    // failure rolls the optimistic patch back instead of leaving a stale row.
-    const now = new Date().toISOString();
-    const optimistic = {
-      ...notification,
-      isRead: read,
-      status: read ? 'read' : 'sent',
-      readAt: read ? notification.readAt || now : null,
-    };
+    // Paint the read state and the bell before any network work. The API call
+    // only confirms persistence; no list refetch is involved.
+    const optimistic = buildReadView(notification, read);
     const delta = (read ? 0 : 1) - (notification.isRead ? 1 : 0);
     patchNotification(notification.id, optimistic);
-    setSelected((current) => (current?.id === notification.id ? optimistic : current));
+    if (!options.selectionAlreadySet) {
+      setSelected((current) => (current?.id === notification.id ? optimistic : current));
+    }
     if (delta) applyLocalChange((current) => ({ unreadCount: current.unreadCount + delta }));
+    recentMutationsRef.current.set(notification.id, Date.now());
 
     try {
       const response = read
@@ -186,25 +231,36 @@ export default function NotificationsPage() {
         : await markNotificationUnread(notification.id, { token });
       const updated = { ...optimistic, ...(response?.notification || {}) };
       patchNotification(notification.id, updated);
-      setSelected((current) => (current?.id === notification.id ? updated : current));
-      // Navigation opens immediately after a read update. Use a background
-      // revalidation instead of invalidating the cached list mid-transition.
-      if (!options.skipInvalidate) refetch();
-      refreshUnreadCount({ force: true });
+      if (!options.selectionAlreadySet) {
+        setSelected((current) => (current?.id === notification.id ? updated : current));
+      }
+      // Reconcile only the small count endpoint, never the whole inbox.
+      refreshUnreadCount();
     } catch {
       patchNotification(notification.id, notification);
       setSelected((current) => (current?.id === notification.id ? notification : current));
       if (delta) applyLocalChange((current) => ({ unreadCount: current.unreadCount - delta }));
+      recentMutationsRef.current.delete(notification.id);
       setActionError('Could not update this notification. Please try again.');
     } finally {
       end(key);
     }
-  }, [token, begin, end, patchNotification, applyLocalChange, refetch, refreshUnreadCount]);
+  }, [
+    token,
+    begin,
+    end,
+    buildReadView,
+    patchNotification,
+    applyLocalChange,
+    refreshUnreadCount,
+  ]);
 
   const selectNotification = useCallback((notification) => {
-    setSelected(notification);
-    if (!notification.isRead) setReadState(notification, true);
-  }, [setReadState]);
+    // The selected detail gets the same read view in the same render pass as
+    // the list patch, so clicking feels immediate rather than waiting on API.
+    setSelected(notification.isRead ? notification : buildReadView(notification, true));
+    if (!notification.isRead) setReadState(notification, true, { selectionAlreadySet: true });
+  }, [buildReadView, setReadState]);
 
   const deleteOne = useCallback(async (notification) => {
     const confirmed = await confirm({
@@ -226,22 +282,22 @@ export default function NotificationsPage() {
       if (!notification.isRead) {
         applyLocalChange((current) => ({ unreadCount: current.unreadCount - 1 }));
       }
-      refetch();
-      refreshUnreadCount({ force: true });
+      recentMutationsRef.current.set(notification.id, Date.now());
+      refreshUnreadCount();
     } catch {
       setActionError('Could not delete this notification. Please try again.');
     } finally {
       end(key);
     }
-  }, [confirm, token, begin, end, removeNotifications, applyLocalChange, refetch, refreshUnreadCount]);
+  }, [confirm, token, begin, end, removeNotifications, applyLocalChange, refreshUnreadCount]);
 
   const openRelated = useCallback((notification) => {
     const path = notification.metadata?.actionPath;
     if (!isInternalActionPath(path)) return;
     if (!notification.isRead) {
-      // Fire-and-forget: the read state is patched locally and refreshed in the
-      // background, but must never delay or interrupt the route transition.
-      setReadState(notification, true, { skipInvalidate: true });
+      // Fire-and-forget: the read state is patched locally before the route
+      // transition and must never delay navigation.
+      setReadState(notification, true);
     }
     navigate(path);
   }, [navigate, setReadState]);
@@ -291,14 +347,13 @@ export default function NotificationsPage() {
           .map((notification) => notification.id));
         setSelected((current) => (current?.isRead ? null : current));
       }
-      refetch();
-      refreshUnreadCount({ force: true });
+      refreshUnreadCount();
     } catch {
       setActionError('Could not complete this action. Please try again.');
     } finally {
       end('bulk');
     }
-  }, [confirm, token, begin, end, mutate, data, removeNotifications, applyLocalChange, refetch, refreshUnreadCount]);
+  }, [confirm, token, begin, end, mutate, data, removeNotifications, applyLocalChange, refreshUnreadCount]);
 
   return (
     <PageContainer className="notifications-page">

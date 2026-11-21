@@ -51,7 +51,7 @@ export default function NotificationItem({ notification, selected, busy, onSelec
             <time dateTime={notification.sentAt || notification.createdAt || undefined}>{relative}</time>
           </span>
         </span>
-        {unread && <span className="notification-item__unread-dot" aria-hidden="true" />}
+        <span className="notification-item__unread-dot" aria-hidden="true" />
       </button>
 
       <NotificationActionsMenu

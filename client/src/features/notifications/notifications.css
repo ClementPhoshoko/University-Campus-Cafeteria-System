@@ -274,6 +274,7 @@
   font-size: 0.88rem;
   font-weight: var(--font-weight-semibold);
   line-height: 1.35;
+  transition: color var(--transition-normal);
 }
 
 .notification-item.is-unread .notification-item__title {

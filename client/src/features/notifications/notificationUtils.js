@@ -116,3 +116,113 @@ export function metadataEntries(notification) {
 
   return entries;
 }
+
+/**
+ * Supabase Realtime rows use the raw database column names. The server already
+ * stored the display metadata on the row, so this only reshapes it into the same
+ * DTO the paginated API returns. Category, level and actionPath remain
+ * server-owned values; the client never invents them.
+ */
+export function notificationFromRow(row) {
+  if (!row || typeof row !== 'object') return null;
+  const metadata = row.metadata && typeof row.metadata === 'object' ? row.metadata : {};
+  const actionPath = isInternalActionPath(metadata.actionPath) ? metadata.actionPath : null;
+  const readAt = row.read_at || null;
+
+  return {
+    id: row.id,
+    eventKey: row.event_key || null,
+    category: metadata.category || 'system',
+    level: ['info', 'warning', 'alert'].includes(metadata.level) ? metadata.level : 'info',
+    title: row.title || '',
+    body: row.body || '',
+    metadata: { ...metadata, actionPath, context: metadata.context || {} },
+    channel: row.channel || 'in_app',
+    status: row.status || (readAt ? 'read' : 'sent'),
+    sentAt: row.sent_at || null,
+    readAt,
+    createdAt: row.created_at || null,
+    isRead: Boolean(readAt),
+  };
+}
+
+function matchesNotificationView(notification, filter, search) {
+  if (!notification?.id) return false;
+  if (notification.channel && notification.channel !== 'in_app') return false;
+  if (filter === 'unread' && notification.isRead) return false;
+  if (filter === 'read' && !notification.isRead) return false;
+
+  const term = typeof search === 'string' ? search.trim().toLowerCase() : '';
+  if (!term) return true;
+  return [notification.title, notification.body]
+    .some((value) => typeof value === 'string' && value.toLowerCase().includes(term));
+}
+
+/**
+ * Apply realtime events to the already-loaded page. This deliberately avoids a
+ * list refetch: a read state change patches one row, a deletion removes one row,
+ * and a new row is prepended only when it belongs to the active page/filter.
+ */
+export function applyNotificationEvents(current, events, options = {}) {
+  if (!current || !Array.isArray(events) || events.length === 0) return current;
+  const { filter = 'all', search = '', limit = NOTIFICATION_LIMIT } = options;
+  const list = Array.isArray(current.notifications) ? [...current.notifications] : [];
+  let total = Number.isFinite(Number(current.pagination?.total))
+    ? Number(current.pagination.total)
+    : list.length;
+  const page = Number(current.pagination?.page) || 1;
+  let changed = false;
+
+  for (const event of events) {
+    if (!event || event.type === 'resync') continue;
+
+    if (event.type === 'delete') {
+      const id = event.id || event.notification?.id;
+      const index = list.findIndex((notification) => notification.id === id);
+      if (index >= 0) {
+        list.splice(index, 1);
+        total -= 1;
+        changed = true;
+      }
+      continue;
+    }
+
+    const notification = event.notification;
+    if (!notification?.id) continue;
+    const index = list.findIndex((item) => item.id === notification.id);
+
+    if (index >= 0) {
+      if (matchesNotificationView(notification, filter, search)) {
+        list[index] = notification;
+      } else {
+        list.splice(index, 1);
+        total -= 1;
+      }
+      changed = true;
+      continue;
+    }
+
+    if (matchesNotificationView(notification, filter, search)) {
+      total += 1;
+      changed = true;
+      if (page === 1) {
+        list.unshift(notification);
+        if (list.length > limit) list.length = limit;
+      }
+    }
+  }
+
+  if (!changed) return current;
+  const safeTotal = Math.max(0, total);
+  return {
+    ...current,
+    notifications: list,
+    pagination: {
+      ...current.pagination,
+      page,
+      limit,
+      total: safeTotal,
+      totalPages: Math.max(1, Math.ceil(safeTotal / limit)),
+    },
+  };
+}

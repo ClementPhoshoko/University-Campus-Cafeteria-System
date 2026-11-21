@@ -14,11 +14,13 @@ import {
 } from '../../services/notificationApi.js';
 import { getCache, setCache } from '../../services/cache.js';
 import {
+  applyNotificationEvents,
   categoryLabel,
   formatRelativeTime,
   isInternalActionPath,
   metadataEntries,
   normalizeLevel,
+  notificationFromRow,
   stripSensitiveText,
 } from './notificationUtils.js';
 
@@ -87,7 +89,10 @@ test('unread provider is session-scoped, abort-aware and realtime-backed', () =>
   assert.match(providerSource, /AbortController/);
   assert.match(providerSource, /postgres_changes/);
   assert.match(providerSource, /user_id=eq\.\$\{userId\}/);
-  assert.match(providerSource, /notificationRevision/);
+  assert.match(providerSource, /notificationFromRow/);
+  assert.match(providerSource, /publishEvents/);
+  assert.match(providerSource, /notificationEvent/);
+  assert.match(providerSource, /realtimeConnectedRef/);
   assert.match(providerSource, /FALLBACK_POLL_MS/);
 });
 
@@ -203,6 +208,83 @@ test('utility helpers honour internal paths, levels and metadata.context', () =>
   );
 });
 
+test('realtime rows are reshaped into the API notification DTO', () => {
+  const notification = notificationFromRow({
+    id: 'n-1',
+    event_key: 'order.accepted',
+    channel: 'in_app',
+    status: 'sent',
+    title: 'Order accepted',
+    body: 'Campus Kitchen accepted your order.',
+    metadata: {
+      category: 'order',
+      level: 'info',
+      actionPath: '/orders/order-1',
+      context: { vendorName: 'Campus Kitchen' },
+    },
+    sent_at: '2026-01-01T12:00:00Z',
+    read_at: null,
+    created_at: '2026-01-01T12:00:00Z',
+  });
+
+  assert.deepEqual(notification, {
+    id: 'n-1',
+    eventKey: 'order.accepted',
+    category: 'order',
+    level: 'info',
+    title: 'Order accepted',
+    body: 'Campus Kitchen accepted your order.',
+    metadata: {
+      category: 'order',
+      level: 'info',
+      actionPath: '/orders/order-1',
+      context: { vendorName: 'Campus Kitchen' },
+    },
+    channel: 'in_app',
+    status: 'sent',
+    sentAt: '2026-01-01T12:00:00Z',
+    readAt: null,
+    createdAt: '2026-01-01T12:00:00Z',
+    isRead: false,
+  });
+  assert.equal(notificationFromRow({ id: 'n-2', metadata: { actionPath: 'https://evil.example' } }).metadata.actionPath, null);
+});
+
+test('realtime events patch one row without fetching the inbox again', () => {
+  const current = {
+    notifications: [
+      { id: 'n-1', channel: 'in_app', title: 'Alpha', body: 'First', isRead: false },
+      { id: 'n-2', channel: 'in_app', title: 'Beta', body: 'Second', isRead: false },
+    ],
+    pagination: { page: 1, limit: 20, total: 2, totalPages: 1 },
+  };
+
+  const read = applyNotificationEvents(current, [{
+    type: 'update',
+    id: 'n-1',
+    notification: { id: 'n-1', channel: 'in_app', title: 'Alpha', body: 'First', isRead: true },
+  }]);
+  assert.equal(read.notifications[0].isRead, true);
+  assert.equal(read.notifications.length, 2);
+  assert.equal(read.pagination.total, 2);
+
+  const unreadFilter = applyNotificationEvents(current, [{
+    type: 'update',
+    id: 'n-1',
+    notification: { id: 'n-1', channel: 'in_app', title: 'Alpha', body: 'First', isRead: true },
+  }], { filter: 'unread' });
+  assert.deepEqual(unreadFilter.notifications.map((item) => item.id), ['n-2']);
+  assert.equal(unreadFilter.pagination.total, 1);
+
+  const inserted = applyNotificationEvents(current, [{
+    type: 'insert',
+    id: 'n-3',
+    notification: { id: 'n-3', channel: 'in_app', title: 'Gamma', body: 'Third', isRead: false },
+  }], { search: 'third' });
+  assert.deepEqual(inserted.notifications.slice(0, 1).map((item) => item.id), ['n-3']);
+  assert.equal(inserted.pagination.total, 3);
+});
+
 test('notifications use category icons and friendly prose without identifier cards', () => {
   assert.match(itemSource, /<NotificationIcon category=\{notification\.category\} size=\{20\} \/>/);
   assert.match(detailSource, /<NotificationIcon category=\{notification\.category\} size=\{22\}/);
@@ -242,25 +324,37 @@ test('inbox styling removes selected borders, aligns the menu and uses a slim sc
   assert.match(listBlock, /scrollbar-width: thin/);
   assert.match(listBlock, /scrollbar-color: var\(--color-border-subtle\) transparent/);
   assert.match(cssSource, /\.notification-inbox__list::-webkit-scrollbar\s*\{[\s\S]*?width: 5px/);
+  assert.match(itemSource, /<span className="notification-item__unread-dot"/);
+  assert.match(cssSource, /\.notification-item:not\(\.is-unread\) \.notification-item__unread-dot\s*\{[^}]*opacity: 0/);
   assert.doesNotMatch(cssSource, /notification-avatar/);
 });
 
-test('opening related content navigates without waiting for a list refetch', () => {
+test('opening related content navigates without waiting for persistence', () => {
   assert.match(pageSource, /navigate\(path\)/);
-  assert.match(pageSource, /setReadState\(notification, true, \{ skipInvalidate: true \}\)/);
-  assert.match(pageSource, /if \(!options\.skipInvalidate\) refetch\(\)/);
+  assert.match(pageSource, /setReadState\(notification, true\)/);
+  assert.doesNotMatch(pageSource, /skipInvalidate/);
   assert.doesNotMatch(pageSource, /await setReadState\(notification, true\)/);
 });
 
-test('read state is optimistic and realtime revisions refresh the current page', () => {
-  assert.match(pageSource, /const optimistic = \{/);
+test('clicking an item paints read state immediately and never refetches the list', () => {
+  assert.match(pageSource, /const optimistic = buildReadView\(notification, read\)/);
   assert.match(pageSource, /patchNotification\(notification\.id, optimistic\)/);
   assert.match(pageSource, /current\.unreadCount \+ delta/);
   assert.match(pageSource, /patchNotification\(notification\.id, notification\)/);
   assert.match(pageSource, /current\.unreadCount - delta/);
-  assert.match(pageSource, /notificationRevision/);
-  assert.match(pageSource, /handledRevisionRef/);
-  assert.match(pageSource, /refetch\(\)/);
+  assert.match(pageSource, /setSelected\(notification\.isRead \? notification : buildReadView\(notification, true\)\)/);
+  assert.match(pageSource, /only confirms persistence; no list refetch is involved/);
+  assert.match(pageSource, /Reconcile only the small count endpoint, never the whole inbox/);
+  assert.doesNotMatch(pageSource, /if \(!options\.skipInvalidate\) refetch\(\)/);
+});
+
+test('realtime events patch the loaded page instead of reloading it', () => {
+  assert.match(pageSource, /notificationEvent/);
+  assert.match(pageSource, /handledEventSequenceRef/);
+  assert.match(pageSource, /recentMutationsRef/);
+  assert.match(pageSource, /applyNotificationEvents\(current, liveEvents/);
+  assert.match(pageSource, /event\?\.type === 'resync'/);
+  assert.doesNotMatch(pageSource, /notificationRevision/);
 });
 
 test('layout styles keep desk top panels independent and reduce motion', () => {

@@ -11,6 +11,7 @@ import { useAuth } from '../hooks/useAuth.js';
 import { getNotificationUnreadCount } from '../services/notificationApi.js';
 import { attachAbortListener } from '../services/abortSignal.js';
 import { supabase } from '../services/supabase.js';
+import { notificationFromRow } from '../features/notifications/notificationUtils.js';
 
 const NotificationsContext = createContext(null);
 const LEVELS = ['none', 'info', 'warning', 'alert'];
@@ -28,9 +29,29 @@ function readUnreadCount(payload) {
 }
 
 /**
- * Global unread summary for the header bell. Counts come from the API service,
- * realtime events come from Supabase, and all in-flight work is aborted on
- * sign-out or unmount.
+ * Convert a Supabase postgres_changes payload into the smallest event the inbox
+ * needs. Email delivery rows are excluded because they are audit records, not
+ * inbox messages.
+ */
+function normalizeNotificationEvent(payload) {
+  const eventType = payload?.eventType || payload?.event_type;
+  const raw = eventType === 'DELETE' ? payload?.old : payload?.new;
+  if (!raw?.id || (raw.channel && raw.channel !== 'in_app')) return null;
+
+  if (eventType === 'DELETE') return { type: 'delete', id: raw.id };
+  const notification = notificationFromRow(raw);
+  if (!notification) return null;
+  return {
+    type: eventType === 'INSERT' ? 'insert' : 'update',
+    id: notification.id,
+    notification,
+  };
+}
+
+/**
+ * Global unread summary and live inbox events for the header bell and the
+ * notification page. Counts come from the API service, row changes come from
+ * Supabase Realtime, and all in-flight work is aborted on sign-out or unmount.
  */
 export function NotificationsProvider({ children }) {
   const { session } = useAuth();
@@ -39,20 +60,28 @@ export function NotificationsProvider({ children }) {
 
   const [summary, setSummary] = useState({ unreadCount: 0, level: 'none' });
   const [loading, setLoading] = useState(false);
-  const [revision, setRevision] = useState(0);
+  const [notificationEvent, setNotificationEvent] = useState(null);
 
   const requestIdRef = useRef(0);
   const controllerRef = useRef(null);
   const inFlightRef = useRef(null);
-  const debounceRef = useRef(null);
+  const eventQueueRef = useRef([]);
+  const eventSequenceRef = useRef(0);
+  const eventDebounceRef = useRef(null);
+  const realtimeConnectedRef = useRef(false);
 
   const reset = useCallback(() => {
     requestIdRef.current += 1;
     controllerRef.current?.abort();
     controllerRef.current = null;
     inFlightRef.current = null;
+    window.clearTimeout(eventDebounceRef.current);
+    eventDebounceRef.current = null;
+    eventQueueRef.current = [];
+    realtimeConnectedRef.current = false;
     setSummary({ unreadCount: 0, level: 'none' });
     setLoading(false);
+    setNotificationEvent(null);
   }, []);
 
   const refreshUnreadCount = useCallback(({ signal, force = false } = {}) => {
@@ -92,21 +121,24 @@ export function NotificationsProvider({ children }) {
     return promise;
   }, [token, reset]);
 
-  // Supabase Realtime is the primary freshness path: the database row is
-  // written before the email is sent, so the bell and inbox update immediately.
-  // Polling remains as a low-frequency safety net if a socket is unavailable.
+  // Realtime row changes patch the loaded page directly; only the small count
+  // endpoint is called. This avoids reloading the whole inbox on every read.
+  const publishEvents = useCallback((events) => {
+    const valid = events.filter(Boolean);
+    if (!valid.length) return;
+    eventQueueRef.current.push(...valid);
+    window.clearTimeout(eventDebounceRef.current);
+    eventDebounceRef.current = window.setTimeout(() => {
+      const batch = eventQueueRef.current.splice(0);
+      eventSequenceRef.current += 1;
+      setNotificationEvent({ sequence: eventSequenceRef.current, events: batch });
+    }, REALTIME_DEBOUNCE_MS);
+  }, []);
+
   useEffect(() => {
     if (!token || !userId || typeof supabase?.channel !== 'function') return undefined;
 
     if (typeof supabase.realtime?.setAuth === 'function') supabase.realtime.setAuth(token);
-
-    const notify = () => {
-      window.clearTimeout(debounceRef.current);
-      debounceRef.current = window.setTimeout(() => {
-        setRevision((current) => current + 1);
-        refreshUnreadCount({ force: true });
-      }, REALTIME_DEBOUNCE_MS);
-    };
 
     const channel = supabase
       .channel(`notifications:${userId}`)
@@ -115,25 +147,42 @@ export function NotificationsProvider({ children }) {
         schema: 'public',
         table: 'notifications',
         filter: `user_id=eq.${userId}`,
-      }, notify)
-      .subscribe();
+      }, (payload) => {
+        const event = normalizeNotificationEvent(payload);
+        if (!event) return;
+        publishEvents([event]);
+        refreshUnreadCount({ force: true });
+      })
+      .subscribe((status) => {
+        realtimeConnectedRef.current = status === 'SUBSCRIBED';
+      });
 
     return () => {
-      window.clearTimeout(debounceRef.current);
-      debounceRef.current = null;
+      window.clearTimeout(eventDebounceRef.current);
+      eventDebounceRef.current = null;
+      eventQueueRef.current = [];
+      realtimeConnectedRef.current = false;
       supabase.removeChannel(channel);
     };
-  }, [token, userId, refreshUnreadCount]);
+  }, [token, userId, publishEvents, refreshUnreadCount]);
+
+  // Polling is only a safety net. While the socket is connected it refreshes
+  // the bell count; when disconnected it also asks the page to resync.
+  const fallbackSync = useCallback(() => {
+    if (!token || document.visibilityState !== 'visible') return;
+    refreshUnreadCount({ force: true });
+    if (!realtimeConnectedRef.current) publishEvents([{ type: 'resync' }]);
+  }, [token, publishEvents, refreshUnreadCount]);
 
   useEffect(() => {
     if (!token) return undefined;
-    const id = window.setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      setRevision((current) => current + 1);
-      refreshUnreadCount({ force: true });
-    }, FALLBACK_POLL_MS);
-    return () => window.clearInterval(id);
-  }, [token, refreshUnreadCount]);
+    const id = window.setInterval(fallbackSync, FALLBACK_POLL_MS);
+    document.addEventListener('visibilitychange', fallbackSync);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', fallbackSync);
+    };
+  }, [token, fallbackSync]);
 
   useEffect(() => {
     if (!token) {
@@ -166,10 +215,10 @@ export function NotificationsProvider({ children }) {
     unreadCount: summary.unreadCount,
     level: summary.level,
     loading,
-    notificationRevision: revision,
+    notificationEvent,
     refreshUnreadCount,
     applyLocalChange,
-  }), [summary, loading, revision, refreshUnreadCount, applyLocalChange]);
+  }), [summary, loading, notificationEvent, refreshUnreadCount, applyLocalChange]);
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 }

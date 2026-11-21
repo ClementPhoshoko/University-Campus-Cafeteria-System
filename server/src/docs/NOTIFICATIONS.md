@@ -58,13 +58,14 @@ owned by another user. Responses are always `Cache-Control: no-store`.
 ## Freshness and caching
 
 The client subscribes to `postgres_changes` on `public.notifications`, filtered
-by the authenticated user id, and refreshes the bell plus the current inbox
-page as soon as a row is inserted, updated or deleted. A 45-second visibility-
-aware poll is kept as a fallback when a realtime socket is unavailable. The
-inbox uses an in-memory `useFetch` cache keyed by user/filter/page/search and a
-short debounce to coalesce bursts; mutations and realtime events revalidate in
-the background so the visible page never collapses into a loading skeleton.
-The client marks a row read optimistically and rolls back if the API rejects it.
+by the authenticated user id. Row changes patch only the affected item in the
+loaded page and refresh the small unread-count endpoint; the paginated inbox is
+not re-fetched on a read, delete or new-row event. A 45-second visibility-aware
+poll refreshes the bell and only triggers a full resync when the realtime socket
+is unavailable. The inbox uses an in-memory `useFetch` cache keyed by
+user/filter/page/search and a short debounce to coalesce bursts. Clicking an
+item paints the read view and decrements the bell immediately, then persists in
+the background and rolls back locally if the API rejects the mutation.
 
 `GET notification-preferences` returns:
 
