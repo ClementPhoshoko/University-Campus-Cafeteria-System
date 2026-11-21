@@ -47,7 +47,7 @@ async function safeAssetUrl(path, options) {
 // GET /favorites/state — Lightweight flags for cards
 // ---------------------------------------------------------------------------
 
-export async function getFavoriteState(req, res, dbClient = supabaseAdmin) {
+export async function getFavoriteStateWithDb(req, res, dbClient) {
   try {
     const userId = req.user.id;
     const [vendorResult, itemResult] = await Promise.all([
@@ -74,11 +74,15 @@ export async function getFavoriteState(req, res, dbClient = supabaseAdmin) {
   }
 }
 
+export function getFavoriteState(req, res) {
+  return getFavoriteStateWithDb(req, res, supabaseAdmin);
+}
+
 // ---------------------------------------------------------------------------
 // GET /favorites/vendors
 // ---------------------------------------------------------------------------
 
-export async function listFavoriteVendors(req, res, dbClient = supabaseAdmin) {
+export async function listFavoriteVendorsWithDb(req, res, dbClient) {
   try {
     const userId = req.user.id;
     const { pageNum, limitNum, from, to } = parsePagination(req.query);
@@ -113,11 +117,15 @@ export async function listFavoriteVendors(req, res, dbClient = supabaseAdmin) {
   }
 }
 
+export function listFavoriteVendors(req, res) {
+  return listFavoriteVendorsWithDb(req, res, supabaseAdmin);
+}
+
 // ---------------------------------------------------------------------------
 // POST /favorites/vendors/:vendorId — Toggle
 // ---------------------------------------------------------------------------
 
-export async function toggleFavoriteVendor(req, res, dbClient = supabaseAdmin) {
+export async function toggleFavoriteVendorWithDb(req, res, dbClient) {
   try {
     const userId = req.user.id;
     const vendorId = requireUuidParam(req, res, 'vendorId');
@@ -169,11 +177,15 @@ export async function toggleFavoriteVendor(req, res, dbClient = supabaseAdmin) {
   }
 }
 
+export function toggleFavoriteVendor(req, res) {
+  return toggleFavoriteVendorWithDb(req, res, supabaseAdmin);
+}
+
 // ---------------------------------------------------------------------------
 // GET /favorites/menu-items
 // ---------------------------------------------------------------------------
 
-export async function listFavoriteMenuItems(req, res, dbClient = supabaseAdmin) {
+export async function listFavoriteMenuItemsWithDb(req, res, dbClient) {
   try {
     const userId = req.user.id;
     const { pageNum, limitNum, from, to } = parsePagination(req.query);
@@ -218,11 +230,15 @@ export async function listFavoriteMenuItems(req, res, dbClient = supabaseAdmin) 
   }
 }
 
+export function listFavoriteMenuItems(req, res) {
+  return listFavoriteMenuItemsWithDb(req, res, supabaseAdmin);
+}
+
 // ---------------------------------------------------------------------------
 // POST /favorites/menu-items/:menuItemId — Toggle
 // ---------------------------------------------------------------------------
 
-export async function toggleFavoriteMenuItem(req, res, dbClient = supabaseAdmin) {
+export async function toggleFavoriteMenuItemWithDb(req, res, dbClient) {
   try {
     const userId = req.user.id;
     const menuItemId = requireUuidParam(req, res, 'menuItemId');
@@ -272,4 +288,8 @@ export async function toggleFavoriteMenuItem(req, res, dbClient = supabaseAdmin)
   } catch (err) {
     return handleControllerError(res, err);
   }
+}
+
+export function toggleFavoriteMenuItem(req, res) {
+  return toggleFavoriteMenuItemWithDb(req, res, supabaseAdmin);
 }

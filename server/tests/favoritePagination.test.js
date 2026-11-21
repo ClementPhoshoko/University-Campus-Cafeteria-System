@@ -1,10 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
   getFavoriteState,
+  getFavoriteStateWithDb,
   listFavoriteMenuItems,
+  listFavoriteMenuItemsWithDb,
   listFavoriteVendors,
+  listFavoriteVendorsWithDb,
   toggleFavoriteVendor,
+  toggleFavoriteVendorWithDb,
+  toggleFavoriteMenuItem,
 } from '../src/controllers/favoriteController.js';
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
@@ -59,7 +66,7 @@ test('favorite vendor list is paginated, stable-ordered, and resolves asset URLs
   });
   const { res, recorder } = createResponseRecorder();
 
-  await listFavoriteVendors({
+  await listFavoriteVendorsWithDb({
     user: { id: USER_ID },
     query: { page: '2', limit: '5' },
     headers: {},
@@ -106,7 +113,7 @@ test('favorite menu item list returns status fields and bounded pagination', asy
   });
   const { res, recorder } = createResponseRecorder();
 
-  await listFavoriteMenuItems({
+  await listFavoriteMenuItemsWithDb({
     user: { id: USER_ID },
     query: { page: '1', limit: '500' },
     headers: {},
@@ -149,7 +156,7 @@ test('favorite state returns user-scoped ID sets without caching', async () => {
   };
   const { res, recorder } = createResponseRecorder();
 
-  await getFavoriteState({ user: { id: USER_ID }, headers: {} }, res, db);
+  await getFavoriteStateWithDb({ user: { id: USER_ID }, headers: {} }, res, db);
 
   assert.equal(recorder.statusCode, 200);
   assert.equal(recorder.headers['Cache-Control'], 'no-store');
@@ -187,7 +194,7 @@ test('a broken favourite asset is omitted instead of failing the whole list', as
     });
     const { res, recorder } = createResponseRecorder();
 
-    await listFavoriteVendors({
+    await listFavoriteVendorsWithDb({
       user: { id: USER_ID },
       query: { page: '1', limit: '10' },
       headers: {},
@@ -215,7 +222,7 @@ test('a vendor toggle stops before inserting when the lookup fails', async () =>
   };
   const { res, recorder } = createResponseRecorder();
 
-  await toggleFavoriteVendor({
+  await toggleFavoriteVendorWithDb({
     user: { id: USER_ID },
     params: { vendorId: VENDOR_ID },
     headers: {},
@@ -238,7 +245,7 @@ test('missing favourite tables return an actionable configuration error', async 
     });
     const { res, recorder } = createResponseRecorder();
 
-    await listFavoriteVendors({
+    await listFavoriteVendorsWithDb({
       user: { id: USER_ID },
       query: { page: '1', limit: '10' },
       headers: {},
@@ -249,5 +256,27 @@ test('missing favourite tables return an actionable configuration error', async 
     assert.match(recorder.body.error.message, /migration 033/i);
   } finally {
     console.error = originalError;
+  }
+});
+
+test('Express handlers do not expose their third argument as a database client', () => {
+  const handlers = [
+    getFavoriteState,
+    listFavoriteVendors,
+    toggleFavoriteVendor,
+    listFavoriteMenuItems,
+    toggleFavoriteMenuItem,
+  ];
+  const source = fs.readFileSync(
+    fileURLToPath(new URL('../src/controllers/favoriteController.js', import.meta.url)),
+    'utf8',
+  );
+
+  for (const handler of handlers) {
+    assert.equal(handler.length, 2, `${handler.name} must declare only req and res`);
+    assert.doesNotMatch(
+      source,
+      new RegExp(`export (?:async )?function ${handler.name}\\([^)]*dbClient`),
+    );
   }
 });

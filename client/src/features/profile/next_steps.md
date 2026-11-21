@@ -334,6 +334,8 @@ Evidence: `ProfileLayout.jsx` passes the confirmed `updateProfile` result to pag
 
 `services/abortSignal.js` bridges caller signals into API requests with an `onabort` fallback, so embedded browsers without `AbortSignal.addEventListener` do not break favourites or other API reads.
 
+`favoriteController.js` keeps its Express handlers to `req, res` and moves Supabase injection into `*WithDb` helpers. The previous optional third `dbClient` argument received Express's `next` callback, which produced generic 500s for every favourite read and toggle.
+
 ### Phase 5 — Verification and rollout
 
 **Status: static verification complete; live target-environment checks pending.**
@@ -342,8 +344,8 @@ The project owner elected to perform the live checks directly. Keep this phase o
 
 - [x] Apply migration 032 before deploying profile API code. Migration 032 has already been applied in the target Supabase project.
 - [x] Keep migration 033 available for projects provisioned from numbered migrations. The current target project already has `favorite_vendors` and `favorite_menu_items`; direct service-role reads confirmed both tables and asset resolution work.
-- [x] Restart the stale API process before retesting. The live server had started before the favourites routes were added, so `/favorites/state` returned 404; after restart it returns 401 without a token and the paginated favourite queries resolve.
-- [x] Run latest static checks: server tests (**151/151**), client build (**passed**, pre-existing chunk-size warning), client tests (**79/79**), OpenAPI parse (**94 paths**), and `git diff --check` (**clean**).
+- [x] Fix Express handler injection: the controllers accepted an optional third `dbClient` argument, so Express passed its `next` callback instead and every favourites request threw before reaching Supabase. Exported route handlers now declare only `req, res`; dependency-injected `*WithDb` helpers remain for tests.
+- [x] Run latest static checks: server tests (**152/152**), client build (**passed**, pre-existing chunk-size warning), client tests (**79/79**), OpenAPI parse (**94 paths**), and `git diff --check` (**clean**).
 - [ ] Verify self-update ownership, blocked protected fields, site/building mismatch rejection, preference validation, and audit sanitization in the target environment.
 - [ ] Verify favourite pagination stability, removal, inactive-item handling, cache invalidation, card-star state, and the save animation in the target environment.
 - [ ] Verify deep links, keyboard navigation, responsive layout, and sensitive-data display.
