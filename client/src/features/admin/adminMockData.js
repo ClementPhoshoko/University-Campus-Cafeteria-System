@@ -4,6 +4,10 @@
 // Enum values match the schema (e.g., vendor status = pending/approved/suspended/inactive).
 // For UI display convenience, denormalised fields (actor_name, resource_name) are included.
 
+import { VENDOR_ROLE_IDS } from '../../utils/roles.js';
+
+export { VENDOR_ROLE_IDS };
+
 export const ADMIN_ROLES = {
   COMPANY_ADMIN: 'admin',
   FINANCE: 'finance',
@@ -1548,6 +1552,8 @@ export const ALL_ROLES = [
   { id: 'support', label: 'Technical Support', tone: 'warning' },
   { id: 'auditor', label: 'System Auditor', tone: 'info' },
 ];
+
+export const PLATFORM_ROLES = ALL_ROLES.filter((role) => !VENDOR_ROLE_IDS.has(role.id));
 
 export const ROLE_FILTERS = [
   { id: 'all', label: 'All roles' },

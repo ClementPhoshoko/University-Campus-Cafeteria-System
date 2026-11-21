@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './useAuth.js';
 import { supabase } from '../services/supabase.js';
+import { filterPlatformRoleIds } from '../utils/roles.js';
 
 /**
  * Returns the authenticated user's roles and helper functions.
@@ -41,7 +42,7 @@ export function useRoles() {
         ]);
 
         if (!cancelled) {
-          const appRoles = roleResult.error ? [] : (roleResult.data || []).map((r) => r.role);
+          const appRoles = roleResult.error ? [] : filterPlatformRoleIds((roleResult.data || []).map((r) => r.role));
           const vendorRoles = vendorResult.error ? [] : (vendorResult.data || []).map((row) => (
             row.role === 'manager' ? 'vendor_manager' : 'vendor_staff'
           ));

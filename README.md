@@ -1320,12 +1320,22 @@ POST   /admin/vendors/:vendorId/users
 DELETE /admin/vendors/:vendorId/users/:userId
 ```
 
-Planned (users/reports/configuration):
+Vendor roles (`vendor_staff`, `vendor_manager`) are derived only from active `vendor_users` memberships. The platform role endpoints cannot write them, so a manager deactivating a member is immediately reflected in Admin → Users & Roles. Apply `server/src/docs/migrations/037_vendor_roles_derived_only.sql` once to remove legacy role rows and block future writes.
+
+User roles are implemented:
+
+```text
+GET    /admin/users
+GET    /admin/users/:userId/roles
+PUT    /admin/users/:userId/roles
+POST   /admin/users/:userId/roles
+DELETE /admin/users/:userId/roles/:role
+```
+
+Planned (dashboard/reports/configuration):
 
 ```text
 GET    /admin/dashboard
-GET    /admin/users
-PATCH  /admin/users/:userId/roles
 GET    /admin/audit-logs
 GET    /admin/reports
 PATCH  /admin/configuration

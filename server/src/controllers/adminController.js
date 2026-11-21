@@ -1,13 +1,25 @@
 import { supabaseAdmin } from '../config/supabase.js';
 import { writeAudit } from '../utils/audit.js';
 import { respond, CACHE } from '../utils/http.js';
-import { buildEffectiveRoleData, fetchEffectiveRoleData, mapVendorMemberRole, mergeEffectiveRoles } from '../utils/effectiveRoles.js';
+import { buildEffectiveRoleData, fetchEffectiveRoleData, filterPlatformRoles, isVendorRole, mapVendorMemberRole } from '../utils/effectiveRoles.js';
 
-const VALID_ROLES = [
+// Vendor roles are derived from active `vendor_users` memberships. They are
+// intentionally absent from this writable platform-role set.
+const VALID_PLATFORM_ROLES = [
   'employee', 'executive', 'executive_assistant', 'meeting_organiser',
-  'training_coordinator', 'cost_centre_owner', 'vendor_staff', 'vendor_manager',
+  'training_coordinator', 'cost_centre_owner',
   'admin', 'finance', 'support', 'auditor',
 ];
+
+const VENDOR_ROLE_MESSAGE = 'Vendor roles are managed through vendor memberships and cannot be assigned here';
+
+function validatePlatformRoles(roles) {
+  if (!Array.isArray(roles)) return 'roles must be an array';
+  const invalid = roles.filter((role) => !VALID_PLATFORM_ROLES.includes(role));
+  if (!invalid.length) return null;
+  if (invalid.some(isVendorRole)) return VENDOR_ROLE_MESSAGE;
+  return `Invalid roles: ${invalid.join(', ')}`;
+}
 
 /**
  * GET /admin/users
@@ -135,9 +147,9 @@ export async function getUserRoles(req, res) {
       });
     }
 
-    const roleDetails = rolesResult.data || [];
+    const roleDetails = (rolesResult.data || []).filter((row) => !isVendorRole(row.role));
     const vendorMemberships = vendorResult.data || [];
-    const platformRoles = roleDetails.map((r) => r.role);
+    const platformRoles = filterPlatformRoles(roleDetails.map((row) => row.role));
     const vendorRoles = [...new Set(vendorMemberships.map((row) => mapVendorMemberRole(row.role)).filter(Boolean))];
     const roleData = buildEffectiveRoleData(
       roleDetails.map((row) => ({ user_id: userId, role: row.role })),
@@ -148,7 +160,7 @@ export async function getUserRoles(req, res) {
     return respond(req, res, {
       success: true,
       user: profile,
-      roles: roleData[userId]?.roles || mergeEffectiveRoles(platformRoles, vendorMemberships),
+      roles: roleData[userId]?.roles || [],
       platformRoles,
       vendorRoles,
       roleDetails,
@@ -172,19 +184,11 @@ export async function setUserRoles(req, res) {
     const { userId } = req.params;
     const { roles } = req.body;
 
-    if (!Array.isArray(roles)) {
+    const validationError = validatePlatformRoles(roles);
+    if (validationError) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'roles must be an array' },
-      });
-    }
-
-    // Validate all roles
-    const invalid = roles.filter((r) => !VALID_ROLES.includes(r));
-    if (invalid.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'VALIDATION_ERROR', message: `Invalid roles: ${invalid.join(', ')}` },
+        error: { code: 'VALIDATION_ERROR', message: validationError },
       });
     }
 
@@ -266,10 +270,13 @@ export async function addRole(req, res) {
     const { userId } = req.params;
     const { role } = req.body;
 
-    if (!role || !VALID_ROLES.includes(role)) {
+    if (!role || !VALID_PLATFORM_ROLES.includes(role)) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}` },
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: isVendorRole(role) ? VENDOR_ROLE_MESSAGE : `Invalid role. Must be one of: ${VALID_PLATFORM_ROLES.join(', ')}`,
+        },
       });
     }
 
@@ -333,10 +340,13 @@ export async function removeRole(req, res) {
   try {
     const { userId, role } = req.params;
 
-    if (!VALID_ROLES.includes(role)) {
+    if (!VALID_PLATFORM_ROLES.includes(role)) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: `Invalid role: ${role}` },
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: isVendorRole(role) ? VENDOR_ROLE_MESSAGE : `Invalid role: ${role}`,
+        },
       });
     }
 

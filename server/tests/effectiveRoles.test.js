@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildEffectiveRoleData,
+  filterPlatformRoles,
+  isVendorRole,
   mapVendorMemberRole,
   mergeEffectiveRoles,
 } from '../src/utils/effectiveRoles.js';
@@ -10,6 +12,33 @@ test('maps vendor membership roles to platform role labels', () => {
   assert.equal(mapVendorMemberRole('manager'), 'vendor_manager');
   assert.equal(mapVendorMemberRole('staff'), 'vendor_staff');
   assert.equal(mapVendorMemberRole('admin'), null);
+});
+
+test('vendor roles are recognized and removed from writable platform role lists', () => {
+  assert.equal(isVendorRole('vendor_staff'), true);
+  assert.equal(isVendorRole('vendor_manager'), true);
+  assert.equal(isVendorRole('employee'), false);
+  assert.deepEqual(filterPlatformRoles(['employee', 'vendor_staff', null, 'vendor_manager', 'admin']), ['employee', 'admin']);
+});
+
+test('stale user_roles vendor labels never become effective vendor access', () => {
+  const data = buildEffectiveRoleData(
+    [
+      { user_id: 'user-a', role: 'employee' },
+      { user_id: 'user-a', role: 'vendor_staff' },
+    ],
+    [
+      { user_id: 'user-a', vendor_id: 'vendor-1', role: 'staff', is_active: false },
+    ],
+    ['user-a'],
+  );
+
+  assert.deepEqual(data['user-a'], {
+    roles: ['employee'],
+    platformRoles: ['employee'],
+    vendorRoles: [],
+    vendorMemberships: [],
+  });
 });
 
 test('merges active vendor roles with platform roles without duplicates', () => {

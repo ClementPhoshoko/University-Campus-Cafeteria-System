@@ -758,7 +758,7 @@ export async function addVendorUser(req, res) {
     const { error } = await db()
       .from('vendor_users')
       .upsert(
-        { user_id: userId, vendor_id: vendorId, role: result.value.role, granted_by: req.user.id },
+        { user_id: userId, vendor_id: vendorId, role: result.value.role, is_active: true, granted_by: req.user.id },
         { onConflict: 'user_id,vendor_id' },
       );
     if (error) throw error;

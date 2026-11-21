@@ -1,5 +1,18 @@
 import { supabaseAdmin } from '../config/supabase.js';
 
+export const VENDOR_ROLE_VALUES = ['vendor_staff', 'vendor_manager'];
+
+const vendorRoles = new Set(VENDOR_ROLE_VALUES);
+
+/** Vendor roles are derived from `vendor_users`, never from `user_roles`. */
+export function isVendorRole(role) {
+  return vendorRoles.has(role);
+}
+
+export function filterPlatformRoles(roles = []) {
+  return (roles || []).filter((role) => role && !isVendorRole(role));
+}
+
 /**
  * Vendor membership roles are stored per vendor in `vendor_users`, while
  * platform-wide roles live in `user_roles`. Admin views show the effective
@@ -12,7 +25,7 @@ export function mapVendorMemberRole(role) {
 }
 
 export function mergeEffectiveRoles(platformRoles = [], vendorMemberships = []) {
-  const roles = [...new Set((platformRoles || []).filter(Boolean))];
+  const roles = [...new Set(filterPlatformRoles(platformRoles))];
 
   for (const membership of vendorMemberships || []) {
     if (!membership || membership.is_active === false) continue;
@@ -43,7 +56,7 @@ export function buildEffectiveRoleData(platformRows = [], vendorRows = [], userI
   }
 
   for (const row of platformRows || []) {
-    if (!row?.user_id || !row.role) continue;
+    if (!row?.user_id || !row.role || isVendorRole(row.role)) continue;
     const entry = ensureUser(row.user_id);
     if (!entry.platformRoles.includes(row.role)) entry.platformRoles.push(row.role);
   }
