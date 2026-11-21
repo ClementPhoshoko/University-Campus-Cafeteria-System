@@ -93,6 +93,10 @@ Preference defaults: `order_updates !== false`, `promotions === true` (opt-in),
 keys receive a transactional-safe `system` definition so a future emitter
 cannot accidentally bypass gating.
 
+The `collection_reminders` storage key is shown in Profile as **Cart reminders**:
+“Remind me before my cart expires and when it is cleared”. Routine order
+progress, including “Ready for collection”, remains under **Order updates**.
+
 Bell level priority across unread rows: **alert** (payment failed, cancelled,
 refunded, corporate rejection, password/security) > **warning** (promotions,
 cart reminders, vendor availability) > **info** (any other unread row) >

@@ -204,8 +204,8 @@ export default function ProfilePreferencesPage() {
             onChange={(value) => updateNotificationDraft('promotions', value)}
           />
           <PreferenceToggle
-            label="Collection reminders"
-            description="Remind me before my order is ready for collection"
+            label="Cart reminders"
+            description="Remind me before my cart expires and when it is cleared"
             checked={notificationDraft.collection_reminders}
             disabled={savingNotifications}
             onChange={(value) => updateNotificationDraft('collection_reminders', value)}

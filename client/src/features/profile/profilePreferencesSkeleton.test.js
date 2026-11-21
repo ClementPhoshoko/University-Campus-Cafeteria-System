@@ -73,11 +73,13 @@ test('food edit cancel restores the confirmed profile values', () => {
   assert.doesNotMatch(page, /onCancel=\{\(\) => setEditingFood\(false\)\}/);
 });
 
-test('notification preference list is unchanged', () => {
+test('notification preference list matches the current labels', () => {
   assert.equal((page.match(/<PreferenceToggle/g) || []).length, 4);
   assert.match(page, /label="Order updates"/);
   assert.match(page, /label="Promotions & offers"/);
-  assert.match(page, /label="Collection reminders"/);
+  assert.match(page, /label="Cart reminders"/);
+  assert.match(page, /description="Remind me before my cart expires and when it is cleared"/);
+  assert.doesNotMatch(page, /Remind me before my order is ready for collection/);
   assert.match(page, /label="Transactional messages"/);
   assert.match(page, /checked\s+disabled/);
 });
