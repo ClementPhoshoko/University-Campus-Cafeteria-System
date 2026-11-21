@@ -223,6 +223,8 @@ Every route, API operation and database query must respect the authenticated use
 
 `*` External integrations remain subject to stakeholder approval and final implementation decisions.
 
+Redis is optional and only needed when running multiple API replicas that must share rate-limit state. See `server/src/docs/REDIS_SETUP.md` before adding it.
+
 ## 6.2 Implementation principles
 
 - React is the presentation layer.
