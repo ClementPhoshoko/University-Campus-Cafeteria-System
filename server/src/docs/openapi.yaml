@@ -1126,6 +1126,27 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  '/favorites/state':
+    get:
+      tags:
+        - Favorites
+      summary: Get favorite IDs
+      description: >
+        Return compact favourite ID sets for the authenticated employee so cards
+        can show their saved state without downloading full paginated lists.
+      operationId: getFavoriteState
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Favorite IDs retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteState'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   '/favorites/vendors':
     get:
       tags:
@@ -4286,6 +4307,27 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VendorMembership'
+
+    FavoriteState:
+      type: object
+      required:
+        - success
+        - vendorIds
+        - menuItemIds
+      properties:
+        success:
+          type: boolean
+          example: true
+        vendorIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        menuItemIds:
+          type: array
+          items:
+            type: string
+            format: uuid
 
     FavoriteVendor:
       type: object

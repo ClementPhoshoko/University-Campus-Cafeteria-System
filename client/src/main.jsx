@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
+import { FavoritesProvider } from './contexts/FavoritesContext.jsx';
 import { ConfirmProvider } from './components/confirmation/ConfirmProvider.jsx';
 import App from './App.jsx';
 import './styles/index.css';
@@ -14,7 +15,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         <ConfirmProvider>
           <AuthProvider>
-            <App />
+            <FavoritesProvider>
+              <App />
+            </FavoritesProvider>
           </AuthProvider>
         </ConfirmProvider>
       </BrowserRouter>

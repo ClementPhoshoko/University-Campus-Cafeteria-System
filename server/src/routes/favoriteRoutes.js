@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/authenticate.js';
 import {
+  getFavoriteState,
   listFavoriteVendors,
   toggleFavoriteVendor,
   listFavoriteMenuItems,
@@ -11,6 +12,7 @@ const favoriteRouter = Router();
 
 favoriteRouter.use(authenticate);
 
+favoriteRouter.get('/favorites/state', getFavoriteState);
 favoriteRouter.get('/favorites/vendors', listFavoriteVendors);
 favoriteRouter.post('/favorites/vendors/:vendorId', toggleFavoriteVendor);
 favoriteRouter.get('/favorites/menu-items', listFavoriteMenuItems);

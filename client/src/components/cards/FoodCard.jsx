@@ -2,6 +2,8 @@ import { IconCheck, IconPlus } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 import './FoodCard.css';
 import SmartImage from '../ui/SmartImage.jsx';
+import FavoriteStarButton from '../favorites/FavoriteStarButton.jsx';
+import { MENU_ITEM_FAVORITE } from '../../features/favorites/favoritesState.js';
 import { getAvailability } from './availability.js';
 
 export default function FoodCard({
@@ -38,6 +40,7 @@ export default function FoodCard({
         <div className="food_browse-image-wrap">
           {bestSeller && <span className="home_best-seller">Best Seller</span>}
           {badge}
+          <FavoriteStarButton kind={MENU_ITEM_FAVORITE} id={id} name={name} placement="meal" />
           <SmartImage src={image} alt={name} className="food_browse-image" width={132} height={132} onError={onImageError ? () => onImageError(id, vendorId, image) : undefined} />
         </div>
         <div className="food_browse-content">
@@ -96,6 +99,7 @@ export default function FoodCard({
       {bestSeller && <span className="home_best-seller">Best Seller</span>}
       <div className="home_vendor-media">
         {badge}
+        <FavoriteStarButton kind={MENU_ITEM_FAVORITE} id={id} name={name} placement="meal" />
         <SmartImage src={image} alt={name} width={220} height={280} onError={onImageError ? () => onImageError(id, vendorId, image) : undefined} />
       </div>
 

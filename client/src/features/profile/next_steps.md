@@ -45,6 +45,7 @@ All paths are mounted under `/api/v1`.
 | `GET /profile` | **New** | None | Self-only full profile. Derive ID from `req.user.id`. Ignore client-supplied IDs. Return full profile object with preferences, status, and timestamps. Use `Cache-Control: no-store` because allergy data is sensitive. `404 PROFILE_NOT_FOUND` if the row is missing. |
 | `PATCH /profile` | **New** | None | Self-only partial update. Accept only the allowlist below. Return the full refreshed profile. Use `no-store`. Validate all fields before writing. Write an explicit audit row. |
 | `GET /profile/access` | **New** | None | Read-only effective roles from `fetchEffectiveRoleData(req.user.id)`, matching Admin → Users. Return `roles`, `platformRoles`, `vendorRoles`, and `vendorMemberships`. No role writes. |
+| `GET /favorites/state` | **New** | None | Compact `vendorIds` and `menuItemIds` for card star state. Auth-derived, `no-store`, and non-fatal in the client when unavailable. |
 | `GET /sites?page&limit&search` | Existing | Yes | Site selector. Use existing active-only, paginated read. Default page size 20, max 100. |
 | `GET /sites/:siteId/buildings?page&limit` | Existing | Yes | Dependent building selector. Use existing active-only, paginated read. Default page size 20, max 100. |
 | `GET /favorites/vendors?page&limit` | **Modify** | Add | Replace unpaginated list with `page`/`limit`, `count: exact`, stable order (`created_at desc`, `vendor_id asc`), and `pagination` in the response. Default 20, max 100. Include vendor `status`/`is_active` so inactive favourites remain removable. |
@@ -80,6 +81,7 @@ server/src/validators/profileValidators.js
 server/tests/profileValidation.test.js
 server/tests/profileController.test.js
 server/src/docs/migrations/032_profile_self_service_guard.sql
+server/src/docs/migrations/033_favorites_self_service.sql
 ```
 
 Mount `profileRoutes` in `server/src/app.js` beside the existing authenticated routers.
@@ -251,7 +253,8 @@ Clean the duplicated override block in `profile.css` and remove stale selectors 
 - Replace sample data with paginated favourite vendor and meal lists.
 - Use `loading`, empty, error/retry, and removal states. Previous/Next controls request the next server page.
 - Link vendors to `/cafeterias/:cafeteriaId` and meals to `/cafeterias/:cafeteriaId/menu/:menuItemId`.
-- Inactive or unavailable favourites remain visible with a badge and remain removable.
+- Inactive or unavailable favourites remain visible with a badge and remain removable. Vendor `approved` is the active status; schema enums do not include `active`.
+- Star controls on vendor and meal cards read shared favourite IDs from `GET /favorites/state` and toggle through the canonical POST routes. They use an outline/filled star, a fast pop/glow on save, and reduced-motion fallbacks.
 
 ### Access
 
@@ -279,7 +282,7 @@ Evidence against each checkbox:
 | Router, controller, service, validators, auth-derived scoping | `profileRoutes.js`, `profileController.js`, `profileService.js`, `profileValidators.js`, `profileRoutes.test.js`, `profileController.test.js` |
 | `GET /profile`, `PATCH /profile`, `GET /profile/access` | Mounted in `app.js`; route and controller tests cover paths, auth-derived IDs, protected-field rejection, and sanitized audit output |
 | Migration 032 | `032_profile_self_service_guard.sql` plus `profileMigration.test.js`; migration applied in the target Supabase project |
-| Favourites pagination and `resolveAssetUrl` | `favoriteController.js` plus `favoritePagination.test.js` |
+| Favourites pagination, state, safe asset URLs, and schema guard | `favoriteController.js`, `favoriteRoutes.js`, `favoritesMigration.test.js`, and `favoritePagination.test.js`; migration 033 provisions the canonical tables/RLS for projects built from numbered migrations |
 | OpenAPI and `/auth/me` envelope | `openapi.yaml` plus `openapiProfile.test.js`; explicit YAML parse succeeded with 93 paths |
 | Validation, ownership, audit, and pagination tests | `profileValidators.test.js`, `profileController.test.js`, `profileMigration.test.js`, `favoritePagination.test.js` |
 
@@ -319,7 +322,7 @@ Evidence: nested `/profile/*` routes and `/profile` → `/profile/overview` redi
 
 **Status: complete — verified 2026-11-21.**
 
-Evidence: `ProfileLayout.jsx` passes the confirmed `updateProfile` result to pages and shows shared-shimmer overview and access skeletons during initial loads, with access placeholder heights and spacing matching the rendered role cards; `profileForms.js` builds only allowlisted patches; `ProfileOverviewPage.jsx` edits full name inline with edit/save/cancel controls beside its label, highlights only the active input, keeps other details visible, and saves the shared `CustomDropdown` location pickers through `PATCH /profile` with the site/building draft keys mapped explicitly into the allowlisted patch; the shared dropdown flips above the trigger when space is limited and uses the project's themed scrollbar; `ProfilePreferencesPage.jsx` normalizes arrays and uses an explicit dirty/save/cancel flow for allowed notification keys; `ProfileFavouritesPage.jsx` reads paginated lists and removes through toggle APIs; `ProfileAccessPage.jsx` reads only `GET /profile/access` and renders a single data-driven role grid using the shared `AccessSectionHeader`, `AccessRoleCard`, `AccessActiveStatus`, and `AccessEmptyState` components; vendor-derived roles stay in that grid with a `Vendor role` label and no vendor IDs or separate membership section; `effectiveRoles.js` still supplies the canonical role data; `ProfileSecurityPage.jsx` uses the existing OTP recovery route and current-device sign-out. Focused profile tests passed 35/35, the full client suite passed 69/69, and the production build passed.
+Evidence: `ProfileLayout.jsx` passes the confirmed `updateProfile` result to pages and shows shared-shimmer overview and access skeletons during initial loads, with access placeholder heights and spacing matching the rendered role cards; `profileForms.js` builds only allowlisted patches; `ProfileOverviewPage.jsx` edits full name inline with edit/save/cancel controls beside its label, highlights only the active input, keeps other details visible, and saves the shared `CustomDropdown` location pickers through `PATCH /profile` with the site/building draft keys mapped explicitly into the allowlisted patch; the shared dropdown flips above the trigger when space is limited and uses the project's themed scrollbar; `ProfilePreferencesPage.jsx` normalizes arrays and uses an explicit dirty/save/cancel flow for allowed notification keys; `ProfileFavouritesPage.jsx` reads paginated lists and removes through the shared favourite state; card stars use `FavoritesProvider`, `GET /favorites/state`, and the canonical toggle routes; `ProfileAccessPage.jsx` reads only `GET /profile/access` and renders a single data-driven role grid using the shared `AccessSectionHeader`, `AccessRoleCard`, `AccessActiveStatus`, and `AccessEmptyState` components; vendor-derived roles stay in that grid with a `Vendor role` label and no vendor IDs or separate membership section; `effectiveRoles.js` still supplies the canonical role data; `ProfileSecurityPage.jsx` uses the existing OTP recovery route and current-device sign-out. Focused profile tests passed 35/35, the full client suite passed 69/69, and the production build passed.
 
 - [x] Wire overview save flow through `PATCH /profile`.
 - [x] Wire location selectors to paginated site/building endpoints.
@@ -336,9 +339,10 @@ Evidence: `ProfileLayout.jsx` passes the confirmed `updateProfile` result to pag
 The project owner elected to perform the live checks directly. Keep this phase open until those results are recorded here.
 
 - [x] Apply migration 032 before deploying profile API code. Migration 032 has already been applied in the target Supabase project.
-- [x] Run server tests (**145/145**), client build (**passed**, pre-existing chunk-size warning), client tests (**69/69**), OpenAPI parse (**93 paths**), and `git diff --check` (**clean**).
+- [ ] Apply migration 033 before live retesting favourites. It creates `favorite_vendors`, `favorite_menu_items`, their grants, and ownership RLS policies for projects provisioned from numbered migrations.
+- [x] Run latest static checks: server tests (**150/150**), client build (**passed**, pre-existing chunk-size warning), client tests (**75/75**), OpenAPI parse (**94 paths**), and `git diff --check` (**clean**).
 - [ ] Verify self-update ownership, blocked protected fields, site/building mismatch rejection, preference validation, and audit sanitization in the target environment.
-- [ ] Verify favourite pagination stability, removal, inactive-item handling, and cache invalidation.
+- [ ] Verify favourite pagination stability, removal, inactive-item handling, cache invalidation, card-star state, and the save animation in the target environment.
 - [ ] Verify deep links, keyboard navigation, responsive layout, and sensitive-data display.
 - [ ] Do not mark this roadmap complete until schema, API, UI, docs, tests, and live checks agree.
 

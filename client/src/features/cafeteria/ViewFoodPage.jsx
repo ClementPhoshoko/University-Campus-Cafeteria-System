@@ -548,6 +548,7 @@ export default function ViewFoodPage() {
                   name={item.name}
                   price={formatPrice(item.base_price)}
                   image={item.image_url}
+                  vendorId={cafeteriaId}
                   to={`/cafeterias/${cafeteriaId}/menu/${item.id}${selectedLocationId ? `?locationId=${encodeURIComponent(selectedLocationId)}` : ''}`}
                 />
               ))}

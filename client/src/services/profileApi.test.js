@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { listFavoriteMenuItems, listFavoriteVendors } from './employeeApi.js';
+import { getFavoriteState, listFavoriteMenuItems, listFavoriteVendors } from './employeeApi.js';
 import { getProfile, getProfileAccess, updateProfile } from './profileApi.js';
 import { listSiteBuildings, listSites } from './locationApi.js';
 
@@ -59,17 +59,22 @@ test('location selectors forward pagination and search parameters', async () => 
 test('favourite wrappers forward pagination and avoid cached reads', async () => {
   const calls = mockFetch({ success: true, favorites: [], pagination: {} });
 
+  await getFavoriteState({ token: 'token-1' });
+  assert.equal(calls[0].url, 'http://localhost:5173/api/v1/favorites/state');
+  assert.equal(calls[0].options.cache, 'no-cache');
+  assert.equal(calls[0].options.headers.Authorization, 'Bearer token-1');
+
   await listFavoriteVendors({ token: 'token-1', page: 3, limit: 15 });
   assert.equal(
-    calls[0].url,
+    calls[1].url,
     'http://localhost:5173/api/v1/favorites/vendors?page=3&limit=15',
   );
-  assert.equal(calls[0].options.cache, 'no-cache');
+  assert.equal(calls[1].options.cache, 'no-cache');
 
   await listFavoriteMenuItems({ token: 'token-1', page: 1, limit: 50 });
   assert.equal(
-    calls[1].url,
+    calls[2].url,
     'http://localhost:5173/api/v1/favorites/menu-items?page=1&limit=50',
   );
-  assert.equal(calls[1].options.cache, 'no-cache');
+  assert.equal(calls[2].options.cache, 'no-cache');
 });

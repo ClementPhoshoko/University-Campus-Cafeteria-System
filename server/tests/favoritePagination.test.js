@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  getFavoriteState,
   listFavoriteMenuItems,
   listFavoriteVendors,
+  toggleFavoriteVendor,
 } from '../src/controllers/favoriteController.js';
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
@@ -64,7 +66,7 @@ test('favorite vendor list is paginated, stable-ordered, and resolves asset URLs
   }, res, db);
 
   assert.equal(recorder.statusCode, 200);
-  assert.equal(recorder.headers['Cache-Control'], 'private, max-age=10, must-revalidate');
+  assert.equal(recorder.headers['Cache-Control'], 'no-store');
   assert.deepEqual(recorder.body.pagination, { page: 2, limit: 5, total: 43, totalPages: 9 });
   assert.equal(recorder.body.favorites[0].vendor.status, 'approved');
   assert.equal(recorder.body.favorites[0].vendor.logo_url, null);
@@ -126,4 +128,100 @@ test('favorite menu item list returns status fields and bounded pagination', asy
   assert.match(selection, /vendors\(.*status/);
   assert.ok(db.calls.some((call) => call.method === 'order' && call.column === 'menu_item_id' && call.options.ascending === true));
   assert.ok(db.calls.some((call) => call.method === 'range' && call.from === 0 && call.to === 99));
+});
+
+test('favorite state returns user-scoped ID sets without caching', async () => {
+  const calls = [];
+  const db = {
+    from(table) {
+      calls.push(table);
+      return {
+        select(selection) { calls.push(['select', selection]); return this; },
+        eq(column, value) { calls.push(['eq', column, value]); return this; },
+        then(onFulfilled, onRejected) {
+          const result = table === 'favorite_vendors'
+            ? { data: [{ vendor_id: VENDOR_ID }], error: null }
+            : { data: [{ menu_item_id: MENU_ITEM_ID }], error: null };
+          return Promise.resolve(result).then(onFulfilled, onRejected);
+        },
+      };
+    },
+  };
+  const { res, recorder } = createResponseRecorder();
+
+  await getFavoriteState({ user: { id: USER_ID }, headers: {} }, res, db);
+
+  assert.equal(recorder.statusCode, 200);
+  assert.equal(recorder.headers['Cache-Control'], 'no-store');
+  assert.deepEqual(recorder.body, {
+    success: true,
+    vendorIds: [VENDOR_ID],
+    menuItemIds: [MENU_ITEM_ID],
+  });
+  assert.deepEqual(calls.filter((call) => Array.isArray(call) && call[0] === 'eq'), [
+    ['eq', 'user_id', USER_ID],
+    ['eq', 'user_id', USER_ID],
+  ]);
+});
+
+test('a broken favourite asset is omitted instead of failing the whole list', async () => {
+  const originalWarn = console.warn;
+  console.warn = () => {};
+
+  try {
+    const db = createDbStub({
+      data: [{
+        vendor_id: VENDOR_ID,
+        created_at: '2026-06-01T10:00:00.000Z',
+        vendors: {
+          id: VENDOR_ID,
+          name: 'Campus Kitchen',
+          slug: 'campus-kitchen',
+          logo_url: 'vendor-assets/missing.png',
+          average_rating: 4.5,
+          status: 'approved',
+        },
+      }],
+      error: null,
+      count: 1,
+    });
+    const { res, recorder } = createResponseRecorder();
+
+    await listFavoriteVendors({
+      user: { id: USER_ID },
+      query: { page: '1', limit: '10' },
+      headers: {},
+    }, res, db);
+
+    assert.equal(recorder.statusCode, 200);
+    assert.equal(recorder.body.favorites[0].vendor.logo_url, null);
+  } finally {
+    console.warn = originalWarn;
+  }
+});
+
+test('a vendor toggle stops before inserting when the lookup fails', async () => {
+  const calls = [];
+  const db = {
+    from(table) {
+      calls.push(`from:${table}`);
+      return {
+        select() { return this; },
+        eq() { return this; },
+        maybeSingle: async () => ({ data: null, error: { code: 'XX000', message: 'lookup failed' } }),
+        insert() { calls.push('insert'); return this; },
+      };
+    },
+  };
+  const { res, recorder } = createResponseRecorder();
+
+  await toggleFavoriteVendor({
+    user: { id: USER_ID },
+    params: { vendorId: VENDOR_ID },
+    headers: {},
+  }, res, db);
+
+  assert.equal(recorder.statusCode, 500);
+  assert.equal(recorder.body.error.code, 'QUERY_ERROR');
+  assert.ok(!calls.includes('insert'));
 });

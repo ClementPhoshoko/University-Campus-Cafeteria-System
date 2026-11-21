@@ -3,11 +3,10 @@ import { Link } from 'react-router-dom';
 import { IconStar, IconX } from '@tabler/icons-react';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { useFetch } from '../../../hooks/useFetch.js';
+import { useFavorites } from '../../../contexts/FavoritesContext.jsx';
 import {
   listFavoriteMenuItems,
   listFavoriteVendors,
-  toggleFavoriteMenuItem,
-  toggleFavoriteVendor,
 } from '../../../services/employeeApi.js';
 import ProfilePagination from '../components/ProfilePagination.jsx';
 import { hasMorePages, pageAfterRemoval } from '../profileForms.js';
@@ -70,6 +69,10 @@ function FavouriteListCard({ title, count, state, error, onRetry, children, pagi
 
 export default function ProfileFavouritesPage() {
   const { session } = useAuth();
+  const {
+    toggleVendor: toggleFavoriteVendor,
+    toggleMenuItem: toggleFavoriteMenuItem,
+  } = useFavorites();
   const token = session?.access_token;
   const [vendorPage, setVendorPage] = useState(1);
   const [mealPage, setMealPage] = useState(1);
@@ -97,7 +100,7 @@ export default function ProfileFavouritesPage() {
     setRemovingVendor(id);
     setActionError('');
     try {
-      const result = await toggleFavoriteVendor(id, { token });
+      const result = await toggleFavoriteVendor(id);
       if (result?.favorited !== false) return;
 
       const nextPage = pageAfterRemoval(
@@ -120,7 +123,7 @@ export default function ProfileFavouritesPage() {
     setRemovingMeal(id);
     setActionError('');
     try {
-      const result = await toggleFavoriteMenuItem(id, { token });
+      const result = await toggleFavoriteMenuItem(id);
       if (result?.favorited !== false) return;
 
       const nextPage = pageAfterRemoval(
@@ -162,7 +165,7 @@ export default function ProfileFavouritesPage() {
           {vendorFavourites.length === 0 ? (
             <p className="profile_favourite-empty">You have not saved any vendors yet.</p>
           ) : vendorFavourites.map(({ vendor }) => {
-            const inactive = vendor?.status && vendor.status !== 'active';
+            const inactive = vendor?.status && vendor.status !== 'approved';
             return (
               <div key={vendor.id} className="profile_favourite-item">
                 <div>

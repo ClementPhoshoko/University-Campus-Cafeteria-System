@@ -31,6 +31,15 @@ test('OpenAPI documents profile self-service endpoints and schemas', () => {
 });
 
 test('OpenAPI documents paginated favorites and the real auth envelope', () => {
+  assert.ok(spec.paths['/favorites/state'].get);
+  assert.equal(
+    spec.paths['/favorites/state'].get.responses['200'].content['application/json'].schema.$ref,
+    '#/components/schemas/FavoriteState',
+  );
+  assert.deepEqual(
+    spec.components.schemas.FavoriteState.required,
+    ['success', 'vendorIds', 'menuItemIds'],
+  );
   assert.ok(spec.paths['/favorites/vendors'].get);
   assert.ok(spec.paths['/favorites/vendors/{vendorId}'].post);
   assert.ok(spec.paths['/favorites/menu-items'].get);

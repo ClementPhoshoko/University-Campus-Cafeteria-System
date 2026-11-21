@@ -140,6 +140,14 @@ export function rateOrder(orderId, { ratings, comments }, { token, signal } = {}
 
 // ─── Favorites ──────────────────────────────────────────────────────
 
+export function getFavoriteState({ token, signal } = {}) {
+  return apiRequest('/favorites/state', {
+    token,
+    signal,
+    cache: 'no-cache',
+  });
+}
+
 export function listFavoriteVendors({ token, signal, page, limit } = {}) {
   return apiRequest('/favorites/vendors', {
     token,

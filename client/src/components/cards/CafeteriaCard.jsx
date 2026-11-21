@@ -6,6 +6,8 @@ import {
 } from '@tabler/icons-react';
 import './CafeteriaCard.css';
 import SmartImage from '../ui/SmartImage.jsx';
+import FavoriteStarButton from '../favorites/FavoriteStarButton.jsx';
+import { VENDOR_FAVORITE } from '../../features/favorites/favoritesState.js';
 
 const STATUS_LABELS = {
   open: 'Open',
@@ -52,6 +54,7 @@ export default function CafeteriaCard({
         <span className={`home_vendor-status-pill ${status}`}>
           {STATUS_LABELS[status]}
         </span>
+        <FavoriteStarButton kind={VENDOR_FAVORITE} id={id} name={name} placement="vendor" />
         {(status === 'closed' || status === 'temporarily_unavailable') && (
           <span className="home_vendor-closed-badge" aria-hidden="true">
             <IconPlugX size={24} stroke={1.8} />

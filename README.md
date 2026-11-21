@@ -1026,8 +1026,8 @@ reconciliation_records
 ## User preferences
 
 ```text
-favourite_vendors
-favourite_meals
+favorite_vendors
+favorite_menu_items
 user_dietary_preferences
 user_allergy_indicators
 notification_preferences
@@ -1205,13 +1205,14 @@ Payment-provider-specific webhook routes should be isolated under `/webhooks/...
 ## Favorites
 
 ```text
+GET    /favorites/state
 GET    /favorites/vendors
 POST   /favorites/vendors/:vendorId
-DELETE /favorites/vendors/:vendorId
-GET    /favorites/meals
-POST   /favorites/meals/:mealId
-DELETE /favorites/meals/:mealId
+GET    /favorites/menu-items
+POST   /favorites/menu-items/:menuItemId
 ```
+
+`GET /favorites/state` returns compact vendor and menu-item ID sets for card stars. The POST routes toggle state; calling an existing favourite again removes it.
 
 ## Notifications
 

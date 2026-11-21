@@ -77,6 +77,8 @@ test('favourites use paginated APIs and contain no sample data', () => {
   ]) {
     assert.match(favourites, new RegExp(symbol));
   }
+  assert.match(favourites, /useFavorites/);
+  assert.match(favourites, /status !== 'approved'/);
   assert.match(favourites, /to=\{`\/cafeterias\//);
   assert.match(favourites, /to=\{`\/cafeterias\/\$\{menuItem\.vendor\.id\}\/menu\//);
   assert.doesNotMatch(favourites, /SAMPLE_/);
