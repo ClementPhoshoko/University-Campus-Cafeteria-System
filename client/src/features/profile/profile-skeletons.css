@@ -1,5 +1,6 @@
 .profile-overview-skeleton,
-.profile-access-skeleton {
+.profile-access-skeleton,
+.profile-favourites-skeleton {
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
@@ -22,6 +23,66 @@
 
 .profile-access-skeleton .access-role-card__body {
   gap: 6px;
+}
+
+.profile-favourites-skeleton .profile_favourites-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.profile-favourites-skeleton .profile_favourite-item > div {
+  width: 100%;
+}
+
+.profile-favourites-skeleton .home_card-skeleton-shimmer,
+.profile-favourites-skeleton-list .home_card-skeleton-shimmer {
+  background: linear-gradient(
+    100deg,
+    var(--color-border-subtle) 20%,
+    var(--color-surface-selected) 45%,
+    var(--color-border-subtle) 70%
+  );
+}
+
+.profile-skeleton-favourite-title {
+  display: block;
+  border-radius: var(--radius-xs);
+}
+
+.profile-skeleton-favourite-count {
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: var(--radius-full);
+}
+
+.profile-skeleton-favourite-name {
+  display: block;
+  border-radius: var(--radius-xs);
+}
+
+.profile-skeleton-favourite-detail {
+  display: block;
+  border-radius: var(--radius-xs);
+}
+
+.profile-skeleton-favourite-remove {
+  display: block;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border-radius: var(--radius-full);
+}
+
+.profile-skeleton-favourite-meta {
+  display: block;
+  width: 56px;
+  height: 0.8rem;
+  flex: 0 0 56px;
+  border-radius: var(--radius-full);
 }
 
 .profile-skeleton-heading-title {
@@ -107,7 +168,9 @@
 }
 
 .profile-overview-skeleton .skeleton,
-.profile-access-skeleton .skeleton {
+.profile-access-skeleton .skeleton,
+.profile-favourites-skeleton .skeleton,
+.profile-favourites-skeleton-list .skeleton {
   max-width: 100%;
 }
 

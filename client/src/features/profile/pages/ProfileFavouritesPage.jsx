@@ -9,6 +9,7 @@ import {
   listFavoriteVendors,
 } from '../../../services/employeeApi.js';
 import ProfilePagination from '../components/ProfilePagination.jsx';
+import ProfileFavouritesSkeleton, { ProfileFavouriteListSkeleton } from '../ProfileFavouritesSkeleton.jsx';
 import { hasMorePages, pageAfterRemoval } from '../profileForms.js';
 
 const FAVOURITE_PAGE_SIZE = 10;
@@ -17,15 +18,6 @@ function formatPrice(value) {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return 'Price unavailable';
   return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
-}
-
-function ListSkeleton() {
-  return (
-    <div className="profile_loading" aria-label="Loading favourites">
-      <div className="profile_loading-bar profile_loading-bar--short" />
-      <div className="profile_loading-bar" />
-    </div>
-  );
 }
 
 function ListError({ message, onRetry }) {
@@ -52,7 +44,7 @@ function FavouriteListCard({ title, count, state, error, onRetry, children, pagi
         {state === 'error' ? (
           <ListError message={error?.message} onRetry={onRetry} />
         ) : state === 'loading' || pageChanging ? (
-          <ListSkeleton />
+          <ProfileFavouriteListSkeleton />
         ) : (
           children
         )}
@@ -139,6 +131,10 @@ export default function ProfileFavouritesPage() {
       setRemovingMeal(null);
     }
   };
+
+  const initialLoad = (!vendorsQuery.data && vendorsQuery.state === 'loading')
+    || (!mealsQuery.data && mealsQuery.state === 'loading');
+  if (initialLoad) return <ProfileFavouritesSkeleton />;
 
   return (
     <section className="profile_section">

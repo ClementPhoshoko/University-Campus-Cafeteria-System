@@ -322,12 +322,13 @@ Evidence: nested `/profile/*` routes and `/profile` → `/profile/overview` redi
 
 **Status: complete — verified 2026-11-21.**
 
-Evidence: `ProfileLayout.jsx` passes the confirmed `updateProfile` result to pages and shows shared-shimmer overview and access skeletons during initial loads, with access placeholder heights and spacing matching the rendered role cards; `profileForms.js` builds only allowlisted patches; `ProfileOverviewPage.jsx` edits full name inline with edit/save/cancel controls beside its label, highlights only the active input, keeps other details visible, and saves the shared `CustomDropdown` location pickers through `PATCH /profile` with the site/building draft keys mapped explicitly into the allowlisted patch; the shared dropdown flips above the trigger when space is limited and uses the project's themed scrollbar; `ProfilePreferencesPage.jsx` normalizes arrays and uses an explicit dirty/save/cancel flow for allowed notification keys; `ProfileFavouritesPage.jsx` reads paginated lists and removes through the shared favourite state; card stars use `FavoritesProvider`, `GET /favorites/state`, and the canonical toggle routes; `ProfileAccessPage.jsx` reads only `GET /profile/access` and renders a single data-driven role grid using the shared `AccessSectionHeader`, `AccessRoleCard`, `AccessActiveStatus`, and `AccessEmptyState` components; vendor-derived roles stay in that grid with a `Vendor role` label and no vendor IDs or separate membership section; `effectiveRoles.js` still supplies the canonical role data; `ProfileSecurityPage.jsx` uses the existing OTP recovery route and current-device sign-out. Focused profile tests passed 35/35, the full client suite passed 69/69, and the production build passed.
+Evidence: `ProfileLayout.jsx` passes the confirmed `updateProfile` result to pages and shows shared-shimmer overview, access, and favourites skeletons during initial loads, with placeholder shapes and spacing matching the rendered cards; `profileForms.js` builds only allowlisted patches; `ProfileOverviewPage.jsx` edits full name inline with edit/save/cancel controls beside its label, highlights only the active input, keeps other details visible, and saves the shared `CustomDropdown` location pickers through `PATCH /profile` with the site/building draft keys mapped explicitly into the allowlisted patch; the shared dropdown flips above the trigger when space is limited and uses the project's themed scrollbar; `ProfilePreferencesPage.jsx` normalizes arrays and uses an explicit dirty/save/cancel flow for allowed notification keys; `ProfileFavouritesPage.jsx` reads paginated lists and removes through the shared favourite state; card stars use `FavoritesProvider`, `GET /favorites/state`, and the canonical toggle routes; `ProfileAccessPage.jsx` reads only `GET /profile/access` and renders a single data-driven role grid using the shared `AccessSectionHeader`, `AccessRoleCard`, `AccessActiveStatus`, and `AccessEmptyState` components; vendor-derived roles stay in that grid with a `Vendor role` label and no vendor IDs or separate membership section; `effectiveRoles.js` still supplies the canonical role data; `ProfileSecurityPage.jsx` uses the existing OTP recovery route and current-device sign-out. Focused profile tests passed 44/44, the full client suite passed 83/83, and the production build passed.
 
 - [x] Wire overview save flow through `PATCH /profile`.
 - [x] Wire location selectors to paginated site/building endpoints.
 - [x] Wire preferences through `PATCH /profile` with normalization and immutable transactional flag.
 - [x] Wire favourites to paginated APIs with loading/empty/error/retry/removal.
+- [x] Add a coloured, shimmering favourites skeleton for initial and later-page loads.
 - [x] Wire access to `GET /profile/access` as read-only.
 - [x] Wire security actions to existing recovery and sign-out flows.
 - [x] Clean duplicated and unused profile CSS.
@@ -335,6 +336,8 @@ Evidence: `ProfileLayout.jsx` passes the confirmed `updateProfile` result to pag
 `services/abortSignal.js` bridges caller signals into API requests with an `onabort` fallback, so embedded browsers without `AbortSignal.addEventListener` do not break favourites or other API reads.
 
 `favoriteController.js` keeps its Express handlers to `req, res` and moves Supabase injection into `*WithDb` helpers. The previous optional third `dbClient` argument received Express's `next` callback, which produced generic 500s for every favourite read and toggle.
+
+`ProfileFavouritesSkeleton.jsx` uses the shared `Skeleton` and shimmer CSS for the initial favourites load and for later-page/removal refreshes. It mirrors the intro, both list cards, row metadata, and pagination, with a tinted shimmer that matches the overview and access skeletons.
 
 ### Phase 5 — Verification and rollout
 
@@ -345,7 +348,7 @@ The project owner elected to perform the live checks directly. Keep this phase o
 - [x] Apply migration 032 before deploying profile API code. Migration 032 has already been applied in the target Supabase project.
 - [x] Keep migration 033 available for projects provisioned from numbered migrations. The current target project already has `favorite_vendors` and `favorite_menu_items`; direct service-role reads confirmed both tables and asset resolution work.
 - [x] Fix Express handler injection: the controllers accepted an optional third `dbClient` argument, so Express passed its `next` callback instead and every favourites request threw before reaching Supabase. Exported route handlers now declare only `req, res`; dependency-injected `*WithDb` helpers remain for tests.
-- [x] Run latest static checks: server tests (**152/152**), client build (**passed**, pre-existing chunk-size warning), client tests (**79/79**), OpenAPI parse (**94 paths**), and `git diff --check` (**clean**).
+- [x] Run latest static checks: server tests (**152/152**), client build (**passed**, pre-existing chunk-size warning), client tests (**83/83**), OpenAPI parse (**94 paths**), and `git diff --check` (**clean**).
 - [ ] Verify self-update ownership, blocked protected fields, site/building mismatch rejection, preference validation, and audit sanitization in the target environment.
 - [ ] Verify favourite pagination stability, removal, inactive-item handling, cache invalidation, card-star state, and the save animation in the target environment.
 - [ ] Verify deep links, keyboard navigation, responsive layout, and sensitive-data display.
