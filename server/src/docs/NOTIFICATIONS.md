@@ -12,15 +12,23 @@ Apply the numbered migration before deploying the API:
 ```sql
 -- from a transaction-capable SQL client (Supabase SQL editor, psql, etc.)
 \i server/src/docs/migrations/034_notification_center.sql
+\i server/src/docs/migrations/035_notification_inbox_realtime.sql
 ```
 
 `034_notification_center.sql` is idempotent: it adds `metadata jsonb not null
 default '{}'::jsonb` and `dedupe_key text`, a partial unique index on
 `(user_id, dedupe_key)`, an index on `(user_id, read_at, created_at desc)`, and
 revokes `INSERT`/`DELETE` from `authenticated`. No table or existing row is
-dropped or rewritten. The service role keeps full access because **the server
-creates and deletes notification rows**; clients may only read their own rows
-and mark them read through the API below.
+dropped or rewritten.
+
+`035_notification_inbox_realtime.sql` is also idempotent. It adds the
+`updated_at` column required by the baseline `set_updated_at` trigger (without
+it, `PATCH .../read` fails with a 500), adds the
+`(user_id, channel, read_at, created_at desc)` inbox index, sets replica
+identity to `full` so filtered DELETE events are delivered, and adds
+`public.notifications` to `supabase_realtime`. The service role keeps full
+access because **the server creates and deletes notification rows**; clients
+may only read their own rows and mark them read through the API below.
 
 ## API
 
@@ -29,7 +37,7 @@ always `req.user.id`; query/body user ids are ignored.
 
 | Method | Path | Purpose | Response |
 | --- | --- | --- | --- |
-| `GET` | `/api/v1/notifications?page=1&limit=20&filter=all\|unread\|read&eventKey=&orderId=` | Paginated inbox | `{ success, notifications, unreadCount, level, pagination }` |
+| `GET` | `/api/v1/notifications?page=1&limit=20&filter=all\|unread\|read&q=&eventKey=&orderId=` | Paginated **in-app** inbox | `{ success, notifications, unreadCount, level, pagination }` |
 | `GET` | `/api/v1/notifications/unread-count` | Bell state | `{ success, unreadCount, level }` |
 | `PATCH` | `/api/v1/notifications/:notificationId/read` | Mark read (idempotent) | `{ success, notification }` |
 | `PATCH` | `/api/v1/notifications/:notificationId/unread` | Mark unread (idempotent) | `{ success, notification }` |
@@ -40,9 +48,23 @@ always `req.user.id`; query/body user ids are ignored.
 | `PATCH` | `/api/v1/notification-preferences` | Update preference alias | `{ success, preferences }` |
 
 `filter=unread` uses `read_at IS NULL`; `filter=read` uses `read_at IS NOT NULL`.
-Mutations are scoped by both notification id and user id, and return
-`404 NOTIFICATION_NOT_FOUND` for rows owned by another user. Responses are
-always `Cache-Control: no-store`.
+`q` is sanitised and applied to title/body with `ilike` on the server, so
+pagination totals always match the visible page. Every inbox read and mutation
+is scoped to `channel = 'in_app'`; email rows are delivery audit records and
+never affect the unread bell or pagination. Mutations are scoped by both
+notification id and user id, and return `404 NOTIFICATION_NOT_FOUND` for rows
+owned by another user. Responses are always `Cache-Control: no-store`.
+
+## Freshness and caching
+
+The client subscribes to `postgres_changes` on `public.notifications`, filtered
+by the authenticated user id, and refreshes the bell plus the current inbox
+page as soon as a row is inserted, updated or deleted. A 45-second visibility-
+aware poll is kept as a fallback when a realtime socket is unavailable. The
+inbox uses an in-memory `useFetch` cache keyed by user/filter/page/search and a
+short debounce to coalesce bursts; mutations and realtime events revalidate in
+the background so the visible page never collapses into a loading skeleton.
+The client marks a row read optimistically and rolls back if the API rejects it.
 
 `GET notification-preferences` returns:
 

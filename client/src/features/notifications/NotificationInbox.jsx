@@ -70,9 +70,6 @@ export default function NotificationInbox({
           />
         </div>
         <NotificationFilters value={filter} onChange={onFilterChange} unreadCount={unreadCount} />
-        {search.trim() && (
-          <p className="notification-inbox__search-hint">Search filters the loaded page.</p>
-        )}
       </div>
 
       <div className="notification-inbox__list" aria-busy={loading || refreshing}>

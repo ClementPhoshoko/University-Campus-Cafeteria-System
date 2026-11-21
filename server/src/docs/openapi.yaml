@@ -666,9 +666,10 @@ paths:
         - Notifications
       summary: List the authenticated user's notifications
       description: >
-        Server-paginated notification inbox. The user id is derived from the
-        access token only. Category and bell level come from the server-owned
-        event catalog, never from query parameters.
+        Server-paginated in-app notification inbox. Email rows are delivery
+        records and are excluded. The user id is derived from the access token
+        only. Category and bell level come from the server-owned event catalog,
+        never from query parameters.
       operationId: listNotifications
       security:
         - bearerAuth: []
@@ -682,6 +683,11 @@ paths:
             enum: [all, unread, read]
             default: all
           description: Read-state filter
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Sanitised case-insensitive title/body search applied server-side
         - name: eventKey
           in: query
           schema:

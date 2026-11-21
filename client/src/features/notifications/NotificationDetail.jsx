@@ -8,8 +8,8 @@ import {
 } from '@tabler/icons-react';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import NotificationActionsMenu from './NotificationActionsMenu.jsx';
-import NotificationAvatar from './NotificationAvatar.jsx';
 import NotificationEmptyState from './NotificationEmptyState.jsx';
+import NotificationIcon from './NotificationIcon.jsx';
 import NotificationMessage from './NotificationMessage.jsx';
 import {
   categoryLabel,
@@ -59,7 +59,7 @@ export default function NotificationDetail({ notification, busy, onBack, onActio
 
       <div className="notification-detail__content">
         <div className="notification-detail__heading">
-          <NotificationAvatar notification={notification} size={52} className="notification-avatar--large" />
+          <NotificationIcon category={notification.category} size={22} className="notification-icon--large" />
           <div>
             <h3 className="notification-detail__title">{notification.title || 'Notification'}</h3>
             <p className="notification-detail__category">{categoryLabel(notification.category)}</p>

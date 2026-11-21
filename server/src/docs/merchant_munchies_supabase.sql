@@ -583,7 +583,8 @@ create table if not exists public.notifications (
   sent_at timestamptz,
   read_at timestamptz,
   failure_reason text,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 -- -----------------------------------------------------------------------------

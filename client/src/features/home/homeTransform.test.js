@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { mapVendorToCafeteriaCard, mapFeaturedMenuItems, mapMenuItemToMeal, normalizeVendorStatus } from './homeTransform.js';
+
+const homeSource = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'HomePage.jsx'), 'utf8');
 
 test('maps one cafeteria card from a vendor and retains all active locations', () => {
   const output = mapVendorToCafeteriaCard({
@@ -146,4 +151,9 @@ test('mapFeaturedMenuItems interleaves cafeteria menus and avoids duplicate vend
   assert.equal(meals[0].cafeteriaName, 'Alpha Kitchen');
   assert.equal(meals[0].vendorId, 'vendor-a');
   assert.ok(meals.every((meal) => meal.source === 'featured'));
+});
+
+test('cancelled popular-item loads are not logged as failures', () => {
+  assert.match(homeSource, /error\?\.name !== 'AbortError'/);
+  assert.match(homeSource, /error\?\.code !== 'ABORT_ERR'/);
 });

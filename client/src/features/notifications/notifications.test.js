@@ -37,7 +37,6 @@ const itemSource = read('./NotificationItem.jsx');
 const menuSource = read('./NotificationActionsMenu.jsx');
 const detailSource = read('./NotificationDetail.jsx');
 const iconSource = read('./NotificationIcon.jsx');
-const avatarSource = read('./NotificationAvatar.jsx');
 const messageSource = read('./NotificationMessage.jsx');
 const skeletonSource = read('./NotificationSkeleton.jsx');
 const cssSource = read('./notifications.css');
@@ -79,14 +78,17 @@ test('header bell links to the inbox and exposes level indicators', () => {
   assert.match(headerCss, /\.notification-bell__indicator--alert \{[^}]*background: var\(--error-500\)/);
 });
 
-test('unread provider is API-only, session-scoped and abort-aware', () => {
+test('unread provider is session-scoped, abort-aware and realtime-backed', () => {
   assert.match(providerSource, /useAuth/);
   assert.match(providerSource, /session\?\.access_token/);
   assert.match(providerSource, /getNotificationUnreadCount/);
   assert.match(providerSource, /applyLocalChange/);
   assert.match(providerSource, /refreshUnreadCount/);
   assert.match(providerSource, /AbortController/);
-  assert.doesNotMatch(providerSource, /supabase/i);
+  assert.match(providerSource, /postgres_changes/);
+  assert.match(providerSource, /user_id=eq\.\$\{userId\}/);
+  assert.match(providerSource, /notificationRevision/);
+  assert.match(providerSource, /FALLBACK_POLL_MS/);
 });
 
 test('API wrappers are no-store, user-scoped and invalidate list caches', async () => {
@@ -145,7 +147,6 @@ test('page copy, actions and loading/error states are present', () => {
   assert.match(inboxSource, /Mark all as read/);
   assert.match(inboxSource, /Clear read notifications/);
   assert.match(inboxSource, /Refresh/);
-  assert.match(inboxSource, /Search filters the loaded page\./);
   assert.match(filtersSource, /aria-pressed=\{value === filter\.value\}/);
   assert.match(filtersSource, /notification-filter__count/);
   assert.match(itemSource, /Mark as read/);
@@ -202,24 +203,14 @@ test('utility helpers honour internal paths, levels and metadata.context', () =>
   );
 });
 
-test('notifications use friendly avatars and prose without identifier cards', () => {
-  for (const asset of [
-    'Cheerful_Student_with_Green_Checkmark.webp',
-    'Cheerful_Student_Presenting_with_Open_Palm.png',
-    'Disappointed_Student_with_Error_Icon.webp',
-    'illustration_avoid_queues.webp',
-    'illustration_collect_order.webp',
-    'connected_avatar.webp',
-  ]) {
-    assert.ok(avatarSource.includes(asset), `${asset} should be used by notifications`);
-  }
-  assert.match(avatarSource, /'order\.ready_for_collection': collectAvatar/);
-  assert.match(avatarSource, /'cart\.expiring': reminderAvatar/);
-  assert.match(avatarSource, /level === 'alert'/);
-  assert.match(itemSource, /<NotificationAvatar notification=\{notification\} \/>/);
-  assert.match(detailSource, /<NotificationAvatar notification=\{notification\} size=\{52\}/);
+test('notifications use category icons and friendly prose without identifier cards', () => {
+  assert.match(itemSource, /<NotificationIcon category=\{notification\.category\} size=\{20\} \/>/);
+  assert.match(detailSource, /<NotificationIcon category=\{notification\.category\} size=\{22\}/);
   assert.match(detailSource, /<NotificationMessage notification=\{notification\} \/>/);
   assert.doesNotMatch(detailSource, /notification-detail__metadata/);
+  assert.doesNotMatch(itemSource, /NotificationAvatar/);
+  assert.doesNotMatch(detailSource, /NotificationAvatar/);
+  assert.throws(() => read('./NotificationAvatar.jsx'), /ENOENT/);
   assert.match(messageSource, /context\.vendorName/);
   assert.match(messageSource, /context\.orderReference/);
   assert.match(messageSource, /stripSensitiveText/);
@@ -238,14 +229,25 @@ test('inbox styling removes selected borders, aligns the menu and uses a slim sc
   assert.match(listBlock, /scrollbar-width: thin/);
   assert.match(listBlock, /scrollbar-color: var\(--color-border-subtle\) transparent/);
   assert.match(cssSource, /\.notification-inbox__list::-webkit-scrollbar\s*\{[\s\S]*?width: 5px/);
-  assert.match(cssSource, /\.notification-avatar__image\s*\{[\s\S]*?object-fit: contain/);
+  assert.doesNotMatch(cssSource, /notification-avatar/);
 });
 
 test('opening related content navigates without waiting for a list refetch', () => {
   assert.match(pageSource, /navigate\(path\)/);
   assert.match(pageSource, /setReadState\(notification, true, \{ skipInvalidate: true \}\)/);
-  assert.match(pageSource, /if \(!options\.skipInvalidate\) invalidate\(\)/);
+  assert.match(pageSource, /if \(!options\.skipInvalidate\) refetch\(\)/);
   assert.doesNotMatch(pageSource, /await setReadState\(notification, true\)/);
+});
+
+test('read state is optimistic and realtime revisions refresh the current page', () => {
+  assert.match(pageSource, /const optimistic = \{/);
+  assert.match(pageSource, /patchNotification\(notification\.id, optimistic\)/);
+  assert.match(pageSource, /current\.unreadCount \+ delta/);
+  assert.match(pageSource, /patchNotification\(notification\.id, notification\)/);
+  assert.match(pageSource, /current\.unreadCount - delta/);
+  assert.match(pageSource, /notificationRevision/);
+  assert.match(pageSource, /handledRevisionRef/);
+  assert.match(pageSource, /refetch\(\)/);
 });
 
 test('layout styles keep desk top panels independent and reduce motion', () => {

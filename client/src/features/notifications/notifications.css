@@ -106,12 +106,6 @@
   color: var(--color-text-placeholder);
 }
 
-.notification-inbox__search-hint {
-  margin: var(--space-2) 0 0;
-  color: var(--color-text-tertiary);
-  font-size: 0.72rem;
-}
-
 .notification-filters {
   display: flex;
   gap: var(--space-2);
@@ -325,57 +319,6 @@
   right: auto;
 }
 
-/* ── Friendly avatars ────────────────────────────────────────────── */
-
-.notification-avatar {
-  position: relative;
-  display: inline-grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: var(--notification-avatar-size, 36px);
-  height: var(--notification-avatar-size, 36px);
-  border-radius: var(--radius-full);
-  background: var(--color-surface-subtle);
-}
-
-.notification-avatar__image {
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  object-fit: contain;
-}
-
-.notification-avatar__badge {
-  position: absolute;
-  right: -3px;
-  bottom: -3px;
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--color-surface-default);
-  border-radius: var(--radius-full);
-  background: var(--color-surface-default);
-}
-
-.notification-avatar__badge .notification-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: var(--radius-full);
-}
-
-.notification-avatar--large .notification-avatar__badge {
-  right: -4px;
-  bottom: -4px;
-  width: 24px;
-  height: 24px;
-}
-
-.notification-avatar--large .notification-avatar__badge .notification-icon {
-  width: 24px;
-  height: 24px;
-}
-
 /* ── Category icons ──────────────────────────────────────────────── */
 
 .notification-icon {
@@ -547,7 +490,7 @@
 .notification-skeleton__icon {
   width: 36px;
   height: 36px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
 }
 
 .notification-skeleton__lines {

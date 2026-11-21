@@ -33,6 +33,7 @@ function createDbStub(responder) {
     query.eq = (column, value) => record({ method: 'eq', column, value });
     query.is = (column, value) => record({ method: 'is', column, value });
     query.not = (column, operator, value) => record({ method: 'not', column, operator, value });
+    query.or = (filter) => record({ method: 'or', filter });
     query.order = (column, options) => record({ method: 'order', column, options });
     query.range = (fromIndex, to) => record({ method: 'range', from: fromIndex, to });
     query.update = (payload) => record({ method: 'update', payload });
@@ -97,6 +98,7 @@ test('list is user-scoped, filtered, paginated and carries the unread bell level
   assert.equal(recorder.body.notifications[0].category, 'payment');
 
   assert.ok(db.calls.some((call) => call.method === 'eq' && call.column === 'user_id' && call.value === USER_ID));
+  assert.ok(db.calls.some((call) => call.method === 'eq' && call.column === 'channel' && call.value === 'in_app'));
   assert.ok(db.calls.some((call) => call.method === 'is' && call.column === 'read_at' && call.value === null));
   assert.ok(db.calls.some((call) => call.method === 'eq' && call.column === 'event_key' && call.value === 'order.payment_failed'));
   assert.ok(db.calls.some((call) => call.method === 'eq' && call.column === 'order_id' && call.value === OTHER_USER_ID));
@@ -124,6 +126,30 @@ test('read filter uses IS NOT NULL and invalid filters are rejected', async () =
   await createNotificationController({ db }).getNotifications(req({ query: { filter: 'archived' } }), invalid.res);
   assert.equal(invalid.recorder.statusCode, 400);
   assert.equal(invalid.recorder.body.error.code, 'VALIDATION_ERROR');
+});
+
+test('inbox search is handled by the backend and email rows stay out of pagination', async () => {
+  const queries = [];
+  const db = createDbStub((local) => {
+    queries.push(local);
+    const select = local.find((call) => call.method === 'select');
+    if (select?.options?.count === 'exact') {
+      return { data: [row()], error: null, count: 1 };
+    }
+    return { data: [row()], error: null };
+  });
+  const { res, recorder } = createResponseRecorder();
+  await createNotificationController({ db }).getNotifications(req({
+    query: { q: "  coffee%_'s  ", filter: 'all' },
+  }), res);
+
+  assert.equal(recorder.statusCode, 200);
+  const listQuery = queries.find((query) => query.some((call) => call.method === 'select' && call.options?.count === 'exact'));
+  assert.ok(listQuery.some((call) => call.method === 'eq' && call.column === 'channel' && call.value === 'in_app'));
+  const search = listQuery.find((call) => call.method === 'or');
+  assert.ok(search, 'expected a backend search filter');
+  assert.match(search.filter, /title\.ilike\.%coffee s%/);
+  assert.doesNotMatch(search.filter, /coffee%_/);
 });
 
 test('notification mutations cannot cross user ownership', async () => {
@@ -184,6 +210,7 @@ test('read/unread transitions set the correct status and scope the update by use
   assert.equal(typeof update.payload.read_at, 'string');
   assert.ok(db.calls.some((call) => call.method === 'eq' && call.column === 'id' && call.value === NOTIFICATION_ID));
   assert.ok(db.calls.some((call) => call.method === 'eq' && call.column === 'user_id' && call.value === USER_ID));
+  assert.ok(db.calls.some((call) => call.method === 'eq' && call.column === 'channel' && call.value === 'in_app'));
   assert.equal(audits.length, 1);
   assert.equal(audits[0].tableName, 'public.notifications');
 

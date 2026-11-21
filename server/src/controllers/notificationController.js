@@ -18,6 +18,19 @@ import {
 
 const NOTIFICATIONS_TABLE = 'public.notifications';
 const PROFILES_TABLE = 'public.profiles';
+const IN_APP_CHANNEL = 'in_app';
+
+/**
+ * The inbox endpoint only serves in-app rows. Email rows are delivery records
+ * and must never inflate the list, pagination count or unread bell.
+ */
+function cleanSearch(value) {
+  return String(value ?? '')
+    .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120);
+}
 
 function handleControllerError(res, err) {
   if (err instanceof ApiError) {
@@ -91,16 +104,19 @@ export function createNotificationController(dependencies = {}) {
         const { pageNum, limitNum, from, to } = parsePagination(req.query || {});
         const eventKey = req.query?.eventKey || null;
         const orderId = req.query?.orderId || null;
+        const q = cleanSearch(req.query?.q);
 
         let listQuery = injectedDb
           .from('notifications')
           .select(NOTIFICATION_COLUMNS, { count: 'exact' })
-          .eq('user_id', userId);
+          .eq('user_id', userId)
+          .eq('channel', IN_APP_CHANNEL);
 
         if (filter === 'unread') listQuery = listQuery.is('read_at', null);
         if (filter === 'read') listQuery = listQuery.not('read_at', 'is', null);
         if (eventKey) listQuery = listQuery.eq('event_key', eventKey);
         if (orderId) listQuery = listQuery.eq('order_id', orderId);
+        if (q) listQuery = listQuery.or(`title.ilike.%${q}%,body.ilike.%${q}%`);
 
         const [listResult, unreadResult] = await Promise.all([
           listQuery
@@ -111,6 +127,7 @@ export function createNotificationController(dependencies = {}) {
             .from('notifications')
             .select('id, event_key, read_at')
             .eq('user_id', userId)
+            .eq('channel', IN_APP_CHANNEL)
             .is('read_at', null),
         ]);
 
@@ -137,6 +154,7 @@ export function createNotificationController(dependencies = {}) {
           .from('notifications')
           .select('id, event_key, read_at')
           .eq('user_id', userId)
+          .eq('channel', IN_APP_CHANNEL)
           .is('read_at', null);
         if (error) throw error;
 
@@ -162,6 +180,7 @@ export function createNotificationController(dependencies = {}) {
           .select(NOTIFICATION_COLUMNS)
           .eq('id', notificationId)
           .eq('user_id', userId)
+          .eq('channel', IN_APP_CHANNEL)
           .maybeSingle();
         if (lookupError) throw lookupError;
         if (!existing) throw notificationNotFoundError();
@@ -176,6 +195,7 @@ export function createNotificationController(dependencies = {}) {
           .update(patch)
           .eq('id', notificationId)
           .eq('user_id', userId)
+          .eq('channel', IN_APP_CHANNEL)
           .select(NOTIFICATION_COLUMNS)
           .maybeSingle();
         if (error) throw error;
@@ -207,6 +227,7 @@ export function createNotificationController(dependencies = {}) {
           .select(NOTIFICATION_COLUMNS)
           .eq('id', notificationId)
           .eq('user_id', userId)
+          .eq('channel', IN_APP_CHANNEL)
           .maybeSingle();
         if (lookupError) throw lookupError;
         if (!existing) throw notificationNotFoundError();
@@ -221,6 +242,7 @@ export function createNotificationController(dependencies = {}) {
           .update(patch)
           .eq('id', notificationId)
           .eq('user_id', userId)
+          .eq('channel', IN_APP_CHANNEL)
           .select(NOTIFICATION_COLUMNS)
           .maybeSingle();
         if (error) throw error;
@@ -252,6 +274,7 @@ export function createNotificationController(dependencies = {}) {
           .select(NOTIFICATION_COLUMNS)
           .eq('id', notificationId)
           .eq('user_id', userId)
+          .eq('channel', IN_APP_CHANNEL)
           .maybeSingle();
         if (lookupError) throw lookupError;
         if (!existing) throw notificationNotFoundError();
@@ -260,7 +283,8 @@ export function createNotificationController(dependencies = {}) {
           .from('notifications')
           .delete()
           .eq('id', notificationId)
-          .eq('user_id', userId);
+          .eq('user_id', userId)
+          .eq('channel', IN_APP_CHANNEL);
         if (error) throw error;
 
         await auditSafely(auditWrite, req, {
@@ -286,6 +310,7 @@ export function createNotificationController(dependencies = {}) {
           .from('notifications')
           .update(patch)
           .eq('user_id', userId)
+          .eq('channel', IN_APP_CHANNEL)
           .is('read_at', null)
           .select('id');
         if (error) throw error;
@@ -313,6 +338,7 @@ export function createNotificationController(dependencies = {}) {
           .from('notifications')
           .delete()
           .eq('user_id', userId)
+          .eq('channel', IN_APP_CHANNEL)
           .not('read_at', 'is', null)
           .select('id');
         if (error) throw error;

@@ -5,7 +5,7 @@ import {
   IconTrash,
 } from '@tabler/icons-react';
 import NotificationActionsMenu from './NotificationActionsMenu.jsx';
-import NotificationAvatar from './NotificationAvatar.jsx';
+import NotificationIcon from './NotificationIcon.jsx';
 import {
   categoryLabel,
   formatRelativeTime,
@@ -39,7 +39,7 @@ export default function NotificationItem({ notification, selected, busy, onSelec
         aria-current={selected ? 'true' : undefined}
         aria-label={`${notification.title || 'Notification'}, ${relative}${unread ? ', unread' : ''}`}
       >
-        <NotificationAvatar notification={notification} />
+        <NotificationIcon category={notification.category} size={20} />
         <span className="notification-item__content">
           <span className="notification-item__title">{notification.title || 'Notification'}</span>
           <span className="notification-item__preview">

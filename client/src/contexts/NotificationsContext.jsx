@@ -10,9 +10,12 @@ import {
 import { useAuth } from '../hooks/useAuth.js';
 import { getNotificationUnreadCount } from '../services/notificationApi.js';
 import { attachAbortListener } from '../services/abortSignal.js';
+import { supabase } from '../services/supabase.js';
 
 const NotificationsContext = createContext(null);
 const LEVELS = ['none', 'info', 'warning', 'alert'];
+const REALTIME_DEBOUNCE_MS = 180;
+const FALLBACK_POLL_MS = 45_000;
 
 function normalizeLevel(level, unreadCount) {
   if (!unreadCount) return 'none';
@@ -25,20 +28,23 @@ function readUnreadCount(payload) {
 }
 
 /**
- * Global unread summary for the header bell. Reads come only from the API
- * service and only while a session exists; all in-flight work is aborted on
+ * Global unread summary for the header bell. Counts come from the API service,
+ * realtime events come from Supabase, and all in-flight work is aborted on
  * sign-out or unmount.
  */
 export function NotificationsProvider({ children }) {
   const { session } = useAuth();
   const token = session?.access_token || null;
+  const userId = session?.user?.id || null;
 
   const [summary, setSummary] = useState({ unreadCount: 0, level: 'none' });
   const [loading, setLoading] = useState(false);
+  const [revision, setRevision] = useState(0);
 
   const requestIdRef = useRef(0);
   const controllerRef = useRef(null);
   const inFlightRef = useRef(null);
+  const debounceRef = useRef(null);
 
   const reset = useCallback(() => {
     requestIdRef.current += 1;
@@ -86,6 +92,49 @@ export function NotificationsProvider({ children }) {
     return promise;
   }, [token, reset]);
 
+  // Supabase Realtime is the primary freshness path: the database row is
+  // written before the email is sent, so the bell and inbox update immediately.
+  // Polling remains as a low-frequency safety net if a socket is unavailable.
+  useEffect(() => {
+    if (!token || !userId || typeof supabase?.channel !== 'function') return undefined;
+
+    if (typeof supabase.realtime?.setAuth === 'function') supabase.realtime.setAuth(token);
+
+    const notify = () => {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(() => {
+        setRevision((current) => current + 1);
+        refreshUnreadCount({ force: true });
+      }, REALTIME_DEBOUNCE_MS);
+    };
+
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      }, notify)
+      .subscribe();
+
+    return () => {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+      supabase.removeChannel(channel);
+    };
+  }, [token, userId, refreshUnreadCount]);
+
+  useEffect(() => {
+    if (!token) return undefined;
+    const id = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      setRevision((current) => current + 1);
+      refreshUnreadCount({ force: true });
+    }, FALLBACK_POLL_MS);
+    return () => window.clearInterval(id);
+  }, [token, refreshUnreadCount]);
+
   useEffect(() => {
     if (!token) {
       reset();
@@ -117,9 +166,10 @@ export function NotificationsProvider({ children }) {
     unreadCount: summary.unreadCount,
     level: summary.level,
     loading,
+    notificationRevision: revision,
     refreshUnreadCount,
     applyLocalChange,
-  }), [summary, loading, refreshUnreadCount, applyLocalChange]);
+  }), [summary, loading, revision, refreshUnreadCount, applyLocalChange]);
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 }

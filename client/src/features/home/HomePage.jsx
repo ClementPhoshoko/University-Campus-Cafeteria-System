@@ -96,7 +96,11 @@ export default function HomePage() {
     try {
       popularResponse = await getPopularMenuItems({ token, signal, cache: 'no-cache' });
     } catch (error) {
-      console.error('Failed to load popular menu items:', error);
+      // Route changes cancel in-flight requests; this is expected and must not
+      // be logged as a failed load.
+      if (error?.name !== 'AbortError' && error?.code !== 'ABORT_ERR') {
+        console.error('Failed to load popular menu items:', error);
+      }
       popularError = error;
     }
 

@@ -19,7 +19,6 @@ import {
 import NotificationDetail from './NotificationDetail.jsx';
 import NotificationInbox from './NotificationInbox.jsx';
 import {
-  categoryLabel,
   isInternalActionPath,
   NOTIFICATION_LIMIT,
 } from './notificationUtils.js';
@@ -31,7 +30,7 @@ export default function NotificationsPage() {
   const userId = session?.user?.id || 'anonymous';
   const navigate = useNavigate();
   const confirm = useConfirm();
-  const { unreadCount, applyLocalChange, refreshUnreadCount } = useNotifications();
+  const { unreadCount, notificationRevision, applyLocalChange, refreshUnreadCount } = useNotifications();
 
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -41,6 +40,7 @@ export default function NotificationsPage() {
   const [busyIds, setBusyIds] = useState(() => new Set());
   const [actionError, setActionError] = useState('');
   const pendingRef = useRef(new Set());
+  const handledRevisionRef = useRef(notificationRevision);
 
   const fetchNotifications = useCallback(({ signal } = {}) => listNotifications({
     page,
@@ -52,20 +52,13 @@ export default function NotificationsPage() {
   }), [page, filter, debouncedSearch, token]);
 
   const cacheKey = `${NOTIFICATION_CACHE_PREFIX}list:${userId}:${filter}:${page}:${debouncedSearch}`;
-  const { data, isLoading, isRefreshing, isError, error, refetch, invalidate, mutate } = useFetch(
+  const { data, isLoading, isRefreshing, isError, error, refetch, mutate } = useFetch(
     fetchNotifications,
     { cacheKey, enabled: Boolean(token), staleTime: 0 },
   );
 
-  // The backend is authoritative for pagination; the local pass keeps search
-  // useful even when a deployment ignores `q`.
-  const notifications = useMemo(() => {
-    const list = Array.isArray(data?.notifications) ? data.notifications : [];
-    const term = debouncedSearch.trim().toLowerCase();
-    if (!term) return list;
-    return list.filter((notification) => [notification.title, notification.body, categoryLabel(notification.category), notification.eventKey]
-      .some((value) => typeof value === 'string' && value.toLowerCase().includes(term)));
-  }, [data, debouncedSearch]);
+  // The backend owns filtering and pagination, including the debounced search.
+  const notifications = Array.isArray(data?.notifications) ? data.notifications : [];
 
   const pagination = data?.pagination || {
     page: 1,
@@ -93,6 +86,14 @@ export default function NotificationsPage() {
     const totalPages = Number(pagination.totalPages);
     if (Number.isFinite(totalPages) && totalPages > 0 && page > totalPages) setPage(totalPages);
   }, [page, pagination.totalPages]);
+
+  // Realtime/poll events refresh the current page without replacing it with a
+  // loading skeleton; useFetch revalidates from cache in the background.
+  useEffect(() => {
+    if (notificationRevision === handledRevisionRef.current) return;
+    handledRevisionRef.current = notificationRevision;
+    refetch();
+  }, [notificationRevision, refetch]);
 
   const emptyState = useMemo(() => {
     if (search.trim()) {
@@ -165,26 +166,40 @@ export default function NotificationsPage() {
     if (!begin(key)) return;
     setActionError('');
 
+    // Update the UI and bell first. The API call confirms persistence; a
+    // failure rolls the optimistic patch back instead of leaving a stale row.
+    const now = new Date().toISOString();
+    const optimistic = {
+      ...notification,
+      isRead: read,
+      status: read ? 'read' : 'sent',
+      readAt: read ? notification.readAt || now : null,
+    };
+    const delta = (read ? 0 : 1) - (notification.isRead ? 1 : 0);
+    patchNotification(notification.id, optimistic);
+    setSelected((current) => (current?.id === notification.id ? optimistic : current));
+    if (delta) applyLocalChange((current) => ({ unreadCount: current.unreadCount + delta }));
+
     try {
       const response = read
         ? await markNotificationRead(notification.id, { token })
         : await markNotificationUnread(notification.id, { token });
-      const updated = { ...notification, ...(response?.notification || {}), isRead: read };
+      const updated = { ...optimistic, ...(response?.notification || {}) };
       patchNotification(notification.id, updated);
       setSelected((current) => (current?.id === notification.id ? updated : current));
-
-      const delta = (read ? 0 : 1) - (notification.isRead ? 1 : 0);
-      applyLocalChange((current) => ({ unreadCount: current.unreadCount + delta }));
-      // Navigation opens immediately after a read update. Invalidating here
-      // would replace the list mid-transition and cause a visible jump.
-      if (!options.skipInvalidate) invalidate();
+      // Navigation opens immediately after a read update. Use a background
+      // revalidation instead of invalidating the cached list mid-transition.
+      if (!options.skipInvalidate) refetch();
       refreshUnreadCount({ force: true });
     } catch {
+      patchNotification(notification.id, notification);
+      setSelected((current) => (current?.id === notification.id ? notification : current));
+      if (delta) applyLocalChange((current) => ({ unreadCount: current.unreadCount - delta }));
       setActionError('Could not update this notification. Please try again.');
     } finally {
       end(key);
     }
-  }, [token, begin, end, patchNotification, applyLocalChange, invalidate, refreshUnreadCount]);
+  }, [token, begin, end, patchNotification, applyLocalChange, refetch, refreshUnreadCount]);
 
   const selectNotification = useCallback((notification) => {
     setSelected(notification);
@@ -211,14 +226,14 @@ export default function NotificationsPage() {
       if (!notification.isRead) {
         applyLocalChange((current) => ({ unreadCount: current.unreadCount - 1 }));
       }
-      invalidate();
+      refetch();
       refreshUnreadCount({ force: true });
     } catch {
       setActionError('Could not delete this notification. Please try again.');
     } finally {
       end(key);
     }
-  }, [confirm, token, begin, end, removeNotifications, applyLocalChange, invalidate, refreshUnreadCount]);
+  }, [confirm, token, begin, end, removeNotifications, applyLocalChange, refetch, refreshUnreadCount]);
 
   const openRelated = useCallback((notification) => {
     const path = notification.metadata?.actionPath;
@@ -240,7 +255,7 @@ export default function NotificationsPage() {
 
   const handleBulkAction = useCallback(async (action) => {
     if (action === 'refresh') {
-      invalidate();
+      refetch();
       refreshUnreadCount({ force: true });
       return;
     }
@@ -276,14 +291,14 @@ export default function NotificationsPage() {
           .map((notification) => notification.id));
         setSelected((current) => (current?.isRead ? null : current));
       }
-      invalidate();
+      refetch();
       refreshUnreadCount({ force: true });
     } catch {
       setActionError('Could not complete this action. Please try again.');
     } finally {
       end('bulk');
     }
-  }, [confirm, token, begin, end, mutate, data, removeNotifications, applyLocalChange, invalidate, refreshUnreadCount]);
+  }, [confirm, token, begin, end, mutate, data, removeNotifications, applyLocalChange, refetch, refreshUnreadCount]);
 
   return (
     <PageContainer className="notifications-page">
@@ -313,7 +328,7 @@ export default function NotificationsPage() {
           loading={isLoading}
           refreshing={isRefreshing}
           error={error}
-          onRetry={() => { invalidate(); refreshUnreadCount({ force: true }); }}
+          onRetry={() => { refetch(); refreshUnreadCount({ force: true }); }}
           emptyState={emptyState}
         />
         <NotificationDetail
