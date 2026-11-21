@@ -341,8 +341,9 @@ Evidence: `ProfileLayout.jsx` passes the confirmed `updateProfile` result to pag
 The project owner elected to perform the live checks directly. Keep this phase open until those results are recorded here.
 
 - [x] Apply migration 032 before deploying profile API code. Migration 032 has already been applied in the target Supabase project.
-- [ ] Apply migration 033 before live retesting favourites. It creates `favorite_vendors`, `favorite_menu_items`, their grants, and ownership RLS policies for projects provisioned from numbered migrations.
-- [x] Run latest static checks: server tests (**150/150**), client build (**passed**, pre-existing chunk-size warning), client tests (**79/79**), OpenAPI parse (**94 paths**), and `git diff --check` (**clean**).
+- [x] Keep migration 033 available for projects provisioned from numbered migrations. The current target project already has `favorite_vendors` and `favorite_menu_items`; direct service-role reads confirmed both tables and asset resolution work.
+- [x] Restart the stale API process before retesting. The live server had started before the favourites routes were added, so `/favorites/state` returned 404; after restart it returns 401 without a token and the paginated favourite queries resolve.
+- [x] Run latest static checks: server tests (**151/151**), client build (**passed**, pre-existing chunk-size warning), client tests (**79/79**), OpenAPI parse (**94 paths**), and `git diff --check` (**clean**).
 - [ ] Verify self-update ownership, blocked protected fields, site/building mismatch rejection, preference validation, and audit sanitization in the target environment.
 - [ ] Verify favourite pagination stability, removal, inactive-item handling, cache invalidation, card-star state, and the save animation in the target environment.
 - [ ] Verify deep links, keyboard navigation, responsive layout, and sensitive-data display.

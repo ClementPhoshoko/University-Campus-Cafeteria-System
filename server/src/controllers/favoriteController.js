@@ -10,7 +10,18 @@ function handleControllerError(res, err) {
   if (err instanceof ApiError) return sendError(res, err.status, err.code, err.message);
   if (err && err.code) {
     const mapped = mapDbError(err);
-    if (mapped) return sendError(res, mapped.status, mapped.code, mapped.message);
+    if (mapped) {
+      console.error('Favourites database request failed:', err);
+      const notConfigured = ['42P01', 'PGRST205'].includes(err.code);
+      return sendError(
+        res,
+        notConfigured ? 503 : mapped.status,
+        notConfigured ? 'FAVORITES_NOT_CONFIGURED' : mapped.code,
+        notConfigured
+          ? 'Favourites are not configured in this environment. Apply migration 033.'
+          : mapped.message,
+      );
+    }
   }
   return sendInternalError(res, err);
 }

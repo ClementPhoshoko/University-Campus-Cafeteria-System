@@ -225,3 +225,29 @@ test('a vendor toggle stops before inserting when the lookup fails', async () =>
   assert.equal(recorder.body.error.code, 'QUERY_ERROR');
   assert.ok(!calls.includes('insert'));
 });
+
+test('missing favourite tables return an actionable configuration error', async () => {
+  const originalError = console.error;
+  console.error = () => {};
+
+  try {
+    const db = createDbStub({
+      data: null,
+      error: { code: '42P01', message: 'relation public.favorite_vendors does not exist' },
+      count: null,
+    });
+    const { res, recorder } = createResponseRecorder();
+
+    await listFavoriteVendors({
+      user: { id: USER_ID },
+      query: { page: '1', limit: '10' },
+      headers: {},
+    }, res, db);
+
+    assert.equal(recorder.statusCode, 503);
+    assert.equal(recorder.body.error.code, 'FAVORITES_NOT_CONFIGURED');
+    assert.match(recorder.body.error.message, /migration 033/i);
+  } finally {
+    console.error = originalError;
+  }
+});
