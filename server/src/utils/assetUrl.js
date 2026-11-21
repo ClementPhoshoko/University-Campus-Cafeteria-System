@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../config/supabase.js';
+import { isUuid } from '../validators/vendorValidators.js';
 
 const BUCKET = 'vendor-assets';
 export const SIGN_EXPIRY = 3600;
@@ -28,9 +29,35 @@ export const IMAGE_SIZES = {
   original: null,
 };
 
+/** The only storage prefixes and database fields that may own a vendor asset. */
+export const ASSET_ENTITY_PATHS = Object.freeze({
+  vendors: { table: 'vendors', field: 'logo_url' },
+  sites: { table: 'sites', field: 'cover_image_url' },
+  buildings: { table: 'buildings', field: 'cover_image_url' },
+  menu_items: { table: 'menu_items', field: 'image_url' },
+  vendor_categories: { table: 'vendor_category_catalog', field: 'image_url' },
+});
+
+// Legacy uploads used readable extensions and filenames; current uploads use
+// UUID.webp. Both are valid as long as the entity segment is a real UUID.
+const ASSET_FILENAME_RE = /^[A-Za-z0-9][A-Za-z0-9._ -]{0,127}\.(?:webp|jpe?g|png|avif|tiff|gif)$/i;
+const CACHE_MAX_AGE_MS = (BUCKET_DURATION + 60) * 1000;
+
 const cache = new Map();
 const inFlight = new Map();
 const generations = new Map();
+
+// Bucketed cache keys are stable within a bucket, but old buckets were never
+// removed. Sweep them so a long-running process does not grow without bound.
+setInterval(() => {
+  const cutoff = Date.now() - CACHE_MAX_AGE_MS;
+  for (const [key, entry] of cache) {
+    if (entry.createdAt > cutoff) continue;
+    cache.delete(key);
+    const stillCached = [...cache.values()].some((candidate) => candidate.objectPath === entry.objectPath);
+    if (!stillCached) generations.delete(entry.objectPath);
+  }
+}, 5 * 60 * 1000).unref();
 
 /**
  * Recover the raw `vendor-assets` object path from a stored value.
@@ -75,6 +102,34 @@ export function getStorageObjectPath(value, supabaseUrl = process.env.SUPABASE_U
   }
 }
 
+/**
+ * Validate an untrusted asset URL at the HTTP boundary. Returns the normalized
+ * object path plus the owning table/field, or null when the value is not a
+ * legitimate `vendor-assets` object for one of the five asset entity types.
+ */
+export function parseAssetObjectPath(value, supabaseUrl = process.env.SUPABASE_URL) {
+  if (typeof value !== 'string' || !value.trim() || value.length > 2048) return null;
+
+  let objectPath;
+  try {
+    objectPath = getStorageObjectPath(value.trim(), supabaseUrl);
+  } catch {
+    return null;
+  }
+  if (!objectPath || /^https?:\/\//i.test(objectPath)) return null;
+
+  const parts = objectPath.split('/');
+  if (parts.length !== 3) return null;
+
+  const [prefix, entityId, filename] = parts;
+  const entity = ASSET_ENTITY_PATHS[prefix];
+  if (!entity || !isUuid(entityId)) return null;
+  if (!ASSET_FILENAME_RE.test(filename)) return null;
+  if (filename.includes('..') || filename.includes('\\') || /[\u0000-\u001f]/.test(filename)) return null;
+
+  return { objectPath, prefix, entityId, filename, table: entity.table, field: entity.field };
+}
+
 function getBucketKey() {
   return Math.floor(Date.now() / (BUCKET_DURATION * 1000));
 }
@@ -110,7 +165,8 @@ async function resolveWithStorage(path, options, storage) {
 
   if (!refresh) {
     const cached = cache.get(cacheKey);
-    if (cached) return cached;
+    if (cached && Date.now() - cached.createdAt < CACHE_MAX_AGE_MS) return cached.url;
+    if (cached) cache.delete(cacheKey);
   }
 
   const generation = generations.get(objectPath) || 0;
@@ -137,7 +193,9 @@ async function resolveWithStorage(path, options, storage) {
 
     // Do not let a signing operation started before invalidation repopulate
     // the cache with a URL for a storage object that has since been replaced.
-    if ((generations.get(objectPath) || 0) === generation) cache.set(cacheKey, signedUrl);
+    if ((generations.get(objectPath) || 0) === generation) {
+      cache.set(cacheKey, { url: signedUrl, objectPath, createdAt: Date.now() });
+    }
     return signedUrl;
   })();
 

@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import sharp from 'sharp';
 import { supabaseAdmin } from '../config/supabase.js';
-import { getStorageObjectPath, invalidateAssetUrl, resolveAssetUrl } from '../utils/assetUrl.js';
+import { getStorageObjectPath, invalidateAssetUrl, parseAssetObjectPath, resolveAssetUrl } from '../utils/assetUrl.js';
 import { writeAudit } from '../utils/audit.js';
 import { ApiError, sendError, sendInternalError } from '../utils/errors.js';
 import { respond } from '../utils/http.js';
@@ -25,8 +25,8 @@ export async function uploadAdminAsset(req, res) {
     const table = ENTITY_TABLES[entityType];
     const field = ENTITY_FIELDS[entityType];
     const storagePath = ENTITY_STORAGE_PATHS[entityType];
-    if (!table || !field || !entityId || typeof data !== 'string') {
-      return sendError(res, 400, 'VALIDATION_ERROR', 'entityType, entityId and base64 data are required');
+    if (!table || !field || !isUuid(String(entityId || '')) || typeof data !== 'string') {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'entityType, a valid UUID entityId and base64 data are required');
     }
     if (/^image\/(jpeg|png|webp|avif|tiff|gif)$/.test(String(contentType || '')) === false) {
       return sendError(res, 400, 'VALIDATION_ERROR', 'Unsupported image type');
@@ -130,11 +130,31 @@ export async function uploadVendorMenuItemAsset(req, res) {
 
 const REFRESH_IMAGE_SIZES = new Set(['icon', 'thumb', 'card', 'hero']);
 
+/** Confirm that the parsed path is still the value stored for its owner. */
+async function defaultLookupAssetPath({ table, field, entityId, objectPath }) {
+  const { data, error } = await supabaseAdmin
+    .from(table)
+    .select(field)
+    .eq('id', entityId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data?.[field]) return false;
+  try {
+    return getStorageObjectPath(data[field]) === objectPath;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Re-sign a single image. The handler is built through a factory so tests can
- * inject a resolver; Express receives the plain `(req, res)` export below.
+ * inject a resolver and DB lookup; Express receives the plain `(req, res)`
+ * export below.
  */
-export function createRefreshAssetImageHandler({ resolve = resolveAssetUrl } = {}) {
+export function createRefreshAssetImageHandler({
+  resolve = resolveAssetUrl,
+  lookupPath = defaultLookupAssetPath,
+} = {}) {
   return async function refreshAssetImage(req, res) {
     try {
       const { url, size } = req.body || {};
@@ -146,20 +166,21 @@ export function createRefreshAssetImageHandler({ resolve = resolveAssetUrl } = {
         throw new ApiError(400, 'VALIDATION_ERROR', 'url must be a non-empty string');
       }
 
-      const input = url.trim();
-      let objectPath;
-      try {
-        objectPath = getStorageObjectPath(input);
-      } catch (error) {
-        throw new ApiError(400, 'VALIDATION_ERROR', error?.message || 'url is not a valid storage object path');
+      const parsed = parseAssetObjectPath(url.trim());
+      if (!parsed) {
+        throw new ApiError(
+          400,
+          'VALIDATION_ERROR',
+          'url must be a vendor-assets object path for a vendor, site, building, menu item, or vendor category',
+        );
       }
-      if (!objectPath || objectPath === input) {
-        throw new ApiError(400, 'VALIDATION_ERROR', 'url must be a vendor-assets storage path or signed URL');
+      if (!(await lookupPath(parsed))) {
+        throw new ApiError(404, 'ASSET_NOT_FOUND', 'Asset not found');
       }
 
       // One asset, one requested size. `refresh` bypasses the cached URL but
       // still shares an in-flight signing operation with concurrent callers.
-      const signedUrl = await resolve(input, size, { refresh: true });
+      const signedUrl = await resolve(parsed.objectPath, size, { refresh: true });
       return respond(req, res, { success: true, url: signedUrl });
     } catch (error) {
       if (error instanceof ApiError) {

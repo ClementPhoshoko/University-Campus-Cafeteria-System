@@ -84,12 +84,6 @@ paths:
       operationId: getCart
       security:
         - bearerAuth: []
-      parameters:
-        - name: refresh_images
-          in: query
-          description: Refresh signed URLs for cart item and vendor images after an image load failure.
-          schema:
-            type: boolean
       responses:
         '200':
           description: Active vendor-location carts (empty when there are none)
@@ -2441,13 +2435,6 @@ paths:
       operationId: listPopularMenuItems
       security:
         - bearerAuth: []
-      parameters:
-        - name: refresh_images
-          in: query
-          required: false
-          schema:
-            type: boolean
-          description: Reissue signed image URLs after an image load failure.
       responses:
         '200':
           description: Popular menu items retrieved
@@ -2593,13 +2580,6 @@ paths:
       operationId: listPublicVendorCategories
       security:
         - bearerAuth: []
-      parameters:
-        - name: refresh_images
-          in: query
-          required: false
-          schema:
-            type: boolean
-          description: Reissue signed image URLs after an image load failure.
       responses:
         '200':
           description: Categories retrieved
@@ -2670,12 +2650,6 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/VendorId'
-        - name: refresh_images
-          in: query
-          required: false
-          schema:
-            type: boolean
-          description: Reissue the vendor logo signed URL after an image load failure.
       responses:
         '200':
           description: Vendor retrieved
@@ -2753,10 +2727,6 @@ paths:
           in: query
           required: true
           schema: { type: string, format: uuid }
-        - name: refresh_images
-          in: query
-          required: false
-          schema: { type: boolean }
       responses:
         '200': { description: Active catalogue items and the validated vendor location ID }
         '400': { description: A valid location_id is required }
@@ -2783,12 +2753,6 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: refresh_images
-          in: query
-          required: false
-          schema:
-            type: boolean
-          description: Reissue the signed menu-item image URL after an image load failure.
       responses:
         '200':
           description: Menu item retrieved
@@ -3469,7 +3433,7 @@ paths:
     post:
       tags: [Assets]
       summary: Re-sign one failed asset image
-      description: Accepts a stored object path, storage URL, or relative storage URL and returns a fresh signed URL for exactly one requested image size.
+      description: Accepts a vendor-assets object path, storage URL, or relative storage URL and returns a fresh signed URL for exactly one requested image size. The object must still be referenced by its owning vendor, site, building, menu item, or vendor category record.
       security: [{ bearerAuth: [] }]
       requestBody:
         required: true
@@ -3481,7 +3445,7 @@ paths:
               properties:
                 url:
                   type: string
-                  description: The failed image URL as stored in the feed response
+                  description: A vendor-assets object path such as sites/<uuid>/<file>.webp, or the signed/relative storage URL returned in a feed response
                 size:
                   type: string
                   enum: [icon, thumb, card, hero]
@@ -3498,6 +3462,8 @@ paths:
                   url: { type: string, format: uri }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
 
   '/admin/assets':
     post:
@@ -5732,6 +5698,12 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
     Conflict:
       description: A record with these values already exists or the action conflicts with the current state
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    RateLimited:
+      description: Too many requests; retry after the interval in the Retry-After header
       content:
         application/json:
           schema:

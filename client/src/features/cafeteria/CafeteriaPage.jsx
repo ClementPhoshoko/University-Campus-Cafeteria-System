@@ -12,6 +12,7 @@ import CafeteriaCardSkeleton from "../../components/cards/CafeteriaCardSkeleton.
 import { useAuth } from '../../hooks/useAuth.js';
 import { listVendors } from '../../services/employeeApi.js';
 import { refreshImageOnce } from '../../services/imageRefresh.js';
+import { useImageRefreshSignal } from '../../hooks/useImageRefreshSignal.js';
 import { mapVendorToCafeteriaCard } from '../home/homeTransform.js';
 import { heroImage } from "../home/homeData.js";
 import { CACHE_TTL } from '../../services/cache.js';
@@ -85,6 +86,7 @@ function FilterChipSkeletons() {
 export default function CafeteriaPage() {
   const { session } = useAuth();
   const token = session?.access_token;
+  const imageRefreshSignal = useImageRefreshSignal();
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const requestedFilter = searchParams.get("filter");
@@ -136,7 +138,7 @@ export default function CafeteriaPage() {
     if (!token || !vendorId || !failedImage) return;
 
     try {
-      const image = await refreshImageOnce({ url: failedImage, size: 'icon', token });
+      const image = await refreshImageOnce({ url: failedImage, size: 'icon', token, signal: imageRefreshSignal });
       if (!image) {
         console.error(`Unable to refresh cafeteria image for vendor ${vendorId}: no new image URL was returned.`);
         return;
@@ -147,6 +149,7 @@ export default function CafeteriaPage() {
           : cafeteria
       )));
     } catch (error) {
+      if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR') return;
       console.error(`Unable to refresh cafeteria image for vendor ${vendorId}:`, error);
     }
   };

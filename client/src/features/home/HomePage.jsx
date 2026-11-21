@@ -24,6 +24,7 @@ import iosBadge from '../../assets/ios_download-Dn_KtiFi.webp';
 import HeroFoodShowcase from '../../components/hero/HeroFoodShowcase.jsx';
 import { getPopularMenuItems, listVendors, listVendorMenu, listVendorCategoryCatalog } from '../../services/employeeApi.js';
 import { refreshImageOnce } from '../../services/imageRefresh.js';
+import { useImageRefreshSignal } from '../../hooks/useImageRefreshSignal.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import { useFetch } from '../../hooks/useFetch.js';
 import { resolveVendorLocationId } from '../cafeteria/vendorLocationSelection.js';
@@ -71,6 +72,7 @@ export default function HomePage() {
   const cafeteria = useScrollProgress();
   const meals = useScrollProgress();
   const token = session?.access_token;
+  const imageRefreshSignal = useImageRefreshSignal();
 
   const loadCafeterias = useCallback(async ({ signal }) => {
     const cafeteriasResponse = await listVendors({
@@ -188,7 +190,7 @@ export default function HomePage() {
     if (!vendorId || !failedImage) return;
 
     try {
-      const image = await refreshImageOnce({ url: failedImage, size: 'icon', token });
+      const image = await refreshImageOnce({ url: failedImage, size: 'icon', token, signal: imageRefreshSignal });
       if (!image) {
         console.error(`Unable to refresh cafeteria image for vendor ${vendorId}: no new image URL was returned.`);
         return;
@@ -202,6 +204,7 @@ export default function HomePage() {
         )),
       }));
     } catch (error) {
+      if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR') return;
       console.error(`Unable to refresh cafeteria image for vendor ${vendorId}:`, error);
     }
   };
@@ -210,7 +213,7 @@ export default function HomePage() {
     if (!categoryId || !failedImage) return;
 
     try {
-      const image = await refreshImageOnce({ url: failedImage, size: 'card', token });
+      const image = await refreshImageOnce({ url: failedImage, size: 'card', token, signal: imageRefreshSignal });
       if (!image) {
         console.error(`Unable to refresh category image for category ${categoryId}: no new image URL was returned.`);
         return;
@@ -221,6 +224,7 @@ export default function HomePage() {
           : category
       )));
     } catch (error) {
+      if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR') return;
       console.error(`Unable to refresh category image for category ${categoryId}:`, error);
     }
   };
@@ -229,7 +233,7 @@ export default function HomePage() {
     if (!itemId || !vendorId || !failedImage) return;
 
     try {
-      const image = await refreshImageOnce({ url: failedImage, size: 'thumb', token });
+      const image = await refreshImageOnce({ url: failedImage, size: 'thumb', token, signal: imageRefreshSignal });
       if (!image) {
         console.error(`Unable to refresh meal image for menu item ${itemId}: no new image URL was returned.`);
         return;
@@ -243,6 +247,7 @@ export default function HomePage() {
         )),
       }));
     } catch (error) {
+      if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR') return;
       console.error(`Unable to refresh meal image for menu item ${itemId}:`, error);
     }
   };

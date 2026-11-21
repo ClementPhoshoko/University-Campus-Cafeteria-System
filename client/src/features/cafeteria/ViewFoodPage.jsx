@@ -17,6 +17,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { useFetch } from '../../hooks/useFetch.js';
 import { getMenuItem, getVendor, addToCart } from '../../services/employeeApi.js';
 import { refreshImageOnce } from '../../services/imageRefresh.js';
+import { useImageRefreshSignal } from '../../hooks/useImageRefreshSignal.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import '../../components/cards/CardSkeletonShimmer.css';
 import './ViewFoodPage.css';
@@ -76,6 +77,7 @@ export default function ViewFoodPage() {
   const vendorId = requestedVendorId || cafeteriaId;
   const { profile, session } = useAuth();
   const token = session?.access_token;
+  const imageRefreshSignal = useImageRefreshSignal();
 
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState({});
@@ -193,7 +195,7 @@ export default function ViewFoodPage() {
     if (!vendorId || !menuItemId || !failedImage) return;
 
     try {
-      const image = await refreshImageOnce({ url: failedImage, size: 'hero', token });
+      const image = await refreshImageOnce({ url: failedImage, size: 'hero', token, signal: imageRefreshSignal });
       if (!image) {
         console.error(`Unable to refresh menu item image for item ${menuItemId}: no new image URL was returned.`);
         return;
@@ -203,6 +205,7 @@ export default function ViewFoodPage() {
         return { ...current, menuItem: { ...current.menuItem, image_url: image } };
       });
     } catch (error) {
+      if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR') return;
       console.error(`Unable to refresh menu item image for item ${menuItemId}:`, error);
     }
   };

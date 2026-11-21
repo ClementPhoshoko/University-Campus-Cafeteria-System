@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {
   BUCKET_DURATION,
   SIGN_EXPIRY,
   getStorageObjectPath,
   invalidateAssetUrl,
+  parseAssetObjectPath,
   resolveAssetUrlWithStorage,
 } from '../src/utils/assetUrl.js';
 
@@ -62,6 +64,73 @@ test('getStorageObjectPath does not rewrite external image URLs', () => {
 test('getStorageObjectPath rejects malformed encoded object paths', () => {
   const url = `${SUPABASE_URL}/storage/v1/object/public/vendor-assets/sites/%E0%A4%A`;
   assert.throws(() => getStorageObjectPath(url, SUPABASE_URL), /invalid encoded object path/);
+});
+
+const SITE_ID = '11111111-1111-1111-1111-111111111111';
+const FILE_ID = '22222222-2222-2222-2222-222222222222';
+
+test('parseAssetObjectPath accepts all five canonical prefixes with UUID entity ids', () => {
+  const prefixes = {
+    vendors: ['vendors', 'logo_url'],
+    sites: ['sites', 'cover_image_url'],
+    buildings: ['buildings', 'cover_image_url'],
+    menu_items: ['menu_items', 'image_url'],
+    vendor_categories: ['vendor_category_catalog', 'image_url'],
+  };
+
+  for (const [prefix, [table, field]] of Object.entries(prefixes)) {
+    const parsed = parseAssetObjectPath(`${prefix}/${SITE_ID}/${FILE_ID}.webp`, SUPABASE_URL);
+    assert.ok(parsed, `${prefix} should be accepted`);
+    assert.equal(parsed.table, table);
+    assert.equal(parsed.field, field);
+    assert.equal(parsed.entityId, SITE_ID);
+  }
+});
+
+test('parseAssetObjectPath preserves legacy jpg/png names and spaces', () => {
+  const parsed = parseAssetObjectPath(`sites/${SITE_ID}/campus photo.webp`, SUPABASE_URL);
+  assert.ok(parsed);
+  assert.equal(parsed.objectPath, `sites/${SITE_ID}/campus photo.webp`);
+  assert.ok(parseAssetObjectPath(`vendors/${SITE_ID}/old-logo.jpeg`, SUPABASE_URL));
+  assert.ok(parseAssetObjectPath(`buildings/${SITE_ID}/campus.png`, SUPABASE_URL));
+});
+
+test('parseAssetObjectPath normalizes object, signed, public, and render storage URLs', () => {
+  const paths = [
+    `sites/${SITE_ID}/${FILE_ID}.webp`,
+    `${SUPABASE_URL}/storage/v1/object/sign/vendor-assets/sites/${SITE_ID}/${FILE_ID}.webp?token=expired`,
+    `${SUPABASE_URL}/storage/v1/object/public/vendor-assets/sites/${SITE_ID}/${FILE_ID}.webp`,
+    `storage/v1/render/image/sign/vendor-assets/sites/${SITE_ID}/${FILE_ID}.webp?width=320`,
+  ];
+
+  for (const path of paths) {
+    assert.equal(parseAssetObjectPath(path, SUPABASE_URL)?.objectPath, `sites/${SITE_ID}/${FILE_ID}.webp`);
+  }
+});
+
+test('parseAssetObjectPath rejects unknown prefixes, non-UUID ids, external URLs, and traversal', () => {
+  const invalid = [
+    `email-assets/sites/${SITE_ID}/${FILE_ID}.webp`,
+    `sites/not-a-uuid/${FILE_ID}.webp`,
+    `sites/${SITE_ID}/nested/${FILE_ID}.webp`,
+    `sites/${SITE_ID}/%2E%2E%2Fsecret.webp`,
+    `sites/${SITE_ID}/logo.exe`,
+    'https://images.example.com/campus.webp',
+    `${SUPABASE_URL}/storage/v1/object/public/vendor-assets/sites/${SITE_ID}/%E0%A4%A`,
+    'x'.repeat(2049),
+  ];
+
+  for (const path of invalid) {
+    assert.equal(parseAssetObjectPath(path, SUPABASE_URL), null, `should reject: ${path.slice(0, 60)}`);
+  }
+});
+
+test('signed URL cache entries are bounded and swept by a background interval', () => {
+  const source = fs.readFileSync(new URL('../src/utils/assetUrl.js', import.meta.url), 'utf8');
+  assert.match(source, /CACHE_MAX_AGE_MS/);
+  assert.match(source, /setInterval\(/);
+  assert.match(source, /\.unref\(\)/);
+  assert.match(source, /entry\.createdAt/);
 });
 
 test('resolveAssetUrlWithStorage deduplicates concurrent signing for one asset and size', async () => {

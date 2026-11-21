@@ -14,6 +14,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { useFetch } from '../../hooks/useFetch.js';
 import { getCart, updateCartItem, removeCartItem, createOrder, processMockPayment } from '../../services/employeeApi.js';
 import { refreshImageOnce } from '../../services/imageRefresh.js';
+import { useImageRefreshSignal } from '../../hooks/useImageRefreshSignal.js';
 import './CartPage.css';
 
 export default function CartPage() {
@@ -24,6 +25,7 @@ export default function CartPage() {
   const cartMutationQueue = useRef(Promise.resolve());
   const pendingCartMutations = useRef(0);
   const latestCartMutation = useRef(new Map());
+  const imageRefreshSignal = useImageRefreshSignal();
   const loadCart = useCallback(async ({ signal }) => {
     const response = await getCart({ token, signal });
     const carts = Array.isArray(response?.carts)
@@ -146,7 +148,7 @@ export default function CartPage() {
     const size = itemId === 'vendor' ? 'icon' : 'thumb';
 
     try {
-      const image = await refreshImageOnce({ url: failedImage, size, token });
+      const image = await refreshImageOnce({ url: failedImage, size, token, signal: imageRefreshSignal });
       if (!image) {
         console.error(`Unable to refresh cart image for ${itemId}: no new image URL was returned.`);
         return;
@@ -171,6 +173,7 @@ export default function CartPage() {
         };
       });
     } catch (error) {
+      if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR') return;
       console.error(`Unable to refresh cart image for ${itemId}:`, error);
     }
   };

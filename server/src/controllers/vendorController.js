@@ -1193,7 +1193,6 @@ export async function getPublicVendor(req, res) {
   try {
     const vendorId = requireUuidParam(req, res, 'vendorId');
     if (!vendorId) return;
-    const refreshImages = req.query.refresh_images === 'true';
 
     const { data: vendor, error } = await db()
       .from('vendors')
@@ -1221,7 +1220,7 @@ export async function getPublicVendor(req, res) {
       success: true,
       vendor: {
         ...vendor,
-        logo_url: await resolveAssetUrl(vendor.logo_url, { size: 'card', refresh: refreshImages }),
+        logo_url: await resolveAssetUrl(vendor.logo_url, { size: 'card' }),
         service_status: location.service_status || 'closed',
         estimated_prep_minutes: location.estimated_prep_minutes ?? null,
         location_count: activeLocations.length,

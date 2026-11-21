@@ -12,6 +12,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { useFetch } from '../../hooks/useFetch.js';
 import { listMyOrders } from '../../services/employeeApi.js';
 import { refreshImageOnce } from '../../services/imageRefresh.js';
+import { useImageRefreshSignal } from '../../hooks/useImageRefreshSignal.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import './orders.css';
 
@@ -80,6 +81,7 @@ export default function OrdersPage() {
   const { session } = useAuth();
   const token = session?.access_token;
   const userId = session?.user?.id;
+  const imageRefreshSignal = useImageRefreshSignal();
   const hasSession = Boolean(token && userId);
   const [activeFilter, setActiveFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -108,7 +110,7 @@ export default function OrdersPage() {
     if (!vendorId || !failedImage) return;
 
     try {
-      const image = await refreshImageOnce({ url: failedImage, size: 'icon', token });
+      const image = await refreshImageOnce({ url: failedImage, size: 'icon', token, signal: imageRefreshSignal });
       if (!image) {
         console.error(`Unable to refresh vendor image for ${vendorId}: no new image URL was returned.`);
         return;
@@ -122,6 +124,7 @@ export default function OrdersPage() {
         )),
       }));
     } catch (error) {
+      if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR') return;
       console.error(`Unable to refresh vendor image for ${vendorId}:`, error);
     }
   };

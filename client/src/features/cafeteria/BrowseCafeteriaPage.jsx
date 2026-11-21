@@ -14,6 +14,7 @@ import emptyStateAvatar from '../../assets/avatars/Disappointed_Student_with_Err
 import { useAuth } from '../../hooks/useAuth.js';
 import { listVendorMenu, getVendor, addToCart } from '../../services/employeeApi.js';
 import { refreshImageOnce } from '../../services/imageRefresh.js';
+import { useImageRefreshSignal } from '../../hooks/useImageRefreshSignal.js';
 import { CACHE_TTL } from '../../services/cache.js';
 import { useFetch } from '../../hooks/useFetch.js';
 import VendorLocationPicker, { VendorLocationPickerSkeleton } from './VendorLocationPicker.jsx';
@@ -239,6 +240,7 @@ export default function BrowseCafeteriaPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { profile, session } = useAuth();
   const token = session?.access_token;
+  const imageRefreshSignal = useImageRefreshSignal();
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [addedItems, setAddedItems] = useState([]);
@@ -348,7 +350,7 @@ export default function BrowseCafeteriaPage() {
     if (!cafeteriaId || !failedImage) return;
 
     try {
-      const image = await refreshImageOnce({ url: failedImage, size: 'card', token });
+      const image = await refreshImageOnce({ url: failedImage, size: 'card', token, signal: imageRefreshSignal });
       if (!image) {
         console.error(`Unable to refresh cafeteria image for vendor ${cafeteriaId}: no new image URL was returned.`);
         return;
@@ -359,6 +361,7 @@ export default function BrowseCafeteriaPage() {
           : current
       ));
     } catch (error) {
+      if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR') return;
       console.error(`Unable to refresh cafeteria image for vendor ${cafeteriaId}:`, error);
     }
   };
@@ -367,7 +370,7 @@ export default function BrowseCafeteriaPage() {
     if (!itemId || vendorId !== cafeteriaId || !failedImage) return;
 
     try {
-      const image = await refreshImageOnce({ url: failedImage, size: 'thumb', token });
+      const image = await refreshImageOnce({ url: failedImage, size: 'thumb', token, signal: imageRefreshSignal });
       if (!image) {
         console.error(`Unable to refresh menu image for item ${itemId}: no new image URL was returned.`);
         return;
@@ -387,6 +390,7 @@ export default function BrowseCafeteriaPage() {
         };
       });
     } catch (error) {
+      if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR') return;
       console.error(`Unable to refresh menu image for item ${itemId}:`, error);
     }
   };

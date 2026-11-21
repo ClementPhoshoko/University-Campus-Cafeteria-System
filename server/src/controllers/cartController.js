@@ -71,7 +71,7 @@ async function findActiveCartForLocation(userId, vendorId, vendorLocationId) {
   return data;
 }
 
-async function getCartItems(cartId, { refreshImages = false, vendorLocationId } = {}) {
+async function getCartItems(cartId, { vendorLocationId } = {}) {
   const { data, error } = await db()
     .from('cart_items')
     .select('*, menu_items(id, name, description, image_url, base_price, status, prep_minutes, dietary_tags:menu_item_dietary_tags(dietary_tags(name)), allergens:menu_item_allergens(allergens(name))), cart_item_options(option_id, quantity, price_delta_snapshot, options(name))')
@@ -94,7 +94,7 @@ async function getCartItems(cartId, { refreshImages = false, vendorLocationId } 
         id: menu_items.id,
         name: menu_items.name,
         description: menu_items.description,
-        image_url: await resolveAssetUrl(menu_items.image_url, { size: 'thumb', refresh: refreshImages }),
+        image_url: await resolveAssetUrl(menu_items.image_url, { size: 'thumb' }),
         base_price: menu_items.base_price,
         status: menu_items.status,
         prep_minutes: menu_items.prep_minutes,
@@ -287,10 +287,9 @@ export async function listCollectionSlots(req, res) {
 export async function getCart(req, res) {
   try {
     const userId = req.user.id;
-    const refreshImages = req.query.refresh_images === 'true';
     const activeCarts = await findActiveCarts(userId);
     const carts = await Promise.all(activeCarts.map(async (cart) => {
-      const items = await getCartItems(cart.id, { refreshImages, vendorLocationId: cart.vendor_location_id });
+      const items = await getCartItems(cart.id, { vendorLocationId: cart.vendor_location_id });
       const allSlots = await getCollectionSlots(cart.vendor_location_id);
       const site = Array.isArray(cart.vendor_locations?.sites)
         ? cart.vendor_locations.sites[0]
@@ -311,10 +310,7 @@ export async function getCart(req, res) {
         vendor: cart.vendors
           ? {
             ...cart.vendors,
-            logo_url: await resolveAssetUrl(cart.vendors.logo_url, {
-              size: 'icon',
-              refresh: refreshImages,
-            }),
+            logo_url: await resolveAssetUrl(cart.vendors.logo_url, { size: 'icon' }),
           }
           : null,
         vendorLocationId: cart.vendor_location_id,
