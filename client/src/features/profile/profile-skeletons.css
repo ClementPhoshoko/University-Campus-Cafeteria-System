@@ -36,16 +36,6 @@
   width: 100%;
 }
 
-.profile-favourites-skeleton .home_card-skeleton-shimmer,
-.profile-favourites-skeleton-list .home_card-skeleton-shimmer {
-  background: linear-gradient(
-    100deg,
-    var(--color-border-subtle) 20%,
-    var(--color-surface-selected) 45%,
-    var(--color-border-subtle) 70%
-  );
-}
-
 .profile-skeleton-favourite-title {
   display: block;
   border-radius: var(--radius-xs);
@@ -79,9 +69,9 @@
 
 .profile-skeleton-favourite-meta {
   display: block;
-  width: 56px;
-  height: 0.8rem;
-  flex: 0 0 56px;
+  width: 44px;
+  height: 16px;
+  flex: 0 0 44px;
   border-radius: var(--radius-full);
 }
 
