@@ -122,7 +122,9 @@ export default function HomePage() {
         });
         return cafeteria.id && locationId
         ? listVendorMenu(cafeteria.id, { token, signal, cache: 'no-cache', locationId }).catch((error) => {
-          console.error(`Failed to load menu for cafeteria ${cafeteria.id}:`, error);
+          if (error?.name !== 'AbortError') {
+            console.error(`Failed to load menu for cafeteria ${cafeteria.id}:`, error);
+          }
           return { categories: [] };
         })
         : Promise.resolve({ categories: [] });
