@@ -26,7 +26,7 @@ export default function ProfileSecurityPage() {
           <h3 className="profile_card-title">Password</h3>
         </div>
         <p className="profile_section-note">
-          Reset your password with the same email verification flow used on the sign-in page.
+          We&apos;ll email you a 6-digit code so you can confirm it&apos;s you and choose a new password.
         </p>
         <button
           type="button"

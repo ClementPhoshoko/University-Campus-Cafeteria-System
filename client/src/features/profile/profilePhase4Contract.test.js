@@ -106,6 +106,8 @@ test('security uses the existing recovery flow and device-only sign-out', () => 
   assert.match(security, /navigate\('\/forgot-password'/);
   assert.match(security, /fromProfile: true/);
   assert.match(security, /affects only this device/);
+  assert.match(security, /6-digit code/);
+  assert.doesNotMatch(security, /same email verification flow/);
   assert.match(publicOnlyRoute, /fromProfileRecovery/);
 });
 
