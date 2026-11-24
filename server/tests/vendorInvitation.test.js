@@ -6,6 +6,23 @@ import * as assetController from '../src/controllers/assetController.js';
 import * as invitationRoutes from '../src/routes/vendorInvitationRoutes.js';
 import * as vendorOperationsRoutes from '../src/routes/vendorRoutes.js';
 
+test('public invitation preview is mounted before namespace-wide auth routers', async () => {
+  const appSource = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
+  const invitationIndex = appSource.indexOf("app.use('/api/v1', vendorInvitationRoutes);");
+  assert.ok(invitationIndex >= 0);
+
+  for (const routerName of ['profileRoutes', 'siteRoutes', 'vendorRoutes', 'cartRoutes', 'orderRoutes']) {
+    const index = appSource.indexOf(`app.use('/api/v1', ${routerName});`);
+    assert.ok(index >= 0, `${routerName} should be mounted`);
+    assert.ok(invitationIndex < index, `${routerName} must be mounted after the public invitation router`);
+  }
+
+  const routes = invitationRoutes.default.stack.filter((layer) => layer.route);
+  const preview = routes.find((route) => route.route.path === '/vendor-invitations/:token' && route.route.methods.get);
+  assert.ok(preview, 'public invitation preview should be registered');
+  assert.equal(preview.route.stack.some((layer) => layer.name === 'authenticate'), false);
+});
+
 test('invitation controller exposes invitation and manager staff access endpoints', () => {
   for (const name of [
     'createVendorInvitation',

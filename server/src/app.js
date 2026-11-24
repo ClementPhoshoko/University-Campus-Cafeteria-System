@@ -80,12 +80,14 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec, {
 }));
 
 app.use('/api/v1', healthRoutes);
+// This router includes a public invitation preview and must be mounted before
+// every router with namespace-wide authentication. Express runs router-level
+// middleware even when no route matches, so a later invitation GET would still
+// be rejected by the first authenticated router it passed through.
+app.use('/api/v1', vendorInvitationRoutes);
 app.use('/api/v1', authRoutes);
 app.use('/api/v1', profileRoutes);
 app.use('/api/v1', emailRoutes);
-// This router includes a public invitation preview and must precede routers
-// whose namespace-wide authentication middleware can intercept unmatched paths.
-app.use('/api/v1', vendorInvitationRoutes);
 app.use('/api/v1', siteRoutes);
 app.use('/api/v1', vendorRoutes);
 app.use('/api/v1', cartRoutes);
