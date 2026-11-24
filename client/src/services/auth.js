@@ -1,4 +1,7 @@
 import { supabase } from './supabase.js';
+import { isSessionRejection } from '../utils/sessionState.js';
+
+export { isSessionRejection };
 
 export async function signInWithEmail(email, password) {
   if (!supabase) throw new Error('Supabase not configured');
@@ -69,7 +72,7 @@ export async function signOut() {
 }
 
 export async function getSession() {
-  if (!supabase) return null;
-  const { data: { session } } = await supabase.auth.getSession();
-  return session;
+  if (!supabase) return { session: null, error: null };
+  const { data, error } = await supabase.auth.getSession();
+  return { session: data.session ?? null, error: error ?? null };
 }

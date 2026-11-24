@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
 import NotFoundScreen from './NotFoundScreen.jsx';
 import SessionExpiredScreen from './SessionExpiredScreen.jsx';
@@ -7,7 +7,7 @@ import notConnectedAvatar from '../../assets/avatars/not_connected_avatar.webp';
 import '../../features/auth/auth.css';
 
 export default function ProtectedRoute() {
-  const { user, initialized, sessionReady } = useAuth();
+  const { user, initialized, sessionReady, sessionIssue } = useAuth();
   const location = useLocation();
   const isProfileRoute = location.pathname.startsWith('/profile');
 
@@ -31,9 +31,14 @@ export default function ProtectedRoute() {
   if (!user) {
     // A signed-out visitor cannot resolve a private order resource. Treat the
     // detail URL as missing rather than revealing that the route exists.
-    if (/^\/orders\/[^/]+\/?$/.test(location.pathname)) return <NotFoundScreen />;
+    if (!sessionIssue && /^\/orders\/[^/]+\/?$/.test(location.pathname)) return <NotFoundScreen />;
     const returnTo = `${location.pathname}${location.search}${location.hash}`;
-    return <SessionExpiredScreen redirectTo={`/login?returnTo=${encodeURIComponent(returnTo)}`} />;
+    const redirectTo = `/login?returnTo=${encodeURIComponent(returnTo)}`;
+
+    // A fresh browser profile simply has no session; send it to sign in.
+    // Only a rejected token gets the dedicated expired-session screen.
+    if (sessionIssue) return <SessionExpiredScreen redirectTo={redirectTo} />;
+    return <Navigate to={redirectTo} replace />;
   }
 
   return <Outlet />;

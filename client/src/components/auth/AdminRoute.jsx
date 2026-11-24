@@ -9,7 +9,7 @@ import '../../features/auth/auth.css';
 const ADMIN_ROLES = ['admin'];
 
 export default function AdminRoute() {
-  const { user, initialized } = useAuth();
+  const { user, initialized, sessionIssue } = useAuth();
   const { roles, loading: rolesLoading } = useRoles();
   const location = useLocation();
 
@@ -29,7 +29,9 @@ export default function AdminRoute() {
 
   if (!user) {
     const returnTo = `${location.pathname}${location.search}${location.hash}`;
-    return <SessionExpiredScreen redirectTo={`/login?returnTo=${encodeURIComponent(returnTo)}`} />;
+    const redirectTo = `/login?returnTo=${encodeURIComponent(returnTo)}`;
+    if (sessionIssue) return <SessionExpiredScreen redirectTo={redirectTo} />;
+    return <Navigate to={redirectTo} replace />;
   }
 
   const isAdmin = roles.some((role) => ADMIN_ROLES.includes(role));

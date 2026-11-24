@@ -25,7 +25,10 @@ export function AuthProvider({ children }) {
   const [profileLoading, setProfileLoading] = useState(true);
   const [sessionReady, setSessionReady] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [sessionIssue, setSessionIssue] = useState(false);
   const profileRequestRef = useRef(0);
+  const hadSessionRef = useRef(false);
+  const explicitSignOutRef = useRef(false);
 
   /**
    * Profile state is only ever set from a confirmed canonical API response.
@@ -78,15 +81,19 @@ export function AuthProvider({ children }) {
 
     const initialiseAuth = async () => {
       try {
-        const currentSession = await auth.getSession();
+        const { session: currentSession, error: sessionError } = await auth.getSession();
         if (!mounted) return;
 
+        const rejected = auth.isSessionRejection(sessionError);
+        setSessionIssue(rejected);
+        hadSessionRef.current = !!currentSession;
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setSessionReady(true);
         await loadProfile(currentSession?.access_token ?? null);
       } catch {
         if (mounted) {
+          setSessionIssue(true);
           setSession(null);
           setUser(null);
           setProfile(null);
@@ -103,21 +110,30 @@ export function AuthProvider({ children }) {
       async (event, nextSession) => {
         if (!mounted) return;
 
+        const hadSession = hadSessionRef.current;
+        hadSessionRef.current = !!nextSession;
         setSession(nextSession);
         setUser(nextSession?.user ?? null);
         setSessionReady(true);
+
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          explicitSignOutRef.current = false;
+          setSessionIssue(false);
+        }
 
         if (event === 'SIGNED_IN' && nextSession?.user) {
           await loadProfile(nextSession.access_token);
         }
 
         if (event === 'SIGNED_OUT') {
+          if (hadSession && !explicitSignOutRef.current) setSessionIssue(true);
           profileRequestRef.current += 1;
           setProfile(null);
           setProfileLoading(false);
         }
 
         if (event === 'USER_UPDATED' && nextSession?.user) {
+          setSessionIssue(false);
           await loadProfile(nextSession.access_token);
         }
       },
@@ -133,6 +149,11 @@ export function AuthProvider({ children }) {
   const refreshProfile = useCallback(async () => {
     return loadProfile(session?.access_token ?? null);
   }, [loadProfile, session?.access_token]);
+
+  const clearSessionIssue = useCallback(() => {
+    explicitSignOutRef.current = false;
+    setSessionIssue(false);
+  }, []);
 
   const updateProfile = useCallback(async (patch) => {
     const token = session?.access_token;
@@ -159,29 +180,34 @@ export function AuthProvider({ children }) {
   const signIn = useCallback(async (email, password) => {
     setLoading(true);
     try {
-      return await auth.signInWithEmail(email, password);
+      const result = await auth.signInWithEmail(email, password);
+      clearSessionIssue();
+      return result;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clearSessionIssue]);
 
   const signUp = useCallback(async (email, password, metadata, options = {}) => {
     setLoading(true);
     try {
-      return await auth.signUpWithEmail(email, password, metadata, options);
+      const result = await auth.signUpWithEmail(email, password, metadata, options);
+      clearSessionIssue();
+      return result;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clearSessionIssue]);
 
   const signInWithGoogle = useCallback(async (returnTo) => {
     setLoading(true);
     try {
+      clearSessionIssue();
       await auth.signInWithGoogle(returnTo);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clearSessionIssue]);
 
   const sendOtp = useCallback(async (email) => {
     setLoading(true);
@@ -195,11 +221,13 @@ export function AuthProvider({ children }) {
   const verifyOtp = useCallback(async (email, token) => {
     setLoading(true);
     try {
-      return await auth.verifyOtp(email, token);
+      const result = await auth.verifyOtp(email, token);
+      clearSessionIssue();
+      return result;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clearSessionIssue]);
 
   const resetPassword = useCallback(async (newPassword) => {
     setLoading(true);
@@ -212,6 +240,8 @@ export function AuthProvider({ children }) {
 
   const signOut = useCallback(async () => {
     setLoading(true);
+    explicitSignOutRef.current = true;
+    setSessionIssue(false);
     try {
       await auth.signOut();
       profileRequestRef.current += 1;
@@ -234,6 +264,7 @@ export function AuthProvider({ children }) {
     sessionReady,
     loading,
     initialized,
+    sessionIssue,
     isEmailVerified: !!user?.email_confirmed_at,
     signIn,
     signUp,
