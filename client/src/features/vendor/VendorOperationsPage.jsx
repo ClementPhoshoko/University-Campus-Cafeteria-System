@@ -64,6 +64,7 @@ export default function VendorOperationsPage() {
   const [busyOrder, setBusyOrder] = useState('');
   const [busyItem, setBusyItem] = useState('');
   const busyItemRef = useRef('');
+  const activeVendorIdRef = useRef('');
   const [editingItem, setEditingItem] = useState(null);
   const [savingEditor, setSavingEditor] = useState(false);
   const [notice, setNotice] = useState('');
@@ -80,7 +81,16 @@ export default function VendorOperationsPage() {
     listMyVendors({ token, signal: controller.signal }).then((response) => {
       const rows = response.vendors || [];
       setVendors(rows);
-      setVendorId((current) => rows.some((row) => row.id === current) ? current : (rows[0]?.id || ''));
+      const currentVendorId = activeVendorIdRef.current;
+      const nextVendorId = rows.some((row) => row.id === currentVendorId)
+        ? currentVendorId
+        : (rows[0]?.id || '');
+      if (nextVendorId !== currentVendorId) {
+        activeVendorIdRef.current = nextVendorId;
+        setQueuePage(1);
+        setMenuPage(1);
+      }
+      setVendorId(nextVendorId);
       setVendorsState('ready'); setVendorError('');
     }).catch((error) => { if (error.name !== 'AbortError') { setVendorsState('error'); setVendorError(error.message || 'Could not load your vendor access.'); } });
     return () => controller.abort();
@@ -112,11 +122,20 @@ export default function VendorOperationsPage() {
 
   useEffect(() => {
     if (!vendorId || showingManagerView) return undefined;
-    const controller = new AbortController(); setOrdersState('loading'); setMenuState('loading');
-    loadOrders(controller.signal); loadMenu(controller.signal);
+    const controller = new AbortController();
+    setOrdersState('loading');
+    loadOrders(controller.signal);
     const refresh = window.setInterval(() => { if (document.visibilityState === 'visible') loadOrders(); }, 20_000);
     return () => { controller.abort(); window.clearInterval(refresh); };
-  }, [vendorId, loadOrders, loadMenu, showingManagerView]);
+  }, [vendorId, loadOrders, showingManagerView]);
+
+  useEffect(() => {
+    if (!vendorId || showingManagerView) return undefined;
+    const controller = new AbortController();
+    setMenuState('loading');
+    loadMenu(controller.signal);
+    return () => controller.abort();
+  }, [vendorId, loadMenu, showingManagerView]);
 
   const selectedVendor = useMemo(() => vendors.find((vendor) => vendor.id === vendorId), [vendors, vendorId]);
   const vendorOptions = useMemo(() => vendors.map((vendor) => ({ id: vendor.id, name: vendor.name, available: true })), [vendors]);
@@ -131,10 +150,23 @@ export default function VendorOperationsPage() {
   const urgentCount = queueCounts.urgent;
   const readyCount = queueCounts.ready_for_collection;
 
-  useEffect(() => { setQueuePage(1); }, [filter, vendorId]);
-  useEffect(() => { setMenuPage(1); }, [vendorId]);
   useEffect(() => { if (queuePage > queueTotalPages) setQueuePage(queueTotalPages); }, [queuePage, queueTotalPages]);
   useEffect(() => { if (menuPage > menuTotalPages) setMenuPage(menuTotalPages); }, [menuPage, menuTotalPages]);
+
+  function changeFilter(nextFilter) {
+    if (nextFilter === filter) return;
+    setFilter(nextFilter);
+    setQueuePage(1);
+  }
+
+  function handleVendorChange(option) {
+    const nextVendorId = option?.id || '';
+    if (nextVendorId === activeVendorIdRef.current) return;
+    activeVendorIdRef.current = nextVendorId;
+    setVendorId(nextVendorId);
+    setQueuePage(1);
+    setMenuPage(1);
+  }
 
   async function handleOrderStatus(order, status, detail) {
     setBusyOrder(order.id); setNotice('');
@@ -242,7 +274,7 @@ export default function VendorOperationsPage() {
           placeholder="Choose a vendor"
           options={vendorOptions}
           value={selectedVendorOption}
-          onChange={(option) => setVendorId(option.id)}
+          onChange={handleVendorChange}
           showAvailabilityStatus={false}
         />
       </div>
@@ -307,7 +339,7 @@ export default function VendorOperationsPage() {
                 : <>
         <div className="vendor-ops-grid">
         <VendorSection title="Live order queue" description="Sorted by collection time · refreshes automatically" Icon={IconShoppingBag} className="vendor-ops-section--queue" action={<button className="vendor-ops-refresh" type="button" onClick={() => loadOrders()} aria-label="Refresh orders"><IconRefresh size={18} /></button>}>
-          <div className="vendor-queue-filters" role="group" aria-label="Filter orders">{QUEUE_FILTERS.map((item) => <button key={item.value} type="button" className={filter === item.value ? 'is-active' : ''} aria-pressed={filter === item.value} onClick={() => setFilter(item.value)}>{item.label}{item.value === 'needs_attention' && urgentCount > 0 ? <span>{urgentCount}</span> : null}</button>)}</div>
+          <div className="vendor-queue-filters" role="group" aria-label="Filter orders">{QUEUE_FILTERS.map((item) => <button key={item.value} type="button" className={filter === item.value ? 'is-active' : ''} aria-pressed={filter === item.value} onClick={() => changeFilter(item.value)}>{item.label}{item.value === 'needs_attention' && urgentCount > 0 ? <span>{urgentCount}</span> : null}</button>)}</div>
           <div className="vendor-queue-list">
             {ordersState === 'loading' && <VendorQueueSkeleton />}
             {ordersError && ordersState !== 'error' && <div className="vendor-ops-inline-error" role="status">Queue refresh failed: {ordersError} Showing the last loaded orders.</div>}
