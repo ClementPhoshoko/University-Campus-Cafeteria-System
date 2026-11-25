@@ -21,6 +21,7 @@ import PageHeader from '../../components/layout/PageHeader.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
+import CorporateCateringSkeleton from './CorporateCateringSkeleton.jsx';
 import '../../components/cards/CardSkeletonShimmer.css';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useRoles } from '../../hooks/useRoles.js';
@@ -216,7 +217,10 @@ export default function CorporateCateringPage() {
   const selectedLocationOption = locationOptions.find((option) => option.id === locationId) || null;
 
   useEffect(() => {
-    if (!token) return undefined;
+    if (!token) {
+      setLoadingVendors(false);
+      return undefined;
+    }
     const controller = new AbortController();
     setLoadingVendors(true);
     listVendors({ limit: 50, token, signal: controller.signal })
@@ -408,19 +412,11 @@ export default function CorporateCateringPage() {
     }
   };
 
-  if (rolesLoading) {
-    return (
-      <PageContainer>
-        <div className="corporate-loading">
-          <Skeleton className={`${SHIMMER} corporate-skeleton-line corporate-skeleton-line--title`} />
-          <Skeleton className={`${SHIMMER} corporate-skeleton-line`} />
-        </div>
-      </PageContainer>
-    );
-  }
+  if (rolesLoading) return <CorporateCateringSkeleton />;
   if (!roles.some((role) => REQUESTER_ROLES.includes(role))) {
     return <Navigate to="/" replace />;
   }
+  if (loadingVendors) return <CorporateCateringSkeleton />;
 
   return (
     <PageContainer>

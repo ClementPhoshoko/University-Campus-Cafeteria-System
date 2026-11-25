@@ -13,6 +13,7 @@ const navigationSource = read('..', '..', 'components', 'layout', 'navigationIte
 const adminReportsSource = read('..', 'admin', 'AdminReportsPage.jsx');
 const approvalsSource = read('CorporateApprovalsPage.jsx');
 const requesterSource = read('CorporateCateringPage.jsx');
+const requesterSkeletonSource = read('CorporateCateringSkeleton.jsx');
 const requesterCss = read('corporate-catering.css');
 const vendorOpsSource = read('..', 'vendor', 'VendorOperationsPage.jsx');
 const vendorLayoutSource = read('..', 'vendor', 'VendorWorkspaceLayout.jsx');
@@ -76,6 +77,18 @@ test('requester form uses the shared dropdown, input, and skeleton patterns', ()
   assert.ok(requesterSource.includes('<MenuSkeleton key={index} />'));
   assert.ok(requesterCss.includes('.corporate-skeleton-line'));
   assert.ok(requesterCss.includes('.corporate-menu-skeletons'));
+});
+
+test('requester initial load uses a full page skeleton', () => {
+  assert.ok(requesterSource.includes("import CorporateCateringSkeleton from './CorporateCateringSkeleton.jsx';"));
+  assert.ok(requesterSource.includes('if (rolesLoading) return <CorporateCateringSkeleton />;'));
+  assert.ok(requesterSource.includes('if (loadingVendors) return <CorporateCateringSkeleton />;'));
+  assert.ok(requesterSkeletonSource.includes('className="corporate-skeleton-page"'));
+  assert.ok(requesterSkeletonSource.includes('className="corporate-layout"'));
+  assert.ok(requesterSkeletonSource.includes('corporate-skeleton-control'));
+  assert.ok(requesterSkeletonSource.includes('corporate-request-skeletons'));
+  assert.ok(requesterCss.includes('.corporate-skeleton-page'));
+  assert.ok(requesterCss.includes('.corporate-skeleton-control'));
 });
 
 test('vendor Catering workspace is manager-only and covers quote through delivery', () => {
