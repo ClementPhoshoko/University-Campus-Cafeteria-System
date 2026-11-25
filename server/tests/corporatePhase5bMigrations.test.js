@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const read = (...parts) => fs.readFileSync(path.join(here, ...parts), 'utf8');
 
-const requesterSql = read('..', 'src', 'docs', 'migrations', '038_corporate_requester_role_consolidation.sql');
+const requesterEnumSql = read('..', 'src', 'docs', 'migrations', '038_corporate_requester_role_consolidation.sql');
+const requesterBackfillSql = read('..', 'src', 'docs', 'migrations', '038b_corporate_requester_role_backfill.sql');
 const quoteSql = read('..', 'src', 'docs', 'migrations', '039_corporate_vendor_quotes.sql');
 const deliverySql = read('..', 'src', 'docs', 'migrations', '040_corporate_delivery_workflow.sql');
 const canonicalSql = read('..', 'src', 'docs', 'merchant_munchies_supabase.sql');
@@ -33,19 +34,28 @@ const phase5bFunctions = [
   'confirm_corporate_delivery(uuid, uuid, text[], text)',
 ];
 
-test('migration 038 consolidates requester roles without deleting legacy rows', () => {
-  assert.ok(requesterSql.includes("alter type public.app_role add value if not exists 'catering_requester'"));
+test('migration 038 separates the enum add from its first use', () => {
+  assert.ok(requesterEnumSql.includes("alter type public.app_role add value if not exists 'catering_requester'"));
+  assert.doesNotMatch(
+    requesterEnumSql,
+    /'catering_requester'::public\.app_role/,
+    'a new enum value cannot be used in the same transaction that adds it',
+  );
+});
+
+test('migration 038b backfills requester roles without deleting legacy rows', () => {
+  assert.ok(requesterBackfillSql.includes("raise exception 'Run 038_corporate_requester_role_consolidation.sql first'"));
   for (const role of legacyRequesterRoles) {
-    assert.ok(requesterSql.includes(`'${role}'`), `missing legacy role ${role}`);
+    assert.ok(requesterBackfillSql.includes(`'${role}'`), `missing legacy role ${role}`);
   }
-  assert.ok(requesterSql.includes("select distinct ur.user_id, 'catering_requester'::public.app_role"));
-  assert.ok(requesterSql.includes('and not exists ('));
-  assert.ok(requesterSql.includes('on conflict (user_id, role) do nothing'));
-  assert.ok(requesterSql.includes('create or replace function private.is_catering_requester()'));
-  assert.ok(requesterSql.includes('security definer'));
-  assert.ok(requesterSql.includes("set search_path = ''"));
-  assert.ok(requesterSql.includes('grant execute on function private.is_catering_requester() to authenticated'));
-  assert.ok(requesterSql.includes('revoke execute on function private.is_catering_requester() from anon'));
+  assert.ok(requesterBackfillSql.includes("select distinct ur.user_id, 'catering_requester'::public.app_role"));
+  assert.ok(requesterBackfillSql.includes('and not exists ('));
+  assert.ok(requesterBackfillSql.includes('on conflict (user_id, role) do nothing'));
+  assert.ok(requesterBackfillSql.includes('create or replace function private.is_catering_requester()'));
+  assert.ok(requesterBackfillSql.includes('security definer'));
+  assert.ok(requesterBackfillSql.includes("set search_path = ''"));
+  assert.ok(requesterBackfillSql.includes('grant execute on function private.is_catering_requester() to authenticated'));
+  assert.ok(requesterBackfillSql.includes('revoke execute on function private.is_catering_requester() from anon'));
 });
 
 test('migration 039 adds vendor quotes and service-role-only re-approval RPCs', () => {

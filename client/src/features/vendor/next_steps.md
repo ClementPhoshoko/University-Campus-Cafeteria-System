@@ -105,7 +105,7 @@ Corporate catering now runs end to end behind migrations `031`, `034`–`040`. A
 - [x] Apply migration 029 from the Supabase migration role before deploying inventory-dependent API routes.
 - [x] Apply migration 030 from the Supabase migration role before deploying collection-slot-dependent API routes.
 - [x] Apply migration 031 from the Supabase migration role before deploying corporate catering APIs or enabling the Catering navigation.
-- [x] Apply migrations 034–040 from the Supabase migration role before deploying notification, role-consolidation, quote, re-approval, and delivery APIs.
+- [x] Apply migrations 034–037, then `038_corporate_requester_role_consolidation.sql` alone, then `038b_corporate_requester_role_backfill.sql`, then 039–040 from the Supabase migration role. PostgreSQL requires the new enum value to commit before `038b` uses it.
 - [x] Confirm item metadata and option-group writes work in the target Supabase project.
 - [x] Verify manager/staff/admin boundaries, cross-vendor denial, audit coverage, option validation, stable order snapshots, and pagination.
 - [x] Verify live vendor reporting date boundaries, timezone display, aggregation, server pagination, and CSV export audit against the target Supabase project.

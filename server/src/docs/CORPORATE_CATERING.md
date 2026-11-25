@@ -16,9 +16,12 @@ Apply the numbered migrations in order before deploying the dependent API/UI:
    `036_notification_dedupe_canonical.sql` — server-owned notification rows.
 3. `migrations/037_vendor_roles_derived_only.sql` — vendor roles derive only
    from active `vendor_users` rows.
-4. `migrations/038_corporate_requester_role_consolidation.sql` — adds
-   `catering_requester`, backfills legacy requester roles, and keeps legacy rows
-   readable.
+4. `migrations/038_corporate_requester_role_consolidation.sql` — adds the
+   `catering_requester` enum value. Run this file alone and let it commit before
+   running anything else. Then run
+   `migrations/038b_corporate_requester_role_backfill.sql`, which backfills
+   legacy requester roles and keeps legacy rows readable. PostgreSQL rejects a
+   new enum value used in the same transaction that adds it.
 5. `migrations/039_corporate_vendor_quotes.sql` — quote RPCs, accepted quote
    totals, approval sequence `2`, and audits.
 6. `migrations/040_corporate_delivery_workflow.sql` — corporate-only dispatch,

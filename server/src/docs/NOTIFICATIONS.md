@@ -16,9 +16,10 @@ Apply the numbered migration before deploying the API:
 \i server/src/docs/migrations/036_notification_dedupe_canonical.sql
 ```
 
-Corporate catering workflow migrations `038`–`040` add emitters but no new
-notification schema. Deploy `034`–`036` first; the workflow server emits only
-catalog-owned event keys and never inserts notification rows from the client.
+Corporate catering workflow migrations `038a`/`038b` and `039`–`040` add
+emitters but no new notification schema. Deploy `034`–`036` first; run `038a`
+alone and commit it before `038b`. The workflow server emits only catalog-owned
+event keys and never inserts notification rows from the client.
 
 `034_notification_center.sql` is idempotent: it adds `metadata jsonb not null
 default '{}'::jsonb` and `dedupe_key text`, a partial unique index on
