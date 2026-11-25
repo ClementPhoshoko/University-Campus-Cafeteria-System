@@ -81,9 +81,7 @@ export function useRoles() {
     isAuditor: roles.includes('auditor'),
     isVendorStaff: roles.includes('vendor_staff'),
     isVendorManager: roles.includes('vendor_manager'),
-    isExecutive: roles.includes('executive'),
-    isExecutiveAssistant: roles.includes('executive_assistant'),
-    isMeetingOrganiser: roles.includes('meeting_organiser'),
+    isCateringRequester: roles.includes('catering_requester'),
     isEmployee: roles.includes('employee'),
   }), [roles, loading, hasRole, hasAnyRole]);
 

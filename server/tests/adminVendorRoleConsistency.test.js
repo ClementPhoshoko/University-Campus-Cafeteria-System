@@ -4,6 +4,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { load as yamlLoad } from 'js-yaml';
+import {
+  ASSIGNABLE_PLATFORM_ROLES,
+  LEGACY_REQUESTER_ROLES,
+  READABLE_PLATFORM_ROLES,
+  validateAssignableRole,
+} from '../src/controllers/adminController.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const read = (...parts) => fs.readFileSync(path.join(here, ...parts), 'utf8');
@@ -13,17 +19,26 @@ const vendorSource = read('..', 'src', 'controllers', 'vendorController.js');
 const migrationSource = read('..', 'src', 'docs', 'migrations', '037_vendor_roles_derived_only.sql');
 const spec = yamlLoad(read('..', 'src', 'docs', 'openapi.yaml'));
 
-test('admin role writes reject vendor roles and read platform roles are sanitized', () => {
-  const writableBlock = adminSource.match(/const VALID_PLATFORM_ROLES = \[([\s\S]*?)\];/)?.[1] || '';
-  assert.match(writableBlock, /'employee'/);
-  assert.match(writableBlock, /'admin'/);
-  assert.doesNotMatch(writableBlock, /vendor_staff|vendor_manager/);
-  assert.doesNotMatch(adminSource, /\bVALID_ROLES\b/);
+test('admin role writes use one requester role and reject vendor roles', () => {
+  assert.deepEqual(ASSIGNABLE_PLATFORM_ROLES, [
+    'employee', 'catering_requester', 'admin', 'finance', 'support', 'auditor',
+  ]);
+  assert.deepEqual(LEGACY_REQUESTER_ROLES, [
+    'executive', 'executive_assistant', 'meeting_organiser',
+    'training_coordinator', 'cost_centre_owner',
+  ]);
+  assert.deepEqual(READABLE_PLATFORM_ROLES, [
+    ...ASSIGNABLE_PLATFORM_ROLES, ...LEGACY_REQUESTER_ROLES,
+  ]);
+  assert.equal(validateAssignableRole('catering_requester'), null);
+  assert.match(validateAssignableRole('executive'), /Legacy requester roles/);
+  assert.equal(validateAssignableRole('executive', {
+    allowExistingLegacy: true, existingRoles: ['executive'],
+  }), null);
+  assert.match(validateAssignableRole('vendor_manager'), /Vendor roles are managed/);
 
-  assert.match(adminSource, /const VENDOR_ROLE_MESSAGE/);
-  assert.match(adminSource, /function validatePlatformRoles\(roles\)/);
-  assert.match(adminSource, /invalid\.some\(isVendorRole\)/);
-  assert.equal((adminSource.match(/VALID_PLATFORM_ROLES\.includes\(/g) || []).length, 3);
+  assert.match(adminSource, /const ASSIGNABLE_PLATFORM_ROLES = \[/);
+  assert.match(adminSource, /function validateAssignableRole\(role/);
   assert.match(adminSource, /roleDetails = .*filter\(\(row\) => !isVendorRole\(row\.role\)\)/);
   assert.match(adminSource, /platformRoles = filterPlatformRoles\(/);
 });
@@ -43,11 +58,7 @@ test('OpenAPI separates writable platform roles from derived vendor roles', () =
   assert.ok(platform);
   assert.deepEqual(platform.enum, [
     'employee',
-    'executive',
-    'executive_assistant',
-    'meeting_organiser',
-    'training_coordinator',
-    'cost_centre_owner',
+    'catering_requester',
     'admin',
     'finance',
     'support',

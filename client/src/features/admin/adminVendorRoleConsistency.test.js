@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ALL_ROLES, PLATFORM_ROLES, VENDOR_ROLE_IDS } from './adminMockData.js';
+import { ALL_ROLES, ASSIGNABLE_ROLES, LEGACY_REQUESTER_ROLES, PLATFORM_ROLES, VENDOR_ROLE_IDS } from './adminMockData.js';
 import { filterPlatformRoleIds } from '../../utils/roles.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -17,6 +17,10 @@ test('platform role options exclude vendor roles', () => {
   assert.ok(!PLATFORM_ROLES.some((role) => VENDOR_ROLE_IDS.has(role.id)));
   assert.equal(ALL_ROLES.length, PLATFORM_ROLES.length + VENDOR_ROLE_IDS.size);
   assert.deepEqual(filterPlatformRoleIds(['employee', 'vendor_staff', 'admin', 'vendor_manager']), ['employee', 'admin']);
+  assert.ok(ASSIGNABLE_ROLES.some((role) => role.id === 'catering_requester'));
+  assert.ok(!ASSIGNABLE_ROLES.some((role) => role.legacy));
+  assert.equal(LEGACY_REQUESTER_ROLES.length, 5);
+  assert.ok(PLATFORM_ROLES.some((role) => role.id === 'executive' && role.legacy));
 });
 
 test('authenticated role resolution ignores stale vendor labels in user_roles', () => {
@@ -25,10 +29,13 @@ test('authenticated role resolution ignores stale vendor labels in user_roles', 
 });
 
 test('admin role modal only writes platform roles and explains derived vendor roles', () => {
-  assert.match(source, /import \{ ALL_ROLES, PLATFORM_ROLES \}/);
-  assert.match(source, /\{PLATFORM_ROLES\.map\(\(role\) =>/);
+  assert.match(source, /import \{ ALL_ROLES, ASSIGNABLE_ROLES, LEGACY_REQUESTER_ROLES \}/);
+  assert.match(source, /\{ASSIGNABLE_ROLES\.map\(\(role\) =>/);
   assert.doesNotMatch(source, /\{ALL_ROLES\.map\(\(role\) =>/);
+  assert.doesNotMatch(source, /\{PLATFORM_ROLES\.map\(\(role\) =>/);
+  assert.match(source, /preservedLegacy/);
   assert.match(source, /come from active vendor memberships and are managed in the vendor’s team settings/);
+  assert.match(source, /Legacy catering requester roles remain visible/);
   assert.doesNotMatch(source, /admin-role-option--readonly/);
   assert.doesNotMatch(source, /Vendor membership/);
 });

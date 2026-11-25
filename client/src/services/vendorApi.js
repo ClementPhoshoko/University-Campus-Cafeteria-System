@@ -332,3 +332,65 @@ export function uploadVendorMenuItemAsset(itemId, file, { token, signal } = {}) 
 export function archiveVendorMenuItem(itemId, { token, signal } = {}) {
   return apiRequest(`/vendor/menu/items/${itemId}`, { method: 'DELETE', token, signal });
 }
+
+export function listVendorCateringOrders(vendorId, { token, page = 1, limit = 8, signal } = {}) {
+  return apiRequest('/vendor/corporate', {
+    token,
+    signal,
+    query: { vendor_id: vendorId, page, limit },
+    cache: 'no-store',
+  });
+}
+
+export function getVendorCateringOrder(orderId, { token, signal } = {}) {
+  return apiRequest(`/vendor/corporate/${encodeURIComponent(orderId)}`, {
+    token,
+    signal,
+    cache: 'no-store',
+  });
+}
+
+export function createVendorCateringQuote(orderId, payload, { token, signal } = {}) {
+  return apiRequest(`/vendor/corporate/${encodeURIComponent(orderId)}/quote`, {
+    method: 'POST',
+    token,
+    signal,
+    body: payload,
+  });
+}
+
+export function submitVendorCateringQuote(quoteId, { token, signal } = {}) {
+  return apiRequest(`/vendor/corporate/quotes/${encodeURIComponent(quoteId)}/submit`, {
+    method: 'POST',
+    token,
+    signal,
+    body: {},
+  });
+}
+
+export function withdrawVendorCateringQuote(quoteId, { token, signal } = {}) {
+  return apiRequest(`/vendor/corporate/quotes/${encodeURIComponent(quoteId)}/withdraw`, {
+    method: 'POST',
+    token,
+    signal,
+    body: {},
+  });
+}
+
+export function dispatchVendorCateringOrder(orderId, payload, { token, signal } = {}) {
+  return apiRequest(`/vendor/corporate/${encodeURIComponent(orderId)}/dispatch`, {
+    method: 'POST',
+    token,
+    signal,
+    body: payload,
+  });
+}
+
+export function markVendorCateringDelivered(orderId, { token, signal } = {}) {
+  return apiRequest(`/vendor/corporate/${encodeURIComponent(orderId)}/delivered`, {
+    method: 'POST',
+    token,
+    signal,
+    body: {},
+  });
+}

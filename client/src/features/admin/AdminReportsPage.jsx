@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   IconReceipt,
   IconBuildingStore,
@@ -34,6 +35,9 @@ import {
   Cell,
   ComposedChart,
 } from 'recharts';
+import Skeleton from '../../components/ui/Skeleton.jsx';
+import { useAuth } from '../../hooks/useAuth.js';
+import { getCorporateReport } from '../../services/corporateApi.js';
 import {
   REPORT_TYPES,
   REPORT_RANGES,
@@ -41,7 +45,6 @@ import {
   VENDOR_PERFORMANCE_REPORT,
   DEMAND_REPORT,
   PEAK_REPORT,
-  CORPORATE_REPORT,
   formatCurrency,
 } from './adminMockData.js';
 
@@ -52,6 +55,15 @@ const ICON_MAP = {
   IconClock,
   IconBriefcase,
 };
+
+const corporateDateTime = new Intl.DateTimeFormat('en-ZA', {
+  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+});
+
+function formatCorporateWhen(value) {
+  if (!value) return 'Date to be confirmed';
+  try { return corporateDateTime.format(new Date(value)); } catch { return value; }
+}
 
 function StatTile({ label, value, sub, trend, icon: Icon, tone = 'blue' }) {
   return (
@@ -601,7 +613,55 @@ function PeakReport() {
 /* ── CORPORATE ── */
 
 function CorporateReport() {
-  const { summary, byCostCentre, byVendor, upcoming } = CORPORATE_REPORT;
+  const navigate = useNavigate();
+  const { session } = useAuth();
+  const token = session?.access_token;
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!token) {
+      setLoading(false);
+      return undefined;
+    }
+    const controller = new AbortController();
+    setLoading(true);
+    setError('');
+    getCorporateReport({ token, signal: controller.signal })
+      .then((response) => setReport(response?.report || null))
+      .catch((err) => {
+        if (err.name !== 'AbortError') setError(err.message || 'Could not load the corporate report.');
+      })
+      .finally(() => setLoading(false));
+    return () => controller.abort();
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="admin-report-stack">
+        <section className="admin-kpis">
+          {[0, 1, 2, 3].map((key) => <Skeleton key={key} />)}
+        </section>
+        <section className="admin-card"><Skeleton /><Skeleton /><Skeleton /></section>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="admin-card">
+        <p className="admin-report-section__sub" role="alert">{error}</p>
+      </section>
+    );
+  }
+
+  const summary = report?.summary || { orders: 0, revenue: 0, avgOrder: 0, growth: '0%' };
+  const byCostCentre = report?.byCostCentre || [];
+  const byVendor = report?.byVendor || [];
+  const upcoming = report?.upcoming || [];
+  const shareBase = Number(summary.revenue) || 0;
+  const vendorBase = Number(byVendor[0]?.revenue) || 0;
 
   return (
     <div className="admin-report-stack">
@@ -627,13 +687,17 @@ function CorporateReport() {
                 </tr>
               </thead>
               <tbody>
-                {byCostCentre.map((cc) => {
-                  const share = Math.round((cc.revenue / summary.revenue) * 100);
+                {byCostCentre.length === 0 ? (
+                  <tr>
+                    <td colSpan={5}>
+                      <div className="admin-empty"><h3>No corporate orders yet</h3><p>Cost centre totals appear once a catering request is approved.</p></div>
+                    </td>
+                  </tr>
+                ) : byCostCentre.map((cc) => {
+                  const share = shareBase ? Math.round((cc.revenue / shareBase) * 100) : 0;
                   return (
                     <tr key={cc.code} className="admin-order-row">
-                      <td>
-                        <span className="admin-user-num">{cc.code}</span>
-                      </td>
+                      <td><span className="admin-user-num">{cc.code}</span></td>
                       <td className="admin-vendor-name">{cc.name}</td>
                       <td>{cc.orders}</td>
                       <td><strong>{formatCurrency(cc.revenue)}</strong></td>
@@ -652,49 +716,59 @@ function CorporateReport() {
 
           <section className="admin-card">
             <SectionHeader eyebrow="Pipeline" title="Upcoming corporate events" />
-            <ul className="admin-cp-rows">
-              {upcoming.map((e) => (
-                <li key={e.id} className="admin-cp-row">
-                  <div className="admin-cp-row__icon">
-                    <IconBriefcase size={18} stroke={1.8} />
-                  </div>
-                  <div className="admin-cp-row__body">
-                    <div className="admin-cp-row__head">
-                      <span className="admin-cp-row__name">{e.event}</span>
-                      <span className="admin-tag admin-tag--blue">{e.costCentre}</span>
+            {upcoming.length === 0 ? (
+              <div className="admin-empty"><h3>No upcoming events</h3><p>Approved catering with a future delivery date will appear here.</p></div>
+            ) : (
+              <ul className="admin-cp-rows">
+                {upcoming.map((event) => (
+                  <li key={event.id} className="admin-cp-row">
+                    <div className="admin-cp-row__icon"><IconBriefcase size={18} stroke={1.8} /></div>
+                    <div className="admin-cp-row__body">
+                      <div className="admin-cp-row__head">
+                        <span className="admin-cp-row__name">{event.event}</span>
+                        <span className="admin-tag admin-tag--blue">{event.costCentre}</span>
+                      </div>
+                      <span className="admin-cp-row__loc">
+                        <IconCalendar size={11} stroke={1.8} /> {formatCorporateWhen(event.when)} · {event.attendees} attendees · {event.vendor}
+                      </span>
                     </div>
-                    <span className="admin-cp-row__loc">
-                      <IconCalendar size={11} stroke={1.8} /> {e.when} · {e.attendees} attendees · {e.vendor}
-                    </span>
-                  </div>
-                  <div className="admin-cp-row__meta">
-                    <button type="button" className="admin-link-cta">
-                      View <IconArrowUpRight size={13} stroke={2} />
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                    <div className="admin-cp-row__meta">
+                      <button
+                        type="button"
+                        className="admin-link-cta"
+                        onClick={() => navigate(`/admin/corporate-approvals?orderId=${encodeURIComponent(event.id)}`)}
+                      >
+                        View <IconArrowUpRight size={13} stroke={2} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </div>
 
         <div className="admin-order-grid__side">
           <section className="admin-card">
             <SectionHeader eyebrow="Vendors" title="Revenue by vendor" />
-            <ul className="admin-report-list">
-              {byVendor.map((v) => (
-                <li key={v.vendor} className="admin-report-row">
-                  <span className="admin-report-row__label">{v.vendor}</span>
-                  <div className="admin-report-row__bar">
-                    <span className="admin-report-row__bar-fill" style={{ width: `${(v.revenue / byVendor[0].revenue) * 100}%` }} />
-                  </div>
-                  <span className="admin-report-row__value">
-                    <strong>{formatCurrency(v.revenue)}</strong>
-                    <small>{v.orders} orders</small>
-                  </span>
-                </li>
-              ))}
-            </ul>
+            {byVendor.length === 0 ? (
+              <div className="admin-empty"><h3>No vendor revenue yet</h3><p>Vendor totals appear once corporate orders are approved.</p></div>
+            ) : (
+              <ul className="admin-report-list">
+                {byVendor.map((vendor) => (
+                  <li key={vendor.vendor} className="admin-report-row">
+                    <span className="admin-report-row__label">{vendor.vendor}</span>
+                    <div className="admin-report-row__bar">
+                      <span className="admin-report-row__bar-fill" style={{ width: `${vendorBase ? (vendor.revenue / vendorBase) * 100 : 0}%` }} />
+                    </div>
+                    <span className="admin-report-row__value">
+                      <strong>{formatCurrency(vendor.revenue)}</strong>
+                      <small>{vendor.orders} orders</small>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </div>
       </div>

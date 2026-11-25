@@ -17,6 +17,7 @@ import VendorLocationStockPage from './VendorLocationStockPage.jsx';
 import VendorCollectionSlotsPage from './VendorCollectionSlotsPage.jsx';
 import VendorReportsPage from './VendorReportsPage.jsx';
 import VendorTeamManagementPage from './VendorTeamManagementPage.jsx';
+import VendorCateringPage from './VendorCateringPage.jsx';
 import VendorWorkspaceLayout from './VendorWorkspaceLayout.jsx';
 import { VendorDashboardSkeleton, VendorMenuItemsSkeleton, VendorQueueSkeleton, VendorSummarySkeleton } from './VendorLoadingSkeletons.jsx';
 import './vendor-operations.css';
@@ -41,10 +42,11 @@ export default function VendorOperationsPage() {
   const showingMenuManagement = searchParams.get('view') === 'menus';
   const showingStockManagement = searchParams.get('view') === 'stock';
   const showingSlotManagement = searchParams.get('view') === 'slots';
+  const showingCateringManagement = searchParams.get('view') === 'catering';
   const showingReportManagement = searchParams.get('view') === 'reports';
   const showingTeamManagement = searchParams.get('view') === 'team';
-  const showingManagerView = showingMenuManagement || showingStockManagement || showingSlotManagement || showingReportManagement || showingTeamManagement;
-  const activeView = showingMenuManagement ? 'menus' : showingStockManagement ? 'stock' : showingSlotManagement ? 'slots' : showingReportManagement ? 'reports' : showingTeamManagement ? 'team' : 'overview';
+  const showingManagerView = showingMenuManagement || showingStockManagement || showingSlotManagement || showingCateringManagement || showingReportManagement || showingTeamManagement;
+  const activeView = showingMenuManagement ? 'menus' : showingStockManagement ? 'stock' : showingSlotManagement ? 'slots' : showingCateringManagement ? 'catering' : showingReportManagement ? 'reports' : showingTeamManagement ? 'team' : 'overview';
   const focusedStockItemId = searchParams.get('item') || '';
   const [vendors, setVendors] = useState([]);
   const [vendorId, setVendorId] = useState('');
@@ -322,7 +324,14 @@ export default function VendorOperationsPage() {
               token={token}
               onBack={() => setSearchParams({})}
             />
-            : showingReportManagement
+            : showingCateringManagement
+              ? <VendorCateringPage
+                vendorId={vendorId}
+                vendorName={selectedVendor.name}
+                token={token}
+                onBack={() => setSearchParams({})}
+              />
+              : showingReportManagement
               ? <VendorReportsPage
                 vendorId={vendorId}
                 vendorName={selectedVendor.name}

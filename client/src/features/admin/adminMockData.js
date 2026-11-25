@@ -1540,11 +1540,12 @@ export const USER_STATUS_FILTERS = [
 
 export const ALL_ROLES = [
   { id: 'employee', label: 'Employee', tone: 'info' },
-  { id: 'executive', label: 'Executive', tone: 'error' },
-  { id: 'executive_assistant', label: 'Executive Assistant', tone: 'info' },
-  { id: 'meeting_organiser', label: 'Meeting Organiser', tone: 'info' },
-  { id: 'training_coordinator', label: 'Training Coordinator', tone: 'info' },
-  { id: 'cost_centre_owner', label: 'Cost Centre Owner', tone: 'warning' },
+  { id: 'catering_requester', label: 'Catering Requester', tone: 'blue' },
+  { id: 'executive', label: 'Executive (legacy)', tone: 'error', legacy: true },
+  { id: 'executive_assistant', label: 'Executive Assistant (legacy)', tone: 'info', legacy: true },
+  { id: 'meeting_organiser', label: 'Meeting Organiser (legacy)', tone: 'info', legacy: true },
+  { id: 'training_coordinator', label: 'Training Coordinator (legacy)', tone: 'info', legacy: true },
+  { id: 'cost_centre_owner', label: 'Cost Centre Owner (legacy)', tone: 'warning', legacy: true },
   { id: 'vendor_staff', label: 'Vendor Staff', tone: 'success' },
   { id: 'vendor_manager', label: 'Vendor Manager', tone: 'success' },
   { id: 'admin', label: 'Company Admin', tone: 'error' },
@@ -1553,6 +1554,8 @@ export const ALL_ROLES = [
   { id: 'auditor', label: 'System Auditor', tone: 'info' },
 ];
 
+export const ASSIGNABLE_ROLES = ALL_ROLES.filter((role) => !VENDOR_ROLE_IDS.has(role.id) && !role.legacy);
+export const LEGACY_REQUESTER_ROLES = ALL_ROLES.filter((role) => role.legacy);
 export const PLATFORM_ROLES = ALL_ROLES.filter((role) => !VENDOR_ROLE_IDS.has(role.id));
 
 export const ROLE_FILTERS = [

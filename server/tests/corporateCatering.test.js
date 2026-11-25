@@ -44,6 +44,11 @@ test('corporate routes are registered with requester and approver namespaces', (
   const expected = [
     '/corporate/requests',
     '/corporate/requests/:orderId',
+    '/corporate/requests/:orderId/reapproval',
+    '/corporate/requests/:orderId/confirm-delivery',
+    '/corporate/quotes/:quoteId/accept',
+    '/corporate/quotes/:quoteId/reject',
+    '/corporate/report',
     '/corporate/approvals/pending',
     '/corporate/approvals/:orderId',
     '/corporate/approvals/:orderId/decision',
@@ -52,13 +57,15 @@ test('corporate routes are registered with requester and approver namespaces', (
     assert.ok(routes.some((route) => route.path === path), `missing route ${path}`);
   }
   assert.ok(routes.some((route) => route.path === '/corporate/requests' && route.methods.post));
+  assert.ok(routes.some((route) => route.path === '/corporate/quotes/:quoteId/accept' && route.methods.post));
+  assert.ok(routes.some((route) => route.path === '/corporate/quotes/:quoteId/reject' && route.methods.post));
+  assert.ok(routes.some((route) => route.path === '/corporate/requests/:orderId/confirm-delivery' && route.methods.post));
+  assert.ok(routes.some((route) => route.path === '/corporate/report' && route.methods.get));
   assert.ok(routes.some((route) => route.path === '/corporate/approvals/:orderId/decision' && route.methods.post));
 });
 
 test('corporate request roles and approval decisions are explicit', () => {
-  assert.deepEqual(CORPORATE_REQUEST_ROLES, [
-    'executive', 'executive_assistant', 'meeting_organiser', 'training_coordinator', 'cost_centre_owner',
-  ]);
+  assert.deepEqual(CORPORATE_REQUEST_ROLES, ['catering_requester']);
   assert.deepEqual(APPROVAL_DECISIONS, ['approved', 'rejected', 'amendment_requested']);
 });
 

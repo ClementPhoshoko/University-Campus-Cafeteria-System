@@ -86,16 +86,16 @@ Migration 030 (applied), manager-only vendor-scoped slot APIs, the sidebar **Col
 - [x] Implement slot changes transactionally. Prevent unsafe changes to started/reserved slots, and ensure customer slot selection and checkout immediately enforce paused/full state.
 - [x] Audit each manager action and validate slot ownership through the slot's vendor location.
 
-### 4. Catering and reporting — reporting and request foundation complete and verified; vendor workflow pending
+### 4. Catering and reporting — complete end-to-end workflow implemented
 
 Live vendor reporting is implemented and verified: manager-only `/vendor/reports` and `/vendor/reports/export`, plus the manager **Reports** sidebar page. It reads real orders, retained item snapshots, status history, and refunds. No migration was needed.
 
-The corporate catering foundation is implemented and verified behind migration 031: eligible employees can create cost-centre requests with retained item prices, server-paginated status tracking, and admin/finance approval decisions. The internal cost-centre payment uses the standard service-fee rules. Vendor quote, acceptance, dispatch, and delivery actions remain unimplemented until their transition rules are agreed; checkout still creates personal orders only.
+Corporate catering now runs end to end behind migrations `031`, `034`–`040`. A `catering_requester` submits a cost-centre request with retained item prices; admin or finance approves; a vendor manager saves, submits, withdraws, or revises quotes; the requester accepts or declines; a quote above the approved total or a manual request reopens approval sequence `2`; the manager dispatches and marks delivered; and the requester confirms receipt. All transitions are service-role-only RPCs with audit rows and server-owned notifications.
 
-- [x] Map existing corporate order, quote, and delivery states before adding vendor actions. Employee request creation, admin/finance approval, and status tracking are implemented; vendor workflow states remain read-only in detail.
-- [ ] Specify allowed transitions for quote, accept/reject, dispatch, and delivery confirmation, with audit history and authorization rules, before building vendor screens.
+- [x] Map existing corporate order, quote, and delivery states before adding vendor actions, then implement quote/accept/reject, dispatch, delivery, and confirmation with explicit authorization and audit history.
+- [x] Build the manager-only vendor Catering workspace (`/vendor/catering`) and keep it out of the staff sidebar and direct URL access.
 - [x] Build live, vendor-scoped reporting from verified order, item, status-history, and settlement data. Date boundaries are UTC; displayed times use the location timezone; recent orders are server-paginated; CSV export is manager-only and audited.
-- [ ] Replace admin mock report sources separately; vendor reports already use live data.
+- [x] Replace the admin corporate mock report with `/corporate/report`; the requester, approver, vendor, and report screens all read live rows only.
 
 ### 5. Rollout and verification — implemented scope verified
 
@@ -105,11 +105,12 @@ The corporate catering foundation is implemented and verified behind migration 0
 - [x] Apply migration 029 from the Supabase migration role before deploying inventory-dependent API routes.
 - [x] Apply migration 030 from the Supabase migration role before deploying collection-slot-dependent API routes.
 - [x] Apply migration 031 from the Supabase migration role before deploying corporate catering APIs or enabling the Catering navigation.
+- [x] Apply migrations 034–040 from the Supabase migration role before deploying notification, role-consolidation, quote, re-approval, and delivery APIs.
 - [x] Confirm item metadata and option-group writes work in the target Supabase project.
 - [x] Verify manager/staff/admin boundaries, cross-vendor denial, audit coverage, option validation, stable order snapshots, and pagination.
 - [x] Verify live vendor reporting date boundaries, timezone display, aggregation, server pagination, and CSV export audit against the target Supabase project.
 - [x] Verify corporate catering role boundaries, schedule/validation guard rails, approval transitions, audit rows, and concurrent decisions using `CORPORATE_CATERING_VERIFICATION.md`.
 - [x] Stress-check concurrent checkout, retries, payment failure/expiry, cancellation, order rejection, and duplicate release/consume attempts against real database transactions.
 - [x] Verify slot pause/full behavior against the employee picker and checkout. Reconcile stock reservations and slot counts in staging before enabling production traffic.
-- Vendor quote/dispatch workflow and admin mock report replacement remain intentionally open; they are outside the verified implemented scope.
+- Verify quote totals, re-approval sequence `2`, dispatch, delivery confirmation, and notification dedupe against the target Supabase project using `CORPORATE_CATERING_VERIFICATION.md`.
 - Update this roadmap as each phase ships; do not mark schema, API, UI, or rollout work complete until all dependent surfaces agree.

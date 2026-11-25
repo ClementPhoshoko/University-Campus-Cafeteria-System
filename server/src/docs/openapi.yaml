@@ -404,6 +404,116 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { description: Request was already decided or approval step is not pending }
 
+  '/corporate/quotes/{quoteId}/accept':
+    post:
+      tags: [Corporate Catering]
+      summary: Accept a submitted corporate quote
+      description: Requester only. A quote above the approved order total creates approval sequence 2 and returns reapprovalRequired true; otherwise the accepted quote is ready for dispatch.
+      operationId: acceptCorporateQuote
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: quoteId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Quote accepted, with approvalStatus and reapprovalRequired }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Quote was not found }
+        '409': { description: Quote expired or request state does not allow acceptance }
+
+  '/corporate/quotes/{quoteId}/reject':
+    post:
+      tags: [Corporate Catering]
+      summary: Decline a submitted corporate quote
+      description: Requester only. The vendor is notified and may submit another quote after the rejection is recorded.
+      operationId: rejectCorporateQuote
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: quoteId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 1000 }
+      responses:
+        '200': { description: Quote declined }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Quote was not found }
+        '409': { description: Quote is not submitted }
+
+  '/corporate/requests/{orderId}/reapproval':
+    post:
+      tags: [Corporate Catering]
+      summary: Request re-approval of an accepted quote
+      description: Requester only. Reopens approval sequence 2 so an admin or finance approver reviews the accepted quote before dispatch continues.
+      operationId: requestCorporateReapproval
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 1000 }
+      responses:
+        '200': { description: Re-approval requested }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Request was not found }
+
+  '/corporate/requests/{orderId}/confirm-delivery':
+    post:
+      tags: [Corporate Catering]
+      summary: Confirm receipt of a delivered corporate order
+      description: Requester only. Completes the delivery and order after the vendor marks it delivered; optional issue notes are stored on the delivery record.
+      operationId: confirmCorporateDelivery
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                missing_or_incorrect_items: { type: string, maxLength: 2000, nullable: true }
+      responses:
+        '200': { description: Delivery confirmed }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Request was not found }
+        '409': { description: Order has not been delivered }
+
+  '/corporate/report':
+    get:
+      tags: [Corporate Catering]
+      summary: Read the live corporate catering report
+      description: Admin or finance only. Aggregates real corporate orders, cost centres, vendors, and upcoming events. No mock data is used.
+      operationId: getCorporateReport
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Corporate summary, top cost centres, vendor revenue, and upcoming events }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
   '/orders/{orderId}':
     get:
       tags:
@@ -3796,6 +3906,156 @@ paths:
               schema: { type: string }
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
+
+  '/vendor/corporate':
+    get:
+      tags: [Vendor Operations]
+      summary: List corporate catering requests for one vendor
+      description: Manager only. Server-paginated corporate orders belonging to the authenticated manager's vendor.
+      operationId: listVendorCateringOrders
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: vendor_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200': { description: Server-paginated corporate requests }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  '/vendor/corporate/{orderId}':
+    get:
+      tags: [Vendor Operations]
+      summary: Read one corporate catering request for quoting and delivery
+      description: Manager only. Includes retained items, quote history, and delivery state.
+      operationId: getVendorCateringOrder
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Corporate request detail }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Corporate request was not found }
+
+  '/vendor/corporate/{orderId}/quote':
+    post:
+      tags: [Vendor Operations]
+      summary: Save a draft corporate quote
+      description: Manager only. Creates or updates one draft quote for an approved, unquoted corporate request.
+      operationId: createVendorQuote
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subtotal, service_fee, valid_until]
+              properties:
+                subtotal: { type: number, format: double, minimum: 0 }
+                service_fee: { type: number, format: double, minimum: 0 }
+                tax: { type: number, format: double, minimum: 0, default: 0 }
+                valid_until: { type: string, format: date-time }
+                notes: { type: string, maxLength: 2000, nullable: true }
+      responses:
+        '200': { description: Draft quote saved }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: Request cannot be quoted or a submitted quote already exists }
+
+  '/vendor/corporate/quotes/{quoteId}/submit':
+    post:
+      tags: [Vendor Operations]
+      summary: Submit a draft quote to the requester
+      description: Manager only. The requester is notified through a server-created notification row.
+      operationId: submitVendorQuote
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: quoteId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Quote submitted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Quote was not found }
+        '409': { description: Quote is not a draft }
+
+  '/vendor/corporate/quotes/{quoteId}/withdraw':
+    post:
+      tags: [Vendor Operations]
+      summary: Withdraw a submitted quote
+      description: Manager only. Marks the quote expired so a revised draft can be created.
+      operationId: withdrawVendorQuote
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: quoteId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Quote withdrawn }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Quote was not found }
+        '409': { description: Quote is not submitted }
+
+  '/vendor/corporate/{orderId}/dispatch':
+    post:
+      tags: [Vendor Operations]
+      summary: Dispatch an accepted corporate order
+      description: Manager only. Requires an approved request with an accepted quote and an order in payment_confirmed or preparing state.
+      operationId: dispatchCorporateOrder
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [delivery_person_name]
+              properties:
+                delivery_person_name: { type: string, minLength: 1, maxLength: 120 }
+                delivery_person_contact: { type: string, maxLength: 120, nullable: true }
+                delivery_notes: { type: string, maxLength: 2000, nullable: true }
+      responses:
+        '200': { description: Order dispatched }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: Request is not ready for dispatch }
+
+  '/vendor/corporate/{orderId}/delivered':
+    post:
+      tags: [Vendor Operations]
+      summary: Mark a dispatched corporate order delivered
+      description: Manager only. Asks the requester to confirm receipt.
+      operationId: markCorporateDelivered
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Delivery recorded }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: Order has not been dispatched }
+
   '/vendor/menu/inventory':
     get:
       tags: [Vendor Operations]
@@ -4774,9 +5034,10 @@ components:
 
     AppRole:
       type: string
-      description: Effective role label. Vendor roles are derived from active vendor memberships and are not writable platform roles.
+      description: Effective role label. Vendor roles are derived from active vendor memberships and are not writable platform roles. Legacy requester labels remain readable but are not assignable.
       enum:
         - employee
+        - catering_requester
         - executive
         - executive_assistant
         - meeting_organiser
@@ -4791,14 +5052,10 @@ components:
 
     PlatformRole:
       type: string
-      description: Writable platform role. Vendor roles are managed through vendor memberships.
+      description: Writable platform role. Vendor roles are managed through vendor memberships; corporate requesters use catering_requester.
       enum:
         - employee
-        - executive
-        - executive_assistant
-        - meeting_organiser
-        - training_coordinator
-        - cost_centre_owner
+        - catering_requester
         - admin
         - finance
         - support

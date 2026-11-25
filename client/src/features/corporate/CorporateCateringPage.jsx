@@ -1,15 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import {
+  IconAlertTriangle,
   IconBuilding,
   IconCalendarEvent,
   IconCheck,
   IconChevronRight,
   IconClock,
+  IconFileText,
   IconInfoCircle,
   IconRefresh,
+  IconTruck,
   IconUsers,
+  IconX,
 } from '@tabler/icons-react';
+import { useConfirm } from '../../components/confirmation/ConfirmProvider.jsx';
 import Pagination from '../../components/ui/Pagination.jsx';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
@@ -19,16 +24,18 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { useRoles } from '../../hooks/useRoles.js';
 import { listVendorMenu, listVendors } from '../../services/employeeApi.js';
 import {
+  acceptCorporateQuote,
+  confirmCorporateDelivery,
   createCorporateRequest,
   getMyCorporateRequest,
   listMyCorporateRequests,
+  rejectCorporateQuote,
+  requestCorporateReapproval,
 } from '../../services/corporateApi.js';
 import './corporate-catering.css';
 
 const PAGE_SIZE = 8;
-const REQUESTER_ROLES = [
-  'executive', 'executive_assistant', 'meeting_organiser', 'training_coordinator', 'cost_centre_owner',
-];
+const REQUESTER_ROLES = ['catering_requester'];
 const money = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' });
 const dateTimeFormat = new Intl.DateTimeFormat('en-ZA', {
   day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -81,9 +88,48 @@ function formatStatus(value) {
   return String(value || '').replaceAll('_', ' ');
 }
 
+function ReasonModal({ config, value, onChange, onSubmit, onCancel, saving }) {
+  if (!config) return null;
+  return (
+    <div className="admin-modal" role="dialog" aria-modal="true" aria-labelledby="corporate-reason-title">
+      <button type="button" className="admin-modal__overlay" aria-label="Close" onClick={onCancel} />
+      <form className="admin-modal__card corporate-reason-modal" onSubmit={onSubmit}>
+        <header className="admin-modal__head">
+          <div>
+            <h3 className="admin-modal__title" id="corporate-reason-title">{config.title}</h3>
+            <p className="admin-modal__sub">{config.message}</p>
+          </div>
+          <button type="button" className="admin-role-modal__close" onClick={onCancel} aria-label="Close"><IconX size={16} /></button>
+        </header>
+        <div className="admin-modal__body admin-modal__body--single">
+          <label className="corporate-field">
+            <span>{config.label}</span>
+            <textarea
+              rows="4"
+              value={value}
+              onChange={(event) => onChange(event.target.value)}
+              maxLength={config.maxLength || 2000}
+              placeholder={config.placeholder}
+              required={config.required}
+              autoFocus
+            />
+          </label>
+        </div>
+        <footer className="admin-modal__foot">
+          <PrimaryButton type="button" disabled={saving} onClick={onCancel}>Cancel</PrimaryButton>
+          <PrimaryButton type="submit" disabled={saving || (config.required && !value.trim())}>
+            {saving ? 'Saving…' : config.confirmLabel}
+          </PrimaryButton>
+        </footer>
+      </form>
+    </div>
+  );
+}
+
 export default function CorporateCateringPage() {
   const { session } = useAuth();
-  const { roles, loading: rolesLoading, hasAnyRole } = useRoles();
+  const { roles, loading: rolesLoading } = useRoles();
+  const confirm = useConfirm();
   const token = session?.access_token;
   const schedule = useMemo(defaultSchedule, []);
 
@@ -115,7 +161,11 @@ export default function CorporateCateringPage() {
   const [detailId, setDetailId] = useState('');
   const [detail, setDetail] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
+  const [notice, setNotice] = useState('');
+  const [reasonConfig, setReasonConfig] = useState(null);
+  const [reasonValue, setReasonValue] = useState('');
   const [busy, setBusy] = useState(false);
+  const [workflowBusy, setWorkflowBusy] = useState(false);
   const [loadingVendors, setLoadingVendors] = useState(true);
   const [loadingMenu, setLoadingMenu] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(true);
@@ -253,6 +303,64 @@ export default function CorporateCateringPage() {
     }
   };
 
+  const openReason = (config) => {
+    setNotice('');
+    setReasonValue('');
+    setReasonConfig(config);
+  };
+
+  const handleAcceptQuote = async (quote) => {
+    const approved = await confirm({
+      title: 'Accept this quote?',
+      message: `Accepting the ${money.format(Number(quote.total || 0))} quote confirms the charge to ${detail.request.costCentre || 'the cost centre'}.`,
+      confirmLabel: 'Accept quote',
+      tone: 'primary',
+    });
+    if (!approved) return;
+    setWorkflowBusy(true);
+    setNotice('');
+    try {
+      const response = await acceptCorporateQuote(quote.id, { token });
+      setNotice(response?.reapprovalRequired
+        ? 'Quote accepted. The updated total now needs approval before dispatch.'
+        : 'Quote accepted. The vendor can begin preparing the order.');
+      setRefreshKey((key) => key + 1);
+    } catch (err) {
+      setError(err.message || 'Could not accept the quote.');
+    } finally {
+      setWorkflowBusy(false);
+    }
+  };
+
+  const submitReason = async (event) => {
+    event.preventDefault();
+    if (!reasonConfig) return;
+    setWorkflowBusy(true);
+    setNotice('');
+    try {
+      if (reasonConfig.type === 'reject') {
+        await rejectCorporateQuote(reasonConfig.quoteId, reasonValue.trim(), { token });
+        setNotice('The quote was declined. The vendor can submit a revised quote.');
+      } else if (reasonConfig.type === 'reapproval') {
+        await requestCorporateReapproval(detail.request.orderId, reasonValue.trim(), { token });
+        setNotice('Re-approval requested. An admin or finance approver will review it.');
+      } else {
+        await confirmCorporateDelivery(detail.request.orderId, {
+          token,
+          missingOrIncorrectItems: reasonValue.trim() || null,
+        });
+        setNotice('Delivery confirmed. Thank you.');
+      }
+      setReasonConfig(null);
+      setReasonValue('');
+      setRefreshKey((key) => key + 1);
+    } catch (err) {
+      setError(err.message || 'Could not complete this action.');
+    } finally {
+      setWorkflowBusy(false);
+    }
+  };
+
   if (rolesLoading) {
     return (
       <PageContainer>
@@ -260,7 +368,7 @@ export default function CorporateCateringPage() {
       </PageContainer>
     );
   }
-  if (!roles.some((role) => [...REQUESTER_ROLES, 'admin', 'finance'].includes(role))) {
+  if (!roles.some((role) => REQUESTER_ROLES.includes(role))) {
     return <Navigate to="/" replace />;
   }
 
@@ -281,6 +389,7 @@ export default function CorporateCateringPage() {
       />
 
       {error && <p className="corporate-alert corporate-alert--error" role="alert">{error}</p>}
+      {notice && <p className="corporate-alert corporate-alert--success" role="status">{notice}</p>}
       {confirmation && (
         <div className="corporate-alert corporate-alert--success" role="status">
           <IconCheck size={18} />
@@ -507,10 +616,124 @@ export default function CorporateCateringPage() {
                   {detail.approvalSteps[0].comments ? ` — ${detail.approvalSteps[0].comments}` : ''}
                 </p>
               )}
+              {detail.quotes.length > 0 && (
+                <div className="corporate-workflow-panel">
+                  <div className="corporate-workflow-panel__head">
+                    <IconFileText size={16} />
+                    <strong>Quotes</strong>
+                    {detail.request.reapprovalRequired && (
+                      <span className="corporate-badge is-warning">Re-approval required</span>
+                    )}
+                  </div>
+                  {detail.quotes.map((quote) => (
+                    <div className="corporate-quote" key={quote.id}>
+                      <div className="corporate-quote__top">
+                        <strong>{money.format(Number(quote.total || 0))}</strong>
+                        <span className={`corporate-badge is-${statusTone(quote.status)}`}>{formatStatus(quote.status)}</span>
+                      </div>
+                      <span>Valid until {formatDateTime(quote.validUntil)}</span>
+                      <span>Subtotal {money.format(Number(quote.subtotal || 0))} · Fee {money.format(Number(quote.serviceFee || 0))} · Tax {money.format(Number(quote.tax || 0))}</span>
+                      {quote.notes && <p>{quote.notes}</p>}
+                      {quote.status === 'submitted' && detail.request.canAcceptQuote && (
+                        <div className="corporate-workflow-actions">
+                          <button type="button" className="corporate-decision" disabled={workflowBusy} onClick={() => handleAcceptQuote(quote)}>
+                            <IconCheck size={14} /> Accept quote
+                          </button>
+                          <button
+                            type="button"
+                            className="corporate-decision corporate-decision--reject"
+                            disabled={workflowBusy}
+                            onClick={() => openReason({
+                              type: 'reject',
+                              quoteId: quote.id,
+                              title: 'Decline this quote?',
+                              message: 'Tell the vendor why this quote does not work. They can then submit a revised quote.',
+                              label: 'Reason for declining',
+                              placeholder: 'For example, the proposed total exceeds the approved budget.',
+                              confirmLabel: 'Decline quote',
+                              required: true,
+                              maxLength: 1000,
+                              tone: 'danger',
+                            })}
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {detail.request.acceptedQuoteId && detail.request.approvalStatus === 'approved' && (
+                    <button
+                      type="button"
+                      className="corporate-decision"
+                      disabled={workflowBusy}
+                      onClick={() => openReason({
+                        type: 'reapproval',
+                        title: 'Request re-approval?',
+                        message: 'An admin or finance approver will review the accepted quote before the vendor continues.',
+                        label: 'Reason for re-approval',
+                        placeholder: 'Explain what changed since the quote was accepted.',
+                        confirmLabel: 'Request re-approval',
+                        required: true,
+                        maxLength: 1000,
+                      })}
+                    >
+                      <IconAlertTriangle size={14} /> Request re-approval
+                    </button>
+                  )}
+                </div>
+              )}
+              {detail.delivery && (
+                <div className="corporate-workflow-panel">
+                  <div className="corporate-workflow-panel__head">
+                    <IconTruck size={16} />
+                    <strong>Delivery</strong>
+                    <span className={`corporate-badge is-${statusTone(detail.delivery.status)}`}>{formatStatus(detail.delivery.status)}</span>
+                  </div>
+                  <dl>
+                    <div><dt>Courier</dt><dd>{detail.delivery.deliveryPersonName || '—'}</dd></div>
+                    <div><dt>Contact</dt><dd>{detail.delivery.deliveryPersonContact || '—'}</dd></div>
+                    <div><dt>Dispatched</dt><dd>{formatDateTime(detail.delivery.dispatchedAt)}</dd></div>
+                    <div><dt>Delivered</dt><dd>{formatDateTime(detail.delivery.deliveredAt)}</dd></div>
+                    <div><dt>Confirmed</dt><dd>{formatDateTime(detail.delivery.recipientConfirmedAt)}</dd></div>
+                  </dl>
+                  {detail.delivery.deliveryNotes && <p className="corporate-detail__step">{detail.delivery.deliveryNotes}</p>}
+                  {detail.delivery.missingOrIncorrectItems && (
+                    <p className="corporate-detail__step">Reported issues: {detail.delivery.missingOrIncorrectItems}</p>
+                  )}
+                  {detail.request.canConfirmDelivery && (
+                    <button
+                      type="button"
+                      className="corporate-decision"
+                      disabled={workflowBusy}
+                      onClick={() => openReason({
+                        type: 'delivery',
+                        title: 'Confirm delivery?',
+                        message: 'Confirm that the catering arrived. You can optionally report missing or incorrect items.',
+                        label: 'Missing or incorrect items',
+                        placeholder: 'Optional: describe anything that was missing or incorrect.',
+                        confirmLabel: 'Confirm delivery',
+                        required: false,
+                        maxLength: 2000,
+                      })}
+                    >
+                      <IconCheck size={14} /> Confirm delivery
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </section>
       </div>
+      <ReasonModal
+        config={reasonConfig}
+        value={reasonValue}
+        onChange={setReasonValue}
+        onSubmit={submitReason}
+        onCancel={() => { setReasonConfig(null); setReasonValue(''); }}
+        saving={workflowBusy}
+      />
     </PageContainer>
   );
 }

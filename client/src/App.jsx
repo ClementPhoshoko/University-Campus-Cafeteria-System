@@ -7,6 +7,7 @@ import AuthLayout from './components/AuthLayout.jsx';
 import PublicOnlyRoute from './components/auth/PublicOnlyRoute.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 import AdminRoute from './components/auth/AdminRoute.jsx';
+import ApprovalRoute from './components/auth/ApprovalRoute.jsx';
 import ApplicationHeader from './components/layout/ApplicationHeader.jsx';
 import MobileBottomNav from './components/layout/MobileBottomNav.jsx';
 import PageContainer from './components/layout/PageContainer.jsx';
@@ -158,7 +159,11 @@ export default function App() {
           <Route path="/vendor/menus" element={<Navigate to="/vendor?view=menus" replace />} />
           <Route path="/vendor/stock" element={<Navigate to="/vendor?view=stock" replace />} />
           <Route path="/vendor/slots" element={<Navigate to="/vendor?view=slots" replace />} />
+          <Route path="/vendor/catering" element={<Navigate to="/vendor?view=catering" replace />} />
           <Route path="/vendor/reports" element={<Navigate to="/vendor?view=reports" replace />} />
+          <Route element={<ApprovalRoute />}>
+            <Route path="/finance" element={<CorporateApprovalsPage />} />
+          </Route>
         </Route>
       </Route>
 
@@ -183,7 +188,6 @@ export default function App() {
           <Route path="/admin/audit" element={<AdminAuditLogPage />} />
           <Route path="/admin/settings" element={<AdminSettingsPage />} />
           <Route path="/admin/catalogue-metadata" element={<AdminCatalogueMetadataPage />} />
-          <Route path="/finance" element={<PlaceholderPage title="Finance" />} />
           <Route path="/support" element={<PlaceholderPage title="Support Centre" />} />
           <Route path="/audit" element={<PlaceholderPage title="Audit Logs" />} />
         </Route>

@@ -20,7 +20,7 @@ create extension if not exists pgcrypto;
 -- -----------------------------------------------------------------------------
 
 do $$ begin create type public.app_role as enum (
-  'employee','executive','executive_assistant','meeting_organiser',
+  'employee','catering_requester','executive','executive_assistant','meeting_organiser',
   'training_coordinator','cost_centre_owner','vendor_staff','vendor_manager',
   'admin','finance','support','auditor'
 ); exception when duplicate_object then null; end $$;
@@ -702,6 +702,12 @@ create table if not exists public.corporate_quotes (
   check (total = subtotal + service_fee + tax)
 );
 
+-- Added by Phase 5B quote workflow: the accepted quote becomes the
+-- authoritative charged amount after approval.
+alter table public.corporate_orders
+  add column if not exists accepted_quote_id uuid references public.corporate_quotes(id) on delete set null,
+  add column if not exists quoted_total numeric(12,2);
+
 create table if not exists public.corporate_deliveries (
   id uuid primary key default gen_random_uuid(),
   order_id uuid not null unique references public.corporate_orders(order_id) on delete cascade,
@@ -1043,6 +1049,16 @@ as $$
   select (select private.has_role('cost_centre_owner'::public.app_role));
 $$;
 
+create or replace function private.is_catering_requester()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select (select private.has_role('catering_requester'::public.app_role));
+$$;
+
 create or replace function private.has_any_role(p_roles public.app_role[])
 returns boolean
 language sql
@@ -1152,6 +1168,7 @@ grant execute on function private.is_executive_assistant() to authenticated;
 grant execute on function private.is_meeting_organiser() to authenticated;
 grant execute on function private.is_training_coordinator() to authenticated;
 grant execute on function private.is_cost_centre_owner() to authenticated;
+grant execute on function private.is_catering_requester() to authenticated;
 grant execute on function private.has_any_role(public.app_role[]) to authenticated;
 grant execute on function private.is_vendor_member(uuid) to authenticated;
 grant execute on function private.is_vendor_manager(uuid) to authenticated;
@@ -1236,6 +1253,8 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  v_is_corporate boolean := new.order_type = 'corporate'::public.order_type;
 begin
   if tg_op = 'INSERT' then
     if new.status <> 'payment_pending'::public.order_status then
@@ -1255,6 +1274,9 @@ begin
     (old.status = 'received_by_vendor' and new.status in ('accepted','rejected','cancelled')) or
     (old.status = 'accepted' and new.status in ('preparing','cancelled','rejected')) or
     (old.status = 'preparing' and new.status in ('ready_for_collection','rejected','cancelled','refund_pending')) or
+    (v_is_corporate and old.status in ('payment_confirmed', 'preparing') and new.status = 'delivery_in_progress') or
+    (v_is_corporate and old.status = 'delivery_in_progress' and new.status in ('delivered','cancelled','refund_pending')) or
+    (v_is_corporate and old.status = 'delivered' and new.status in ('completed','refund_pending')) or
     (old.status = 'ready_for_collection' and new.status in ('collected','collection_not_completed','cancelled')) or
     (old.status = 'collected' and new.status in ('completed')) or
     (old.status = 'completed' and new.status in ('refund_pending')) or

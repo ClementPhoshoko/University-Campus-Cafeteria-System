@@ -26,7 +26,7 @@ function handleError(res, error) {
   return sendInternalError(res, error);
 }
 
-async function membership(userId, vendorId) {
+export async function membership(userId, vendorId) {
   const query = db().from('vendor_users').select('vendor_id, role, vendors(id, name, status)').eq('user_id', userId).eq('is_active', true);
   if (vendorId) query.eq('vendor_id', vendorId);
   const { data, error } = await query;
@@ -35,7 +35,7 @@ async function membership(userId, vendorId) {
   return data || [];
 }
 
-async function requireVendorManager(userId, vendorId) {
+export async function requireVendorManager(userId, vendorId) {
   const rows = await membership(userId, vendorId);
   if (rows[0]?.role !== 'manager') throw new ApiError(403, 'VENDOR_MANAGER_REQUIRED', 'A vendor manager role is required to manage menu items');
   return rows[0];

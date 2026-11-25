@@ -340,6 +340,55 @@
 .corporate-decision--reject:hover { border-color: var(--color-status-error); color: var(--color-status-error); }
 .corporate-decision:disabled { opacity: .55; cursor: not-allowed; }
 
+.corporate-workflow-panel {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.corporate-workflow-panel__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-action-primary);
+}
+
+.corporate-workflow-panel__head strong { color: var(--color-text-primary); font-size: .8rem; }
+.corporate-workflow-panel__head .corporate-badge { margin-left: auto; min-width: 0; }
+.corporate-workflow-panel dl { gap: 6px; }
+.corporate-workflow-panel dl > div { grid-template-columns: 84px minmax(0, 1fr); }
+
+.corporate-quote {
+  display: grid;
+  gap: 4px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-default);
+}
+
+.corporate-quote__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.corporate-quote__top strong { color: var(--color-text-primary); font-size: .88rem; }
+.corporate-quote__top .corporate-badge { min-width: 0; }
+.corporate-quote > span,
+.corporate-quote > p {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: .72rem;
+  line-height: 1.5;
+}
+
+.corporate-workflow-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-1); }
+
+.corporate-reason-modal .admin-modal__body { padding-block: var(--space-4); }
+
 @media (max-width: 1080px) {
   .corporate-layout { grid-template-columns: 1fr; }
 }

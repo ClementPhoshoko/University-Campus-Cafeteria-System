@@ -6,15 +6,18 @@ import { isUuid } from '../validators/vendorValidators.js';
 import { generateOrderReference } from '../utils/orderReference.js';
 import { calculateServiceFee } from '../utils/feeCalculator.js';
 import { dispatchNotification } from '../services/notificationService.js';
+import {
+  notifyCorporateApprovers,
+  notifyCorporateRequester,
+  notifyCorporateVendorManagers,
+} from '../services/corporateNotifications.js';
 
 const db = () => supabaseAdmin;
 const LIST_PAGE_SIZE = 8;
-const REQUEST_SELECT = 'order_id, event_name, venue, attendee_count, cost_centre, department, approval_status, required_delivery_at, meeting_start_at, meeting_end_at, created_at, requester_user_id';
-const DETAIL_SELECT = `${REQUEST_SELECT}, on_behalf_of_user_id, business_unit, floor_id, dietary_requirements, allergy_requirements, delivery_setup_requirements, serviceware_requirements, special_instructions, purchase_order_number, site_id, building_id, updated_at`;
+const REQUEST_SELECT = 'order_id, event_name, venue, attendee_count, cost_centre, department, approval_status, required_delivery_at, meeting_start_at, meeting_end_at, created_at, requester_user_id, accepted_quote_id, quoted_total';
+const DETAIL_SELECT = `${REQUEST_SELECT}, on_behalf_of_user_id, business_unit, floor_id, dietary_requirements, allergy_requirements, delivery_setup_requirements, serviceware_requirements, special_instructions, purchase_order_number, site_id, building_id, accepted_quote_id, quoted_total, updated_at`;
 
-export const CORPORATE_REQUEST_ROLES = [
-  'executive', 'executive_assistant', 'meeting_organiser', 'training_coordinator', 'cost_centre_owner',
-];
+export const CORPORATE_REQUEST_ROLES = ['catering_requester'];
 export const APPROVAL_DECISIONS = ['approved', 'rejected', 'amendment_requested'];
 
 export function handleCorporateError(res, error) {
@@ -35,6 +38,18 @@ export function handleCorporateError(res, error) {
     CORPORATE_ALREADY_DECIDED: [409, 'CORPORATE_ALREADY_DECIDED', 'This request has already been decided.'],
     APPROVAL_STEP_NOT_PENDING: [409, 'APPROVAL_STEP_NOT_PENDING', 'The approval step is no longer pending.'],
     APPROVAL_ROLE_REQUIRED: [403, 'APPROVAL_ROLE_REQUIRED', 'Only admin or finance can decide corporate approvals.'],
+    CATERING_REQUESTER_REQUIRED: [403, 'CATERING_REQUESTER_REQUIRED', 'Only the catering requester can perform this action.'],
+    CORPORATE_QUOTE_NOT_FOUND: [404, 'CORPORATE_QUOTE_NOT_FOUND', 'Corporate quote not found.'],
+    CORPORATE_QUOTE_NOT_ALLOWED: [409, 'CORPORATE_QUOTE_NOT_ALLOWED', 'This request cannot be quoted.'],
+    CORPORATE_QUOTE_EXISTS: [409, 'CORPORATE_QUOTE_EXISTS', 'Withdraw the current quote before creating another.'],
+    CORPORATE_QUOTE_NOT_DRAFT: [409, 'CORPORATE_QUOTE_NOT_DRAFT', 'Only a draft quote can be submitted.'],
+    CORPORATE_QUOTE_NOT_SUBMITTED: [409, 'CORPORATE_QUOTE_NOT_SUBMITTED', 'Only a submitted quote can be accepted or rejected.'],
+    CORPORATE_QUOTE_NOT_ACCEPTED: [409, 'CORPORATE_QUOTE_NOT_ACCEPTED', 'No quote has been accepted for this request.'],
+    CORPORATE_DELIVERY_NOT_DELIVERED: [409, 'CORPORATE_DELIVERY_NOT_DELIVERED', 'This request has not been delivered yet.'],
+    INVALID_CORPORATE_QUOTE_TOTAL: [400, 'INVALID_CORPORATE_QUOTE_TOTAL', 'Enter valid quote amounts.'],
+    INVALID_CORPORATE_QUOTE_VALIDITY: [400, 'INVALID_CORPORATE_QUOTE_VALIDITY', 'The quote has expired or has an invalid date.'],
+    INVALID_CORPORATE_QUOTE_REASON: [400, 'INVALID_CORPORATE_QUOTE_REASON', 'Enter a valid reason.'],
+    INVALID_CORPORATE_DELIVERY_DETAILS: [400, 'INVALID_CORPORATE_DELIVERY_DETAILS', 'Enter valid delivery confirmation details.'],
   };
   for (const [code, [status, errorCode, text]] of Object.entries(codes)) {
     if (message.includes(code)) return sendError(res, status, errorCode, text);
@@ -167,6 +182,9 @@ function shapeRequest(row, order, vendor) {
     meetingStartAt: row.meeting_start_at,
     requestedAt: row.created_at,
     vendorName: vendor?.name || '',
+    acceptedQuoteId: row.accepted_quote_id || null,
+    quotedTotal: row.quoted_total == null ? null : money(row.quoted_total),
+    reapprovalRequired: Boolean(row.accepted_quote_id && row.approval_status === 'pending'),
     canDecide: row.approval_status === 'pending',
   };
 }
@@ -344,13 +362,46 @@ async function buildCorporateDetail(orderId) {
     db().from('orders').select('id, order_reference, status, total, subtotal, service_fee, currency, created_at, vendor_id').eq('id', orderId).maybeSingle(),
     db().from('order_items').select('id, item_name_snapshot, quantity, unit_price_snapshot, line_total').eq('order_id', orderId).order('created_at'),
     db().from('corporate_approval_steps').select('id, sequence_no, status, approver_user_id, comments, decided_at').eq('order_id', orderId).order('sequence_no'),
-    db().from('corporate_quotes').select('id, status, total, currency, valid_until, notes').eq('order_id', orderId).order('created_at', { ascending: false }),
-    db().from('corporate_deliveries').select('id, status, dispatched_at, delivered_at, recipient_confirmed_at').eq('order_id', orderId).maybeSingle(),
+    db().from('corporate_quotes').select('id, order_id, vendor_id, subtotal, service_fee, tax, total, currency, status, valid_until, notes').eq('order_id', orderId).order('created_at', { ascending: false }),
+    db().from('corporate_deliveries').select('id, status, delivery_person_name, delivery_person_contact, delivery_notes, dispatched_at, delivered_at, recipient_confirmed_at, recipient_user_id, missing_or_incorrect_items').eq('order_id', orderId).maybeSingle(),
   ]);
 
   const vendor = order
     ? (await db().from('vendors').select('id, name').eq('id', order.vendor_id).maybeSingle()).data
     : null;
+  const pendingStep = (steps || []).find((step) => step.status === 'pending');
+  const reapprovalRequired = Boolean(
+    corporate.accepted_quote_id
+    && corporate.approval_status === 'pending'
+    && pendingStep?.sequence_no === 2,
+  );
+  const shapedQuotes = (quotes || []).map((quote) => ({
+    id: quote.id,
+    orderId: quote.order_id,
+    vendorId: quote.vendor_id,
+    status: quote.status,
+    subtotal: money(quote.subtotal),
+    serviceFee: money(quote.service_fee),
+    tax: money(quote.tax),
+    total: money(quote.total),
+    currency: quote.currency,
+    validUntil: quote.valid_until,
+    notes: quote.notes,
+  }));
+  const liveQuote = shapedQuotes.find((quote) =>
+    quote.status === 'submitted' && new Date(quote.validUntil).getTime() > Date.now());
+  const shapedDelivery = delivery ? {
+    id: delivery.id,
+    status: delivery.status,
+    deliveryPersonName: delivery.delivery_person_name,
+    deliveryPersonContact: delivery.delivery_person_contact,
+    deliveryNotes: delivery.delivery_notes,
+    dispatchedAt: delivery.dispatched_at,
+    deliveredAt: delivery.delivered_at,
+    recipientConfirmedAt: delivery.recipient_confirmed_at,
+    recipientUserId: delivery.recipient_user_id,
+    missingOrIncorrectItems: delivery.missing_or_incorrect_items,
+  } : null;
 
   return {
     success: true,
@@ -365,6 +416,9 @@ async function buildCorporateDetail(orderId) {
       dietaryRequirements: corporate.dietary_requirements || [],
       allergyRequirements: corporate.allergy_requirements || [],
       servicewareRequirements: corporate.serviceware_requirements || [],
+      reapprovalRequired,
+      canAcceptQuote: !reapprovalRequired && corporate.approval_status === 'approved' && Boolean(liveQuote),
+      canConfirmDelivery: Boolean(shapedDelivery && shapedDelivery.status === 'delivered' && !shapedDelivery.recipientConfirmedAt),
     },
     order: order ? {
       reference: order.order_reference,
@@ -388,15 +442,8 @@ async function buildCorporateDetail(orderId) {
       comments: step.comments,
       decidedAt: step.decided_at,
     })),
-    quotes: (quotes || []).map((quote) => ({
-      id: quote.id,
-      status: quote.status,
-      total: money(quote.total),
-      currency: quote.currency,
-      validUntil: quote.valid_until,
-      notes: quote.notes,
-    })),
-    delivery: delivery || null,
+    quotes: shapedQuotes,
+    delivery: shapedDelivery,
   };
 }
 
@@ -474,5 +521,232 @@ export async function decideCorporateApproval(req, res) {
     }
 
     return respond(req, res, data, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleCorporateError(res, error); }
+}
+
+async function safeNotify(label, action) {
+  try {
+    await action();
+  } catch (notificationError) {
+    console.error(`[Notification] Failed to dispatch ${label}:`, notificationError);
+  }
+}
+
+function workflowReason(value, field, code = 'INVALID_CORPORATE_QUOTE_REASON', max = 1000) {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new ApiError(400, code, `${field} is required`);
+  }
+  const trimmed = value.trim();
+  if (trimmed.length > max) throw new ApiError(400, code, `${field} is too long`);
+  return trimmed;
+}
+
+async function quoteOrderId(quoteId) {
+  if (!isUuid(quoteId)) throw new ApiError(400, 'INVALID_UUID', 'A valid quote id is required');
+  const { data: quote, error } = await db().from('corporate_quotes')
+    .select('order_id')
+    .eq('id', quoteId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!quote) throw new ApiError(404, 'CORPORATE_QUOTE_NOT_FOUND', 'Corporate quote not found.');
+  return quote.order_id;
+}
+
+export async function acceptCorporateQuote(req, res) {
+  try {
+    const orderId = await quoteOrderId(req.params.quoteId);
+    const { data, error } = await db().rpc('accept_corporate_quote', {
+      p_quote_id: req.params.quoteId,
+      p_actor_id: req.user.id,
+      p_actor_roles: req.userRoles || [],
+    });
+    if (error) throw error;
+
+    if (data?.success !== false) {
+      if (data?.reapprovalRequired) {
+        const currency = data?.quote?.currency || 'ZAR';
+        await safeNotify('corporate.reapproval_required', () => notifyCorporateApprovers(
+          orderId,
+          'corporate.reapproval_required',
+          {
+            total: `${currency} ${money(data?.quote?.total).toFixed(2)}`,
+            currency,
+          },
+          `corporate.reapproval_required:${orderId}:${req.params.quoteId}`,
+        ));
+      } else {
+        await safeNotify('corporate.quote_accepted', () => notifyCorporateVendorManagers(orderId, 'corporate.quote_accepted'));
+      }
+    }
+    return respond(req, res, data, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleCorporateError(res, error); }
+}
+
+export async function rejectCorporateQuote(req, res) {
+  try {
+    const reason = workflowReason(req.body?.reason, 'reason');
+    const orderId = await quoteOrderId(req.params.quoteId);
+    const { data, error } = await db().rpc('reject_corporate_quote', {
+      p_quote_id: req.params.quoteId,
+      p_actor_id: req.user.id,
+      p_actor_roles: req.userRoles || [],
+      p_reason: reason,
+    });
+    if (error) throw error;
+    await safeNotify('corporate.quote_rejected', () => notifyCorporateVendorManagers(
+      orderId,
+      'corporate.quote_rejected',
+      {},
+      `corporate.quote_rejected:${req.params.quoteId}`,
+    ));
+    return respond(req, res, data, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleCorporateError(res, error); }
+}
+
+export async function requestCorporateReapproval(req, res) {
+  try {
+    const { orderId } = req.params;
+    if (!isUuid(orderId)) return sendError(res, 400, 'INVALID_UUID', 'A valid request id is required');
+    const reason = workflowReason(req.body?.reason, 'reason');
+    const { data, error } = await db().rpc('request_corporate_reapproval', {
+      p_order_id: orderId,
+      p_actor_id: req.user.id,
+      p_actor_roles: req.userRoles || [],
+      p_reason: reason,
+    });
+    if (error) throw error;
+    await safeNotify('corporate.reapproval_required', () => notifyCorporateApprovers(
+      orderId,
+      'corporate.reapproval_required',
+      {},
+      `corporate.reapproval_required:${orderId}:manual`,
+    ));
+    return respond(req, res, data, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleCorporateError(res, error); }
+}
+
+export async function confirmCorporateDelivery(req, res) {
+  try {
+    const { orderId } = req.params;
+    if (!isUuid(orderId)) return sendError(res, 400, 'INVALID_UUID', 'A valid request id is required');
+    const missing = req.body?.missing_or_incorrect_items == null
+      ? null
+      : workflowReason(req.body.missing_or_incorrect_items, 'missing_or_incorrect_items', 'INVALID_CORPORATE_DELIVERY_DETAILS', 2000);
+    const { data, error } = await db().rpc('confirm_corporate_delivery', {
+      p_order_id: orderId,
+      p_actor_id: req.user.id,
+      p_actor_roles: req.userRoles || [],
+      p_missing_or_incorrect_items: missing,
+    });
+    if (error) throw error;
+    await safeNotify('corporate.delivery_confirmed', () => notifyCorporateVendorManagers(orderId, 'corporate.delivery_confirmed'));
+    await safeNotify('corporate.delivery_confirmed', () => notifyCorporateRequester(orderId, 'corporate.delivery_confirmed'));
+    return respond(req, res, data, { cacheControl: 'private, no-store' });
+  } catch (error) { return handleCorporateError(res, error); }
+}
+
+export async function getCorporateReport(req, res) {
+  try {
+    const { data: orders, error } = await db().from('orders')
+      .select('id, vendor_id, total, status, created_at')
+      .eq('order_type', 'corporate')
+      .order('created_at', { ascending: false })
+      .limit(5000);
+    if (error) throw error;
+
+    const orderRows = orders || [];
+    const ids = orderRows.map((order) => order.id);
+    const vendorIds = [...new Set(orderRows.map((order) => order.vendor_id))];
+    const [{ data: corporateRows }, { data: vendors }] = await Promise.all([
+      ids.length
+        ? db().from('corporate_orders').select('order_id, cost_centre, department, event_name, attendee_count, required_delivery_at').in('order_id', ids)
+        : { data: [] },
+      vendorIds.length
+        ? db().from('vendors').select('id, name').in('id', vendorIds)
+        : { data: [] },
+    ]);
+
+    const corporateById = new Map((corporateRows || []).map((row) => [row.order_id, row]));
+    const departmentByCode = new Map();
+    for (const row of corporateRows || []) {
+      if (row.cost_centre && row.department && !departmentByCode.has(row.cost_centre)) {
+        departmentByCode.set(row.cost_centre, row.department);
+      }
+    }
+    const vendorById = new Map((vendors || []).map((vendor) => [vendor.id, vendor.name]));
+    const excluded = new Set(['rejected', 'cancelled', 'refunded']);
+    const billable = orderRows.filter((order) => !excluded.has(order.status));
+
+    const sum = (rows) => rows.reduce((total, row) => total + Number(row.total || 0), 0);
+    const now = Date.now();
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const previousMonthStart = new Date(monthStart);
+    previousMonthStart.setMonth(previousMonthStart.getMonth() - 1);
+    const currentRevenue = sum(billable.filter((order) => new Date(order.created_at).getTime() >= monthStart.getTime()));
+    const previousRevenue = sum(billable.filter((order) => {
+      const time = new Date(order.created_at).getTime();
+      return time >= previousMonthStart.getTime() && time < monthStart.getTime();
+    }));
+    const growth = previousRevenue > 0
+      ? `${(((currentRevenue - previousRevenue) / previousRevenue) * 100).toFixed(1)}%`
+      : (currentRevenue > 0 ? 'new' : '0%');
+
+    const groupBy = (keyFn, nameFn) => {
+      const groups = new Map();
+      for (const order of billable) {
+        const key = keyFn(order) || 'Unassigned';
+        const current = groups.get(key) || { orders: 0, revenue: 0 };
+        current.orders += 1;
+        current.revenue += Number(order.total || 0);
+        groups.set(key, current);
+      }
+      return [...groups.entries()]
+        .map(([key, value]) => ({ key, name: nameFn(key), ...value }))
+        .sort((a, b) => b.revenue - a.revenue);
+    };
+
+    const costCentres = groupBy(
+      (order) => corporateById.get(order.id)?.cost_centre,
+      (code) => code === 'Unassigned' ? 'Unassigned' : (departmentByCode.get(code) || code),
+    ).slice(0, 5).map(({ key, name, ...rest }) => ({ code: key, name, ...rest }));
+    const vendorsByRevenue = groupBy(
+      (order) => vendorById.get(order.vendor_id) || 'Unknown vendor',
+      (name) => name,
+    ).slice(0, 5).map(({ name, ...rest }) => ({ vendor: name, ...rest }));
+
+    const upcoming = orderRows
+      .map((order) => ({ order, corporate: corporateById.get(order.id) }))
+      .filter(({ order, corporate }) => corporate
+        && corporate.required_delivery_at
+        && new Date(corporate.required_delivery_at).getTime() >= now
+        && !['completed', 'rejected', 'cancelled', 'refunded'].includes(order.status))
+      .sort((a, b) => new Date(a.corporate.required_delivery_at) - new Date(b.corporate.required_delivery_at))
+      .slice(0, 5)
+      .map(({ order, corporate }) => ({
+        id: order.id,
+        event: corporate.event_name,
+        when: corporate.required_delivery_at,
+        attendees: corporate.attendee_count,
+        vendor: vendorById.get(order.vendor_id) || 'Unknown vendor',
+        costCentre: corporate.cost_centre || '—',
+      }));
+
+    const revenue = sum(billable);
+    return respond(req, res, {
+      success: true,
+      report: {
+        summary: {
+          orders: billable.length,
+          revenue,
+          avgOrder: billable.length ? Math.round((revenue / billable.length) * 100) / 100 : 0,
+          growth,
+        },
+        byCostCentre: costCentres,
+        byVendor: vendorsByRevenue,
+        upcoming,
+      },
+    }, { cacheControl: 'private, no-store' });
   } catch (error) { return handleCorporateError(res, error); }
 }

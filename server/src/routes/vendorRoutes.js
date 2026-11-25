@@ -62,6 +62,15 @@ import {
   getMyVendorReport,
   exportMyVendorReport,
 } from '../controllers/vendorReportsController.js';
+import {
+  listVendorCateringOrders,
+  getVendorCateringOrder,
+  createVendorQuote,
+  submitVendorQuote,
+  withdrawVendorQuote,
+  dispatchCorporateOrder,
+  markCorporateDelivered,
+} from '../controllers/vendorCateringController.js';
 
 /**
  * Employee-facing cafeteria browsing is vendor-based: each approved vendor is a
@@ -109,6 +118,13 @@ vendorRouter.get('/vendor/collection-slots', getMyVendorCollectionSlots);
 vendorRouter.patch('/vendor/collection-slots/:slotId', vendorMutations, updateMyVendorCollectionSlot);
 vendorRouter.get('/vendor/reports', getMyVendorReport);
 vendorRouter.get('/vendor/reports/export', vendorMutations, exportMyVendorReport);
+vendorRouter.get('/vendor/corporate', listVendorCateringOrders);
+vendorRouter.get('/vendor/corporate/:orderId', getVendorCateringOrder);
+vendorRouter.post('/vendor/corporate/:orderId/quote', vendorMutations, createVendorQuote);
+vendorRouter.post('/vendor/corporate/quotes/:quoteId/submit', vendorMutations, submitVendorQuote);
+vendorRouter.post('/vendor/corporate/quotes/:quoteId/withdraw', vendorMutations, withdrawVendorQuote);
+vendorRouter.post('/vendor/corporate/:orderId/dispatch', vendorMutations, dispatchCorporateOrder);
+vendorRouter.post('/vendor/corporate/:orderId/delivered', vendorMutations, markCorporateDelivered);
 
 vendorRouter.get('/popular-menu-items', listPopularMenuItems);
 vendorRouter.get('/vendor-categories', listPublicVendorCategories);

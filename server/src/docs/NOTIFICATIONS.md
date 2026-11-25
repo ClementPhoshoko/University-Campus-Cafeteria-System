@@ -16,6 +16,10 @@ Apply the numbered migration before deploying the API:
 \i server/src/docs/migrations/036_notification_dedupe_canonical.sql
 ```
 
+Corporate catering workflow migrations `038`–`040` add emitters but no new
+notification schema. Deploy `034`–`036` first; the workflow server emits only
+catalog-owned event keys and never inserts notification rows from the client.
+
 `034_notification_center.sql` is idempotent: it adds `metadata jsonb not null
 default '{}'::jsonb` and `dedupe_key text`, a partial unique index on
 `(user_id, dedupe_key)`, an index on `(user_id, read_at, created_at desc)`, and
@@ -110,6 +114,13 @@ is no second preference store. `transactional` and unknown keys are rejected.
 | `order.refunded` | payment | transactional | alert | in_app, email |
 | `corporate.approved` | order | transactional | info | in_app, email |
 | `corporate.rejected` | order | transactional | alert | in_app, email |
+| `corporate.quote_submitted` | order | transactional | info | in_app, email |
+| `corporate.quote_accepted` | order | transactional | info | in_app, email |
+| `corporate.quote_rejected` | order | transactional | warning | in_app, email |
+| `corporate.reapproval_required` | order | transactional | warning | in_app, email |
+| `corporate.dispatched` | order | transactional | info | in_app, email |
+| `corporate.delivered` | order | transactional | info | in_app, email |
+| `corporate.delivery_confirmed` | order | transactional | info | in_app |
 | `cart.expiring` | cart | collection_reminders | warning | in_app, email |
 | `cart.expired` | cart | collection_reminders | warning | in_app, email |
 | `vendor.menu_updated` | vendor | order_updates | info | in_app |
@@ -129,8 +140,8 @@ progress, including “Ready for collection”, remains under **Order updates**.
 
 Bell level priority across unread rows: **alert** (payment failed, cancelled,
 refunded, corporate rejection, password/security) > **warning** (promotions,
-cart reminders, vendor availability) > **info** (any other unread row) >
-**none**.
+cart reminders, vendor availability, declined quotes, re-approval requests) >
+**info** (any other unread row) > **none**.
 
 Cart reminders are the important gating change in this slice: both
 `cart.expiring` and `cart.expired` now include the `email` channel. A profile
@@ -153,6 +164,13 @@ never used.
 | `vendorOperationsController.updateMyVendorOrderStatus` success | `order.accepted`, `order.preparing`, `order.ready_for_collection`, `order.collected`, `order.cancelled` (rejected) | `order.user_id` | `nextStatus` |
 | `cartExpiry.js` one-time reminder / atomic expiry RPC | `cart.expiring`, `cart.expired` | `cart.user_id` | `cart.id` |
 | `corporateController.decideCorporateApproval` approved/rejected RPC | `corporate.approved`, `corporate.rejected` | `corporate_orders.requester_user_id` | `corporate-decision` |
+| `vendorCateringController.submitVendorQuote` | `corporate.quote_submitted` | `corporate_orders.requester_user_id` | `quote.id` |
+| `corporateController.acceptCorporateQuote` | `corporate.quote_accepted` | active vendor managers | event key |
+| `corporateController.rejectCorporateQuote` | `corporate.quote_rejected` | active vendor managers | `quoteId` |
+| `corporateController.acceptCorporateQuote` / `requestCorporateReapproval` | `corporate.reapproval_required` | `admin` and `finance` role rows | `orderId:quoteId` / `orderId:manual` |
+| `vendorCateringController.dispatchCorporateOrder` | `corporate.dispatched` | `corporate_orders.requester_user_id` | event key |
+| `vendorCateringController.markCorporateDelivered` | `corporate.delivered` | `corporate_orders.requester_user_id` | event key |
+| `corporateController.confirmCorporateDelivery` | `corporate.delivery_confirmed` | active vendor managers and requester | event key |
 | Hardened `/email/order-confirmed` | `order.placed` | resolved `order.user_id` | `checkout` |
 | Hardened `/email/order-ready` | `order.ready_for_collection` | resolved `order.user_id` | `ready_for_collection` |
 
@@ -193,6 +211,9 @@ Caller idempotency hints used today:
 | `accepted` / `preparing` / `ready_for_collection` / `collected` / `rejected` | vendor status events | one notification per status per order |
 | `cart.id` | `cart.expiring`, `cart.expired` | one reminder and one expiry notice per cart |
 | `corporate-decision` | `corporate.approved`, `corporate.rejected` | one decision notification per order |
+| `quote.id` | `corporate.quote_submitted` | one submission notice per quote |
+| `quoteId` | `corporate.quote_rejected` | one decline notice per quote |
+| `orderId:quoteId` / `orderId:manual` | `corporate.reapproval_required` | one automatic or manually requested re-approval notice per order |
 | `ready_for_collection` | `order.ready_for_collection` (hardened email endpoint) | aligns the endpoint with the vendor status event |
 
 ## Rich email mapping

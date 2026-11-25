@@ -5,20 +5,38 @@ import { buildEffectiveRoleData, fetchEffectiveRoleData, filterPlatformRoles, is
 
 // Vendor roles are derived from active `vendor_users` memberships. They are
 // intentionally absent from this writable platform-role set.
-const VALID_PLATFORM_ROLES = [
-  'employee', 'executive', 'executive_assistant', 'meeting_organiser',
+// The legacy requester labels remain readable for existing users, but new
+// grants use the single `catering_requester` role.
+const LEGACY_REQUESTER_ROLES = [
+  'executive', 'executive_assistant', 'meeting_organiser',
   'training_coordinator', 'cost_centre_owner',
-  'admin', 'finance', 'support', 'auditor',
 ];
 
-const VENDOR_ROLE_MESSAGE = 'Vendor roles are managed through vendor memberships and cannot be assigned here';
+const ASSIGNABLE_PLATFORM_ROLES = [
+  'employee', 'catering_requester', 'admin', 'finance', 'support', 'auditor',
+];
 
-function validatePlatformRoles(roles) {
+const READABLE_PLATFORM_ROLES = [...ASSIGNABLE_PLATFORM_ROLES, ...LEGACY_REQUESTER_ROLES];
+
+const VENDOR_ROLE_MESSAGE = 'Vendor roles are managed through vendor memberships and cannot be assigned here';
+const LEGACY_ROLE_MESSAGE = 'Legacy requester roles cannot be assigned; use catering_requester';
+
+function validateAssignableRole(role, { allowExistingLegacy = false, existingRoles = [] } = {}) {
+  if (isVendorRole(role)) return VENDOR_ROLE_MESSAGE;
+  if (ASSIGNABLE_PLATFORM_ROLES.includes(role)) return null;
+  if (LEGACY_REQUESTER_ROLES.includes(role)) {
+    return allowExistingLegacy && existingRoles.includes(role) ? null : LEGACY_ROLE_MESSAGE;
+  }
+  return `Invalid role: ${role}`;
+}
+
+function validateAssignableRoles(roles, existingRoles = []) {
   if (!Array.isArray(roles)) return 'roles must be an array';
-  const invalid = roles.filter((role) => !VALID_PLATFORM_ROLES.includes(role));
-  if (!invalid.length) return null;
-  if (invalid.some(isVendorRole)) return VENDOR_ROLE_MESSAGE;
-  return `Invalid roles: ${invalid.join(', ')}`;
+  for (const role of roles) {
+    const error = validateAssignableRole(role, { allowExistingLegacy: true, existingRoles });
+    if (error) return error;
+  }
+  return null;
 }
 
 /**
@@ -184,11 +202,10 @@ export async function setUserRoles(req, res) {
     const { userId } = req.params;
     const { roles } = req.body;
 
-    const validationError = validatePlatformRoles(roles);
-    if (validationError) {
+    if (!Array.isArray(roles)) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: validationError },
+        error: { code: 'VALIDATION_ERROR', message: 'roles must be an array' },
       });
     }
 
@@ -206,6 +223,20 @@ export async function setUserRoles(req, res) {
       });
     }
 
+    const { data: previousRoles } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId);
+
+    const existingRoles = (previousRoles || []).map((item) => item.role);
+    const validationError = validateAssignableRoles(roles, existingRoles);
+    if (validationError) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: validationError },
+      });
+    }
+
     // Prevent removing own admin role (self-demotion guard)
     if (userId === req.user.id && !roles.includes('admin')) {
       return res.status(400).json({
@@ -213,11 +244,6 @@ export async function setUserRoles(req, res) {
         error: { code: 'SELF_DEMOTION_BLOCKED', message: 'Cannot remove your own admin role' },
       });
     }
-
-    const { data: previousRoles } = await supabaseAdmin
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId);
 
     // Delete existing roles
     await supabaseAdmin
@@ -270,12 +296,13 @@ export async function addRole(req, res) {
     const { userId } = req.params;
     const { role } = req.body;
 
-    if (!role || !VALID_PLATFORM_ROLES.includes(role)) {
+    const validationError = role ? validateAssignableRole(role) : 'Invalid role';
+    if (validationError) {
       return res.status(400).json({
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: isVendorRole(role) ? VENDOR_ROLE_MESSAGE : `Invalid role. Must be one of: ${VALID_PLATFORM_ROLES.join(', ')}`,
+          message: validationError,
         },
       });
     }
@@ -340,7 +367,7 @@ export async function removeRole(req, res) {
   try {
     const { userId, role } = req.params;
 
-    if (!VALID_PLATFORM_ROLES.includes(role)) {
+    if (!READABLE_PLATFORM_ROLES.includes(role)) {
       return res.status(400).json({
         success: false,
         error: {
@@ -394,3 +421,11 @@ export async function removeRole(req, res) {
     });
   }
 }
+
+export {
+  ASSIGNABLE_PLATFORM_ROLES,
+  READABLE_PLATFORM_ROLES,
+  LEGACY_REQUESTER_ROLES,
+  validateAssignableRole,
+  validateAssignableRoles,
+};

@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
+  IconAlertTriangle,
   IconCheck,
   IconClock,
   IconEdit,
+  IconFileText,
   IconInfoCircle,
   IconRefresh,
   IconX,
@@ -31,8 +34,14 @@ function formatDateTime(value) {
   try { return dateTimeFormat.format(new Date(value)); } catch { return value; }
 }
 
+function formatStatus(value) {
+  return String(value || '').replaceAll('_', ' ');
+}
+
 export default function CorporateApprovalsPage() {
   const { session } = useAuth();
+  const [searchParams] = useSearchParams();
+  const requestedOrderId = searchParams.get('orderId') || '';
   const token = session?.access_token;
   const [requests, setRequests] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 });
@@ -48,6 +57,10 @@ export default function CorporateApprovalsPage() {
   const [error, setError] = useState('');
 
   const refresh = useCallback(() => setRefreshKey((key) => key + 1), []);
+
+  useEffect(() => {
+    if (requestedOrderId) setSelectedId(requestedOrderId);
+  }, [requestedOrderId]);
 
   useEffect(() => {
     if (!token) return undefined;
@@ -107,7 +120,7 @@ export default function CorporateApprovalsPage() {
   return (
     <PageContainer>
       <PageHeader
-        eyebrow="Admin operations"
+        eyebrow="Approval operations"
         title="Catering approvals"
         subtitle="Review cost-centre catering requests. Approval confirms the charge and releases the request to the vendor workflow."
         actions={(
@@ -144,7 +157,9 @@ export default function CorporateApprovalsPage() {
                 >
                   <span className="corporate-request__top">
                     <strong>{request.eventName}</strong>
-                    <span className="corporate-badge is-warning">{request.costCentre || 'No cost centre'}</span>
+                    <span className={`corporate-badge is-${request.reapprovalRequired ? 'error' : 'warning'}`}>
+                      {request.reapprovalRequired ? 'Quote re-approval' : (request.costCentre || 'No cost centre')}
+                    </span>
                   </span>
                   <span>{request.reference} · {request.vendorName}</span>
                   <span>{formatDateTime(request.requiredDeliveryAt)} · {request.attendees} attendees</span>
@@ -185,8 +200,16 @@ export default function CorporateApprovalsPage() {
                   <span>{detail.request.reference}</span>
                   <h4>{detail.request.eventName}</h4>
                 </div>
-                <span className="corporate-badge is-warning">{detail.request.approvalStatus}</span>
+                <span className={`corporate-badge is-${detail.request.reapprovalRequired ? 'error' : 'warning'}`}>
+                  {detail.request.reapprovalRequired ? 'Quote re-approval' : formatStatus(detail.request.approvalStatus)}
+                </span>
               </div>
+              {detail.request.reapprovalRequired && (
+                <p className="corporate-alert corporate-alert--success" role="status">
+                  <IconAlertTriangle size={17} />
+                  <span>Accepted quote total {money.format(Number(detail.request.quotedTotal || 0))} exceeds the originally approved charge. Approve this step to release dispatch.</span>
+                </p>
+              )}
 
               <dl className="corporate-detail">
                 <div><dt>Requester</dt><dd>{detail.request.department || '—'}</dd></div>
@@ -202,6 +225,25 @@ export default function CorporateApprovalsPage() {
                   <li key={item.id}><span>{item.name} × {item.quantity}</span><strong>{money.format(Number(item.lineTotal || 0))}</strong></li>
                 ))}
               </ul>
+
+              {detail.quotes.length > 0 && (
+                <div className="corporate-workflow-panel">
+                  <div className="corporate-workflow-panel__head">
+                    <IconFileText size={16} />
+                    <strong>Quotes</strong>
+                  </div>
+                  {detail.quotes.map((quote) => (
+                    <div className="corporate-quote" key={quote.id}>
+                      <div className="corporate-quote__top">
+                        <strong>{money.format(Number(quote.total || 0))}</strong>
+                        <span className={`corporate-badge is-${quote.status === 'accepted' ? 'success' : 'info'}`}>{formatStatus(quote.status)}</span>
+                      </div>
+                      <span>Valid until {formatDateTime(quote.validUntil)}</span>
+                      {quote.notes && <p>{quote.notes}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {(detail.request.dietaryRequirements.length > 0 || detail.request.allergyRequirements.length > 0) && (
                 <p className="corporate-detail__step">
