@@ -19,7 +19,9 @@ import Pagination from '../../components/ui/Pagination.jsx';
 import PageContainer from '../../components/layout/PageContainer.jsx';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
+import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
+import '../../components/cards/CardSkeletonShimmer.css';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useRoles } from '../../hooks/useRoles.js';
 import { listVendorMenu, listVendors } from '../../services/employeeApi.js';
@@ -88,6 +90,27 @@ function formatStatus(value) {
   return String(value || '').replaceAll('_', ' ');
 }
 
+const SHIMMER = 'home_card-skeleton-shimmer';
+
+function RequestSkeleton() {
+  return (
+    <div className="corporate-request-skeleton" aria-hidden="true">
+      <Skeleton className={`${SHIMMER} corporate-skeleton-line corporate-skeleton-line--title`} />
+      <Skeleton className={`${SHIMMER} corporate-skeleton-line`} />
+      <Skeleton className={`${SHIMMER} corporate-skeleton-line corporate-skeleton-line--short`} />
+    </div>
+  );
+}
+
+function MenuSkeleton() {
+  return (
+    <div className="corporate-menu-skeleton" aria-hidden="true">
+      <Skeleton className={`${SHIMMER} corporate-skeleton-line`} />
+      <Skeleton className={`${SHIMMER} corporate-skeleton-line corporate-skeleton-line--input`} />
+    </div>
+  );
+}
+
 function ReasonModal({ config, value, onChange, onSubmit, onCancel, saving }) {
   if (!config) return null;
   return (
@@ -105,6 +128,7 @@ function ReasonModal({ config, value, onChange, onSubmit, onCancel, saving }) {
           <label className="corporate-field">
             <span>{config.label}</span>
             <textarea
+              className="admin-input"
               rows="4"
               value={value}
               onChange={(event) => onChange(event.target.value)}
@@ -169,11 +193,27 @@ export default function CorporateCateringPage() {
   const [loadingVendors, setLoadingVendors] = useState(true);
   const [loadingMenu, setLoadingMenu] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(true);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState('');
 
   const selectedVendor = vendors.find((vendor) => vendor.id === vendorId) || null;
   const locations = selectedVendor?.locations || [];
   const selectedLocation = locations.find((location) => location.id === locationId) || null;
+
+  const vendorOptions = useMemo(() => vendors.map((vendor) => ({
+    id: vendor.id,
+    name: vendor.name,
+    available: true,
+  })), [vendors]);
+  const locationOptions = useMemo(() => locations.map((location) => ({
+    id: location.id,
+    name: location.site_name || location.building_name
+      ? `${location.site_name || 'Site'} · ${location.building_name || 'Building'}`
+      : location.id,
+    available: true,
+  })), [locations]);
+  const selectedVendorOption = vendorOptions.find((option) => option.id === vendorId) || null;
+  const selectedLocationOption = locationOptions.find((option) => option.id === locationId) || null;
 
   useEffect(() => {
     if (!token) return undefined;
@@ -232,14 +272,17 @@ export default function CorporateCateringPage() {
   useEffect(() => {
     if (!token || !detailId) {
       setDetail(null);
+      setLoadingDetail(false);
       return undefined;
     }
     const controller = new AbortController();
+    setLoadingDetail(true);
     getMyCorporateRequest(detailId, { token, signal: controller.signal })
       .then((response) => setDetail(response))
       .catch((err) => {
         if (err.name !== 'AbortError') setError(err.message || 'Could not load request details.');
-      });
+      })
+      .finally(() => setLoadingDetail(false));
     return () => controller.abort();
   }, [token, detailId, refreshKey]);
 
@@ -251,10 +294,14 @@ export default function CorporateCateringPage() {
     setForm((current) => ({ ...current, [field]: event.target.value }));
   }, []);
 
-  const handleVendorChange = (event) => {
-    const nextVendorId = event.target.value;
-    setVendorId(nextVendorId);
+  const handleVendorChange = (option) => {
+    setVendorId(option?.id || '');
     setLocationId('');
+    setError('');
+  };
+
+  const handleLocationChange = (option) => {
+    setLocationId(option?.id || '');
     setError('');
   };
 
@@ -364,7 +411,10 @@ export default function CorporateCateringPage() {
   if (rolesLoading) {
     return (
       <PageContainer>
-        <div className="corporate-loading"><Skeleton /><Skeleton /></div>
+        <div className="corporate-loading">
+          <Skeleton className={`${SHIMMER} corporate-skeleton-line corporate-skeleton-line--title`} />
+          <Skeleton className={`${SHIMMER} corporate-skeleton-line`} />
+        </div>
       </PageContainer>
     );
   }
@@ -411,51 +461,59 @@ export default function CorporateCateringPage() {
           </div>
 
           <div className="corporate-field-grid">
-            <label className="corporate-field">
-              <span>Catering vendor</span>
-              <select value={vendorId} onChange={handleVendorChange} required>
-                <option value="">Select a vendor</option>
-                {vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}
-              </select>
-            </label>
-            <label className="corporate-field">
-              <span>Collection location</span>
-              <select value={locationId} onChange={(event) => setLocationId(event.target.value)} required disabled={!vendorId}>
-                <option value="">Select a location</option>
-                {locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.site_name || 'Site'} · {location.building_name || 'Building'}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="corporate-field">
+              <CustomDropdown
+                label="Catering vendor"
+                ariaLabel="Catering vendor"
+                placeholder="Select a vendor"
+                options={vendorOptions}
+                value={selectedVendorOption}
+                onChange={handleVendorChange}
+                loading={loadingVendors}
+                disabled={loadingVendors || busy}
+                showAvailabilityStatus={false}
+              />
+            </div>
+            <div className="corporate-field">
+              <CustomDropdown
+                label="Collection location"
+                ariaLabel="Collection location"
+                placeholder="Select a location"
+                options={locationOptions}
+                value={selectedLocationOption}
+                onChange={handleLocationChange}
+                loading={loadingVendors}
+                disabled={!vendorId || loadingVendors || busy}
+                showAvailabilityStatus={false}
+              />
+            </div>
             <label className="corporate-field">
               <span>Event name</span>
-              <input value={form.event_name} onChange={updateForm('event_name')} maxLength={160} required />
+              <input className="admin-input" value={form.event_name} onChange={updateForm('event_name')} maxLength={160} required />
             </label>
             <label className="corporate-field">
               <span>Venue</span>
-              <input value={form.venue} onChange={updateForm('venue')} maxLength={200} required />
+              <input className="admin-input" value={form.venue} onChange={updateForm('venue')} maxLength={200} required />
             </label>
             <label className="corporate-field">
               <span>Attendees</span>
-              <input type="number" min="1" max="20000" value={form.attendee_count} onChange={updateForm('attendee_count')} required />
+              <input className="admin-input" type="number" min="1" max="20000" value={form.attendee_count} onChange={updateForm('attendee_count')} required />
             </label>
             <label className="corporate-field">
               <span>Cost centre</span>
-              <input value={form.cost_centre} onChange={updateForm('cost_centre')} maxLength={120} required />
+              <input className="admin-input" value={form.cost_centre} onChange={updateForm('cost_centre')} maxLength={120} required />
             </label>
             <label className="corporate-field">
               <span>Department</span>
-              <input value={form.department} onChange={updateForm('department')} maxLength={120} />
+              <input className="admin-input" value={form.department} onChange={updateForm('department')} maxLength={120} />
             </label>
             <label className="corporate-field">
               <span>Business unit</span>
-              <input value={form.business_unit} onChange={updateForm('business_unit')} maxLength={120} />
+              <input className="admin-input" value={form.business_unit} onChange={updateForm('business_unit')} maxLength={120} />
             </label>
             <label className="corporate-field">
               <span>Purchase order</span>
-              <input value={form.purchase_order_number} onChange={updateForm('purchase_order_number')} maxLength={120} />
+              <input className="admin-input" value={form.purchase_order_number} onChange={updateForm('purchase_order_number')} maxLength={120} />
             </label>
           </div>
 
@@ -463,15 +521,15 @@ export default function CorporateCateringPage() {
           <div className="corporate-field-grid">
             <label className="corporate-field">
               <span>Required delivery</span>
-              <input type="datetime-local" value={form.required_delivery_at} onChange={updateForm('required_delivery_at')} required />
+              <input className="admin-input" type="datetime-local" value={form.required_delivery_at} onChange={updateForm('required_delivery_at')} required />
             </label>
             <label className="corporate-field">
               <span>Meeting starts</span>
-              <input type="datetime-local" value={form.meeting_start_at} onChange={updateForm('meeting_start_at')} required />
+              <input className="admin-input" type="datetime-local" value={form.meeting_start_at} onChange={updateForm('meeting_start_at')} required />
             </label>
             <label className="corporate-field">
               <span>Meeting ends</span>
-              <input type="datetime-local" value={form.meeting_end_at} onChange={updateForm('meeting_end_at')} required />
+              <input className="admin-input" type="datetime-local" value={form.meeting_end_at} onChange={updateForm('meeting_end_at')} required />
             </label>
           </div>
           <p className="corporate-hint">Delivery must be before the meeting starts and in the future.</p>
@@ -480,25 +538,27 @@ export default function CorporateCateringPage() {
           <div className="corporate-field-grid">
             <label className="corporate-field">
               <span>Dietary requirements <small>comma separated</small></span>
-              <input value={form.dietary_requirements} onChange={updateForm('dietary_requirements')} placeholder="Vegetarian, Halaal" />
+              <input className="admin-input" value={form.dietary_requirements} onChange={updateForm('dietary_requirements')} placeholder="Vegetarian, Halaal" />
             </label>
             <label className="corporate-field">
               <span>Allergy requirements <small>comma separated</small></span>
-              <input value={form.allergy_requirements} onChange={updateForm('allergy_requirements')} placeholder="Nut-free, Gluten-free" />
+              <input className="admin-input" value={form.allergy_requirements} onChange={updateForm('allergy_requirements')} placeholder="Nut-free, Gluten-free" />
             </label>
             <label className="corporate-field corporate-field--wide">
               <span>Delivery and setup</span>
-              <textarea rows="3" value={form.delivery_setup_requirements} onChange={updateForm('delivery_setup_requirements')} maxLength={2000} />
+              <textarea className="admin-input" rows="3" value={form.delivery_setup_requirements} onChange={updateForm('delivery_setup_requirements')} maxLength={2000} />
             </label>
             <label className="corporate-field corporate-field--wide">
               <span>Special instructions</span>
-              <textarea rows="3" value={form.special_instructions} onChange={updateForm('special_instructions')} maxLength={2000} />
+              <textarea className="admin-input" rows="3" value={form.special_instructions} onChange={updateForm('special_instructions')} maxLength={2000} />
             </label>
           </div>
 
           <div className="corporate-subheading"><IconBuilding size={17} /><span>Menu</span></div>
           {loadingVendors || loadingMenu ? (
-            <div className="corporate-loading"><Skeleton /><Skeleton /><Skeleton /><Skeleton /></div>
+            <div className="corporate-menu-skeletons" aria-hidden="true">
+              {[0, 1, 2, 3].map((index) => <MenuSkeleton key={index} />)}
+            </div>
           ) : !selectedLocation ? (
             <p className="corporate-empty">Choose an active vendor location to load its menu.</p>
           ) : !menuItems.length ? (
@@ -512,6 +572,7 @@ export default function CorporateCateringPage() {
                     <span>{money.format(Number(item.base_price || 0))} each</span>
                   </div>
                   <input
+                    className="admin-input"
                     type="number"
                     min="0"
                     max="500"
@@ -548,7 +609,9 @@ export default function CorporateCateringPage() {
           </div>
 
           {loadingRequests ? (
-            <div className="corporate-loading"><Skeleton /><Skeleton /><Skeleton /><Skeleton /><Skeleton /></div>
+            <div className="corporate-request-skeletons" aria-hidden="true">
+              {[0, 1, 2].map((index) => <RequestSkeleton key={index} />)}
+            </div>
           ) : requests.length === 0 ? (
             <p className="corporate-empty">No catering requests yet.</p>
           ) : (
@@ -585,7 +648,16 @@ export default function CorporateCateringPage() {
             onPageChange={setPage}
           />
 
-          {detail && (
+          {loadingDetail ? (
+            <div className="corporate-detail corporate-detail--loading" aria-hidden="true">
+              <div className="corporate-loading">
+                <Skeleton className={`${SHIMMER} corporate-skeleton-line corporate-skeleton-line--title`} />
+                <Skeleton className={`${SHIMMER} corporate-skeleton-line`} />
+                <Skeleton className={`${SHIMMER} corporate-skeleton-line corporate-skeleton-line--short`} />
+                <Skeleton className={`${SHIMMER} corporate-skeleton-line`} />
+              </div>
+            </div>
+          ) : detail ? (
             <div className="corporate-detail">
               <div className="corporate-detail__head">
                 <div>
@@ -723,6 +795,8 @@ export default function CorporateCateringPage() {
                 </div>
               )}
             </div>
+          ) : (
+            <p className="corporate-empty">Select a request to view its approval and delivery progress.</p>
           )}
         </section>
       </div>

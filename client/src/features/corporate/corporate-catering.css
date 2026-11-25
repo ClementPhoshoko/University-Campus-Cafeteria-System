@@ -3,6 +3,40 @@
   gap: var(--space-2);
 }
 
+.corporate-skeleton-line {
+  display: block;
+  width: 100%;
+  height: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.corporate-skeleton-line--title { width: 68%; height: 18px; }
+.corporate-skeleton-line--short { width: 52%; }
+.corporate-skeleton-line--input { width: 76px; height: 34px; }
+
+.corporate-request-skeletons,
+.corporate-menu-skeletons {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.corporate-request-skeletons { gap: var(--space-3); }
+
+.corporate-request-skeleton,
+.corporate-menu-skeleton {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+}
+
+.corporate-menu-skeletons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.corporate-menu-skeleton { grid-template-columns: minmax(0, 1fr) 76px; align-items: center; }
+
 .corporate-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(320px, .85fr);
@@ -92,29 +126,22 @@
   font-weight: var(--font-weight-normal);
 }
 
-.corporate-field input,
-.corporate-field select,
-.corporate-field textarea,
-.corporate-menu__item input {
-  width: 100%;
+.corporate-field .admin-input,
+.corporate-menu__item .admin-input {
   min-height: 40px;
-  padding: 9px 11px;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-primary);
-  background: var(--color-surface-default);
-  font: inherit;
-  font-size: .84rem;
 }
 
-.corporate-field textarea { resize: vertical; }
+.corporate-field textarea.admin-input {
+  height: auto;
+  min-height: 84px;
+  padding: 10px 12px;
+  resize: vertical;
+}
 
-.corporate-field input:focus,
-.corporate-field select:focus,
-.corporate-field textarea:focus,
-.corporate-menu__item input:focus {
-  outline: 2px solid color-mix(in srgb, var(--color-action-primary) 35%, transparent);
-  outline-offset: 1px;
+.corporate-menu__item .admin-input {
+  min-height: 34px;
+  padding: 6px 8px;
+  text-align: center;
 }
 
 .corporate-subheading {
@@ -396,6 +423,7 @@
 @media (max-width: 640px) {
   .corporate-card { padding: var(--space-4); }
   .corporate-field-grid,
-  .corporate-menu { grid-template-columns: 1fr; }
+  .corporate-menu,
+  .corporate-menu-skeletons { grid-template-columns: 1fr; }
   .corporate-form__footer { align-items: flex-start; flex-direction: column; }
 }

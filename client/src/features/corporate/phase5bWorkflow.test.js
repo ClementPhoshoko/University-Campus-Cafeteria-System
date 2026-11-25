@@ -13,6 +13,7 @@ const navigationSource = read('..', '..', 'components', 'layout', 'navigationIte
 const adminReportsSource = read('..', 'admin', 'AdminReportsPage.jsx');
 const approvalsSource = read('CorporateApprovalsPage.jsx');
 const requesterSource = read('CorporateCateringPage.jsx');
+const requesterCss = read('corporate-catering.css');
 const vendorOpsSource = read('..', 'vendor', 'VendorOperationsPage.jsx');
 const vendorLayoutSource = read('..', 'vendor', 'VendorWorkspaceLayout.jsx');
 const vendorCateringSource = read('..', 'vendor', 'VendorCateringPage.jsx');
@@ -61,6 +62,20 @@ test('requester UI exposes quote, re-approval, and delivery confirmation actions
   assert.ok(requesterSource.includes('rejectCorporateQuote('));
   assert.ok(requesterSource.includes('requestCorporateReapproval('));
   assert.ok(requesterSource.includes('confirmCorporateDelivery('));
+});
+
+test('requester form uses the shared dropdown, input, and skeleton patterns', () => {
+  assert.ok(requesterSource.includes("import CustomDropdown from '../../components/ui/CustomDropdown.jsx';"));
+  assert.equal((requesterSource.match(/<CustomDropdown/g) || []).length, 2);
+  assert.equal((requesterSource.match(/className="admin-input"/g) || []).length, 16);
+  assert.doesNotMatch(requesterSource, /<select\b/);
+  assert.ok(requesterSource.includes('function RequestSkeleton()'));
+  assert.ok(requesterSource.includes('function MenuSkeleton()'));
+  assert.ok(requesterSource.includes('const [loadingDetail, setLoadingDetail]'));
+  assert.ok(requesterSource.includes('<RequestSkeleton key={index} />'));
+  assert.ok(requesterSource.includes('<MenuSkeleton key={index} />'));
+  assert.ok(requesterCss.includes('.corporate-skeleton-line'));
+  assert.ok(requesterCss.includes('.corporate-menu-skeletons'));
 });
 
 test('vendor Catering workspace is manager-only and covers quote through delivery', () => {
