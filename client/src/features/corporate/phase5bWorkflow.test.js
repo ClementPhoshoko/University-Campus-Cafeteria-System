@@ -13,7 +13,6 @@ const navigationSource = read('..', '..', 'components', 'layout', 'navigationIte
 const adminReportsSource = read('..', 'admin', 'AdminReportsPage.jsx');
 const approvalsSource = read('CorporateApprovalsPage.jsx');
 const requesterSource = read('CorporateCateringPage.jsx');
-const requesterSkeletonSource = read('CorporateCateringSkeleton.jsx');
 const requesterCss = read('corporate-catering.css');
 const vendorOpsSource = read('..', 'vendor', 'VendorOperationsPage.jsx');
 const vendorLayoutSource = read('..', 'vendor', 'VendorWorkspaceLayout.jsx');
@@ -65,30 +64,29 @@ test('requester UI exposes quote, re-approval, and delivery confirmation actions
   assert.ok(requesterSource.includes('confirmCorporateDelivery('));
 });
 
-test('requester form uses the shared dropdown, input, and skeleton patterns', () => {
+test('requester form renders immediately with skeletons only in fetched areas', () => {
   assert.ok(requesterSource.includes("import CustomDropdown from '../../components/ui/CustomDropdown.jsx';"));
   assert.equal((requesterSource.match(/<CustomDropdown/g) || []).length, 2);
   assert.equal((requesterSource.match(/className="admin-input"/g) || []).length, 16);
   assert.doesNotMatch(requesterSource, /<select\b/);
   assert.ok(requesterSource.includes('function RequestSkeleton()'));
-  assert.ok(requesterSource.includes('function MenuSkeleton()'));
-  assert.ok(requesterSource.includes('const [loadingDetail, setLoadingDetail]'));
   assert.ok(requesterSource.includes('<RequestSkeleton key={index} />'));
-  assert.ok(requesterSource.includes('<MenuSkeleton key={index} />'));
-  assert.ok(requesterCss.includes('.corporate-skeleton-line'));
-  assert.ok(requesterCss.includes('.corporate-menu-skeletons'));
+  assert.ok(requesterSource.includes('loading={loadingVendors}'));
+  assert.doesNotMatch(requesterSource, /function MenuSkeleton/);
+  assert.doesNotMatch(requesterSource, /loadingDetail/);
+  assert.doesNotMatch(requesterSource, /CorporateCateringSkeleton/);
 });
 
-test('requester initial load uses a full page skeleton', () => {
-  assert.ok(requesterSource.includes("import CorporateCateringSkeleton from './CorporateCateringSkeleton.jsx';"));
-  assert.ok(requesterSource.includes('if (rolesLoading) return <CorporateCateringSkeleton />;'));
-  assert.ok(requesterSource.includes('if (loadingVendors) return <CorporateCateringSkeleton />;'));
-  assert.ok(requesterSkeletonSource.includes('className="corporate-skeleton-page"'));
-  assert.ok(requesterSkeletonSource.includes('className="corporate-layout"'));
-  assert.ok(requesterSkeletonSource.includes('corporate-skeleton-control'));
-  assert.ok(requesterSkeletonSource.includes('corporate-request-skeletons'));
-  assert.ok(requesterCss.includes('.corporate-skeleton-page'));
-  assert.ok(requesterCss.includes('.corporate-skeleton-control'));
+test('fetched placeholders match the real dropdown trigger and request card sizes', () => {
+  assert.ok(requesterCss.includes('.corporate-field .custom-dropdown--loading .custom-dropdown__trigger'));
+  assert.ok(requesterCss.includes('animation: home-card-skeleton-shimmer'));
+  assert.ok(requesterCss.includes('.corporate-request-skeleton__top'));
+  assert.ok(requesterCss.includes('.corporate-request-skeleton__badge'));
+  assert.ok(requesterCss.includes('.corporate-request-skeleton__foot'));
+  assert.ok(requesterCss.includes('gap: 5px;'));
+  assert.ok(requesterCss.includes('border-radius: 999px'));
+  assert.doesNotMatch(requesterCss, /corporate-skeleton-page/);
+  assert.doesNotMatch(requesterCss, /corporate-menu-skeletons/);
 });
 
 test('vendor Catering workspace is manager-only and covers quote through delivery', () => {

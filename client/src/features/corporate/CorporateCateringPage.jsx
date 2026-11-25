@@ -21,7 +21,6 @@ import PageHeader from '../../components/layout/PageHeader.jsx';
 import PrimaryButton from '../../components/PrimaryButton.jsx';
 import CustomDropdown from '../../components/ui/CustomDropdown.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
-import CorporateCateringSkeleton from './CorporateCateringSkeleton.jsx';
 import '../../components/cards/CardSkeletonShimmer.css';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useRoles } from '../../hooks/useRoles.js';
@@ -96,18 +95,16 @@ const SHIMMER = 'home_card-skeleton-shimmer';
 function RequestSkeleton() {
   return (
     <div className="corporate-request-skeleton" aria-hidden="true">
-      <Skeleton className={`${SHIMMER} corporate-skeleton-line corporate-skeleton-line--title`} />
-      <Skeleton className={`${SHIMMER} corporate-skeleton-line`} />
-      <Skeleton className={`${SHIMMER} corporate-skeleton-line corporate-skeleton-line--short`} />
-    </div>
-  );
-}
-
-function MenuSkeleton() {
-  return (
-    <div className="corporate-menu-skeleton" aria-hidden="true">
-      <Skeleton className={`${SHIMMER} corporate-skeleton-line`} />
-      <Skeleton className={`${SHIMMER} corporate-skeleton-line corporate-skeleton-line--input`} />
+      <span className="corporate-request-skeleton__top">
+        <Skeleton className={`${SHIMMER} corporate-request-skeleton__title`} />
+        <Skeleton className={`${SHIMMER} corporate-request-skeleton__badge`} />
+      </span>
+      <Skeleton className={`${SHIMMER} corporate-request-skeleton__line`} />
+      <Skeleton className={`${SHIMMER} corporate-request-skeleton__line corporate-request-skeleton__line--short`} />
+      <span className="corporate-request-skeleton__foot">
+        <Skeleton className={`${SHIMMER} corporate-request-skeleton__total`} />
+        <Skeleton className={`${SHIMMER} corporate-request-skeleton__chevron`} />
+      </span>
     </div>
   );
 }
@@ -194,7 +191,6 @@ export default function CorporateCateringPage() {
   const [loadingVendors, setLoadingVendors] = useState(true);
   const [loadingMenu, setLoadingMenu] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(true);
-  const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState('');
 
   const selectedVendor = vendors.find((vendor) => vendor.id === vendorId) || null;
@@ -276,17 +272,14 @@ export default function CorporateCateringPage() {
   useEffect(() => {
     if (!token || !detailId) {
       setDetail(null);
-      setLoadingDetail(false);
       return undefined;
     }
     const controller = new AbortController();
-    setLoadingDetail(true);
     getMyCorporateRequest(detailId, { token, signal: controller.signal })
       .then((response) => setDetail(response))
       .catch((err) => {
         if (err.name !== 'AbortError') setError(err.message || 'Could not load request details.');
-      })
-      .finally(() => setLoadingDetail(false));
+      });
     return () => controller.abort();
   }, [token, detailId, refreshKey]);
 
@@ -412,11 +405,9 @@ export default function CorporateCateringPage() {
     }
   };
 
-  if (rolesLoading) return <CorporateCateringSkeleton />;
-  if (!roles.some((role) => REQUESTER_ROLES.includes(role))) {
+  if (!rolesLoading && !roles.some((role) => REQUESTER_ROLES.includes(role))) {
     return <Navigate to="/" replace />;
   }
-  if (loadingVendors) return <CorporateCateringSkeleton />;
 
   return (
     <PageContainer>
@@ -466,7 +457,7 @@ export default function CorporateCateringPage() {
                 value={selectedVendorOption}
                 onChange={handleVendorChange}
                 loading={loadingVendors}
-                disabled={loadingVendors || busy}
+                disabled={busy}
                 showAvailabilityStatus={false}
               />
             </div>
@@ -479,7 +470,7 @@ export default function CorporateCateringPage() {
                 value={selectedLocationOption}
                 onChange={handleLocationChange}
                 loading={loadingVendors}
-                disabled={!vendorId || loadingVendors || busy}
+                disabled={!vendorId || busy}
                 showAvailabilityStatus={false}
               />
             </div>
@@ -552,9 +543,7 @@ export default function CorporateCateringPage() {
 
           <div className="corporate-subheading"><IconBuilding size={17} /><span>Menu</span></div>
           {loadingVendors || loadingMenu ? (
-            <div className="corporate-menu-skeletons" aria-hidden="true">
-              {[0, 1, 2, 3].map((index) => <MenuSkeleton key={index} />)}
-            </div>
+            <p className="corporate-empty">Loading menu items…</p>
           ) : !selectedLocation ? (
             <p className="corporate-empty">Choose an active vendor location to load its menu.</p>
           ) : !menuItems.length ? (
@@ -644,16 +633,7 @@ export default function CorporateCateringPage() {
             onPageChange={setPage}
           />
 
-          {loadingDetail ? (
-            <div className="corporate-detail corporate-detail--loading" aria-hidden="true">
-              <div className="corporate-loading">
-                <Skeleton className={`${SHIMMER} corporate-skeleton-line corporate-skeleton-line--title`} />
-                <Skeleton className={`${SHIMMER} corporate-skeleton-line`} />
-                <Skeleton className={`${SHIMMER} corporate-skeleton-line corporate-skeleton-line--short`} />
-                <Skeleton className={`${SHIMMER} corporate-skeleton-line`} />
-              </div>
-            </div>
-          ) : detail ? (
+          {detail ? (
             <div className="corporate-detail">
               <div className="corporate-detail__head">
                 <div>
